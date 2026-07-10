@@ -55,4 +55,7 @@ export const api = {
 
   // Stats API
   getStats: () => request('/stats'),
+
+  // Sync API
+  syncExercises: (rapidApiKey?: string) => request('/sync/exercises', { method: 'POST', body: JSON.stringify({ rapidApiKey }) }),
 };

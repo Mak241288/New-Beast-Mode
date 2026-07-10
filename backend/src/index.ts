@@ -9,6 +9,7 @@ import workoutRoutes from './routes/workoutRoutes';
 import nutritionRoutes from './routes/nutritionRoutes';
 import chatRoutes from './routes/chatRoutes';
 import statsRoutes from './routes/statsRoutes';
+import syncRoutes from './routes/syncRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/workout', workoutRoutes);
 app.use('/api/nutrition', nutritionRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/sync', syncRoutes);
 
 // Basic Health Check Route
 app.get('/api/health', (_req, res) => {

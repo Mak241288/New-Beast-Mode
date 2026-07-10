@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { User, ShieldAlert, Sparkles, Save, CheckCircle } from 'lucide-react';
+import { User, ShieldAlert, Sparkles, Save, CheckCircle, RefreshCw } from 'lucide-react';
 
 interface ProfileProps {
   onNavigate: (view: string) => void;
@@ -30,6 +30,11 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
   // AI Suggestion state after profile edit
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [adjustmentText, setAdjustmentText] = useState('');
+
+  // Sync exercises state
+  const [syncing, setSyncing] = useState(false);
+  const [rapidApiKey, setRapidApiKey] = useState('');
+  const [syncMessage, setSyncMessage] = useState('');
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -105,6 +110,19 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
       alert('فشل تحديث الخطة الرياضية تلقائياً.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSyncExercises = async () => {
+    setSyncing(true);
+    setSyncMessage('');
+    try {
+      const res = await api.syncExercises(rapidApiKey || undefined);
+      setSyncMessage(res.message + ` (تمت إضافة/تحديث ${res.count} تمرين)`);
+    } catch (err: any) {
+      setSyncMessage(`حدث خطأ أثناء المزامنة: ${err.message || 'فشل الاتصال'}`);
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -239,6 +257,55 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
                     <textarea name="foodDislikes" value={profile.foodDislikes || ''} onChange={handleInputChange} className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="السمك، الكوسا..." />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Sync Library Section (Developers) */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+              <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+                <RefreshCw size={18} color="var(--primary)" />
+                مزامنة وتوسيع قاعدة بيانات التمارين (مطورين)
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                اسحب آلاف التمارين المتنوعة فورياً من ExerciseDB و Wger و Yoga API لملء مكتبة تطبيقك بالكامل.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label>مفتاح RapidAPI Key (اختياري، لتشغيل ExerciseDB و Yoga API)</label>
+                  <input
+                    type="text"
+                    placeholder="ضع مفتاح RapidAPI الخاص بك هنا..."
+                    value={rapidApiKey}
+                    onChange={(e) => setRapidApiKey(e.target.value)}
+                    className="input-field"
+                  />
+                </div>
+                
+                {syncMessage && (
+                  <div style={{
+                    padding: '10px 15px',
+                    background: syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid ' + (syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'),
+                    fontSize: '13px',
+                    color: syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') ? 'var(--danger)' : 'var(--primary)',
+                    fontWeight: 'bold',
+                    textAlign: 'right'
+                  }}>
+                    {syncMessage}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  disabled={syncing}
+                  onClick={handleSyncExercises}
+                  className="secondary-btn"
+                  style={{ alignSelf: 'flex-start', padding: '10px 20px', gap: '8px', display: 'flex', alignItems: 'center' }}
+                >
+                  <RefreshCw size={16} style={{ animation: syncing ? 'spin 1.5s linear infinite' : 'none' }} />
+                  {syncing ? 'جاري سحب ومزامنة التمارين...' : 'بدء المزامنة الذكية الآن'}
+                </button>
               </div>
             </div>
 
