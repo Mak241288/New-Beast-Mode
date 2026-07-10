@@ -1,0 +1,148 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                Int             @id @default(autoincrement())
+  email             String          @unique
+  password          String
+  name              String
+  gender            String?
+  birthDate         DateTime?
+  height            Float?          // in cm
+  currentWeight     Float?          // in kg
+  targetWeight      Float?          // in kg
+  medicalConditions String?         // text detailing injuries/ailments
+  labResults        String?         // blood tests/health metrics
+  foodAllergies     String?
+  foodPreferences   String?         // e.g. "vegan, high protein"
+  foodDislikes      String?         // e.g. "fish, broccoli"
+  workoutLocation   String?         // "HOME" or "GYM"
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  workoutPlans      WorkoutPlan[]
+  weightLogs        WeightLog[]
+  chatMessages      ChatMessage[]
+  nutritionPlans    NutritionPlan[]
+}
+
+model WeightLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weight    Float
+  date      DateTime @default(now())
+  notes     String?  // user comments on how they feel that day
+}
+
+model WorkoutPlan {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String        // e.g. "Week 1-4: Foundation Phase"
+  durationWeeks Int           @default(4)
+  startDate     DateTime
+  active        Boolean       @default(true)
+  weeklyTips    String?       // overall instructions for the week
+  isManual      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  dayWorkouts   DayWorkout[]
+}
+
+model DayWorkout {
+  id         Int         @id @default(autoincrement())
+  planId     Int
+  plan       WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  dayIndex   Int         // 1 to 7 (Day 1, Day 2 etc)
+  title      String      // e.g. "Push Day - Iron Chest & Shoulders"
+  focusArea  String      // e.g. "Chest, Shoulders, Triceps"
+  dayTips    String?     // dynamic tips for warm-up, stretching
+  isRestDay  Boolean     @default(false)
+  exercises  Exercise[]
+}
+
+model Exercise {
+  id            Int           @id @default(autoincrement())
+  dayWorkoutId  Int
+  dayWorkout    DayWorkout    @relation(fields: [dayWorkoutId], references: [id], onDelete: Cascade)
+  name          String
+  targetMuscle  String?       // e.g. "Chest", "Quads"
+  category      String?       // "IRON", "YOGA", "PILATES", "HIIT", "CARDIO", "CALISTHENICS"
+  sets          Int           @default(3)
+  reps          String        @default("10-12") // Can be "10-12", "Max", "30s", etc.
+  weight        String?       // e.g. "15kg", "Bodyweight"
+  exerciseTips  String?       // Form advice
+  imageUrl      String?       // Illustration image URL
+  videoUrl      String?       // YouTube Shorts search link
+  order         Int           @default(0)
+  progressLogs  ProgressLog[]
+}
+
+model ExerciseLibrary {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  targetMuscle  String   // e.g. "Chest", "Quads", "Full Body"
+  category      String   // "IRON", "YOGA", "PILATES", "HIIT", "CARDIO", "CALISTHENICS"
+  description   String?  // details of how to do the exercise
+  imageUrl      String?
+  videoUrl      String?
+  createdAt     DateTime @default(now())
+}
+
+model ProgressLog {
+  id            Int      @id @default(autoincrement())
+  exerciseId    Int
+  exercise      Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  date          DateTime @default(now())
+  completedSets Int
+  repsCompleted String   // e.g. "12,11,10"
+  weightUsed    String?  // e.g. "15kg, 15kg, 15kg"
+  notes         String?  // How the user felt during the exercise
+}
+
+model NutritionPlan {
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             DateTime
+  caloriesGoal     Int
+  proteinGoal      Int
+  carbsGoal        Int
+  fatGoal          Int
+  breakfast        String    // Recommended breakfast
+  lunch            String    // Recommended lunch
+  dinner           String    // Recommended dinner
+  snacks           String?   // Recommended snacks
+  syncWithWorkout  Boolean   @default(true)
+  waterLoggedMl    Int       @default(0)
+  mealsLogged      MealLog[]
+
+  @@unique([userId, date])
+}
+
+model MealLog {
+  id              Int           @id @default(autoincrement())
+  nutritionPlanId Int
+  nutritionPlan   NutritionPlan @relation(fields: [nutritionPlanId], references: [id], onDelete: Cascade)
+  time            DateTime      @default(now())
+  description     String        // e.g. "Grilled chicken breast, white rice"
+  calories        Int
+  protein         Int
+  carbs           Int
+  fat             Int
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender    String   // "USER" or "AI"
+  text      String
+  timestamp DateTime @default(now())
+}
