@@ -44,6 +44,17 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/sync', syncRoutes);
 
+// root greeting route
+app.get('/', (_req, res) => {
+  res.send(`
+    <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 100px; color: #10b981;">
+      <h1>BeastMode API Server is Running! 🏋️‍♂️🔥</h1>
+      <p style="color: #6b7280; font-size: 16px;">Backend server is fully active and ready to power your fitness journey.</p>
+      <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">v1.0.0 | SQLite | Express | TypeScript</p>
+    </div>
+  `);
+});
+
 // Basic Health Check Route
 app.get('/api/health', (_req, res) => {
   res.status(200).json({
