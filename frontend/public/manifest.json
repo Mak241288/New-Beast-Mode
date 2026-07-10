@@ -1,0 +1,17 @@
+{
+  "short_name": "BeastMode",
+  "name": "BeastMode - AI Workout & Nutrition Coach",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2964/2964514.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0d0e12",
+  "theme_color": "#10b981",
+  "display": "standalone",
+  "orientation": "portrait"
+}

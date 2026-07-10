@@ -1,0 +1,42 @@
+/* Global animations for BeastMode */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.99); }
+}
+
+/* Printing Style Customizations */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    direction: rtl;
+  }
+  .no-print, header, nav, button, form {
+    display: none !important;
+  }
+  .print-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    border: none !important;
+  }
+  .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    color: #000 !important;
+  }
+}
