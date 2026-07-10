@@ -83,7 +83,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
     }
   };
 
-  // Active workout timer
+  // Exercise countdown timer (for time-based exercises like Plank)
+  const [exerciseSeconds, setExerciseSeconds] = useState(0);
+  const [isExerciseTimerActive, setIsExerciseTimerActive] = useState(false);
+
+  // Helper to parse duration from reps text (e.g. "60s" or "30 ثانية")
+  const parseRepsToSeconds = (repsText: string): number | null => {
+    const match = repsText.match(/(\d+)\s*(ثانية|s|second|sec|ثوان|دقيقة|min)/i);
+    if (!match) return null;
+    const value = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    if (unit.includes('دقيقة') || unit.includes('min')) {
+      return value * 60;
+    }
+    return value;
+  };
+
+  const checkAndInitExerciseTimer = (ex: any) => {
+    if (!ex) return;
+    const secs = parseRepsToSeconds(ex.reps);
+    if (secs !== null) {
+      setExerciseSeconds(secs);
+      setIsExerciseTimerActive(false);
+    } else {
+      setExerciseSeconds(0);
+      setIsExerciseTimerActive(false);
+    }
+  };
+
+  // Active workout rest timer
   useEffect(() => {
     let interval: any = null;
     if (isResting && restSeconds > 0) {
@@ -93,9 +121,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
     } else if (isResting && restSeconds === 0) {
       setIsResting(false);
       playBeep();
+      // Initialize the exercise timer for the next set if it's time-based
+      const exercises = getSelectedDay()?.exercises || [];
+      const currentEx = exercises[activeExerciseIndex];
+      checkAndInitExerciseTimer(currentEx);
     }
     return () => clearInterval(interval);
-  }, [isResting, restSeconds]);
+  }, [isResting, restSeconds, activeExerciseIndex, selectedDayIndex]);
+
+  // Exercise countdown timer ticking
+  useEffect(() => {
+    let interval: any = null;
+    if (isExerciseTimerActive && exerciseSeconds > 0) {
+      interval = setInterval(() => {
+        setExerciseSeconds((prev) => prev - 1);
+      }, 1000);
+    } else if (isExerciseTimerActive && exerciseSeconds === 0) {
+      setIsExerciseTimerActive(false);
+      playBeep();
+      // Auto trigger set completion
+      handleFinishSet();
+    }
+    return () => clearInterval(interval);
+  }, [isExerciseTimerActive, exerciseSeconds]);
 
   const handleStartWorkout = () => {
     const exercises = getSelectedDay()?.exercises || [];
@@ -109,6 +157,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
     setCurrentSet(1);
     setIsResting(false);
     setShowPlayer(true);
+    
+    // Check if first exercise is time-based
+    checkAndInitExerciseTimer(exercises[0]);
   };
 
   const handleFinishSet = () => {
@@ -116,8 +167,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
     const currentEx = exercises[activeExerciseIndex];
     
     // Save sets input
-    const currentRepVal = (document.getElementById('rep-input') as HTMLInputElement)?.value || '10';
-    const currentWeightVal = (document.getElementById('weight-input') as HTMLInputElement)?.value || 'Bodyweight';
+    let currentRepVal = '';
+    let currentWeightVal = '';
+
+    const isTimeBased = parseRepsToSeconds(currentEx.reps) !== null;
+    if (isTimeBased) {
+      currentRepVal = `${currentEx.reps}`;
+      currentWeightVal = currentEx.weight || 'Bodyweight';
+    } else {
+      currentRepVal = (document.getElementById('rep-input') as HTMLInputElement)?.value || '10';
+      currentWeightVal = (document.getElementById('weight-input') as HTMLInputElement)?.value || 'Bodyweight';
+    }
 
     const newReps = [...completedReps];
     newReps[currentSet - 1] = currentRepVal;
@@ -133,20 +193,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
       setIsResting(true);
     } else {
       // Finished all sets of this exercise
-      handleNextExercise();
+      handleNextExercise(newReps, newWeights);
     }
   };
 
-  const handleNextExercise = async () => {
+  const handleNextExercise = async (finalReps?: string[], finalWeights?: string[]) => {
     const exercises = getSelectedDay()?.exercises || [];
     const currentEx = exercises[activeExerciseIndex];
+
+    const repsToLog = finalReps || completedReps;
+    const weightsToLog = finalWeights || loggedWeight;
 
     // Log progress to backend
     try {
       await api.logProgress(currentEx.id, {
         completedSets: currentEx.sets,
-        repsCompleted: completedReps.join(','),
-        weightUsed: loggedWeight.join(','),
+        repsCompleted: repsToLog.join(','),
+        weightUsed: weightsToLog.join(','),
         notes: exerciseLogNotes,
       });
     } catch (err) {
@@ -160,6 +223,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
       setLoggedWeight([]);
       setExerciseLogNotes('');
       setIsResting(false);
+      
+      // Check if next exercise is time-based
+      checkAndInitExerciseTimer(exercises[activeExerciseIndex + 1]);
     } else {
       // Finished entire day workout
       setShowPlayer(false);
@@ -484,16 +550,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
                       <button onClick={() => setIsResting(false)} className="secondary-btn" style={{ marginTop: '10px', fontSize: '12px' }}>تخطي الراحة</button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 'bold' }}>التكرارات الفعلية</label>
-                        <input id="rep-input" type="number" defaultValue={ex.reps.split('-')[0]} className="input-field" style={{ textAlign: 'center' }} />
+                    parseRepsToSeconds(ex.reps) !== null ? (
+                      <div className="glass-panel" style={{ padding: '20px', borderColor: 'var(--primary)' }}>
+                        <div style={{ display: 'flex', justifySelf: 'center', alignItems: 'center', gap: '8px', color: 'var(--primary)' }}>
+                          <Timer size={24} />
+                          <h3 style={{ fontSize: '16px' }}>عداد التمرين التنازلي</h3>
+                        </div>
+                        <h2 style={{ fontSize: '48px', color: 'var(--primary)', marginTop: '10px' }}>{exerciseSeconds} ثانية</h2>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setIsExerciseTimerActive(!isExerciseTimerActive)}
+                            className="glow-btn"
+                            style={{ padding: '8px 16px', fontSize: '12px' }}
+                          >
+                            {isExerciseTimerActive ? 'إيقاف مؤقت' : 'بدء المؤقت'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsExerciseTimerActive(false);
+                              setExerciseSeconds(parseRepsToSeconds(ex.reps) || 0);
+                            }}
+                            className="secondary-btn"
+                            style={{ padding: '8px 16px', fontSize: '12px' }}
+                          >
+                            إعادة تعيين
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 'bold' }}>الوزن المستعمل</label>
-                        <input id="weight-input" type="text" defaultValue={ex.weight} className="input-field" style={{ textAlign: 'center' }} />
+                    ) : (
+                      <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: 'bold' }}>التكرارات الفعلية</label>
+                          <input id="rep-input" type="number" defaultValue={ex.reps.split('-')[0]} className="input-field" style={{ textAlign: 'center' }} />
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: 'bold' }}>الوزن المستعمل</label>
+                          <input id="weight-input" type="text" defaultValue={ex.weight} className="input-field" style={{ textAlign: 'center' }} />
+                        </div>
                       </div>
-                    </div>
+                    )
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
