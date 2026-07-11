@@ -22,6 +22,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [workoutLocation, setWorkoutLocation] = useState<'HOME' | 'GYM'>('GYM');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [level, setLevel] = useState('beginner');
+  const [targetMuscles, setTargetMuscles] = useState<string[]>([]);
 
   // Step 3: Health / Medical
   const [medicalConditions, setMedicalConditions] = useState('');
@@ -43,6 +44,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     { id: 'pullup', label: 'عقلة منزلية (Pull-up Bar)' },
     { id: 'cables', label: 'جهاز كيبل (Cables)' },
   ];
+
+  const muscleGroups = [
+    { id: 'chest', label: 'الصدر (Chest)' },
+    { id: 'back', label: 'الظهر (Back)' },
+    { id: 'shoulders', label: 'الأكتاف (Shoulders)' },
+    { id: 'legs', label: 'الأرجل (Legs)' },
+    { id: 'arms', label: 'الذراعين (Arms)' },
+    { id: 'abs', label: 'البطن (Abs)' },
+  ];
+
+  const handleMuscleChange = (id: string) => {
+    if (targetMuscles.includes(id)) {
+      setTargetMuscles(targetMuscles.filter((m) => m !== id));
+    } else {
+      setTargetMuscles([...targetMuscles, id]);
+    }
+  };
 
   const handleEquipmentChange = (id: string) => {
     if (equipment.includes(id)) {
@@ -80,14 +98,24 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         workoutLocation,
       });
 
-      // 2. Generate workout plan via AI
+      // 2. Generate workout plan via Local Python Engine
+      const curW = currentWeight ? parseFloat(currentWeight) : 75;
+      const tarW = targetWeight ? parseFloat(targetWeight) : 75;
+      let calculatedGoal = 'HYPERTROPHY';
+      if (tarW < curW) {
+        calculatedGoal = 'FAT_LOSS';
+      } else if (foodPreferences === 'High Protein') {
+        calculatedGoal = 'STRENGTH';
+      }
+
       await api.generatePlan({
         durationWeeks,
         startDate: new Date(startDate),
         workoutLocation,
         equipment,
         level,
-        additionalQuestions: {},
+        targetMuscles,
+        goal: calculatedGoal,
       });
 
       onComplete();
@@ -260,6 +288,37 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                       checked={equipment.includes(item.id)}
                       onChange={() => handleEquipmentChange(item.id)}
                       style={{ accentColor: 'var(--primary)' }}
+                    />
+                    {item.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>العضلات المستهدفة للتمرين (اتركه فارغاً لاستهداف الجسم بالكامل)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                {muscleGroups.map((item) => (
+                  <label
+                    key={item.id}
+                    className="flex-center"
+                    style={{
+                      justifyContent: 'flex-start',
+                      gap: '10px',
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: targetMuscles.includes(item.id) ? '1px solid var(--secondary)' : '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      transition: 'border-color 0.2s',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={targetMuscles.includes(item.id)}
+                      onChange={() => handleMuscleChange(item.id)}
+                      style={{ accentColor: 'var(--secondary)' }}
                     />
                     {item.label}
                   </label>

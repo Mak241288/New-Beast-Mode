@@ -1,13 +1,107 @@
 import { Response } from 'express';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
-import { generateWorkoutPlanAI, upgradeWorkoutPlanAI } from '../services/aiService';
+import { upgradeWorkoutPlanAI } from '../services/aiService';
 
-// @desc    Generate Workout Plan using AI
+// Helper to get muscle-specific Unsplash image URLs
+const getMuscleImage = (muscle: string): string => {
+  const m = (muscle || '').toLowerCase();
+  if (m.includes('chest') || m.includes('صدر')) {
+    return 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500&auto=format&fit=crop&q=60';
+  }
+  if (m.includes('back') || m.includes('lats') || m.includes('ظهر')) {
+    return 'https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=500&auto=format&fit=crop&q=60';
+  }
+  if (m.includes('shoulder') || m.includes('كتف')) {
+    return 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=500&auto=format&fit=crop&q=60';
+  }
+  if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('calf') || m.includes('رجل') || m.includes('فخذ') || m.includes('سمانة')) {
+    return 'https://images.unsplash.com/photo-1434608519344-49d77a699e1d?w=500&auto=format&fit=crop&q=60';
+  }
+  if (m.includes('bicep') || m.includes('tricep') || m.includes('arm') || m.includes('باي') || m.includes('تراي') || m.includes('ذراع')) {
+    return 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500&auto=format&fit=crop&q=60';
+  }
+  if (m.includes('ab') || m.includes('core') || m.includes('بطن')) {
+    return 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500&auto=format&fit=crop&q=60';
+  }
+  if (m.includes('yoga') || m.includes('يوجا')) {
+    return 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=500&auto=format&fit=crop&q=60';
+  }
+  return 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60';
+};
+
+// Helper to calculate suggested starting weights dynamically
+const getSuggestedWeight = (exerciseName: string, equipment: string, gender: string, level: string, userWeight: number): string => {
+  const name = exerciseName.toLowerCase();
+  const eq = equipment.toLowerCase();
+  const lvl = level.toLowerCase();
+  const w = userWeight || 75;
+  const isMale = gender === 'MALE';
+
+  // Bodyweight / Time / Stretches
+  if (eq.includes('bodyweight') || eq.includes('body only') || eq.includes('none') || name.includes('plank') || name.includes('pushup') || name.includes('pullup') || name.includes('yoga') || name.includes('dip')) {
+    return 'وزن الجسم (Bodyweight)';
+  }
+
+  // Dumbbells
+  if (eq.includes('dumbbell') || eq.includes('dumbbells')) {
+    let ratio = 0.1;
+    if (isMale) {
+      if (lvl === 'beginner') ratio = 0.1;
+      else if (lvl === 'intermediate') ratio = 0.16;
+      else ratio = 0.22;
+    } else {
+      if (lvl === 'beginner') ratio = 0.05;
+      else if (lvl === 'intermediate') ratio = 0.09;
+      else ratio = 0.14;
+    }
+    const weightVal = Math.round((w * ratio) / 2) * 2;
+    const finalWeight = Math.max(2, weightVal);
+    return `دمبلز ${finalWeight} كجم (Dumbbell ${finalWeight}kg)`;
+  }
+
+  // Barbell
+  if (eq.includes('barbell') || eq.includes('bar')) {
+    let ratio = 0.3;
+    if (isMale) {
+      if (lvl === 'beginner') ratio = 0.35;
+      else if (lvl === 'intermediate') ratio = 0.55;
+      else ratio = 0.75;
+    } else {
+      if (lvl === 'beginner') ratio = 0.2;
+      else if (lvl === 'intermediate') ratio = 0.35;
+      else ratio = 0.5;
+    }
+    const weightVal = Math.round((w * ratio) / 5) * 5;
+    const finalWeight = Math.max(10, weightVal);
+    return `بار ${finalWeight} كجم (Barbell ${finalWeight}kg)`;
+  }
+
+  // Cables/Machines
+  if (eq.includes('cable') || eq.includes('machine')) {
+    let ratio = 0.25;
+    if (isMale) {
+      if (lvl === 'beginner') ratio = 0.25;
+      else if (lvl === 'intermediate') ratio = 0.45;
+      else ratio = 0.65;
+    } else {
+      if (lvl === 'beginner') ratio = 0.15;
+      else if (lvl === 'intermediate') ratio = 0.28;
+      else ratio = 0.4;
+    }
+    const weightVal = Math.round((w * ratio) / 5) * 5;
+    const finalWeight = Math.max(5, weightVal);
+    return `جهاز ${finalWeight} كجم (Machine ${finalWeight}kg)`;
+  }
+
+  return 'حسب القدرة (As comfortable)';
+};
+
+// @desc    Generate Workout Plan using Local Python Engine
 // @route   POST /api/workout/generate
 export const generatePlan = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
-  const { durationWeeks, startDate, workoutLocation, equipment, level, additionalQuestions } = req.body;
+  const { durationWeeks, startDate, workoutLocation, equipment, level, targetMuscles, goal } = req.body;
 
   try {
     if (!userId) {
@@ -15,74 +109,114 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const startDateTime = startDate ? new Date(startDate) : new Date();
-
-    // Call AI Service
-    const aiPlan = await generateWorkoutPlanAI(userId, {
-      durationWeeks: durationWeeks || 4,
-      startDate: startDateTime,
-      workoutLocation: workoutLocation || 'GYM',
-      equipment: equipment || [],
-      level: level || 'beginner',
-      additionalQuestions: additionalQuestions || {},
+    const userProfile = await prisma.user.findUnique({
+      where: { id: userId }
     });
 
-    // Deactivate previous active plans
-    await prisma.workoutPlan.updateMany({
-      where: { userId, active: true },
-      data: { active: false },
-    });
+    const gender = userProfile?.gender || 'MALE';
+    const userWeight = userProfile?.currentWeight || 75;
 
-    // Save WorkoutPlan to Database
-    const createdPlan = await prisma.workoutPlan.create({
-      data: {
-        userId,
-        title: aiPlan.title || `جدول تمارين مخصص للمستوى ${level}`,
-        durationWeeks: durationWeeks || 4,
-        startDate: startDateTime,
-        active: true,
-        weeklyTips: aiPlan.weeklyTips || '',
-        isManual: false,
-        dayWorkouts: {
-          create: aiPlan.days.map((day: any) => ({
-            dayIndex: day.dayIndex,
-            title: day.title,
-            focusArea: day.focusArea,
-            dayTips: day.dayTips,
-            isRestDay: day.isRestDay,
-            exercises: {
-              create: day.isRestDay ? [] : day.exercises.map((ex: any, idx: number) => ({
-                name: ex.name,
-                targetMuscle: ex.targetMuscle,
-                category: ex.category || 'IRON',
-                sets: ex.sets || 3,
-                reps: ex.reps || '10-12',
-                weight: ex.weight || 'Bodyweight',
-                exerciseTips: ex.exerciseTips,
-                order: idx,
-                // Match with Library to get standard image/video URL if available, else query links
-                imageUrl: ex.imageUrl || `https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60`,
-                videoUrl: ex.videoUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' exercise tutorial shorts')}`,
+    // Resolve days count and other parameters
+    // Default workout days per week to 3 or 4
+    const daysPerWeek = req.body.daysPerWeek || 3;
+    const finalGoal = goal || 'HYPERTROPHY';
+    const finalLocation = workoutLocation || userProfile?.workoutLocation || 'GYM';
+
+    // Map equipment array to comma-separated string
+    const equipStr = Array.isArray(equipment) ? equipment.join(',') : '';
+    const muscleStr = Array.isArray(targetMuscles) ? targetMuscles.join(',') : '';
+
+    const { exec } = require('child_process');
+    const path = require('path');
+    const fs = require('fs').promises;
+
+    const pythonDir = path.join(__dirname, '../../../workout_generator_python');
+    const command = `python src/generator.py --days ${daysPerWeek} --location ${finalLocation} --equipment "${equipStr}" --level ${level || 'intermediate'} --goal ${finalGoal} --muscles "${muscleStr}"`;
+
+    console.log(`[WorkoutController] Executing: ${command}`);
+
+    exec(command, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
+      console.log('[WorkoutController] Python Generator Output:', stdout);
+      if (error) {
+        console.error('[WorkoutController] Python Generator Error:', error, stderr);
+        res.status(500).json({ error: 'فشل تشغيل خوارزمية التوزيع الذكي للتمارين محلياً.' });
+        return;
+      }
+
+      try {
+        const planFilePath = path.join(pythonDir, 'data/processed/generated_plan.json');
+        const fileContent = await fs.readFile(planFilePath, 'utf-8');
+        const pythonPlan = JSON.parse(fileContent);
+
+        // Deactivate previous plans
+        await prisma.workoutPlan.updateMany({
+          where: { userId, active: true },
+          data: { active: false },
+        });
+
+        // Save generated plan to PostgreSQL/Prisma
+        const startDateTime = startDate ? new Date(startDate) : new Date();
+
+        const createdPlan = await prisma.workoutPlan.create({
+          data: {
+            userId,
+            title: `جدول تمارين محلي مخصص (${finalLocation === 'GYM' ? 'النادي' : 'المنزل'})`,
+            durationWeeks: durationWeeks || 4,
+            startDate: startDateTime,
+            active: true,
+            weeklyTips: `ركز على الأداء السليم وتدرج في زيادة الأحمال. الأدوات المستخدمة تناسب تفضيلاتك: ${equipStr || 'جميع الأدوات'}`,
+            isManual: false,
+            dayWorkouts: {
+              create: pythonPlan.map((day: any, dIdx: number) => ({
+                dayIndex: dIdx,
+                title: day.day_name_ar || day.day_name_en,
+                focusArea: day.day_name_en,
+                dayTips: 'ابدأ بالإحماء لمدة 5 دقائق قبل بدء جولتك.',
+                isRestDay: false,
+                exercises: {
+                  create: day.exercises.map((ex: any, idx: number) => {
+                    const suggestedWeight = getSuggestedWeight(ex.name_en, ex.equipment_en, gender, level || 'intermediate', userWeight);
+                    const imageUrl = getMuscleImage(ex.muscle_en);
+
+                    return {
+                      name: ex.name_ar || ex.name_en,
+                      targetMuscle: ex.muscle_ar || ex.muscle_en,
+                      category: ex.category || 'IRON',
+                      sets: ex.sets || 3,
+                      reps: ex.reps_ar || ex.reps_en || '8-12',
+                      weight: suggestedWeight,
+                      exerciseTips: ex.instructions_ar || ex.description_ar || ex.instructions_en || 'أداء هادئ وتركيز كامل في الحركة.',
+                      order: idx,
+                      imageUrl: imageUrl,
+                      videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent((ex.name_en || '') + ' exercise tutorial shorts')}`,
+                    };
+                  }),
+                },
               })),
             },
-          })),
-        },
-      },
-      include: {
-        dayWorkouts: {
-          include: {
-            exercises: true,
           },
-        },
-      },
+          include: {
+            dayWorkouts: {
+              include: {
+                exercises: true,
+              },
+            },
+          },
+        });
+
+        res.status(201).json(createdPlan);
+      } catch (err: any) {
+        console.error('[WorkoutController] Error parsing/saving Python plan:', err);
+        res.status(500).json({ error: 'فشل معالجة وحفظ الجدول الرياضي الناتج.' });
+      }
     });
 
-    res.status(201).json(createdPlan);
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء توليد جدول التمارين' });
   }
 };
+
 
 // @desc    Get Active Workout Plan
 // @route   GET /api/workout/active

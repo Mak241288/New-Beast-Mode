@@ -34,7 +34,7 @@ export const syncController = {
     }
   },
 
-  async testPerformance(req: AuthRequest, res: Response) {
+  async testPerformance(_req: AuthRequest, res: Response): Promise<void> {
     try {
       const cwd = path.join(__dirname, '../../../workout_generator_python');
       
@@ -42,20 +42,21 @@ export const syncController = {
       exec('python test_performance.py', { cwd, env: process.env }, (error, stdout, stderr) => {
         if (error) {
           console.error('[SyncController] Performance test execution error:', error);
-          return res.status(500).json({
+          res.status(500).json({
             message: 'فشل تشغيل اختبار الأداء للـ Cache بسبب خطأ في الخادم أو عدم توفر بايثون.',
             error: error.message + '\n' + stderr
           });
+          return;
         }
         
-        return res.status(200).json({
+        res.status(200).json({
           success: true,
           output: stdout
         });
       });
     } catch (err: any) {
       console.error('[SyncController] Performance test exception:', err);
-      return res.status(500).json({
+      res.status(500).json({
         message: 'فشل تشغيل اختبار الأداء للـ Cache بسبب خطأ داخلي.',
         error: err.message
       });
