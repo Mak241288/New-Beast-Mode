@@ -75,7 +75,7 @@ export const syncService = {
     // --- 2. Wger Workout Manager API Sync ---
     try {
       console.log('[SyncService] Fetching from Wger API...');
-      const response = await fetch('https://wger.de/api/v2/exercise/?language=2&limit=50');
+      const response = await fetch('https://wger.de/api/v2/exercise/?language=2&limit=500');
       if (response.ok) {
         const data: any = await response.json();
         if (data && Array.isArray(data.results)) {
