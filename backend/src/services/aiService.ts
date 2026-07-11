@@ -1,10 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
 import prisma from './db';
-
-const apiKey = process.env.GEMINI_API_KEY || '';
-
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey });
 
 export interface WorkoutPlanOptions {
   durationWeeks: number;
@@ -14,6 +8,42 @@ export interface WorkoutPlanOptions {
   level: string; // beginner, intermediate, advanced
   additionalQuestions: any; // medical conditions, goals etc.
 }
+
+/**
+ * Generic helper to make calls to Groq API using Llama 3.3 70B model (OpenAI compatible)
+ */
+const callGroq = async (prompt: string, jsonMode: boolean = false, customMessages: any[] = []): Promise<string> => {
+  const groqKey = process.env.GROQ_API_KEY || '';
+  if (!groqKey) {
+    throw new Error('مفتاح Groq API غير متوفر في ملف البيئة .env');
+  }
+
+  const messages = customMessages.length > 0 
+    ? customMessages 
+    : [{ role: 'user', content: prompt }];
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${groqKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      temperature: 0.3,
+      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+    }),
+  });
+
+  const data: any = await response.json();
+  if (!response.ok) {
+    console.error('[Groq Error Details]:', data);
+    throw new Error(data.error?.message || 'فشلت عملية التوليد عبر Groq');
+  }
+
+  return data.choices[0]?.message?.content || '';
+};
 
 // 1. Generate Workout Plan using AI (66 years experience Coach & PT)
 export const generateWorkoutPlanAI = async (userId: number, options: WorkoutPlanOptions) => {
@@ -48,17 +78,17 @@ export const generateWorkoutPlanAI = async (userId: number, options: WorkoutPlan
     "weeklyTips": "النصيحة الأسبوعية العامة للالتزام والاستمرار",
     "days": [
       {
-        "dayIndex": 1, // رقم اليوم من 1 إلى 7
+        "dayIndex": 1, 
         "title": "مسمى اليوم الجذاب والحماسي (مثال: اليوم 1: تفجير الصدر والتراي)",
         "focusArea": "العضلات المستهدفة اليوم (مثال: الصدر، الأكتاف، الترايسبس)",
         "dayTips": "نصائح إحماء وتأهيل وتغذية خاصة بهذا اليوم فقط",
-        "isRestDay": false, // هل هو يوم راحة؟
+        "isRestDay": false,
         "exercises": [
           {
             "name": "اسم التمرين باللغة العربية مع الاسم الإنجليزي الشهير بين قوسين",
             "targetMuscle": "العضلة المستهدفة بدقة لهذا التمرين",
             "category": "تصنيف التمرين: IRON (حديد جيم)، YOGA (يوجا)، PILATES (بيلاتس)، HIIT (شدة عالية)، CARDIO (كارديو)، CALISTHENICS (وزن جسم ومقاومة منزلية)",
-            "sets": 3, // عدد الجولات
+            "sets": 3,
             "reps": "عدد التكرارات أو الزمن (مثال: 12-15 أو 30 ثانية أو أقصى تكرار)",
             "weight": "الوزن المقترح أو طريقة المقاومة (مثال: وزن الجسم، 10 كجم، حبل مقاومة متوسط)",
             "exerciseTips": "نصائح الأداء السليم وتفادي الإصابة لهذا التمرين بالتحديد"
@@ -72,18 +102,10 @@ export const generateWorkoutPlanAI = async (userId: number, options: WorkoutPlan
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
-
-    const resultText = response.text || '{}';
+    const resultText = await callGroq(prompt, true);
     return JSON.parse(resultText);
   } catch (error) {
-    console.error('Error generating workout plan via Gemini:', error);
+    console.error('Error generating workout plan via Groq:', error);
     throw new Error('فشل الذكاء الاصطناعي في توليد جدول التمارين. يرجى التأكد من مفتاح الـ API وصياغة الطلب.');
   }
 };
@@ -118,10 +140,10 @@ export const generateNutritionPlanAI = async (userId: number, workoutPlanTitle: 
 
   أعد النتيجة بصيغة JSON حصراً مطابقة تماماً للمواصفات التالية:
   {
-    "caloriesGoal": 2300, // السعرات الكلية المقترحة اليوم
-    "proteinGoal": 160, // جرام بروتين
-    "carbsGoal": 240, // جرام كربوهيدرات
-    "fatGoal": 70, // جرام دهون
+    "caloriesGoal": 2300, 
+    "proteinGoal": 160, 
+    "carbsGoal": 240, 
+    "fatGoal": 70, 
     "breakfast": "وجبة الفطور بالتفصيل باللغة العربية مع توضيح الكميات التقريبية والفوائد",
     "lunch": "وجبة الغداء بالتفصيل باللغة العربية مع توضيح الكميات التقريبية والفوائد",
     "dinner": "وجبة العشاء بالتفصيل باللغة العربية مع توضيح الكميات التقريبية والفوائد",
@@ -130,18 +152,10 @@ export const generateNutritionPlanAI = async (userId: number, workoutPlanTitle: 
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
-
-    const resultText = response.text || '{}';
+    const resultText = await callGroq(prompt, true);
     return JSON.parse(resultText);
   } catch (error) {
-    console.error('Error generating nutrition plan via Gemini:', error);
+    console.error('Error generating nutrition plan via Groq:', error);
     throw new Error('فشل الذكاء الاصطناعي في توليد نظام التغذية.');
   }
 };
@@ -157,26 +171,18 @@ export const parseMealTextAI = async (mealText: string) => {
   أعد النتيجة بصيغة JSON حصراً مطابقة تماماً للمواصفات التالية:
   {
     "description": "وصف مبسط باللغة العربية للوجبة التي تم تحليلها مع الكميات المفترضة (مثال: صدر دجاج مشوي 150 جرام مع كوب أرز أبيض)",
-    "calories": 450, // السعرات المقدرة كعدد صحيح
-    "protein": 40, // جرام بروتين كعدد صحيح
-    "carbs": 45, // جرام كربوهيدرات كعدد صحيح
-    "fat": 10 // جرام دهون كعدد صحيح
+    "calories": 450, 
+    "protein": 40, 
+    "carbs": 45, 
+    "fat": 10 
   }
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
-
-    const resultText = response.text || '{}';
+    const resultText = await callGroq(prompt, true);
     return JSON.parse(resultText);
   } catch (error) {
-    console.error('Error parsing meal text via Gemini:', error);
+    console.error('Error parsing meal text via Groq:', error);
     throw new Error('فشل الذكاء الاصطناعي في تحليل الوجبة.');
   }
 };
@@ -208,13 +214,6 @@ export const chatConsultationAI = async (userId: number, chatHistory: { sender: 
     });
   }
 
-  // Format chat history for Gemini
-  const formattedHistory = chatHistory.map(msg => ({
-    role: msg.sender === 'USER' ? 'user' : 'model',
-    parts: [{ text: msg.text }]
-  }));
-
-  // Append context and system instructions
   const systemContext = `
   أنت البروفيسور والمدرب العريق "الكابتن د. صخر". لديك خبرة 66 عاماً كمدرب أبطال أولمبيين، طبيب علاج طبيعي وإصابات ملاعب، ومستشار تغذية رياضية.
   تتحدث باللغة العربية بأسلوب وقور، محفز، دافئ ومهني للغاية. تعطي نصائح برمجية دقيقة للغاية مبنية على العلم والخبرة العملية الطويلة.
@@ -236,22 +235,23 @@ export const chatConsultationAI = async (userId: number, chatHistory: { sender: 
   - استخدم معلومات وزنه وطوله وجدوله الحالي لكي تكون الإجابة مخصصة 100% له وليست عامة.
   `;
 
-  // Combine history and new message under a single generation conversation
+  // Format history for Groq (OpenAI format)
+  const formattedHistory = chatHistory.map(msg => ({
+    role: msg.sender === 'USER' ? 'user' : 'assistant',
+    content: msg.text
+  }));
+
+  const messages = [
+    { role: 'system', content: systemContext },
+    ...formattedHistory,
+    { role: 'user', content: userMessage }
+  ];
+
   try {
-    const promptContents = [
-      { role: 'user', parts: [{ text: systemContext }] },
-      ...formattedHistory,
-      { role: 'user', parts: [{ text: userMessage }] }
-    ];
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: promptContents as any,
-    });
-
-    return response.text || 'عذراً، لم أستطع معالجة ردك الآن. كيف يمكنني مساعدتك بطريقة أخرى؟';
+    const reply = await callGroq('', false, messages);
+    return reply || 'عذراً، لم أستطع معالجة ردك الآن. كيف يمكنني مساعدتك بطريقة أخرى؟';
   } catch (error) {
-    console.error('Error in chat consultation via Gemini:', error);
+    console.error('Error in chat consultation via Groq:', error);
     throw new Error('فشل الاتصال بمستشار الذكاء الاصطناعي.');
   }
 };
