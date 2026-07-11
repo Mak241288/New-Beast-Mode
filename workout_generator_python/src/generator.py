@@ -126,10 +126,28 @@ def determine_sets_reps(goal, category):
     
     return {"sets": 3, "reps_en": "8-12 reps", "reps_ar": "8-12 تكرار"} # Default
 
-def generate_workout_plan(days_per_week, location, equipment_list, level, goal):
+def generate_workout_plan(days_per_week, location, equipment_list, level, goal, target_muscles_filter=None):
     """
     Generate a complete weekly workout routine.
     """
+    # Map user selected general muscle groups to internal database muscle keys
+    internal_muscle_targets = []
+    if target_muscles_filter:
+        muscle_mapping = {
+            'chest': ['chest'],
+            'back': ['lats', 'middle back', 'lower back'],
+            'shoulders': ['shoulders', 'traps'],
+            'legs': ['quadriceps', 'hamstrings', 'glutes', 'calves'],
+            'arms': ['biceps', 'triceps', 'forearms'],
+            'abs': ['abdominals']
+        }
+        for group in target_muscles_filter:
+            group_lower = group.lower()
+            if group_lower in muscle_mapping:
+                internal_muscle_targets.extend(muscle_mapping[group_lower])
+            else:
+                internal_muscle_targets.append(group_lower)
+
     # 1. Resolve Day Split Config
     days_count = max(2, min(6, days_per_week)) # clamp between 2 and 6
     split_config = SPLIT_CONFIGS[days_count]
@@ -138,6 +156,14 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal):
     selected_names = set() # Track already selected exercises to avoid duplicates
     
     for day in split_config:
+        # Filter muscles to only those matching user preferences, if filter is active
+        day_muscles = day["muscles"]
+        if internal_muscle_targets:
+            day_muscles = [m for m in day_muscles if m in internal_muscle_targets]
+            
+        if not day_muscles:
+            continue # Skip day if it has no matching target muscles
+
         day_routine = {
             "day_name_en": day["name_en"],
             "day_name_ar": day["name_ar"],
@@ -145,7 +171,7 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal):
         }
         
         # For each target muscle group on this day
-        for muscle in day["muscles"]:
+        for muscle in day_muscles:
             pool = fetch_exercises_for_muscle(muscle, location, equipment_list, level)
             if not pool:
                 # If pool is empty, try a broader search without level restrictions
@@ -156,8 +182,13 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal):
             # Prioritize higher rated exercises
             pool.sort(key=lambda x: x.get("rating", 0.0), reverse=True)
             
-            # Select exercises for this muscle (usually 1-2 per muscle group)
-            exercises_to_add = 1 if len(day["muscles"]) > 4 else 2
+            # Dynamic volume scaling:
+            # If day has fewer muscles, increase exercises per muscle to maintain workout length (5-7 exercises)
+            if len(day_muscles) <= 2:
+                exercises_to_add = 3 if muscle.lower() in ["chest", "lats", "middle back", "quadriceps", "hamstrings"] else 2
+            else:
+                exercises_to_add = 2 if muscle.lower() in ["chest", "lats", "middle back", "quadriceps", "hamstrings"] else 1
+                
             added_count = 0
             
             # Try to add unique exercises
@@ -179,7 +210,7 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal):
             # If we couldn't meet the target due to avoiding duplication, allow repeats of high rating exercises
             if added_count < exercises_to_add:
                 for ex in pool:
-                    if len(day_routine["exercises"]) >= (len(day["muscles"]) * exercises_to_add):
+                    if len(day_routine["exercises"]) >= (len(day_muscles) * exercises_to_add):
                         break
                     # Avoid repeating inside the SAME day at all costs
                     if ex["name_en"] not in [e["name_en"] for e in day_routine["exercises"]]:
@@ -206,18 +237,21 @@ def main():
     parser.add_argument("--equipment", type=str, default="", help="Comma-separated available equipment (for HOME)")
     parser.add_argument("--level", type=str, default="intermediate", choices=["beginner", "intermediate", "advanced"], help="User fitness level")
     parser.add_argument("--goal", type=str, default="HYPERTROPHY", choices=["STRENGTH", "FAT_LOSS", "HYPERTROPHY", "ATHLETICISM"], help="Workout goal")
+    parser.add_argument("--muscles", type=str, default="", help="Comma-separated target muscles (chest, back, shoulders, legs, arms, abs)")
     
     args = parser.parse_args()
     
     equip_list = [eq.strip() for eq in args.equipment.split(",") if eq.strip()] if args.equipment else []
+    muscle_list = [m.strip() for m in args.muscles.split(",") if m.strip()] if args.muscles else []
     
     print(f"Generating workout plan with parameters:")
     print(f"  -> Days Per Week: {args.days}")
     print(f"  -> Location: {args.location}")
     print(f"  -> Equipment Available: {equip_list if equip_list else 'All (Gym)' if args.location == 'GYM' else 'Bodyweight'}")
+    print(f"  -> Target Muscles: {muscle_list if muscle_list else 'All Muscles'}")
     print(f"  -> Level: {args.level} | Goal: {args.goal}\n")
     
-    plan = generate_workout_plan(args.days, args.location, equip_list, args.level, args.goal)
+    plan = generate_workout_plan(args.days, args.location, equip_list, args.level, args.goal, muscle_list)
     
     # Configure UTF-8 stdout encoding for printing Arabic
     import sys
