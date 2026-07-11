@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { User, ShieldAlert, Sparkles, Save, CheckCircle, RefreshCw } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { translations } from '../utils/translations';
 
 interface ProfileProps {
+  lang: 'ar' | 'en';
+  onLanguageChange: (lang: 'ar' | 'en') => void;
   onNavigate: (view: string) => void;
   onLogout: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
+export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavigate, onLogout }) => {
+  const t = translations[lang] || translations.ar;
   const [profile, setProfile] = useState<any>({
     name: '',
     gender: 'MALE',
@@ -151,13 +156,16 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
           BEASTMODE
         </h2>
         <nav style={{ display: 'flex', gap: '15px' }}>
-          <button onClick={() => onNavigate('dashboard')} className="secondary-btn" style={{ padding: '8px 16px' }}>التمارين</button>
-          <button onClick={() => onNavigate('nutrition')} className="secondary-btn" style={{ padding: '8px 16px' }}>التغذية</button>
-          <button onClick={() => onNavigate('stats')} className="secondary-btn" style={{ padding: '8px 16px' }}>الإحصاءات</button>
-          <button onClick={() => onNavigate('chat')} className="secondary-btn" style={{ padding: '8px 16px' }}>استشارة الذكاء الاصطناعي</button>
-          <button onClick={() => onNavigate('profile')} className="glow-btn" style={{ padding: '8px 16px' }}>الملف الشخصي</button>
+          <button onClick={() => onNavigate('dashboard')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.workout}</button>
+          <button onClick={() => onNavigate('nutrition')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.nutrition}</button>
+          <button onClick={() => onNavigate('stats')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.stats}</button>
+          <button onClick={() => onNavigate('chat')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.consultation}</button>
+          <button onClick={() => onNavigate('profile')} className="glow-btn" style={{ padding: '8px 16px' }}>{t.profile}</button>
         </nav>
-        <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>تسجيل الخروج</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ThemeToggle />
+          <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{t.logout}</button>
+        </div>
       </header>
 
       <main className="container">
@@ -167,12 +175,14 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
           <form onSubmit={handleFormSubmit} className="glass-panel animated-fade" style={{ padding: '30px', maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px' }}>
               <div>
-                <h1 style={{ fontSize: '22px' }}>إدارة الملف الشخصي والبيانات الطبية ⚙️</h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>حدث وزنك وحالتك الصحية وسيقوم الذكاء الاصطناعي بمزامنتها مع برامجك</p>
+                <h1 style={{ fontSize: '22px' }}>{lang === 'en' ? 'Manage Profile & Medical Profile ⚙️' : 'إدارة الملف الشخصي والبيانات الطبية ⚙️'}</h1>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>
+                  {lang === 'en' ? 'Update weight, health data, and it will sync with your workout plans' : 'حدث وزنك وحالتك الصحية وسيقوم الذكاء الاصطناعي بمزامنتها مع برامجك'}
+                </p>
               </div>
               <button type="submit" disabled={saving} className="glow-btn">
                 <Save size={18} />
-                {saving ? 'جاري الحفظ...' : 'حفظ البيانات'}
+                {saving ? (lang === 'en' ? 'Saving...' : 'جاري الحفظ...') : (lang === 'en' ? 'Save Profile' : 'حفظ البيانات')}
               </button>
             </div>
 
@@ -187,42 +197,54 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
             <div>
               <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
                 <User size={18} color="var(--primary)" />
-                البيانات الأساسية والجسدية
+                {lang === 'en' ? 'Basic Bio & Physical Details' : 'البيانات الأساسية والجسدية'}
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>الاسم بالكامل</label>
+                  <label>{lang === 'en' ? 'Full Name' : 'الاسم بالكامل'}</label>
                   <input type="text" name="name" value={profile.name} onChange={handleInputChange} className="input-field" required />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>الجنس</label>
+                  <label>{lang === 'en' ? 'Gender' : 'الجنس'}</label>
                   <select name="gender" value={profile.gender} onChange={handleInputChange} className="input-field">
-                    <option value="MALE">ذكر</option>
-                    <option value="FEMALE">أنثى</option>
+                    <option value="MALE">{lang === 'en' ? 'Male' : 'ذكر'}</option>
+                    <option value="FEMALE">{lang === 'en' ? 'Female' : 'أنثى'}</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>تاريخ الميلاد</label>
+                  <label>{lang === 'en' ? 'Birth Date' : 'تاريخ الميلاد'}</label>
                   <input type="date" name="birthDate" value={profile.birthDate || ''} onChange={handleInputChange} className="input-field" />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>مكان التمرين</label>
+                  <label>{lang === 'en' ? 'Workout Location' : 'مكان التمرين'}</label>
                   <select name="workoutLocation" value={profile.workoutLocation} onChange={handleInputChange} className="input-field">
-                    <option value="GYM">النادي الرياضي (Gym)</option>
-                    <option value="HOME">المنزل (Home)</option>
+                    <option value="GYM">{lang === 'en' ? 'Gym' : 'النادي الرياضي (Gym)'}</option>
+                    <option value="HOME">{lang === 'en' ? 'Home' : 'المنزل (Home)'}</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>الطول (سم)</label>
+                  <label>{t.languageSetting}</label>
+                  <select
+                    value={lang}
+                    onChange={(e) => onLanguageChange(e.target.value as 'ar' | 'en')}
+                    className="input-field"
+                    style={{ borderColor: 'var(--primary)', borderWidth: '1px' }}
+                  >
+                    <option value="ar">العربية (Arabic)</option>
+                    <option value="en">English (الإنجليزية)</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label>{lang === 'en' ? 'Height (cm)' : 'الطول (سم)'}</label>
                   <input type="number" name="height" value={profile.height} onChange={handleInputChange} className="input-field" />
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label>الوزن الحالي</label>
+                    <label>{lang === 'en' ? 'Current Weight (kg)' : 'الوزن الحالي'}</label>
                     <input type="number" name="currentWeight" value={profile.currentWeight} onChange={handleInputChange} className="input-field" />
                   </div>
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label>الوزن المستهدف</label>
+                    <label>{lang === 'en' ? 'Target Weight (kg)' : 'الوزن المستهدف'}</label>
                     <input type="number" name="targetWeight" value={profile.targetWeight} onChange={handleInputChange} className="input-field" />
                   </div>
                 </div>
@@ -233,15 +255,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
               <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
                 <ShieldAlert size={18} color="var(--secondary)" />
-                الحالة الصحية والطبية
+                {lang === 'en' ? 'AI Health & Medical Profile' : 'الحالة الصحية والطبية'}
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>الإصابات أو آلام المفاصل (لتفاديها في التمارين)</label>
+                  <label>{lang === 'en' ? 'Injuries or physical joint pain (to avoid)' : 'الإصابات أو آلام المفاصل (لتفاديها في التمارين)'}</label>
                   <textarea name="medicalConditions" value={profile.medicalConditions || ''} onChange={handleInputChange} className="input-field" style={{ minHeight: '100px', resize: 'vertical' }} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>تفاصيل التحاليل والفيتامينات (للتغذية والمكملات)</label>
+                  <label>{lang === 'en' ? 'Blood analysis / vitamin deficiencies' : 'تفاصيل التحاليل والفيتامينات (للتغذية والمكملات)'}</label>
                   <textarea name="labResults" value={profile.labResults || ''} onChange={handleInputChange} className="input-field" style={{ minHeight: '100px', resize: 'vertical' }} />
                 </div>
               </div>
@@ -251,27 +273,27 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
               <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
                 <Sparkles size={18} color="var(--primary)" />
-                تفضيلات التغذية والوجبات
+                {lang === 'en' ? 'Nutrition & Diet Preferences' : 'تفضيلات التغذية والوجبات'}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>النظام الغذائي المفضل</label>
+                  <label>{lang === 'en' ? 'Preferred Diet Type' : 'النظام الغذائي المفضل'}</label>
                   <select name="foodPreferences" value={profile.foodPreferences || 'Balanced'} onChange={handleInputChange} className="input-field">
-                    <option value="Balanced">متوازن (Balanced)</option>
-                    <option value="High Protein">بروتين عالي (High Protein)</option>
-                    <option value="Vegan">نباتي كامل (Vegan)</option>
-                    <option value="Vegetarian">نباتي البيض والألبان (Vegetarian)</option>
-                    <option value="Keto">كيتو (Keto)</option>
+                    <option value="Balanced">{lang === 'en' ? 'Balanced' : 'متوازن (Balanced)'}</option>
+                    <option value="High Protein">{lang === 'en' ? 'High Protein' : 'بروتين عالي (High Protein)'}</option>
+                    <option value="Vegan">{lang === 'en' ? 'Vegan' : 'نباتي كامل (Vegan)'}</option>
+                    <option value="Vegetarian">{lang === 'en' ? 'Vegetarian' : 'نباتي البيض والألبان (Vegetarian)'}</option>
+                    <option value="Keto">{lang === 'en' ? 'Keto' : 'كيتو (Keto)'}</option>
                   </select>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label>حساسية الطعام</label>
-                    <input type="text" name="foodAllergies" value={profile.foodAllergies || ''} onChange={handleInputChange} className="input-field" placeholder="المكسرات، الحليب، القمح..." />
+                    <label>{lang === 'en' ? 'Food Allergies' : 'حساسية الطعام'}</label>
+                    <input type="text" name="foodAllergies" value={profile.foodAllergies || ''} onChange={handleInputChange} className="input-field" placeholder={lang === 'en' ? 'Nuts, milk, wheat...' : 'المكسرات، الحليب، القمح...'} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label>أطعمة تكرهها ولا تود رؤيتها في الوجبات</label>
-                    <textarea name="foodDislikes" value={profile.foodDislikes || ''} onChange={handleInputChange} className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="السمك، الكوسا..." />
+                    <label>{lang === 'en' ? 'Disliked foods to exclude from meals' : 'أطعمة تكرهها ولا تود رؤيتها في الوجبات'}</label>
+                    <textarea name="foodDislikes" value={profile.foodDislikes || ''} onChange={handleInputChange} className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} placeholder={lang === 'en' ? 'Fish, zucchini...' : 'السمك، الكوسا...'} />
                   </div>
                 </div>
               </div>
@@ -281,17 +303,17 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
               <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
                 <RefreshCw size={18} color="var(--primary)" />
-                مزامنة وتوسيع قاعدة بيانات التمارين (مطورين)
+                {lang === 'en' ? 'Sync & Expand Exercise Library (Developers)' : 'مزامنة وتوسيع قاعدة بيانات التمارين (مطورين)'}
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
-                اسحب آلاف التمارين المتنوعة فورياً من ExerciseDB و Wger و Yoga API لملء مكتبة تطبيقك بالكامل.
+                {lang === 'en' ? 'Fetch thousands of exercises from ExerciseDB, Wger, and Yoga APIs to fill your database library.' : 'اسحب آلاف التمارين المتنوعة فورياً من ExerciseDB و Wger و Yoga API لملء مكتبة تطبيقك بالكامل.'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label>مفتاح RapidAPI Key (اختياري، لتشغيل ExerciseDB و Yoga API)</label>
+                  <label>{lang === 'en' ? 'RapidAPI Key (Optional, to fetch ExerciseDB/Yoga Poses)' : 'مفتاح RapidAPI Key (اختياري، لتشغيل ExerciseDB و Yoga API)'}</label>
                   <input
                     type="text"
-                    placeholder="ضع مفتاح RapidAPI الخاص بك هنا..."
+                    placeholder="Put your RapidAPI key here..."
                     value={rapidApiKey}
                     onChange={(e) => setRapidApiKey(e.target.value)}
                     className="input-field"
@@ -301,13 +323,13 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
                 {syncMessage && (
                   <div style={{
                     padding: '10px 15px',
-                    background: syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                    background: syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') || syncMessage.includes('failed') || syncMessage.includes('error') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
                     borderRadius: '8px',
-                    border: '1px solid ' + (syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'),
+                    border: '1px solid ' + (syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') || syncMessage.includes('failed') || syncMessage.includes('error') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)'),
                     fontSize: '13px',
-                    color: syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') ? 'var(--danger)' : 'var(--primary)',
+                    color: syncMessage.includes('فشل') || syncMessage.includes('خطأ') || syncMessage.includes('حدث') || syncMessage.includes('failed') || syncMessage.includes('error') ? 'var(--danger)' : 'var(--primary)',
                     fontWeight: 'bold',
-                    textAlign: 'right'
+                    textAlign: lang === 'en' ? 'left' : 'right'
                   }}>
                     {syncMessage}
                   </div>
@@ -321,19 +343,15 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
                   style={{ alignSelf: 'flex-start', padding: '10px 20px', gap: '8px', display: 'flex', alignItems: 'center' }}
                 >
                   <RefreshCw size={16} style={{ animation: syncing ? 'spin 1.5s linear infinite' : 'none' }} />
-                  {syncing ? 'جاري سحب ومزامنة التمارين...' : 'بدء المزامنة الذكية الآن'}
+                  {syncing ? (lang === 'en' ? 'Syncing exercises...' : 'جاري سحب ومزامنة التمارين...') : (lang === 'en' ? 'Start Smart Sync' : 'بدء المزامنة الذكية الآن')}
                 </button>
 
                 {/* Performance Test Block */}
                 <div style={{ marginTop: '20px', borderTop: '1px dashed var(--border-color)', paddingTop: '20px' }}>
                   <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <RefreshCw size={16} color="var(--secondary)" />
-                    اختبار سرعة وكفاءة الـ Cache والـ Resolver (للمطورين)
+                    {lang === 'en' ? 'Developer Tools & Run Benchmarks' : 'أدوات المطور واختبار كفاءة التشغيل'}
                   </h4>
-                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
-                    قم بقياس ومقارنة سرعة جلب التمارين من قاعدة البيانات المحلية مقابل الاتصال الخارجي والترجمة بالذكاء الاصطناعي لرصد توفير الوقت.
-                  </p>
-                  
                   <button
                     type="button"
                     disabled={testingPerformance}

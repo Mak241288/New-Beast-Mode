@@ -14,6 +14,17 @@ function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [currentView, setCurrentView] = useState<string>('dashboard');
   const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState<'ar' | 'en'>(localStorage.getItem('lang') === 'en' ? 'en' : 'ar');
+
+  const handleLanguageChange = (newLang: 'ar' | 'en') => {
+    setLang(newLang);
+    localStorage.setItem('lang', newLang);
+    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+  };
+
+  useEffect(() => {
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }, [lang]);
 
   const checkStatus = async () => {
     if (!token) {
@@ -73,7 +84,7 @@ function App() {
 
   // Onboarding Guard
   if (currentView === 'onboarding') {
-    return <Onboarding onComplete={handleOnboardingComplete} />;
+    return <Onboarding lang={lang} onComplete={handleOnboardingComplete} />;
   }
 
   // Main Application Router (State-based)
@@ -81,6 +92,7 @@ function App() {
     <>
       {currentView === 'dashboard' && (
         <Dashboard
+          lang={lang}
           onLogout={handleLogout}
           onNavigate={(view) => setCurrentView(view)}
         />
@@ -88,6 +100,7 @@ function App() {
 
       {currentView === 'nutrition' && (
         <Nutrition
+          lang={lang}
           onNavigate={(view) => setCurrentView(view)}
           onLogout={handleLogout}
         />
@@ -95,6 +108,7 @@ function App() {
 
       {currentView === 'chat' && (
         <Consultation
+          lang={lang}
           onNavigate={(view) => setCurrentView(view)}
           onLogout={handleLogout}
         />
@@ -102,6 +116,7 @@ function App() {
 
       {currentView === 'stats' && (
         <Stats
+          lang={lang}
           onNavigate={(view) => setCurrentView(view)}
           onLogout={handleLogout}
         />
@@ -109,6 +124,8 @@ function App() {
 
       {currentView === 'profile' && (
         <Profile
+          lang={lang}
+          onLanguageChange={handleLanguageChange}
           onNavigate={(view) => setCurrentView(view)}
           onLogout={handleLogout}
         />

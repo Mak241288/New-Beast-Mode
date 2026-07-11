@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Play, Plus, Edit, Trash2, RefreshCw, Timer } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { translations } from '../utils/translations';
 
 interface DashboardProps {
+  lang: 'ar' | 'en';
   onLogout: () => void;
   onNavigate: (view: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate }) => {
+  const t = translations[lang] || translations.ar;
   const [activePlan, setActivePlan] = useState<any>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
   const [loading, setLoading] = useState(true);
@@ -84,7 +88,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
     setImportLoading(true);
     setError('');
     try {
-      const plan = await api.importBulkPlan(importListText);
+      const plan = await api.importBulkPlan(importListText, lang);
       setActivePlan(plan);
 
       setShowImport(false);
@@ -383,14 +387,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
   };
 
   const handleUpgradePlan = async () => {
-    if (!confirm('سيقوم الذكاء الاصطناعي بمراجعة إنجازاتك المسجلة وتوليد جدول متطور وجديد كلياً. هل تود البدء؟')) return;
+    const isEn = lang === 'en';
+    const confirmMsg = isEn
+      ? 'AI will review your achievements and generate a brand new progressive routine. Do you want to start?'
+      : 'سيقوم الذكاء الاصطناعي بمراجعة إنجازاتك المسجلة وتوليد جدول متطور وجديد كلياً. هل تود البدء؟';
+    if (!confirm(confirmMsg)) return;
     setLoading(true);
     try {
-      const res = await api.upgradePlan();
-      alert(`مبروك! نسبة التزامك بالجدول السابق بلغت ${res.completionRate.toFixed(1)}%. تم توليد نسختك المطورة بنجاح.`);
+      const res = await api.upgradePlan(lang);
+      const successMsg = isEn
+        ? `Congratulations! Your adherence rate was ${res.completionRate.toFixed(1)}%. Upgraded plan generated successfully!`
+        : `مبروك! نسبة التزامك بالجدول السابق بلغت ${res.completionRate.toFixed(1)}%. تم توليد نسختك المطورة بنجاح.`;
+      alert(successMsg);
       fetchActivePlan();
     } catch (err: any) {
-      alert(err.message || 'فشل الترقية. تأكد من تسجيل تقدمك في التمارين أولاً.');
+      const errMsg = isEn
+        ? (err.message || 'Upgrade failed. Make sure you have logged some exercise progress first.')
+        : (err.message || 'فشل الترقية. تأكد من تسجيل تقدمك في التمارين أولاً.');
+      alert(errMsg);
     } finally {
       setLoading(false);
     }
@@ -408,13 +422,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
           </h2>
         </div>
         <nav style={{ display: 'flex', gap: '15px' }}>
-          <button onClick={() => onNavigate('dashboard')} className="glow-btn" style={{ padding: '8px 16px' }}>التمارين</button>
-          <button onClick={() => onNavigate('nutrition')} className="secondary-btn" style={{ padding: '8px 16px' }}>التغذية</button>
-          <button onClick={() => onNavigate('stats')} className="secondary-btn" style={{ padding: '8px 16px' }}>الإحصاءات</button>
-          <button onClick={() => onNavigate('chat')} className="secondary-btn" style={{ padding: '8px 16px' }}>استشارة الذكاء الاصطناعي</button>
-          <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>الملف الشخصي</button>
+          <button onClick={() => onNavigate('dashboard')} className="glow-btn" style={{ padding: '8px 16px' }}>{t.workout}</button>
+          <button onClick={() => onNavigate('nutrition')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.nutrition}</button>
+          <button onClick={() => onNavigate('stats')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.stats}</button>
+          <button onClick={() => onNavigate('chat')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.consultation}</button>
+          <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.profile}</button>
         </nav>
-        <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>تسجيل الخروج</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ThemeToggle />
+          <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{t.logout}</button>
+        </div>
       </header>
 
       <main className="container">

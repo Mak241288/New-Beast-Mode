@@ -101,7 +101,7 @@ const getSuggestedWeight = (exerciseName: string, equipment: string, gender: str
 // @route   POST /api/workout/generate
 export const generatePlan = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
-  const { durationWeeks, startDate, workoutLocation, equipment, level, targetMuscles, goal, restDays, exercisesPerDay } = req.body;
+  const { durationWeeks, startDate, workoutLocation, equipment, level, targetMuscles, goal, restDays, exercisesPerDay, lang } = req.body;
 
   try {
     if (!userId) {
@@ -159,21 +159,22 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
         // Save generated plan to PostgreSQL/Prisma
         const startDateTime = startDate ? new Date(startDate) : new Date();
 
+        const isEn = lang === 'en';
         const createdPlan = await prisma.workoutPlan.create({
           data: {
             userId,
-            title: `جدول تمارين مخصص (${finalLocation === 'GYM' ? 'النادي' : 'المنزل'})`,
+            title: isEn ? `Custom Workout Plan (${finalLocation === 'GYM' ? 'Gym' : 'Home'})` : `جدول تمارين مخصص (${finalLocation === 'GYM' ? 'النادي' : 'المنزل'})`,
             durationWeeks: durationWeeks || 4,
             startDate: startDateTime,
             active: true,
-            weeklyTips: `ركز على الأداء السليم وتدرج في زيادة الأحمال. الأدوات المستخدمة تناسب تفضيلاتك: ${equipStr || 'جميع الأدوات'}`,
+            weeklyTips: isEn ? `Focus on proper execution and progressive overload. Equipment: ${equipStr || 'All'}` : `ركز على الأداء السليم وتدرج في زيادة الأحمال. الأدوات المستخدمة تناسب تفضيلاتك: ${equipStr || 'جميع الأدوات'}`,
             isManual: false,
             dayWorkouts: {
               create: pythonPlan.map((day: any, dIdx: number) => ({
                 dayIndex: dIdx,
-                title: day.day_name_ar || day.day_name_en,
+                title: isEn ? day.day_name_en : (day.day_name_ar || day.day_name_en),
                 focusArea: day.day_name_en,
-                dayTips: day.is_rest_day ? 'يوم راحة مخصص للاستشفاء العضلي.' : 'ابدأ بالإحماء لمدة 5 دقائق قبل بدء جولتك.',
+                dayTips: day.is_rest_day ? (isEn ? 'Recovery and rest day.' : 'يوم راحة مخصص للاستشفاء العضلي.') : (isEn ? 'Warm up for 5 minutes before training.' : 'ابدأ بالإحماء لمدة 5 دقائق قبل بدء جولتك.'),
                 isRestDay: !!day.is_rest_day,
                 exercises: {
                   create: day.is_rest_day ? [] : day.exercises.map((ex: any, idx: number) => {
@@ -181,13 +182,13 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
                     const imageUrl = getMuscleImage(ex.muscle_en);
 
                     return {
-                      name: ex.name_ar || ex.name_en,
-                      targetMuscle: ex.muscle_ar || ex.muscle_en,
+                      name: isEn ? (ex.name_en || ex.name_ar) : (ex.name_ar || ex.name_en),
+                      targetMuscle: isEn ? (ex.muscle_en || ex.muscle_ar) : (ex.muscle_ar || ex.muscle_en),
                       category: ex.category || 'IRON',
                       sets: ex.sets || 3,
-                      reps: ex.reps_ar || ex.reps_en || '8-12',
+                      reps: isEn ? (ex.reps_en || ex.reps_ar || '8-12') : (ex.reps_ar || ex.reps_en || '8-12'),
                       weight: suggestedWeight,
-                      exerciseTips: ex.instructions_ar || ex.description_ar || ex.instructions_en || 'أداء هادئ وتركيز كامل في الحركة.',
+                      exerciseTips: isEn ? (ex.instructions_en || 'Controlled performance and focus.') : (ex.instructions_ar || ex.description_ar || ex.instructions_en || 'أداء هادئ وتركيز كامل في الحركة.'),
                       order: idx,
                       imageUrl: imageUrl,
                       videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent((ex.name_en || '') + ' exercise tutorial shorts')}`,
@@ -528,8 +529,9 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
     }
 
     let aiPlan;
+    const lang = req.body.lang || 'ar';
     try {
-      aiPlan = await upgradeWorkoutPlanAI(userId, activePlan.title, completionRate);
+      aiPlan = await upgradeWorkoutPlanAI(userId, activePlan.title, completionRate, lang);
     } catch (aiErr) {
       console.error('Error upgrading workout plan:', aiErr);
       res.status(500).json({ error: 'فشل ترقية الجدول الرياضي بالذكاء الاصطناعي' });
@@ -601,7 +603,7 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
 // @route   POST /api/workout/import-bulk
 export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
-  const { list } = req.body;
+  const { list, lang } = req.body;
 
   try {
     if (!userId) {
@@ -647,12 +649,15 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
           return;
         }
 
-        // Generate AI Critique via Groq Llama 3.3
-        const exerciseNames = pythonExercises.map((ex: any) => `${ex.name_ar} (${ex.name_en})`).join(', ');
-        const prompt = `مرحباً أيها الكوتش المحترف. قام المستخدم باستيراد الجدول الرياضي التالي. الرجاء كتابة نقد وتقييم فني رياضي مفصل باللغة العربية (بين 3 إلى 5 جمل مركزة ومحفزة) للتمارين التالية، موضحاً مدى توازن العضلات ونقاط القوة والضعف ونصائح هامة للأداء:
-        التمارين: ${exerciseNames}`;
-        
-        let critique = 'تم استيراد قائمة التمارين بنجاح. تذكر الحفاظ على الأداء الصحيح وزيادة الأحمال تدريجياً.';
+        const isEn = lang === 'en';
+        const exerciseNames = pythonExercises.map((ex: any) => isEn ? `${ex.name_en} (${ex.name_ar})` : `${ex.name_ar} (${ex.name_en})`).join(', ');
+        const prompt = isEn
+          ? `Hello Coach. The user imported the following custom workout routine. Please write a detailed, professional fitness feedback and critique in English (3 to 5 concise and encouraging sentences) about this routine, muscle balance, strengths/weaknesses, and safety tips:\nExercises: ${exerciseNames}`
+          : `مرحباً أيها الكوتش المحترف. قام المستخدم باستيراد الجدول الرياضي التالي. الرجاء كتابة نقد وتقييم فني رياضي مفصل باللغة العربية (بين 3 إلى 5 جمل مركزة ومحفزة) للتمارين التالية، موضحاً مدى توازن العضلات ونقاط القوة والضعف ونصائح هامة للأداء:\nالتمارين: ${exerciseNames}`;
+
+        let critique = isEn
+          ? 'Workout routine imported successfully. Remember to maintain proper form and practice progressive overload.'
+          : 'تم استيراد قائمة التمارين بنجاح. تذكر الحفاظ على الأداء الصحيح وزيادة الأحمال تدريجياً.';
         try {
           critique = await callGroq(prompt);
         } catch (groqErr) {
@@ -669,7 +674,7 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
         const createdPlan = await prisma.workoutPlan.create({
           data: {
             userId,
-            title: `جدول تمارين مستورد مخصص (${new Date().toLocaleDateString('ar-EG')})`,
+            title: isEn ? `Imported Workout Plan (${new Date().toLocaleDateString('en-US')})` : `جدول تمارين مستورد مخصص (${new Date().toLocaleDateString('ar-EG')})`,
             durationWeeks: 4,
             startDate: new Date(),
             active: true,
@@ -678,10 +683,10 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
             dayWorkouts: {
               create: [
                 {
-                  dayIndex: 0,
-                  title: 'الحصة الرياضية المستوردة',
+                  dayIndex: 1,
+                  title: isEn ? 'Imported Session' : 'الحصة الرياضية المستوردة',
                   focusArea: 'Imported Routine',
-                  dayTips: 'ابدأ بالإحماء لمدة 5-10 دقائق قبل البدء.',
+                  dayTips: isEn ? 'Warm up for 5-10 minutes before starting.' : 'ابدأ بالإحماء لمدة 5-10 دقائق قبل البدء.',
                   isRestDay: false,
                   exercises: {
                     create: pythonExercises.map((ex: any, idx: number) => {
@@ -689,13 +694,13 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
                       const imageUrl = ex.image_url || getMuscleImage(ex.muscle_en);
 
                       return {
-                        name: ex.name_ar || ex.name_en,
-                        targetMuscle: ex.muscle_ar || ex.muscle_en,
+                        name: isEn ? (ex.name_en || ex.name_ar) : (ex.name_ar || ex.name_en),
+                        targetMuscle: isEn ? (ex.muscle_en || ex.muscle_ar) : (ex.muscle_ar || ex.muscle_en),
                         category: ex.category || 'IRON',
                         sets: ex.sets || 3,
-                        reps: ex.reps_ar || ex.reps_en || '8-12',
+                        reps: isEn ? (ex.reps_en || ex.reps_ar || '8-12') : (ex.reps_ar || ex.reps_en || '8-12'),
                         weight: suggestedWeight,
-                        exerciseTips: ex.instructions_ar || ex.instructions_en || 'أداء هادئ مع التركيز الكامل.',
+                        exerciseTips: isEn ? (ex.instructions_en || 'Controlled performance and focus.') : (ex.instructions_ar || ex.instructions_en || 'أداء هادئ مع التركيز الكامل.'),
                         order: idx,
                         imageUrl: imageUrl,
                         videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent((ex.name_en || '') + ' exercise tutorial shorts')}`,

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Sparkles, Trash2, Calendar, Coffee, Utensils, Moon, HelpCircle, Droplet } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { translations } from '../utils/translations';
 
 interface NutritionProps {
+  lang: 'ar' | 'en';
   onNavigate: (view: string) => void;
   onLogout: () => void;
 }
 
-export const Nutrition: React.FC<NutritionProps> = ({ onNavigate, onLogout }) => {
+export const Nutrition: React.FC<NutritionProps> = ({ lang, onNavigate, onLogout }) => {
+  const t = translations[lang] || translations.ar;
   const [nutritionPlan, setNutritionPlan] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(true);
@@ -118,13 +122,16 @@ export const Nutrition: React.FC<NutritionProps> = ({ onNavigate, onLogout }) =>
           BEASTMODE
         </h2>
         <nav style={{ display: 'flex', gap: '15px' }}>
-          <button onClick={() => onNavigate('dashboard')} className="secondary-btn" style={{ padding: '8px 16px' }}>التمارين</button>
-          <button onClick={() => onNavigate('nutrition')} className="glow-btn" style={{ padding: '8px 16px' }}>التغذية</button>
-          <button onClick={() => onNavigate('stats')} className="secondary-btn" style={{ padding: '8px 16px' }}>الإحصاءات</button>
-          <button onClick={() => onNavigate('chat')} className="secondary-btn" style={{ padding: '8px 16px' }}>استشارة الذكاء الاصطناعي</button>
-          <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>الملف الشخصي</button>
+          <button onClick={() => onNavigate('dashboard')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.workout}</button>
+          <button onClick={() => onNavigate('nutrition')} className="glow-btn" style={{ padding: '8px 16px' }}>{t.nutrition}</button>
+          <button onClick={() => onNavigate('stats')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.stats}</button>
+          <button onClick={() => onNavigate('chat')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.consultation}</button>
+          <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.profile}</button>
         </nav>
-        <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>تسجيل الخروج</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <ThemeToggle />
+          <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{t.logout}</button>
+        </div>
       </header>
 
       <main className="container">

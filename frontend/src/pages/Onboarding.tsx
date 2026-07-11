@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { ChevronLeft, ChevronRight, Activity, Calendar, Compass, ShieldAlert, Check } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { translations } from '../utils/translations';
 
 interface OnboardingProps {
+  lang: 'ar' | 'en';
   onComplete: () => void;
 }
 
-export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
+  const t = translations[lang] || translations.ar;
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -139,6 +143,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         restDays,
         exercisesPerDay,
         daysPerWeek: 7 - restDays.length,
+        lang,
       });
 
       onComplete();
@@ -154,9 +159,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       <div className="glass-panel" style={{ width: '100%', maxWidth: '580px', padding: '35px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         {/* Step Indicator */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>
-            الخطوة {step} من 5
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>
+              {t.stepOf(step, 5)}
+            </span>
+            <ThemeToggle />
+          </div>
           <div style={{ display: 'flex', gap: '6px' }}>
             {[1, 2, 3, 4, 5].map((s) => (
               <div
@@ -381,13 +389,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700' }}>عدد التمارين المقترحة في الحصة الواحدة</label>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)' }}>{exercisesPerDay} تمارين</span>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.exercisesPerDay}</label>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)' }}>{exercisesPerDay} {t.exercises}</span>
               </div>
               <input
                 type="range"
                 min="3"
-                max="10"
+                max="25"
                 value={exercisesPerDay}
                 onChange={(e) => setExercisesPerDay(parseInt(e.target.value))}
                 style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}

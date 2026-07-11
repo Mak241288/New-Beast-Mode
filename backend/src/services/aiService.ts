@@ -282,11 +282,49 @@ export const getProfileAdviceAI = async (oldUser: any, updatedUser: any): Promis
 };
 
 // 6. Upgrade Workout Plan (Progressive Overload)
-export const upgradeWorkoutPlanAI = async (userId: number, activePlanTitle: string, completionRate: number) => {
+export const upgradeWorkoutPlanAI = async (userId: number, activePlanTitle: string, completionRate: number, lang?: string) => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('المستخدم غير موجود');
 
-  const prompt = `
+  const isEn = lang === 'en';
+  const prompt = isEn ? `
+  You are an expert fitness coach and physical therapist with 66 years of experience.
+  The user ${user.name} successfully finished the previous workout plan titled "${activePlanTitle}".
+  - Adherence rate: ${completionRate.toFixed(1)}%.
+  - Fitness state: ${user.currentWeight ? 'Weight: ' + user.currentWeight + ' kg' : ''}, Location: ${user.workoutLocation || 'GYM'}.
+
+  Based on this achievement, generate a completely new, progressive workout routine representing the "next level" (Progressive Overload).
+  - If adherence was high (>75%), increase difficulty, sets/reps, or weights.
+  - If adherence was low, focus on building fundamentals and adapting difficult exercises.
+  
+  You MUST return the entire response in English.
+
+  Format the output strictly as a JSON object matching this structure:
+  {
+    "title": "Title of the new progressive workout plan",
+    "weeklyTips": "New weekly tips for handling the extra intensity or maintaining consistency",
+    "days": [
+      {
+        "dayIndex": 1,
+        "title": "Motivating and attractive name of the training day",
+        "focusArea": "Targeted muscles",
+        "dayTips": "Warm-up and recovery tips for this day",
+        "isRestDay": false,
+        "exercises": [
+          {
+            "name": "Exercise name",
+            "targetMuscle": "Target muscle",
+            "category": "Exercise category: IRON, YOGA, PILATES, HIIT, CARDIO, CALISTHENICS",
+            "sets": 3,
+            "reps": "Target reps or time (e.g. '8-10 reps' or '30s')",
+            "weight": "Suggested weight (e.g. '17.5kg' or 'Bodyweight')",
+            "exerciseTips": "Performance tip for correct form"
+          }
+        ]
+      }
+    ]
+  }
+  ` : `
   أنت مدرب رياضي وطبيب علاج طبيعي بخبرة 66 عاماً.
   المستخدم ${user.name} أنهى بنجاح جدول التمارين السابق الذي عنوانه "${activePlanTitle}".
   - نسبة الالتزام الإجمالية بإدخال التمارين وإكمالها: ${completionRate.toFixed(1)}%.
