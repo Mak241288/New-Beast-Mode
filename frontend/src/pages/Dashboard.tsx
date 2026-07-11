@@ -36,6 +36,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
     exerciseTips: '',
   });
 
+  // Advanced Features State
+  const [showImport, setShowImport] = useState(false);
+  const [importListText, setImportListText] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
+
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyList, setHistoryList] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const [libraryTree, setLibraryTree] = useState<any[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [selectedLibraryEx, setSelectedLibraryEx] = useState<any>(null);
+  
+  // Search state in library
+  const [librarySearchQuery, setLibrarySearchQuery] = useState('');
+  const [expandedDivisions, setExpandedDivisions] = useState<string[]>([]);
+  const [expandedMuscles, setExpandedMuscles] = useState<string[]>([]);
+
   const fetchActivePlan = async () => {
     setLoading(true);
     setError('');
@@ -58,6 +76,78 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
       setError(err.message || 'لم نتمكن من تحميل جدول التمارين النشط.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImportBulk = async () => {
+    if (!importListText.trim()) return;
+    setImportLoading(true);
+    setError('');
+    try {
+      const plan = await api.importBulkPlan(importListText);
+      setActivePlan(plan);
+
+      setShowImport(false);
+      setImportListText('');
+      setSelectedDayIndex(1);
+    } catch (err: any) {
+      setError(err.message || 'فشل استيراد الجدول المجمع وتحليله.');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await api.getPlanHistory();
+      setHistoryList(res || []);
+    } catch (err: any) {
+      setError('فشل جلب سجل الخطط السابقة.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleActivatePlan = async (id: number) => {
+    try {
+      const plan = await api.activateHistoricalPlan(id);
+      setActivePlan(plan);
+      setShowHistory(false);
+      setSelectedDayIndex(1);
+    } catch (err: any) {
+      setError('فشل تفعيل هذا البرنامج الرياضي.');
+    }
+  };
+
+  const fetchLibraryTree = async () => {
+    setLibraryLoading(true);
+    try {
+      const tree = await api.getLibraryTree();
+      setLibraryTree(tree || []);
+      if (tree) {
+        setExpandedDivisions(tree.map((d: any) => d.key));
+      }
+    } catch (err: any) {
+      setError('فشل جلب مكتبة التمارين.');
+    } finally {
+      setLibraryLoading(false);
+    }
+  };
+
+  const toggleDivision = (key: string) => {
+    if (expandedDivisions.includes(key)) {
+      setExpandedDivisions(expandedDivisions.filter((d) => d !== key));
+    } else {
+      setExpandedDivisions([...expandedDivisions, key]);
+    }
+  };
+
+  const toggleMuscle = (key: string) => {
+    if (expandedMuscles.includes(key)) {
+      setExpandedMuscles(expandedMuscles.filter((m) => m !== key));
+    } else {
+      setExpandedMuscles([...expandedMuscles, key]);
     }
   };
 
@@ -353,10 +443,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
                   </p>
                 )}
               </div>
-              <button onClick={handleUpgradePlan} className="secondary-btn" style={{ border: '1px solid var(--secondary)', color: 'var(--secondary)' }}>
-                <RefreshCw size={18} />
-                ترقية الجدول بالذكاء الاصطناعي
-              </button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button onClick={handleUpgradePlan} className="secondary-btn" style={{ border: '1px solid var(--secondary)', color: 'var(--secondary)' }}>
+                  <RefreshCw size={16} />
+                  ترقية الجدول
+                </button>
+                <button onClick={() => { fetchHistory(); setShowHistory(true); }} className="secondary-btn">
+                  سجل البرامج السابقة
+                </button>
+                <button onClick={() => setShowImport(true)} className="secondary-btn">
+                  استيراد جدول مجمع
+                </button>
+                <button onClick={() => { fetchLibraryTree(); setShowLibrary(true); }} className="secondary-btn">
+                  مكتبة التمارين الشجرية
+                </button>
+              </div>
             </div>
 
             {/* Days Calendar Bar */}
@@ -446,13 +547,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
                           flexWrap: 'wrap',
                         }}
                       >
-                        {ex.imageUrl && (
-                          <img
-                            src={ex.imageUrl}
-                            alt={ex.name}
-                            style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'cover' }}
-                          />
-                        )}
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          {ex.imageUrl && (
+                            <img
+                              src={ex.imageUrl}
+                              alt={ex.name}
+                              style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'cover' }}
+                            />
+                          )}
+                          {ex.anatomyImageUrl && (
+                            <img
+                              src={ex.anatomyImageUrl}
+                              alt="Anatomy"
+                              style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'contain', background: '#090a0f', border: '1px solid var(--border-color)' }}
+                              title="المخطط التشريحي للعضلة المستهدفة"
+                            />
+                          )}
+                        </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                             <h3 style={{ fontSize: '18px' }}>{ex.name}</h3>
@@ -525,6 +636,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
                     <span className="badge badge-primary">تمرين {activeExerciseIndex + 1} من {exercises.length}</span>
                     <h2 style={{ fontSize: '22px', marginTop: '10px' }}>{ex.name}</h2>
                     <span className="badge badge-secondary" style={{ marginTop: '5px' }}>{ex.targetMuscle}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                    {ex.imageUrl && (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>توضيح الحركة</span>
+                        <img src={ex.imageUrl} alt={ex.name} style={{ width: '100%', height: '140px', borderRadius: '10px', objectFit: 'contain', background: '#090a0f', border: '1px solid var(--border-color)' }} />
+                      </div>
+                    )}
+                    {ex.anatomyImageUrl && (
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>الخريطة التشريحية</span>
+                        <img src={ex.anatomyImageUrl} alt="Target Muscle Anatomy" style={{ width: '100%', height: '140px', borderRadius: '10px', objectFit: 'contain', background: '#090a0f', border: '1px solid var(--border-color)' }} />
+                      </div>
+                    )}
                   </div>
 
                   <div className="glass-panel" style={{ padding: '20px', display: 'flex', justifyContent: 'center', gap: '30px', alignItems: 'center' }}>
@@ -791,6 +917,295 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout, onNavigate }) =>
               <button type="button" onClick={() => setAddingCustom(false)} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>إلغاء</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* BULK IMPORT MODAL */}
+      {showImport && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '550px', padding: '30px', border: '1px solid var(--primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px' }}>استيراد قائمة تمارين خارجية 📥</h3>
+              <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+              انسخ قائمة تمارينك من أي ملف نصي أو تطبيق آخر والزقها هنا (اسم تمرين في كل سطر). سيقوم محرك التوليد بمطابقة الأسماء محلياً، واقتراح الأوزان والصور التشريحية، بالإضافة إلى **تحليل ونقد فني من كوتش الذكاء الاصطناعي**.
+            </p>
+
+            <textarea
+              placeholder="مثال:&#10;Bench Press&#10;Bicep Curl&#10;Squats"
+              value={importListText}
+              onChange={(e) => setImportListText(e.target.value)}
+              className="input-field"
+              style={{ minHeight: '180px', width: '100%', fontFamily: 'monospace', fontSize: '14px', padding: '15px' }}
+              disabled={importLoading}
+            />
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+              <button
+                onClick={handleImportBulk}
+                className="glow-btn"
+                style={{ flex: 1, justifyContent: 'center' }}
+                disabled={importLoading || !importListText.trim()}
+              >
+                {importLoading ? 'جاري الاستيراد والتحليل الذكي...' : 'استورد وحلل الجدول'}
+              </button>
+              <button
+                onClick={() => setShowImport(false)}
+                className="secondary-btn"
+                style={{ flex: 1, justifyContent: 'center' }}
+                disabled={importLoading}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WORKOUT PLANS HISTORY MODAL */}
+      {showHistory && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '700px', padding: '30px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px' }}>أرشيف وسجل جداولك الرياضية 📅</h3>
+              <button onClick={() => setShowHistory(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>×</button>
+            </div>
+
+            {historyLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>جاري جلب سجل الجداول...</div>
+            ) : historyList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>لا توجد جداول سابقة مسجلة في هذا الحساب.</div>
+            ) : (
+              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '15px', paddingRight: '5px' }}>
+                {historyList.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="glass-panel"
+                    style={{
+                      padding: '20px',
+                      border: plan.active ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '15px',
+                      background: plan.active ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <h4 style={{ fontSize: '16px', fontWeight: '700' }}>{plan.title}</h4>
+                        {plan.active && <span className="badge badge-primary">نشط حالياً</span>}
+                        {plan.isManual && <span className="badge badge-secondary" style={{ background: 'rgba(255, 255, 255, 0.1)' }}>مستورد / يدوي</span>}
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '5px' }}>
+                        تاريخ الإنشاء: {new Date(plan.createdAt).toLocaleDateString('ar-EG')} | عدد الأيام: {plan.dayWorkouts.length} أيام
+                      </p>
+                      {plan.weeklyTips && (
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', maxWidth: '450px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          📝 نقد/إرشادات: {plan.weeklyTips}
+                        </p>
+                      )}
+                    </div>
+                    {!plan.active && (
+                      <button
+                        onClick={() => handleActivatePlan(plan.id)}
+                        className="glow-btn"
+                        style={{ padding: '8px 16px', fontSize: '12px' }}
+                      >
+                        تنشيط هذا الجدول
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* EXERCISES LIBRARY TREE BROWSER */}
+      {showLibrary && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.96)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '1100px', height: '90vh', padding: '30px', display: 'flex', flexDirection: 'column' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: '20px', fontWeight: '800' }}>مكتبة التمارين الهيكلية (الشجرة التفاعلية) 🌳</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>تصفح واستكشف 4,206 تمرين رياضي مصنف ومترجم باحترافية حسب جزء الجسم والعضلات.</p>
+              </div>
+              <button onClick={() => setShowLibrary(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer' }}>×</button>
+            </div>
+
+            {/* Search Bar */}
+            <div style={{ marginBottom: '20px' }}>
+              <input
+                type="text"
+                placeholder="🔍 ابحث عن تمرين باسمه العربي أو الإنجليزي أو الأداة المستخدمة..."
+                value={librarySearchQuery}
+                onChange={(e) => setLibrarySearchQuery(e.target.value)}
+                className="input-field"
+                style={{ width: '100%', padding: '12px 18px', fontSize: '14px' }}
+              />
+            </div>
+
+            {/* Main Content Area: Left list (scrollable), Right details (panel) */}
+            <div style={{ display: 'flex', gap: '25px', flex: 1, overflow: 'hidden' }}>
+              {/* Left Side: Tree Structure */}
+              <div style={{ flex: 1.2, overflowY: 'auto', borderRight: '1px solid var(--border-color)', paddingRight: '15px' }}>
+                {libraryLoading ? (
+                  <div style={{ textAlign: 'center', padding: '50px' }}>جاري قراءة وتصنيف التمارين شجرياً...</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {libraryTree.map((div: any) => {
+                      // Filter down to matching query
+                      const filteredChildren = div.children.map((muscle: any) => {
+                        const filteredExercises = muscle.exercises.filter((ex: any) =>
+                          ex.name_en.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
+                          ex.name_ar.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
+                          ex.equipment_en.toLowerCase().includes(librarySearchQuery.toLowerCase()) ||
+                          ex.equipment_ar.toLowerCase().includes(librarySearchQuery.toLowerCase())
+                        );
+                        return { ...muscle, exercises: filteredExercises };
+                      }).filter((muscle: any) => muscle.exercises.length > 0);
+
+                      if (filteredChildren.length === 0 && librarySearchQuery) return null;
+
+                      const isDivExpanded = expandedDivisions.includes(div.key);
+
+                      return (
+                        <div key={div.key} className="glass-panel" style={{ padding: '15px', background: 'rgba(255, 255, 255, 0.01)' }}>
+                          {/* Division Header (Level 1) */}
+                          <div
+                            onClick={() => toggleDivision(div.key)}
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: '800', fontSize: '15px', color: 'var(--primary)', borderBottom: isDivExpanded ? '1px solid rgba(255,255,255,0.05)' : 'none', paddingBottom: isDivExpanded ? '8px' : '0' }}
+                          >
+                            <span>📂 {div.label_ar} ({div.label_en})</span>
+                            <span style={{ fontSize: '12px' }}>{isDivExpanded ? '▼ إخفاء' : '▲ عرض'}</span>
+                          </div>
+
+                          {/* Muscles List (Level 2) */}
+                          {isDivExpanded && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px', paddingRight: '15px' }}>
+                              {filteredChildren.map((muscle: any) => {
+                                const isMuscleExpanded = expandedMuscles.includes(muscle.key) || !!librarySearchQuery;
+
+                                return (
+                                  <div key={muscle.key} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)', paddingBottom: '8px' }}>
+                                    <div
+                                      onClick={() => toggleMuscle(muscle.key)}
+                                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: 'var(--secondary)' }}
+                                    >
+                                      <span>💪 {muscle.label_ar} ({muscle.label_en})</span>
+                                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                        {muscle.exercises.length} تمرين {isMuscleExpanded ? '▼' : '▲'}
+                                      </span>
+                                    </div>
+
+                                    {/* Exercises List (Level 3) */}
+                                    {isMuscleExpanded && (
+                                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', marginTop: '8px', paddingRight: '15px' }}>
+                                        {muscle.exercises.map((ex: any) => (
+                                          <div
+                                            key={ex.id}
+                                            onClick={() => setSelectedLibraryEx(ex)}
+                                            style={{
+                                              padding: '8px 12px',
+                                              background: selectedLibraryEx?.id === ex.id ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.01)',
+                                              border: selectedLibraryEx?.id === ex.id ? '1px solid var(--primary)' : '1px solid transparent',
+                                              borderRadius: '6px',
+                                              cursor: 'pointer',
+                                              fontSize: '13px',
+                                              display: 'flex',
+                                              justifyContent: 'space-between',
+                                              alignItems: 'center',
+                                              transition: 'all 0.15s',
+                                            }}
+                                          >
+                                            <span style={{ fontWeight: '600' }}>{ex.name_ar}</span>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{ex.equipment_ar}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Right Side: Exercise Detail Panel */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                {selectedLibraryEx ? (
+                  <div className="glass-panel animated-fade" style={{ padding: '24px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    <div>
+                      <span className="badge badge-primary">{selectedLibraryEx.equipment_ar}</span>
+                      <h2 style={{ fontSize: '20px', fontWeight: '800', marginTop: '8px' }}>{selectedLibraryEx.name_ar}</h2>
+                      <h3 style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '2px' }}>{selectedLibraryEx.name_en}</h3>
+                    </div>
+
+                    {/* Dual Images Side-by-Side (Exercise execution + Anatomical diagram) */}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {selectedLibraryEx.image_url && (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>شرح الحركة</span>
+                          <img
+                            src={selectedLibraryEx.image_url}
+                            alt={selectedLibraryEx.name_en}
+                            style={{ width: '100%', height: '110px', borderRadius: '8px', objectFit: 'contain', background: '#090a0f', border: '1px solid var(--border-color)' }}
+                          />
+                        </div>
+                      )}
+                      {selectedLibraryEx.anatomy_image_url && (
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>الخريطة التشريحية</span>
+                          <img
+                            src={selectedLibraryEx.anatomy_image_url}
+                            alt="Muscle Anatomy Map"
+                            style={{ width: '100%', height: '110px', borderRadius: '8px', objectFit: 'contain', background: '#090a0f', border: '1px solid var(--border-color)' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Instructions */}
+                    <div>
+                      <h4 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--secondary)' }}>📋 طريقة الأداء بالتفصيل:</h4>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', marginTop: '6px', whiteSpace: 'pre-line' }}>
+                        {selectedLibraryEx.instructions_ar || selectedLibraryEx.instructions_en || 'لا توجد تعليمات مسجلة لهذا التمرين حالياً.'}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: 'auto', paddingTop: '15px', borderTop: '1px solid var(--border-color)' }}>
+                      {selectedLibraryEx.video_url && (
+                        <a
+                          href={selectedLibraryEx.video_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="glow-btn"
+                          style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', fontSize: '12px' }}
+                        >
+                          🎥 شاهد شرح يوتيوب شورتس
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-color)', borderRadius: '15px', color: 'var(--text-muted)', fontSize: '14px' }}>
+                    👈 اختر أي تمرين من الشجرة لعرض الصور والتعليمات والخرائط التشريحية.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -12,7 +12,7 @@ export interface WorkoutPlanOptions {
 /**
  * Generic helper to make calls to Groq API using Llama 3.3 70B model (OpenAI compatible)
  */
-const callGroq = async (prompt: string, jsonMode: boolean = false, customMessages: any[] = []): Promise<string> => {
+export const callGroq = async (prompt: string, jsonMode: boolean = false, customMessages: any[] = []): Promise<string> => {
   const groqKey = process.env.GROQ_API_KEY || '';
   if (!groqKey) {
     throw new Error('مفتاح Groq API غير متوفر في ملف البيئة .env');

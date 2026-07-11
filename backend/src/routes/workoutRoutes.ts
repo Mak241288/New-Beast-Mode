@@ -8,7 +8,11 @@ import {
   logProgress,
   createManualPlan,
   updateDayWorkout,
-  upgradePlan
+  upgradePlan,
+  importBulkPlan,
+  getPlanHistory,
+  activateHistoricalPlan,
+  getLibraryTree
 } from '../controllers/workoutController';
 import { protect } from '../middleware/auth';
 
@@ -19,6 +23,10 @@ router.use(protect as any);
 
 router.post('/generate', generatePlan);
 router.post('/manual', createManualPlan);
+router.post('/import-bulk', importBulkPlan);
+router.get('/history', getPlanHistory);
+router.post('/:id/activate', activateHistoricalPlan);
+router.get('/library-tree', getLibraryTree);
 router.get('/active', getActivePlan);
 router.post('/upgrade', upgradePlan);
 

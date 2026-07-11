@@ -41,6 +41,10 @@ export const api = {
   logProgress: (exerciseId: number, logData: any) => request(`/workout/exercise/${exerciseId}/log`, { method: 'POST', body: JSON.stringify(logData) }),
   updateDayWorkout: (dayId: number, data: any) => request(`/workout/day/${dayId}`, { method: 'PUT', body: JSON.stringify(data) }),
   upgradePlan: () => request('/workout/upgrade', { method: 'POST' }),
+  importBulkPlan: (list: string) => request('/workout/import-bulk', { method: 'POST', body: JSON.stringify({ list }) }),
+  getPlanHistory: () => request('/workout/history', { method: 'GET' }),
+  activateHistoricalPlan: (id: number) => request(`/workout/${id}/activate`, { method: 'POST' }),
+  getLibraryTree: () => request('/workout/library-tree', { method: 'GET' }),
 
   // Nutrition API
   getNutritionPlan: (date: string) => request(`/nutrition/day?date=${date}`),

@@ -23,6 +23,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [equipment, setEquipment] = useState<string[]>([]);
   const [level, setLevel] = useState('beginner');
   const [targetMuscles, setTargetMuscles] = useState<string[]>([]);
+  const [exercisesPerDay, setExercisesPerDay] = useState(5);
+  const [restDays, setRestDays] = useState<string[]>([]);
 
   // Step 3: Health / Medical
   const [medicalConditions, setMedicalConditions] = useState('');
@@ -59,6 +61,24 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       setTargetMuscles(targetMuscles.filter((m) => m !== id));
     } else {
       setTargetMuscles([...targetMuscles, id]);
+    }
+  };
+
+  const weekdaysList = [
+    { id: 'saturday', label: 'السبت' },
+    { id: 'sunday', label: 'الأحد' },
+    { id: 'monday', label: 'الإثنين' },
+    { id: 'tuesday', label: 'الثلاثاء' },
+    { id: 'wednesday', label: 'الأربعاء' },
+    { id: 'thursday', label: 'الخميس' },
+    { id: 'friday', label: 'الجمعة' },
+  ];
+
+  const handleRestDayChange = (id: string) => {
+    if (restDays.includes(id)) {
+      setRestDays(restDays.filter((d) => d !== id));
+    } else {
+      setRestDays([...restDays, id]);
     }
   };
 
@@ -116,6 +136,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         level,
         targetMuscles,
         goal: calculatedGoal,
+        restDays,
+        exercisesPerDay,
+        daysPerWeek: 7 - restDays.length,
       });
 
       onComplete();
@@ -324,6 +347,51 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   </label>
                 ))}
               </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>أيام الراحة المخصصة (اتركها فارغة للتوزيع التلقائي)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
+                {weekdaysList.map((day) => (
+                  <label
+                    key={day.id}
+                    className="flex-center"
+                    style={{
+                      justifyContent: 'flex-start',
+                      gap: '8px',
+                      padding: '10px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: restDays.includes(day.id) ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={restDays.includes(day.id)}
+                      onChange={() => handleRestDayChange(day.id)}
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                    {day.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>عدد التمارين المقترحة في الحصة الواحدة</label>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)' }}>{exercisesPerDay} تمارين</span>
+              </div>
+              <input
+                type="range"
+                min="3"
+                max="10"
+                value={exercisesPerDay}
+                onChange={(e) => setExercisesPerDay(parseInt(e.target.value))}
+                style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
+              />
             </div>
           </div>
         )}
