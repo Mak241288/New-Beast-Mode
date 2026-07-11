@@ -126,9 +126,9 @@ def determine_sets_reps(goal, category):
     
     return {"sets": 3, "reps_en": "8-12 reps", "reps_ar": "8-12 تكرار"} # Default
 
-def generate_workout_plan(days_per_week, location, equipment_list, level, goal, target_muscles_filter=None):
+def generate_workout_plan(days_per_week, location, equipment_list, level, goal, target_muscles_filter=None, rest_days_filter=None, exercises_limit=0):
     """
-    Generate a complete weekly workout routine.
+    Generate a complete weekly workout routine (7 days).
     """
     # Map user selected general muscle groups to internal database muscle keys
     internal_muscle_targets = []
@@ -148,47 +148,103 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal, 
             else:
                 internal_muscle_targets.append(group_lower)
 
-    # 1. Resolve Day Split Config
-    days_count = max(2, min(6, days_per_week)) # clamp between 2 and 6
-    split_config = SPLIT_CONFIGS[days_count]
+    # 1. Resolve Rest Days
+    rest_days_set = set(r.strip().lower() for r in rest_days_filter) if rest_days_filter else set()
+    
+    # Calculate training days count
+    if rest_days_set:
+        training_days_count = 7 - len(rest_days_set)
+        training_days_count = max(2, min(6, training_days_count))
+    else:
+        training_days_count = max(2, min(6, days_per_week))
+        # Default rest days if not provided
+        if training_days_count == 2:
+            rest_days_set = {"sunday", "tuesday", "wednesday", "friday", "saturday"} # Monday, Thursday
+        elif training_days_count == 3:
+            rest_days_set = {"sunday", "tuesday", "thursday", "friday"} # Saturday, Monday, Wednesday
+        elif training_days_count == 4:
+            rest_days_set = {"sunday", "tuesday", "friday"} # Sat, Mon, Wed, Thu
+        elif training_days_count == 5:
+            rest_days_set = {"tuesday", "friday"} # Sat, Mon, Wed, Thu, Sat
+        else:
+            rest_days_set = {"friday"}
+
+    split_config = SPLIT_CONFIGS[training_days_count]
+    
+    DAYS_OF_WEEK = [
+        {"name_en": "Saturday", "name_ar": "السبت"},
+        {"name_en": "Sunday", "name_ar": "الأحد"},
+        {"name_en": "Monday", "name_ar": "الإثنين"},
+        {"name_en": "Tuesday", "name_ar": "الثلاثاء"},
+        {"name_en": "Wednesday", "name_ar": "الأربعاء"},
+        {"name_en": "Thursday", "name_ar": "الخميس"},
+        {"name_en": "Friday", "name_ar": "الجمعة"}
+    ]
     
     weekly_routine = []
     selected_names = set() # Track already selected exercises to avoid duplicates
     
-    for day in split_config:
+    split_idx = 0
+    for day_info in DAYS_OF_WEEK:
+        day_name_lower = day_info["name_en"].lower()
+        
+        if day_name_lower in rest_days_set or split_idx >= len(split_config):
+            weekly_routine.append({
+                "day_name_en": f"{day_info['name_en']} (Rest Day)",
+                "day_name_ar": f"{day_info['name_ar']} (يوم راحة)",
+                "is_rest_day": True,
+                "exercises": []
+            })
+            continue
+            
+        day = split_config[split_idx]
+        split_idx += 1
+        
         # Filter muscles to only those matching user preferences, if filter is active
         day_muscles = day["muscles"]
         if internal_muscle_targets:
             day_muscles = [m for m in day_muscles if m in internal_muscle_targets]
             
         if not day_muscles:
-            continue # Skip day if it has no matching target muscles
+            weekly_routine.append({
+                "day_name_en": f"{day_info['name_en']} (Rest Day)",
+                "day_name_ar": f"{day_info['name_ar']} (يوم راحة)",
+                "is_rest_day": True,
+                "exercises": []
+            })
+            continue
 
         day_routine = {
-            "day_name_en": day["name_en"],
-            "day_name_ar": day["name_ar"],
+            "day_name_en": f"{day_info['name_en']}: {day['name_en']}",
+            "day_name_ar": f"{day_info['name_ar']}: {day['name_ar']}",
+            "is_rest_day": False,
             "exercises": []
         }
         
+        # Determine exercises to add per muscle
+        total_limit = int(exercises_limit) if exercises_limit else 0
+        if total_limit > 0:
+            base_count = total_limit // len(day_muscles)
+            extra = total_limit % len(day_muscles)
+            muscle_limits = {m: base_count + (1 if idx < extra else 0) for idx, m in enumerate(day_muscles)}
+        else:
+            if len(day_muscles) <= 2:
+                muscle_limits = {m: (3 if m.lower() in ["chest", "lats", "middle back", "quadriceps", "hamstrings"] else 2) for m in day_muscles}
+            else:
+                muscle_limits = {m: (2 if m.lower() in ["chest", "lats", "middle back", "quadriceps", "hamstrings"] else 1) for m in day_muscles}
+        
         # For each target muscle group on this day
         for muscle in day_muscles:
+            muscle_limit = muscle_limits[muscle]
             pool = fetch_exercises_for_muscle(muscle, location, equipment_list, level)
             if not pool:
-                # If pool is empty, try a broader search without level restrictions
                 pool = fetch_exercises_for_muscle(muscle, location, equipment_list, "advanced")
                 if not pool:
-                    continue # Still empty, skip this muscle group
+                    continue
                     
             # Prioritize higher rated exercises
             pool.sort(key=lambda x: x.get("rating", 0.0), reverse=True)
             
-            # Dynamic volume scaling:
-            # If day has fewer muscles, increase exercises per muscle to maintain workout length (5-7 exercises)
-            if len(day_muscles) <= 2:
-                exercises_to_add = 3 if muscle.lower() in ["chest", "lats", "middle back", "quadriceps", "hamstrings"] else 2
-            else:
-                exercises_to_add = 2 if muscle.lower() in ["chest", "lats", "middle back", "quadriceps", "hamstrings"] else 1
-                
             added_count = 0
             
             # Try to add unique exercises
@@ -204,13 +260,13 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal, 
                     day_routine["exercises"].append(ex_data)
                     selected_names.add(ex["name_en"])
                     added_count += 1
-                    if added_count >= exercises_to_add:
+                    if added_count >= muscle_limit:
                         break
                         
             # If we couldn't meet the target due to avoiding duplication, allow repeats of high rating exercises
-            if added_count < exercises_to_add:
+            if added_count < muscle_limit:
                 for ex in pool:
-                    if len(day_routine["exercises"]) >= (len(day_muscles) * exercises_to_add):
+                    if len(day_routine["exercises"]) >= sum(muscle_limits.values()):
                         break
                     # Avoid repeating inside the SAME day at all costs
                     if ex["name_en"] not in [e["name_en"] for e in day_routine["exercises"]]:
@@ -223,7 +279,7 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal, 
                         }
                         day_routine["exercises"].append(ex_data)
                         added_count += 1
-                        if added_count >= exercises_to_add:
+                        if added_count >= muscle_limit:
                             break
                             
         weekly_routine.append(day_routine)
@@ -238,20 +294,25 @@ def main():
     parser.add_argument("--level", type=str, default="intermediate", choices=["beginner", "intermediate", "advanced"], help="User fitness level")
     parser.add_argument("--goal", type=str, default="HYPERTROPHY", choices=["STRENGTH", "FAT_LOSS", "HYPERTROPHY", "ATHLETICISM"], help="Workout goal")
     parser.add_argument("--muscles", type=str, default="", help="Comma-separated target muscles (chest, back, shoulders, legs, arms, abs)")
+    parser.add_argument("--rest-days", type=str, default="", help="Comma-separated rest days (e.g. friday,sunday)")
+    parser.add_argument("--limit", type=int, default=0, help="Number of exercises per training day")
     
     args = parser.parse_args()
     
     equip_list = [eq.strip() for eq in args.equipment.split(",") if eq.strip()] if args.equipment else []
     muscle_list = [m.strip() for m in args.muscles.split(",") if m.strip()] if args.muscles else []
+    rest_list = [r.strip() for r in args.rest_days.split(",") if r.strip()] if args.rest_days else []
     
     print(f"Generating workout plan with parameters:")
     print(f"  -> Days Per Week: {args.days}")
     print(f"  -> Location: {args.location}")
     print(f"  -> Equipment Available: {equip_list if equip_list else 'All (Gym)' if args.location == 'GYM' else 'Bodyweight'}")
     print(f"  -> Target Muscles: {muscle_list if muscle_list else 'All Muscles'}")
+    print(f"  -> Custom Rest Days: {rest_list if rest_list else 'Default'}")
+    print(f"  -> Exercises Per Day Limit: {args.limit if args.limit > 0 else 'Dynamic'}")
     print(f"  -> Level: {args.level} | Goal: {args.goal}\n")
     
-    plan = generate_workout_plan(args.days, args.location, equip_list, args.level, args.goal, muscle_list)
+    plan = generate_workout_plan(args.days, args.location, equip_list, args.level, args.goal, muscle_list, rest_list, args.limit)
     
     # Configure UTF-8 stdout encoding for printing Arabic
     import sys
@@ -267,6 +328,10 @@ def main():
     for day in plan:
         print(f"\n★ {day['day_name_ar']} ({day['day_name_en']})")
         print("-" * 65)
+        if day.get("is_rest_day"):
+            print("     يوم راحة - استرخِ واستعد للحصة القادمة (Rest Day)")
+            print()
+            continue
         for idx, ex in enumerate(day["exercises"]):
             print(f"  {idx+1}. {ex['name_ar']} ({ex['name_en']})")
             print(f"     Target: {ex['muscle_ar']} | Equipment: {ex['equipment_ar']}")

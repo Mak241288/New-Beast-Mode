@@ -263,9 +263,20 @@ def setup_database():
         category TEXT,
         rating REAL DEFAULT 0.0,
         source TEXT,
-        sanskrit_name TEXT
+        sanskrit_name TEXT,
+        image_url TEXT
     )
     """)
+    
+    # Migration: Add image_url column to existing database if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE exercises ADD COLUMN image_url TEXT")
+        conn.commit()
+        print("  [+] Database migration: Added image_url column successfully.")
+    except sqlite3.OperationalError:
+        # Column already exists, ignore
+        pass
+        
     conn.commit()
     return conn
 
@@ -352,28 +363,35 @@ def import_free_exercise_db(conn):
         
         instructions_ar = translate_text_ai(instructions_en, "instructions") if instructions_en else ""
         
+        # Resolve GitHub raw image URL if available
+        images = ex.get('images') or []
+        image_url = ""
+        if len(images) > 0 and images[0]:
+            image_url = f"https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/{images[0]}"
+        
         try:
             cursor.execute("""
             INSERT INTO exercises (
                 name_en, name_ar, instructions_en, instructions_ar,
                 muscle_en, muscle_ar, equipment_en, equipment_ar,
-                level, category, source
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                level, category, source, image_url
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 name, name_ar, instructions_en, instructions_ar,
                 primary_muscle.capitalize(), muscle_ar, equip.capitalize(), equip_ar,
-                level, category, 'FreeExerciseDB'
+                level, category, 'FreeExerciseDB', image_url
             ))
             imported_count += 1
         except sqlite3.IntegrityError:
             # Handle duplicate (exercise with name_en already exists)
-            # We can update the description/instructions if they are empty
+            # We can update the description/instructions/image if they are empty
             cursor.execute("""
             UPDATE exercises 
             SET instructions_en = COALESCE(instructions_en, ?), 
-                instructions_ar = COALESCE(instructions_ar, ?)
-            WHERE name_en = ? AND (instructions_en IS NULL OR instructions_en = '')
-            """, (instructions_en, instructions_ar, name))
+                instructions_ar = COALESCE(instructions_ar, ?),
+                image_url = COALESCE(image_url, ?)
+            WHERE name_en = ?
+            """, (instructions_en, instructions_ar, image_url, name))
             
     conn.commit()
     print(f"  [SUCCESS] Successfully imported/merged {imported_count} exercises from Free Exercise DB.")
