@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
-import { GoogleGenAI } from '@google/genai';
+import { getProfileAdviceAI } from '../services/aiService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'beastmode_super_secret_jwt_key_2026_fitness_nutrition';
 
@@ -202,38 +202,12 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     ) {
       needsPlanAdjustment = true;
 
-      // Call Gemini API to generate advice about the changes
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (apiKey && apiKey !== 'YOUR_GEMINI_API_KEY_HERE') {
-        try {
-          const ai = new GoogleGenAI({ apiKey });
-          const prompt = `
-          أنت مدرب رياضي وطبيب علاج طبيعي بخبرة 66 عاماً، وخبير تغذية رياضية وصحية بخبرة 50 عاماً.
-          المستخدم قام بتحديث ملفه الشخصي كالتالي:
-          - الوزن السابق: ${oldUser.currentWeight} كجم، الوزن الجديد: ${updatedUser.currentWeight} كجم.
-          - موقع التمرين السابق: ${oldUser.workoutLocation}، الجديد: ${updatedUser.workoutLocation}.
-          - الحالة الطبية/الإصابات السابقة: ${oldUser.medicalConditions || 'لا يوجد'}، الجديدة: ${updatedUser.medicalConditions || 'لا يوجد'}.
-          - تفضيلات الأكل السابقة: ${oldUser.foodPreferences || 'لا يوجد'}، الجديدة: ${updatedUser.foodPreferences || 'لا يوجد'}.
-          - الأطعمة المكروهة السابقة: ${oldUser.foodDislikes || 'لا يوجد'}، الجديدة: ${updatedUser.foodDislikes || 'لا يوجد'}.
-
-          بناءً على هذه التغييرات، اكتب فقرة قصيرة وجذابة باللغة العربية تشرح فيها للمستخدم:
-          1. تأثير هذه التغييرات على برنامجه الرياضي والغذائي الحالي.
-          2. ما يقترحه الخبير الرياضي والغذائي من تعديلات (مثال: إذا تغير الوزن أو مكان التمرين أو أصيب بمفصل أو غير تفضيل طعام).
-          اجعل الأسلوب محفزاً ومهنياً للغاية ولا يتجاوز 150 كلمة.
-          `;
-
-          const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: prompt,
-          });
-
-          adjustmentSuggestion = response.text || '';
-        } catch (aiErr) {
-          console.error('Error generating AI profile advice:', aiErr);
-          adjustmentSuggestion = 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح إعادة توليد جدول التمارين والتغذية ليتناسب مع موقع تمرينك وحالتك البدنية والغذائية المحدثة.';
-        }
-      } else {
-        adjustmentSuggestion = 'لقد قمنا برصد تغييرات هامة في ملفك الشخصي. نوصي بتحديث جدول التمارين ونظام التغذية ليتناسب مع البيانات الجديدة.';
+      // Call Groq API to generate advice about the changes
+      try {
+        adjustmentSuggestion = await getProfileAdviceAI(oldUser, updatedUser);
+      } catch (aiErr) {
+        console.error('Error generating AI profile advice:', aiErr);
+        adjustmentSuggestion = 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح إعادة توليد جدول التمارين والتغذية ليتناسب مع موقع تمرينك وحالتك البدنية والغذائية المحدثة.';
       }
     }
 

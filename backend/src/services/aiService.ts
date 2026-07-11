@@ -255,3 +255,80 @@ export const chatConsultationAI = async (userId: number, chatHistory: { sender: 
     throw new Error('فشل الاتصال بمستشار الذكاء الاصطناعي.');
   }
 };
+
+// 5. AI Profile Adjustment Advice
+export const getProfileAdviceAI = async (oldUser: any, updatedUser: any): Promise<string> => {
+  const prompt = `
+  أنت مدرب رياضي وطبيب علاج طبيعي بخبرة 66 عاماً، وخبير تغذية رياضية وصحية بخبرة 50 عاماً.
+  المستخدم قام بتحديث ملفه الشخصي كالتالي:
+  - الوزن السابق: ${oldUser.currentWeight || 'غير محدد'} كجم، الوزن الجديد: ${updatedUser.currentWeight || 'غير محدد'} كجم.
+  - موقع التمرين السابق: ${oldUser.workoutLocation || 'غير محدد'}، الجديد: ${updatedUser.workoutLocation || 'غير محدد'}.
+  - الحالة الطبية/الإصابات السابقة: ${oldUser.medicalConditions || 'لا يوجد'}، الجديدة: ${updatedUser.medicalConditions || 'لا يوجد'}.
+  - تفضيلات الأكل السابقة: ${oldUser.foodPreferences || 'لا يوجد'}، الجديدة: ${updatedUser.foodPreferences || 'لا يوجد'}.
+  - الأطعمة المكروهة السابقة: ${oldUser.foodDislikes || 'لا يوجد'}، الجديدة: ${updatedUser.foodDislikes || 'لا يوجد'}.
+
+  بناءً على هذه التغييرات، اكتب فقرة قصيرة وجذابة باللغة العربية تشرح فيها للمستخدم:
+  1. تأثير هذه التغييرات على برنامجه الرياضي والغذائي الحالي.
+  2. ما يقترحه الخبير الرياضي والغذائي من تعديلات (مثال: إذا تغير الوزن أو مكان التمرين أو أصيب بمفصل أو غير تفضيل طعام).
+  اجعل الأسلوب محفزاً ومهنياً للغاية ولا يتجاوز 150 كلمة.
+  `;
+
+  try {
+    return await callGroq(prompt, false);
+  } catch (error) {
+    console.error('Error generating AI profile advice via Groq:', error);
+    return 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح إعادة توليد جدول التمارين والتغذية ليتناسب مع موقع تمرينك وحالتك البدنية والغذائية المحدثة.';
+  }
+};
+
+// 6. Upgrade Workout Plan (Progressive Overload)
+export const upgradeWorkoutPlanAI = async (userId: number, activePlanTitle: string, completionRate: number) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error('المستخدم غير موجود');
+
+  const prompt = `
+  أنت مدرب رياضي وطبيب علاج طبيعي بخبرة 66 عاماً.
+  المستخدم ${user.name} أنهى بنجاح جدول التمارين السابق الذي عنوانه "${activePlanTitle}".
+  - نسبة الالتزام الإجمالية بإدخال التمارين وإكمالها: ${completionRate.toFixed(1)}%.
+  - مستوى لياقته: ${user.currentWeight ? 'الوزن الحالي: ' + user.currentWeight + ' كجم' : ''}، موقع تمرينه: ${user.workoutLocation || 'GYM'}.
+
+  بناءً على هذا الإنجاز، نريد توليد جدول تمارين جديد تماماً يمثل "المرحلة القادمة" المتطورة (Progressive Overload).
+  - إذا كانت نسبة التزامه عالية (>75%)، زد مستوى الشدة والأوزان أو التمارين تدريجياً.
+  - إذا كانت نسبة الالتزام منخفضة، ركز على بناء الأساسيات وتعديل التمارين الصعبة لجعلها أكثر إتاحة وحماساً.
+  - التزم بمسميات أيام وأسابيع جذابة ومحفزة للغاية باللغة العربية.
+
+  أعد النتيجة بصيغة JSON حصراً مطابقة تماماً للمواصفات التالية:
+  {
+    "title": "عنوان الجدول الرياضي الجديد المتطور لرفع الصعوبة تدريجياً",
+    "weeklyTips": "نصائح الأسبوع الجديد للتعامل مع الصعوبة الإضافية أو الاستمرار",
+    "days": [
+      {
+        "dayIndex": 1,
+        "title": "مسمى اليوم الجديد الجذاب والمحفز",
+        "focusArea": "العضلات المستهدفة",
+        "dayTips": "نصائح إحماء واستشفاء خاصة بهذا اليوم",
+        "isRestDay": false,
+        "exercises": [
+          {
+            "name": "اسم التمرين باللغة العربية مع الاسم الإنجليزي",
+            "targetMuscle": "العضلة المستهدفة بدقة",
+            "category": "تصنيف التمرين: IRON، YOGA، PILATES، HIIT، CARDIO، CALISTHENICS",
+            "sets": 3,
+            "reps": "تكرارات أو زمن متطور (مثال: زيادة جولة أو تقليل تكرارات مع رفع أوزان)",
+            "weight": "الوزن الجديد المقترح المتطور (مثال: زيادة 2.5 كجم عن السابق أو إبقاء وزن الجسم للمقاومة)",
+            "exerciseTips": "نصائح دقيقة للأداء الصحيح للنسخة المطورة من التمرين"
+          }
+        ]
+      }
+    ]
+  }
+  `;
+
+  try {
+    const resultText = await callGroq(prompt, true);
+    return JSON.parse(resultText);
+  } catch (error) {
+    console.error('Error upgrading workout plan via Groq:', error);
+    throw new Error('فشل ترقية الجدول الرياضي بالذكاء الاصطناعي.');
+  }
+};

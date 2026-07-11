@@ -1,8 +1,7 @@
 import { Response } from 'express';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
-import { generateWorkoutPlanAI } from '../services/aiService';
-import { GoogleGenAI } from '@google/genai';
+import { generateWorkoutPlanAI, upgradeWorkoutPlanAI } from '../services/aiService';
 
 // @desc    Generate Workout Plan using AI
 // @route   POST /api/workout/generate
@@ -347,67 +346,21 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
 
     const completionRate = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
 
-    // Call Gemini API to generate the UPGRADED plan
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-      res.status(400).json({ error: 'مفتاح Gemini API غير متاح لتوليد الترقية' });
-      return;
-    }
-
+    // Call Groq API to generate the UPGRADED plan
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       res.status(404).json({ error: 'المستخدم غير موجود' });
       return;
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    const prompt = `
-    أنت مدرب رياضي وطبيب علاج طبيعي بخبرة 66 عاماً.
-    المستخدم ${user.name} أنهى بنجاح جدول التمارين السابق الذي عنوانه "${activePlan.title}".
-    - نسبة الالتزام الإجمالية بإدخال التمارين وإكمالها: ${completionRate.toFixed(1)}%.
-    - مستوى لياقته: ${user.currentWeight ? 'الوزن الحالي: ' + user.currentWeight + ' كجم' : ''}، موقع تمرينه: ${user.workoutLocation || 'GYM'}.
-
-    بناءً على هذا الإنجاز، نريد توليد جدول تمارين جديد تماماً يمثل "المرحلة القادمة" المتطورة (Progressive Overload).
-    - إذا كانت نسبة التزامه عالية (>75%)، زد مستوى الشدة والأوزان أو التمارين تدريجياً.
-    - إذا كانت نسبة الالتزام منخفضة، ركز على بناء الأساسيات وتعديل التمارين الصعبة لجعلها أكثر إتاحة وحماساً.
-    - التزم بمسميات أيام وأسابيع جذابة ومحفزة للغاية باللغة العربية.
-
-    أعد النتيجة بصيغة JSON حصراً مطابقة تماماً للمواصفات التالية:
-    {
-      "title": "عنوان الجدول الرياضي الجديد المتطور لرفع الصعوبة تدريجياً",
-      "weeklyTips": "نصائح الأسبوع الجديد للتعامل مع الصعوبة الإضافية أو الاستمرار",
-      "days": [
-        {
-          "dayIndex": 1,
-          "title": "مسمى اليوم الجديد الجذاب والمحفز",
-          "focusArea": "العضلات المستهدفة",
-          "dayTips": "نصائح إحماء واستشفاء خاصة بهذا اليوم",
-          "isRestDay": false,
-          "exercises": [
-            {
-              "name": "اسم التمرين باللغة العربية مع الاسم الإنجليزي",
-              "targetMuscle": "العضلة المستهدفة بدقة",
-              "category": "تصنيف التمرين: IRON، YOGA، PILATES، HIIT، CARDIO، CALISTHENICS",
-              "sets": 3,
-              "reps": "تكرارات أو زمن متطور (مثال: زيادة جولة أو تقليل تكرارات مع رفع أوزان)",
-              "weight": "الوزن الجديد المقترح المتطور (مثال: زيادة 2.5 كجم عن السابق أو إبقاء وزن الجسم للمقاومة)",
-              "exerciseTips": "نصائح دقيقة للأداء الصحيح للنسخة المطورة من التمرين"
-            }
-          ]
-        }
-      ]
+    let aiPlan;
+    try {
+      aiPlan = await upgradeWorkoutPlanAI(userId, activePlan.title, completionRate);
+    } catch (aiErr) {
+      console.error('Error upgrading workout plan:', aiErr);
+      res.status(500).json({ error: 'فشل ترقية الجدول الرياضي بالذكاء الاصطناعي' });
+      return;
     }
-    `;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
-
-    const aiPlan = JSON.parse(response.text || '{}');
 
     // Deactivate previous active plans
     await prisma.workoutPlan.updateMany({
