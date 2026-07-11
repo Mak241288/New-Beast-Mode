@@ -33,3 +33,15 @@ Thumbs.db
 # Antigravity/Agentic files
 .agents/
 .gemini/
+
+# Python project local environments and raw datasets
+workout_generator_python/data/raw/*
+!workout_generator_python/data/raw/.gitkeep
+workout_generator_python/data/processed/*
+!workout_generator_python/data/processed/.gitkeep
+workout_generator_python/database/*.db
+workout_generator_python/database/*.db-journal
+__pycache__/
+*.pyc
+.venv/
+venv/
