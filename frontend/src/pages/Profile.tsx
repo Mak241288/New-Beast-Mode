@@ -36,6 +36,10 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
   const [rapidApiKey, setRapidApiKey] = useState('');
   const [syncMessage, setSyncMessage] = useState('');
 
+  // Performance test state
+  const [testingPerformance, setTestingPerformance] = useState(false);
+  const [performanceOutput, setPerformanceOutput] = useState('');
+
   const fetchProfile = async () => {
     setLoading(true);
     try {
@@ -123,6 +127,19 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
       setSyncMessage(`حدث خطأ أثناء المزامنة: ${err.message || 'فشل الاتصال'}`);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleTestPerformance = async () => {
+    setTestingPerformance(true);
+    setPerformanceOutput('');
+    try {
+      const res = await api.testPerformance();
+      setPerformanceOutput(res.output);
+    } catch (err: any) {
+      setPerformanceOutput(`فشل تشغيل الاختبار: ${err.message || 'حدث خطأ غير متوقع'}`);
+    } finally {
+      setTestingPerformance(false);
     }
   };
 
@@ -306,6 +323,48 @@ export const Profile: React.FC<ProfileProps> = ({ onNavigate, onLogout }) => {
                   <RefreshCw size={16} style={{ animation: syncing ? 'spin 1.5s linear infinite' : 'none' }} />
                   {syncing ? 'جاري سحب ومزامنة التمارين...' : 'بدء المزامنة الذكية الآن'}
                 </button>
+
+                {/* Performance Test Block */}
+                <div style={{ marginTop: '20px', borderTop: '1px dashed var(--border-color)', paddingTop: '20px' }}>
+                  <h4 style={{ fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <RefreshCw size={16} color="var(--secondary)" />
+                    اختبار سرعة وكفاءة الـ Cache والـ Resolver (للمطورين)
+                  </h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                    قم بقياس ومقارنة سرعة جلب التمارين من قاعدة البيانات المحلية مقابل الاتصال الخارجي والترجمة بالذكاء الاصطناعي لرصد توفير الوقت.
+                  </p>
+                  
+                  <button
+                    type="button"
+                    disabled={testingPerformance}
+                    onClick={handleTestPerformance}
+                    className="secondary-btn"
+                    style={{ padding: '8px 16px', gap: '8px', display: 'flex', alignItems: 'center' }}
+                  >
+                    <RefreshCw size={14} style={{ animation: testingPerformance ? 'spin 1.5s linear infinite' : 'none' }} />
+                    {testingPerformance ? 'جاري فحص سرعة الاستعلام...' : 'تشغيل اختبار الأداء والسرعة'}
+                  </button>
+                  
+                  {performanceOutput && (
+                    <pre style={{
+                      marginTop: '15px',
+                      padding: '15px',
+                      background: 'rgba(0, 0, 0, 0.5)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      color: '#4af626',
+                      fontFamily: 'monospace',
+                      fontSize: '12px',
+                      whiteSpace: 'pre-wrap',
+                      direction: 'ltr',
+                      textAlign: 'left',
+                      maxHeight: '300px',
+                      overflowY: 'auto'
+                    }}>
+                      {performanceOutput}
+                    </pre>
+                  )}
+                </div>
               </div>
             </div>
 

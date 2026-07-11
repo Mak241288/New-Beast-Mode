@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { syncService } from '../services/syncService';
+import { exec } from 'child_process';
+import path from 'path';
 
 export const syncController = {
   async syncExercises(req: AuthRequest, res: Response) {
@@ -31,4 +33,32 @@ export const syncController = {
       });
     }
   },
+
+  async testPerformance(req: AuthRequest, res: Response) {
+    try {
+      const cwd = path.join(__dirname, '../../../workout_generator_python');
+      
+      console.log('[SyncController] Launching Python cache performance benchmark test...');
+      exec('python test_performance.py', { cwd, env: process.env }, (error, stdout, stderr) => {
+        if (error) {
+          console.error('[SyncController] Performance test execution error:', error);
+          return res.status(500).json({
+            message: 'فشل تشغيل اختبار الأداء للـ Cache بسبب خطأ في الخادم أو عدم توفر بايثون.',
+            error: error.message + '\n' + stderr
+          });
+        }
+        
+        return res.status(200).json({
+          success: true,
+          output: stdout
+        });
+      });
+    } catch (err: any) {
+      console.error('[SyncController] Performance test exception:', err);
+      return res.status(500).json({
+        message: 'فشل تشغيل اختبار الأداء للـ Cache بسبب خطأ داخلي.',
+        error: err.message
+      });
+    }
+  }
 };
