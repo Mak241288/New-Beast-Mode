@@ -8,9 +8,10 @@ interface ConsultationProps {
   lang: 'ar' | 'en';
   onNavigate: (view: string) => void;
   onLogout: () => void;
+  onLanguageChange?: (lang: 'ar' | 'en') => void;
 }
 
-export const Consultation: React.FC<ConsultationProps> = ({ lang, onNavigate, onLogout }) => {
+export const Consultation: React.FC<ConsultationProps> = ({ lang, onNavigate, onLogout, onLanguageChange }) => {
   const t = translations[lang] || translations.ar;
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
@@ -79,6 +80,17 @@ export const Consultation: React.FC<ConsultationProps> = ({ lang, onNavigate, on
           <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.profile}</button>
         </nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {onLanguageChange && (
+            <select
+              value={lang}
+              onChange={(e) => onLanguageChange(e.target.value as 'ar' | 'en')}
+              className="input-field"
+              style={{ width: 'fit-content', padding: '4px 8px', fontSize: '12px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-primary)' }}
+            >
+              <option value="ar" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 ع</option>
+              <option value="en" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 EN</option>
+            </select>
+          )}
           <ThemeToggle />
           <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{t.logout}</button>
         </div>

@@ -390,16 +390,30 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.exercisesPerDay}</label>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)' }}>{exercisesPerDay} {t.exercises}</span>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)' }}>
+                  {exercisesPerDay === 0 ? (lang === 'en' ? 'Open / Dynamic (AI Recommended)' : 'مفتوح / تلقائي (موصى به 🧠)') : `${exercisesPerDay} ${t.exercises}`}
+                </span>
               </div>
-              <input
-                type="range"
-                min="3"
-                max="25"
-                value={exercisesPerDay}
-                onChange={(e) => setExercisesPerDay(parseInt(e.target.value))}
-                style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <input
+                  type="range"
+                  min="3"
+                  max="25"
+                  value={exercisesPerDay === 0 ? 5 : exercisesPerDay}
+                  disabled={exercisesPerDay === 0}
+                  onChange={(e) => setExercisesPerDay(parseInt(e.target.value))}
+                  style={{ flex: 1, accentColor: 'var(--primary)', opacity: exercisesPerDay === 0 ? 0.3 : 1 }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <input
+                    type="checkbox"
+                    checked={exercisesPerDay === 0}
+                    onChange={(e) => setExercisesPerDay(e.target.checked ? 0 : 5)}
+                    style={{ accentColor: 'var(--primary)' }}
+                  />
+                  {lang === 'en' ? 'Let AI Decide' : 'دع الذكاء الاصطناعي يقرر'}
+                </label>
+              </div>
             </div>
           </div>
         )}

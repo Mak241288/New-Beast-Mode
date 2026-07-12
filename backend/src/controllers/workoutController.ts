@@ -150,6 +150,50 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
         const fileContent = await fs.readFile(planFilePath, 'utf-8');
         const pythonPlan = JSON.parse(fileContent);
 
+        // For Arabic plans, if instructions_ar is missing, collect for batch translation
+        const exercisesToTranslate: any[] = [];
+        const isEn = lang === 'en';
+        if (!isEn) {
+          pythonPlan.forEach((day: any) => {
+            if (!day.is_rest_day && day.exercises) {
+              day.exercises.forEach((ex: any) => {
+                const hasNoAr = !ex.instructions_ar || ex.instructions_ar.trim() === '' || ex.instructions_ar === ex.instructions_en;
+                if (hasNoAr) {
+                  if (!exercisesToTranslate.find(e => e.name_en === ex.name_en)) {
+                    exercisesToTranslate.push(ex);
+                  }
+                }
+              });
+            }
+          });
+        }
+
+        // Call Gemini (Groq Llama) to translate instructions in one batch
+        let translationsMap: Record<string, string> = {};
+        if (exercisesToTranslate.length > 0) {
+          try {
+            const prompt = `
+            You are an elite sports coach and professional translator.
+            Translate the following workout exercise instructions/tips from English to clear, motivating, and correct Arabic.
+            Return a JSON object where the keys are the exercise English names, and the values are the translated Arabic instructions.
+            Keep the formatting simple as bullet points or numbered steps in Arabic. Do not add any extra text or conversational filler, just return the JSON object.
+
+            Exercises:
+            ${exercisesToTranslate.map(ex => `Name: ${ex.name_en}\nInstructions: ${ex.instructions_en || 'Perform with controlled movement and proper posture.'}`).join('\n\n')}
+
+            JSON Output Schema:
+            {
+              "Exercise Name": "شرح كيفية الأداء بالعربية..."
+            }
+            `;
+            
+            const responseText = await callGroq(prompt, true);
+            translationsMap = JSON.parse(responseText);
+          } catch (err) {
+            console.error('[Batch Translation Error]:', err);
+          }
+        }
+
         // Deactivate previous plans
         await prisma.workoutPlan.updateMany({
           where: { userId, active: true },
@@ -159,7 +203,6 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
         // Save generated plan to PostgreSQL/Prisma
         const startDateTime = startDate ? new Date(startDate) : new Date();
 
-        const isEn = lang === 'en';
         const createdPlan = await prisma.workoutPlan.create({
           data: {
             userId,
@@ -171,7 +214,7 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
             isManual: false,
             dayWorkouts: {
               create: pythonPlan.map((day: any, dIdx: number) => ({
-                dayIndex: dIdx,
+                dayIndex: dIdx + 1,
                 title: isEn ? day.day_name_en : (day.day_name_ar || day.day_name_en),
                 focusArea: day.day_name_en,
                 dayTips: day.is_rest_day ? (isEn ? 'Recovery and rest day.' : 'يوم راحة مخصص للاستشفاء العضلي.') : (isEn ? 'Warm up for 5 minutes before training.' : 'ابدأ بالإحماء لمدة 5 دقائق قبل بدء جولتك.'),
@@ -180,15 +223,21 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
                   create: day.is_rest_day ? [] : day.exercises.map((ex: any, idx: number) => {
                     const suggestedWeight = getSuggestedWeight(ex.name_en, ex.equipment_en, gender, level || 'intermediate', userWeight);
                     const imageUrl = ex.image_url || getMuscleImage(ex.muscle_en);
+                    
+                    // Retrieve translation or fallbacks
+                    const translatedTips = translationsMap[ex.name_en] || ex.instructions_ar || ex.instructions_en || 'أداء هادئ وتركيز كامل في الحركة.';
+                    const displayName = isEn 
+                      ? (ex.name_en || ex.name_ar) 
+                      : (ex.name_ar ? `${ex.name_ar} (${ex.name_en})` : ex.name_en);
 
                     return {
-                      name: isEn ? (ex.name_en || ex.name_ar) : (ex.name_ar || ex.name_en),
+                      name: displayName,
                       targetMuscle: isEn ? (ex.muscle_en || ex.muscle_ar) : (ex.muscle_ar || ex.muscle_en),
                       category: ex.category || 'IRON',
                       sets: ex.sets || 3,
                       reps: isEn ? (ex.reps_en || ex.reps_ar || '8-12') : (ex.reps_ar || ex.reps_en || '8-12'),
                       weight: suggestedWeight,
-                      exerciseTips: isEn ? (ex.instructions_en || 'Controlled performance and focus.') : (ex.instructions_ar || ex.description_ar || ex.instructions_en || 'أداء هادئ وتركيز كامل في الحركة.'),
+                      exerciseTips: translatedTips,
                       order: idx,
                       imageUrl: imageUrl,
                       videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent((ex.name_en || '') + ' exercise tutorial shorts')}`,
@@ -226,27 +275,27 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
 const getAnatomyImage = (muscle: string): string => {
   const m = (muscle || '').toLowerCase();
   if (m.includes('chest') || m.includes('صدر')) {
-    return 'https://www.fitliferegimen.com/wp-content/uploads/2021/04/Pectoralis-Major-Muscle.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Pectoralis_major.png/320px-Pectoralis_major.png';
   }
   if (m.includes('back') || m.includes('lats') || m.includes('ظهر')) {
-    return 'https://www.fitliferegimen.com/wp-content/uploads/2021/05/Latissimus-Dorsi-Muscle.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Latissimus_dorsi.png/320px-Latissimus_dorsi.png';
   }
   if (m.includes('shoulder') || m.includes('deltoid') || m.includes('كتف')) {
-    return 'https://www.fitliferegimen.com/wp-content/uploads/2021/04/Deltoid-Muscle.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Deltoideus.png/320px-Deltoideus.png';
   }
   if (m.includes('bicep') || m.includes('باي')) {
-    return 'https://www.fitliferegimen.com/wp-content/uploads/2021/04/Biceps-Brachii-Muscle.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Biceps_brachii.png/320px-Biceps_brachii.png';
   }
   if (m.includes('tricep') || m.includes('تراي')) {
-    return 'https://www.fitliferegimen.com/wp-content/uploads/2021/04/Triceps-Brachii-Muscle.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Triceps_brachii.png/320px-Triceps_brachii.png';
   }
   if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('glute') || m.includes('رجل') || m.includes('فخذ')) {
-    return 'https://www.fitliferegimen.com/wp-content/uploads/2021/05/Quadriceps-Femoris-Muscle.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Quadriceps_femoris.png/320px-Quadriceps_femoris.png';
   }
   if (m.includes('ab') || m.includes('core') || m.includes('بطن')) {
-    return 'https://www.fitliferegimen.com/wp-content/uploads/2021/05/Rectus-Abdominis-Muscle.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Rectus_abdominis.png/320px-Rectus_abdominis.png';
   }
-  return 'https://www.fitliferegimen.com/wp-content/uploads/2021/05/Rectus-Abdominis-Muscle.png';
+  return 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Rectus_abdominis.png/320px-Rectus_abdominis.png';
 };
 
 // @route   GET /api/workout/active
@@ -300,7 +349,7 @@ export const getActivePlan = async (req: AuthRequest, res: Response): Promise<vo
 // @route   PUT /api/workout/exercise/:id
 export const updateExercise = async (req: AuthRequest, res: Response): Promise<void> => {
   const exerciseId = parseInt(req.params.id);
-  const { sets, reps, weight, name, targetMuscle, exerciseTips } = req.body;
+  const { sets, reps, weight, name, targetMuscle, exerciseTips, imageUrl, videoUrl } = req.body;
 
   try {
     const updated = await prisma.exercise.update({
@@ -312,6 +361,8 @@ export const updateExercise = async (req: AuthRequest, res: Response): Promise<v
         name,
         targetMuscle,
         exerciseTips,
+        imageUrl,
+        videoUrl,
       },
     });
 
@@ -959,3 +1010,71 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
     res.status(200).json(treeData);
   });
 };
+
+// @desc    Get Alternatives for a specific exercise target muscle from SQLite
+// @route   GET /api/workout/exercise/:id/alternatives
+export const getAlternatives = async (req: AuthRequest, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const exerciseId = parseInt(id);
+
+  try {
+    const targetExercise = await prisma.exercise.findUnique({
+      where: { id: exerciseId }
+    });
+
+    if (!targetExercise) {
+      res.status(404).json({ error: 'التمرين غير موجود' });
+      return;
+    }
+
+    const muscle = targetExercise.targetMuscle || 'Chest';
+
+    const sqlite3 = require('sqlite3').verbose();
+    const path = require('path');
+    const dbPath = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
+
+    const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err: any) => {
+      if (err) {
+        console.error('[Alternatives] Database connection error:', err);
+        res.status(500).json({ error: 'فشل الاتصال بقاعدة بيانات البدائل.' });
+        return;
+      }
+    });
+
+    // Query for alternative exercises targeting the same muscle
+    const query = `
+      SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, category, image_url, instructions_ar, instructions_en
+      FROM exercises
+      WHERE LOWER(muscle_en) = LOWER(?) OR LOWER(muscle_ar) = LOWER(?)
+      ORDER BY rating DESC
+      LIMIT 15
+    `;
+
+    db.all(query, [muscle, muscle], (err: any, rows: any[]) => {
+      db.close();
+      if (err) {
+        console.error('[Alternatives] Query error:', err);
+        res.status(500).json({ error: 'فشل استعلام التمارين البديلة.' });
+        return;
+      }
+
+      const alternatives = rows.map((row) => ({
+        id: row.id,
+        name_en: row.name_en,
+        name_ar: row.name_ar || row.name_en,
+        equipment_en: row.equipment_en || 'None',
+        equipment_ar: row.equipment_ar || 'بدون أدوات',
+        category: row.category || 'IRON',
+        image_url: row.image_url || getMuscleImage(muscle),
+        instructions_en: row.instructions_en || '',
+        instructions_ar: row.instructions_ar || '',
+        video_url: `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' exercise tutorial shorts')}`
+      }));
+
+      res.status(200).json(alternatives);
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'حدث خطأ غير متوقع أثناء البحث عن بدائل.' });
+  }
+};
+

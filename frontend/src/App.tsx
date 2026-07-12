@@ -22,6 +22,27 @@ function App() {
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
+  const navigateTo = (view: string) => {
+    setCurrentView(view);
+    window.history.pushState({ view }, '', `#${view}`);
+  };
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.view) {
+        setCurrentView(event.state.view);
+      } else {
+        setCurrentView('dashboard');
+      }
+    };
+
+    // Set initial state
+    window.history.replaceState({ view: currentView }, '', `#${currentView}`);
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
@@ -95,31 +116,35 @@ function App() {
         <Dashboard
           lang={lang}
           onLogout={handleLogout}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={navigateTo}
+          onLanguageChange={handleLanguageChange}
         />
       )}
 
       {currentView === 'nutrition' && (
         <Nutrition
           lang={lang}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={navigateTo}
           onLogout={handleLogout}
+          onLanguageChange={handleLanguageChange}
         />
       )}
 
       {currentView === 'chat' && (
         <Consultation
           lang={lang}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={navigateTo}
           onLogout={handleLogout}
+          onLanguageChange={handleLanguageChange}
         />
       )}
 
       {currentView === 'stats' && (
         <Stats
           lang={lang}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={navigateTo}
           onLogout={handleLogout}
+          onLanguageChange={handleLanguageChange}
         />
       )}
 
@@ -127,7 +152,7 @@ function App() {
         <Profile
           lang={lang}
           onLanguageChange={handleLanguageChange}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={navigateTo}
           onLogout={handleLogout}
         />
       )}

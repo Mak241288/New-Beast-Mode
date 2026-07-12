@@ -89,6 +89,17 @@ def fetch_exercises_for_muscle(muscle, location, equipment_list, level):
     
     exercises = []
     for r in rows:
+        name_en_lower = (r[1] or "").lower()
+        equip_en_lower = (r[9] or "").lower()
+        
+        # Strict HOME filter: Exclude heavy gym equipment dependent exercises
+        if location.upper() == "HOME":
+            gym_terms = ["bench press", "leg press", "lat pulldown", "smith machine", "rack", "cable", "machine", "hack squat"]
+            if any(term in name_en_lower for term in gym_terms):
+                continue
+            if any(term in equip_en_lower for term in ["machine", "cable", "lat pull", "bench press"]):
+                continue
+
         exercises.append({
             "id": r[0],
             "name_en": r[1],

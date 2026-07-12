@@ -8,9 +8,10 @@ interface StatsProps {
   lang: 'ar' | 'en';
   onNavigate: (view: string) => void;
   onLogout: () => void;
+  onLanguageChange?: (lang: 'ar' | 'en') => void;
 }
 
-export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout }) => {
+export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLanguageChange }) => {
   const t = translations[lang] || translations.ar;
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -49,14 +50,14 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout }) => {
       content += `لا توجد أوزان مسجلة بعد.\n`;
     } else {
       stats.weightHistory.forEach((log: any) => {
-        content += `- تاريخ: ${new Date(log.date).toLocaleDateString('ar-EG')} | الوزن: ${log.weight} كجم | الملاحظة: ${log.notes || 'بدون ملاحظات'}\n`;
+        content += `- تاريخ: ${new Date(log.date).toLocaleDateString('ar-EG')} | الوزن: ${log.weight} كجم | ملاحظات: ${log.notes || 'لا يوجد'}\n`;
       });
     }
     content += `\n`;
 
-    content += `## 3. سجل السعرات الحرارية والتغذية (آخر 7 أيام):\n`;
+    content += `## 3. سجل الالتزام بالتغذية اليومية:\n`;
     if (stats.nutritionStats.length === 0) {
-      content += `لا يوجد سجل تغذية بعد.\n`;
+      content += `لا توجد بيانات تغذية مسجلة.\n`;
     } else {
       stats.nutritionStats.forEach((n: any) => {
         content += `- تاريخ: ${new Date(n.date).toLocaleDateString('ar-EG')} | السعرات المستهلكة: ${n.caloriesLogged} / ${n.caloriesGoal} سعرة | المياه: ${n.waterLoggedMl} مل\n`;
@@ -146,6 +147,17 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout }) => {
           <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.profile}</button>
         </nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {onLanguageChange && (
+            <select
+              value={lang}
+              onChange={(e) => onLanguageChange(e.target.value as 'ar' | 'en')}
+              className="input-field"
+              style={{ width: 'fit-content', padding: '4px 8px', fontSize: '12px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-primary)' }}
+            >
+              <option value="ar" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 ع</option>
+              <option value="en" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 EN</option>
+            </select>
+          )}
           <ThemeToggle />
           <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{t.logout}</button>
         </div>

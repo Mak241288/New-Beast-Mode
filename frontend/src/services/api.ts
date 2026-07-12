@@ -39,6 +39,7 @@ export const api = {
   getActivePlan: () => request('/workout/active'),
   updateExercise: (id: number, data: any) => request(`/workout/exercise/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteExercise: (id: number) => request(`/workout/exercise/${id}`, { method: 'DELETE' }),
+  getAlternatives: (id: number) => request(`/workout/exercise/${id}/alternatives`),
   addCustomExercise: (dayId: number, data: any) => request(`/workout/day/${dayId}/exercise`, { method: 'POST', body: JSON.stringify(data) }),
   logProgress: (exerciseId: number, logData: any) => request(`/workout/exercise/${exerciseId}/log`, { method: 'POST', body: JSON.stringify(logData) }),
   updateDayWorkout: (dayId: number, data: any) => request(`/workout/day/${dayId}`, { method: 'PUT', body: JSON.stringify(data) }),

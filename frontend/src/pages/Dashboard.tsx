@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Play, Plus, Edit, Trash2, RefreshCw, Timer } from 'lucide-react';
+import { RefreshCw, Timer } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { translations } from '../utils/translations';
 
@@ -8,9 +8,10 @@ interface DashboardProps {
   lang: 'ar' | 'en';
   onLogout: () => void;
   onNavigate: (view: string) => void;
+  onLanguageChange?: (lang: 'ar' | 'en') => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate, onLanguageChange }) => {
   const t = translations[lang] || translations.ar;
   const [activePlan, setActivePlan] = useState<any>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
@@ -30,6 +31,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
   // Manual Edit State
   const [editingExercise, setEditingExercise] = useState<any>(null);
   const [addingCustom, setAddingCustom] = useState(false);
+  const [manualCustomInput, setManualCustomInput] = useState(false);
+  const [customSearchQuery, setCustomSearchQuery] = useState('');
   const [customExForm, setCustomExForm] = useState({
     name: '',
     targetMuscle: '',
@@ -58,6 +61,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
   const [expandedDivisions, setExpandedDivisions] = useState<string[]>([]);
   const [expandedMuscles, setExpandedMuscles] = useState<string[]>([]);
 
+  // Redesign premium states
+  const [activeExerciseDetail, setActiveExerciseDetail] = useState<any | null>(null);
+  const [swapExerciseId, setSwapExerciseId] = useState<number | null>(null);
+  const [alternativesList, setAlternativesList] = useState<any[]>([]);
+  const [alternativesLoading, setAlternativesLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'schedule' | 'progression'>('schedule');
+
   const fetchActivePlan = async () => {
     setLoading(true);
     setError('');
@@ -80,6 +90,73 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
       setError(err.message || 'لم نتمكن من تحميل جدول التمارين النشط.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getStreakCount = () => {
+    if (!activePlan || !activePlan.dayWorkouts) return 1;
+    let loggedDates = new Set<string>();
+    activePlan.dayWorkouts.forEach((day: any) => {
+      day.exercises.forEach((ex: any) => {
+        if (ex.progressLogs) {
+          ex.progressLogs.forEach((log: any) => {
+            const dateStr = new Date(log.date).toDateString();
+            loggedDates.add(dateStr);
+          });
+        }
+      });
+    });
+    return loggedDates.size > 0 ? loggedDates.size : 1;
+  };
+
+  const getXPLevel = () => {
+    if (!activePlan || !activePlan.dayWorkouts) return { level: lang === 'en' ? 'Newbie' : 'مبتدئ', xp: 0 };
+    let totalLogs = 0;
+    activePlan.dayWorkouts.forEach((day: any) => {
+      day.exercises.forEach((ex: any) => {
+        if (ex.progressLogs) {
+          totalLogs += ex.progressLogs.length;
+        }
+      });
+    });
+    const xp = totalLogs * 10;
+    let levelName = lang === 'en' ? 'Newbie' : 'مبتدئ';
+    if (xp >= 100 && xp < 500) levelName = lang === 'en' ? 'Challenger' : 'متحدي';
+    else if (xp >= 500) levelName = lang === 'en' ? 'Beast Mode' : 'الوحش ⚡';
+    return { level: levelName, xp };
+  };
+
+  const handleFetchAlternatives = async (exerciseId: number) => {
+    setSwapExerciseId(exerciseId);
+    setAlternativesLoading(true);
+    try {
+      const list = await api.getAlternatives(exerciseId);
+      setAlternativesList(list || []);
+    } catch (err) {
+      alert(lang === 'en' ? 'Failed to fetch alternative exercises.' : 'فشل جلب التمارين البديلة.');
+    } finally {
+      setAlternativesLoading(false);
+    }
+  };
+
+  const handleSwapExercise = async (newEx: any) => {
+    if (!swapExerciseId) return;
+    try {
+      await api.updateExercise(swapExerciseId, {
+        name: newEx.name_ar || newEx.name_en,
+        targetMuscle: newEx.muscle_ar || newEx.muscle_en,
+        category: newEx.category || 'IRON',
+        sets: 3,
+        reps: '8-12',
+        weight: 'Bodyweight',
+        exerciseTips: newEx.instructions_ar || newEx.instructions_en || '',
+        imageUrl: newEx.image_url || null,
+        videoUrl: newEx.video_url || null
+      });
+      setSwapExerciseId(null);
+      fetchActivePlan();
+    } catch (err) {
+      alert(lang === 'en' ? 'Failed to swap exercise.' : 'فشل استبدال التمرين.');
     }
   };
 
@@ -239,6 +316,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
     return () => clearInterval(interval);
   }, [isExerciseTimerActive, exerciseSeconds]);
 
+  useEffect(() => {
+    if (addingCustom && libraryTree.length === 0) {
+      fetchLibraryTree();
+    }
+  }, [addingCustom]);
+
   const handleStartWorkout = () => {
     const exercises = getSelectedDay()?.exercises || [];
     if (exercises.length === 0) return;
@@ -333,14 +416,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
     return activePlan.dayWorkouts.find((dw: any) => dw.dayIndex === selectedDayIndex);
   };
 
-  // Helper to format date in Arabic
-  const getArabicDateForDay = (dayIdx: number) => {
-    if (!activePlan) return '';
-    const start = new Date(activePlan.startDate);
-    const dateForDay = new Date(start);
-    dateForDay.setDate(start.getDate() + (dayIdx - 1));
-    return dateForDay.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
-  };
+
 
   // Manual Edit Submits
   const handleEditExerciseSubmit = async (e: React.FormEvent) => {
@@ -410,7 +486,73 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
     }
   };
 
-  const selectedDay = getSelectedDay();
+  const renderTimelineExerciseRow = (ex: any, idx: number) => {
+    const isEn = lang === 'en';
+    const animationDelay = `${(idx % 10) * 0.05}s`;
+
+    return (
+      <div 
+        key={ex.id} 
+        className="routine-exercise-card"
+        style={{ animationDelay }}
+        onClick={() => setActiveExerciseDetail(ex)}
+      >
+        {/* Thumbnail animation */}
+        <div style={{ width: '50px', height: '50px', borderRadius: '10px', overflow: 'hidden', background: '#090a0f', flexShrink: 0, position: 'relative' }}>
+          {ex.imageUrl ? (
+            <img src={ex.imageUrl} alt={ex.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <div style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>🏋️‍♂️</div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: '800' }}>{ex.name}</h4>
+            <span className="badge badge-primary" style={{ padding: '2px 6px', fontSize: '10px' }}>{ex.targetMuscle}</span>
+          </div>
+          <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+            {isEn ? `${ex.sets} sets` : `${ex.sets} جولات`} | {ex.reps} | {ex.weight}
+          </p>
+        </div>
+
+        {/* Replace & Edit Actions */}
+        <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => handleFetchAlternatives(ex.id)}
+            className="secondary-btn"
+            style={{ padding: '6px 10px', fontSize: '11px', borderRadius: '8px', border: '1px solid rgba(249, 115, 22, 0.2)', color: 'var(--secondary)' }}
+            title={isEn ? 'Replace' : 'استبدال'}
+          >
+            🔄 {isEn ? 'Replace' : 'استبدال'}
+          </button>
+          
+          <button
+            onClick={() => setEditingExercise(ex)}
+            className="secondary-btn"
+            style={{ padding: '6px 8px', borderRadius: '8px' }}
+            title="تعديل"
+          >
+            ✏️
+          </button>
+          <button
+            onClick={() => handleDeleteExercise(ex.id)}
+            className="secondary-btn"
+            style={{ padding: '6px 8px', borderRadius: '8px', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
+            title="حذف"
+          >
+            🗑️
+          </button>
+        </div>
+
+        {/* Right Arrow chevron */}
+        <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+          ▶
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '80px' }}>
@@ -429,6 +571,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
           <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.profile}</button>
         </nav>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {onLanguageChange && (
+            <select
+              value={lang}
+              onChange={(e) => onLanguageChange(e.target.value as 'ar' | 'en')}
+              className="input-field"
+              style={{ width: 'fit-content', padding: '4px 8px', fontSize: '12px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-primary)' }}
+            >
+              <option value="ar" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 ع</option>
+              <option value="en" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 EN</option>
+            </select>
+          )}
           <ThemeToggle />
           <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{t.logout}</button>
         </div>
@@ -446,187 +599,376 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
 
         {!loading && activePlan && (
           <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-            {/* Header info */}
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-              <div>
-                <span className="badge badge-primary" style={{ marginBottom: '8px' }}>خطة تمارين نشطة</span>
-                <h1 style={{ fontSize: '26px', fontWeight: '800' }}>{activePlan.title}</h1>
-                <p style={{ fontSize: '14px', marginTop: '6px' }}>
-                  تاريخ البداية: {new Date(activePlan.startDate).toLocaleDateString('ar-EG')} | المدة: {activePlan.durationWeeks} أسابيع
+            {/* Curved Header Section */}
+            <div className="curved-header">
+              {/* Inline SVG Athlete Overlay to look incredibly premium and works offline */}
+              <svg className="curved-header-athlete" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ right: lang === 'en' ? 'auto' : '15px', left: lang === 'en' ? '15px' : 'auto' }}>
+                <path d="M50 15C53.866 15 57 11.866 57 8C57 4.13401 53.866 1 50 1C46.134 1 43 4.13401 43 8C43 11.866 46.134 15 50 15Z" fill="var(--primary)" opacity="0.6"/>
+                <path d="M50 18C44.4772 18 40 22.4772 40 28V45C40 46.1046 40.8954 47 42 47H44V70C44 72.7614 46.2386 75 49 75H51C53.7614 75 56 72.7614 56 70V47H58C59.1046 47 60 46.1046 60 45V28C60 22.4772 55.5228 18 50 18Z" fill="var(--primary)" opacity="0.4"/>
+                <path d="M35 25C33 28 28 32 24 32C20 32 18 28 22 25C26 22 30 22 35 25Z" fill="var(--secondary)" opacity="0.8"/>
+                <path d="M65 25C67 28 72 32 76 32C80 32 82 28 78 25C74 22 70 22 65 25Z" fill="var(--secondary)" opacity="0.8"/>
+              </svg>
+              
+              <div style={{ position: 'relative', zIndex: 3 }}>
+                <span className="badge badge-primary" style={{ marginBottom: '8px' }}>
+                  {lang === 'en' ? 'Active Plan' : 'الخطة التدريبية النشطة'}
+                </span>
+                <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                  {activePlan.title}
+                </h1>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '6px' }}>
+                  {lang === 'en' ? 'Start Date: ' : 'تاريخ البدء: '} 
+                  {new Date(activePlan.startDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG')} 
+                  {' | '} 
+                  {lang === 'en' ? `Duration: ${activePlan.durationWeeks} Weeks` : `المدة: ${activePlan.durationWeeks} أسابيع`}
                 </p>
+
+                {/* Stats row */}
+                <div className="stats-row" style={{ flexDirection: lang === 'en' ? 'row' : 'row' }}>
+                  <div className="stat-badge-glass">
+                    <span>🔥</span>
+                    <span>
+                      {lang === 'en' ? `Streak: ${getStreakCount()} Days` : `الالتزام: ${getStreakCount()} أيام متتالية`}
+                    </span>
+                  </div>
+                  <div className="stat-badge-glass">
+                    <span>🛡️</span>
+                    <span>
+                      {lang === 'en' ? `Level: ${getXPLevel().level}` : `المستوى: ${getXPLevel().level}`}
+                    </span>
+                  </div>
+                  <div className="stat-badge-glass" style={{ color: 'var(--primary)' }}>
+                    <span>⚡</span>
+                    <span>
+                      {getXPLevel().xp} XP
+                    </span>
+                  </div>
+                </div>
+
                 {activePlan.weeklyTips && (
-                  <p style={{ fontSize: '13px', color: 'var(--primary)', marginTop: '8px', fontWeight: '600' }}>
-                    💡 نصيحة الأسبوع: {activePlan.weeklyTips}
+                  <p style={{ fontSize: '13px', color: '#60a5fa', marginTop: '16px', background: 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    💡 <strong>{lang === 'en' ? 'Coach Tip: ' : 'نصيحة الكوتش: '}</strong> {activePlan.weeklyTips}
                   </p>
                 )}
               </div>
+            </div>
+
+            {/* Actions panel */}
+            <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+              <div style={{ fontSize: '15px', fontWeight: '800' }}>
+                ⚙️ {lang === 'en' ? 'Plan Controls' : 'لوحة التحكم بالبرنامج'}
+              </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button onClick={handleUpgradePlan} className="secondary-btn" style={{ border: '1px solid var(--secondary)', color: 'var(--secondary)' }}>
-                  <RefreshCw size={16} />
-                  ترقية الجدول
+                <button onClick={handleUpgradePlan} className="secondary-btn" style={{ border: '1px solid var(--secondary)', color: 'var(--secondary)', padding: '8px 16px', fontSize: '13px' }}>
+                  <RefreshCw size={14} />
+                  {lang === 'en' ? 'Upgrade Plan' : 'ترقية الجدول'}
                 </button>
-                <button onClick={() => { fetchHistory(); setShowHistory(true); }} className="secondary-btn">
-                  سجل البرامج السابقة
+                <button onClick={() => { fetchHistory(); setShowHistory(true); }} className="secondary-btn" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                  {lang === 'en' ? 'History' : 'سجل الخطط'}
                 </button>
-                <button onClick={() => setShowImport(true)} className="secondary-btn">
-                  استيراد جدول مجمع
+                <button onClick={() => setShowImport(true)} className="secondary-btn" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                  {lang === 'en' ? 'Import Bulk' : 'استيراد جدول'}
                 </button>
-                <button onClick={() => { fetchLibraryTree(); setShowLibrary(true); }} className="secondary-btn">
-                  مكتبة التمارين الشجرية
+                <button onClick={() => { fetchLibraryTree(); setShowLibrary(true); }} className="secondary-btn" style={{ padding: '8px 16px', fontSize: '13px' }}>
+                  {lang === 'en' ? 'Exercise Library' : 'مكتبة التمارين'}
                 </button>
               </div>
             </div>
 
-            {/* Days Calendar Bar */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px' }}>
+            {/* Tab Switcher */}
+            <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.02)', padding: '6px', borderRadius: '14px', border: '1px solid var(--border-color)', width: 'fit-content', margin: '0 auto', gap: '8px' }}>
+              <button
+                onClick={() => setActiveTab('schedule')}
+                className={activeTab === 'schedule' ? 'glow-btn' : 'secondary-btn'}
+                style={{ padding: '8px 20px', borderRadius: '10px', fontSize: '13px' }}
+              >
+                📅 {lang === 'en' ? 'Daily Schedule' : 'الجدول اليومي'}
+              </button>
+              <button
+                onClick={() => setActiveTab('progression')}
+                className={activeTab === 'progression' ? 'glow-btn' : 'secondary-btn'}
+                style={{ padding: '8px 20px', borderRadius: '10px', fontSize: '13px' }}
+              >
+                📈 {lang === 'en' ? 'Weekly Progression' : 'خطة التقدم الأسبوعي'}
+              </button>
+              <button
+                onClick={() => onNavigate('onboarding')}
+                className="secondary-btn"
+                style={{ 
+                  padding: '8px 16px', 
+                  borderRadius: '10px', 
+                  fontSize: '13px', 
+                  borderColor: 'var(--primary)', 
+                  color: 'var(--primary)',
+                  marginLeft: lang === 'en' ? 'auto' : '0',
+                  marginRight: lang === 'ar' ? 'auto' : '0'
+                }}
+              >
+                🔄 {lang === 'en' ? 'New Routine (AI)' : 'توليد جدول جديد بالذكاء الاصطناعي 🚀'}
+              </button>
+            </div>
+
+            {activeTab === 'schedule' && (
+              <div className="timeline-container">
+                <div className="timeline-line"></div>
               {activePlan.dayWorkouts.map((day: any) => {
                 const isSelected = day.dayIndex === selectedDayIndex;
+                const isRest = day.isRestDay;
+                
+                // Determine circle timeline status
+                const isCompleted = day.exercises.length > 0 && day.exercises.every((ex: any) => ex.progressLogs && ex.progressLogs.length > 0);
+                const circleClass = isCompleted 
+                  ? 'timeline-circle-completed' 
+                  : isSelected 
+                    ? 'timeline-circle-active' 
+                    : '';
+
+                // Calculate estimated time and calories
+                const totalExercises = day.exercises.length;
+                const estimatedMins = isRest ? 0 : totalExercises * 2 + 10;
+                const estimatedKcal = isRest ? 0 : totalExercises * 15 + 40;
+
+                // Group exercises into Warm up, Main, Cool down
+                const warmUpEx = day.exercises.filter((ex: any) => 
+                  ['YOGA', 'PILATES', 'HIIT', 'CARDIO'].includes(ex.category) || ex.order < 1
+                );
+                const mainEx = day.exercises.filter((ex: any) => 
+                  !warmUpEx.includes(ex) && ex.order < totalExercises - 1
+                );
+                const coolDownEx = day.exercises.filter((ex: any) => 
+                  !warmUpEx.includes(ex) && !mainEx.includes(ex)
+                );
+
                 return (
-                  <button
-                    key={day.id}
-                    onClick={() => setSelectedDayIndex(day.dayIndex)}
-                    className="glass-panel"
-                    style={{
-                      padding: '16px 10px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '8px',
-                      border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                      boxShadow: isSelected ? '0 0 15px var(--primary-glow)' : 'none',
-                      background: isSelected ? 'var(--bg-card-hover)' : 'var(--bg-card)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <span style={{ fontSize: '12px', color: isSelected ? 'var(--primary)' : 'var(--text-muted)', fontWeight: '800' }}>
-                      اليوم {day.dayIndex}
-                    </span>
-                    <span style={{ fontSize: '11px', fontWeight: '600', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
-                      {day.isRestDay ? 'استراحة' : day.focusArea}
-                    </span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                      {getArabicDateForDay(day.dayIndex).split('،')[0]} {/* Day Name only */}
-                    </span>
-                  </button>
+                  <div key={day.id} className="timeline-item">
+                    {/* The circle on the timeline */}
+                    <div className={`timeline-circle ${circleClass}`}></div>
+
+                    {/* The day card itself */}
+                    <div 
+                      className={`day-timeline-card ${isSelected ? 'active' : ''}`}
+                      onClick={() => setSelectedDayIndex(day.dayIndex)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                          {/* Left Avatar / preview */}
+                          <div style={{ width: '60px', height: '60px', borderRadius: '14px', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                            {isRest ? (
+                              <span style={{ fontSize: '24px' }}>🧘‍♂️</span>
+                            ) : day.exercises[0]?.imageUrl ? (
+                              <img src={day.exercises[0].imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <span style={{ fontSize: '24px' }}>🏋️‍♂️</span>
+                            )}
+                          </div>
+                          <div>
+                            <h3 style={{ fontSize: '18px', fontWeight: '800' }}>
+                              {lang === 'en' ? `Day ${day.dayIndex}: ${day.focusArea}` : `اليوم ${day.dayIndex}: ${day.title}`}
+                            </h3>
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                              ⏱️ {estimatedMins} {lang === 'en' ? 'mins' : 'دقيقة'} | 🔥 {estimatedKcal} {lang === 'en' ? 'kcal' : 'سعرة'}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {isCompleted && (
+                            <span className="badge badge-primary" style={{ fontSize: '10px' }}>
+                              ✅ {lang === 'en' ? 'Completed' : 'مكتمل'}
+                            </span>
+                          )}
+                          <span style={{ color: 'var(--text-muted)', transform: isSelected ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>
+                            ▶
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Expanded Day Details */}
+                      {isSelected && (
+                        <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }} onClick={(e) => e.stopPropagation()}>
+                          
+                          {/* Start Workout Button */}
+                          {!isRest && (
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                              <button 
+                                onClick={handleStartWorkout}
+                                className="glow-btn"
+                                style={{
+                                  width: '100%',
+                                  maxWidth: '350px',
+                                  padding: '16px 24px',
+                                  borderRadius: '30px',
+                                  fontSize: '16px',
+                                  background: 'linear-gradient(135deg, #10b981, #3b82f6)',
+                                  boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                🚀 {lang === 'en' ? 'Start Workout' : 'ابدأ الحصة الرياضية'}
+                              </button>
+                            </div>
+                          )}
+
+                          {isRest ? (
+                            <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(255,255,255,0.01)', borderRadius: '16px' }}>
+                              <div style={{ fontSize: '40px' }}>🧘‍♂️</div>
+                              <h4 style={{ fontSize: '16px', marginTop: '12px' }}>
+                                {lang === 'en' ? 'Rest & Muscle Recovery Day' : 'يوم راحة مخصص للاستشفاء العضلي'}
+                              </h4>
+                              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px', maxWidth: '400px', margin: '6px auto 0' }}>
+                                {lang === 'en' 
+                                  ? 'Active recovery day. Focus on light walking, stretching, drinking water, and nourishing your body for the next challenges.'
+                                  : 'الاستشفاء جزء لا يتجزأ من التطور الرياضي. ركز على التمدد الخفيف، شرب الماء، والتغذية السليمة استعداداً للحصة القادمة.'}
+                              </p>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                              
+                              {/* 1. Warm Up Segment */}
+                              {warmUpEx.length > 0 && (
+                                <div>
+                                  <div className="routine-phase-header">
+                                    <span>🔥 {lang === 'en' ? 'Warm Up' : 'محطة الإحماء والتسخين'}</span>
+                                    <span>{warmUpEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {warmUpEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 2. Main Routine Segment */}
+                              {mainEx.length > 0 && (
+                                <div>
+                                  <div className="routine-phase-header">
+                                    <span>🏋️‍♂️ {lang === 'en' ? 'Main Routine' : 'الجدول التدريبي الأساسي'}</span>
+                                    <span>{mainEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {mainEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx + 10))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 3. Cool Down Segment */}
+                              {coolDownEx.length > 0 && (
+                                <div>
+                                  <div className="routine-phase-header">
+                                    <span>🧘‍♂️ {lang === 'en' ? 'Cool Down' : 'محطة التهدئة والاطالات'}</span>
+                                    <span>{coolDownEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
+                                  </div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {coolDownEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx + 20))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Add custom manually */}
+                              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
+                                <button 
+                                  onClick={() => setAddingCustom(true)} 
+                                  className="secondary-btn" 
+                                  style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '12px' }}
+                                >
+                                  ➕ {lang === 'en' ? 'Add Custom Exercise' : 'إضافة تمرين يدوي مخصص'}
+                                </button>
+                              </div>
+
+                            </div>
+                          )}
+
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
             </div>
+            )}
 
-            {/* Selected Day Content */}
-            {selectedDay && (
-              <div className="glass-panel" style={{ padding: '30px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px', marginBottom: '24px', flexWrap: 'wrap', gap: '15px' }}>
-                  <div>
-                    <h2 style={{ fontSize: '22px' }}>{selectedDay.title}</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-                      📅 التاريخ: {getArabicDateForDay(selectedDay.dayIndex)}
-                    </p>
-                    {selectedDay.dayTips && (
-                      <p style={{ fontSize: '13px', color: 'var(--secondary)', marginTop: '8px', fontWeight: '600' }}>
-                        🏋️‍♂️ إرشادات اليوم: {selectedDay.dayTips}
-                      </p>
-                    )}
+            {activeTab === 'progression' && (
+              <div className="glass-panel animated-fade" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800' }}>📈 خطة التقدم الأسبوعي وزيادة الأحمال (Progressive Overload Plan)</h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    يوضح الجدول التالي آلية تدرج شدة التدريب وتوزيع المجهود الرياضي على مدار الأسابيع الأربعة للبرنامج.
+                  </p>
+                </div>
+                
+                {/* General Progression Strategy Card */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                  <div className="glass-panel" style={{ padding: '15px', background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: '800', color: 'var(--primary)' }}>الأسبوع 1: التأسيس والاستقرار</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>تهيئة الجسم وتثبيت الأداء السليم بالوزن الأساسي المقترح.</p>
                   </div>
-                  {!selectedDay.isRestDay && (
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <button onClick={handleStartWorkout} className="glow-btn">
-                        <Play size={18} />
-                        ابدأ تمرين الوحش
-                      </button>
-                      <button onClick={() => setAddingCustom(true)} className="secondary-btn">
-                        <Plus size={18} />
-                        إضافة تمرين يدوي
-                      </button>
-                    </div>
-                  )}
+                  <div className="glass-panel" style={{ padding: '15px', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: '800', color: '#10b981' }}>الأسبوع 2: زيادة الكثافة (Intensity)</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>زيادة التكرارات بمقدار (+2 تكرار) أو إضافة وزن (+2.5 كجم) مع الحفاظ على الأداء.</p>
+                  </div>
+                  <div className="glass-panel" style={{ padding: '15px', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: '800', color: 'var(--secondary)' }}>الأسبوع 3: زيادة الحجم (Volume)</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>زيادة عدد جولات التمارين الرئيسية بمقدار جولة إضافية (+1 جولة) لتحفيز الخلايا العضلية.</p>
+                  </div>
+                  <div className="glass-panel" style={{ padding: '15px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: '800', color: 'var(--danger)' }}>الأسبوع 4: الاستشفاء النشط (Deload)</h4>
+                    <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>تخفيض الأوزان والجولات بنسبة 20% لتجنب الإجهاد وتفعيل النمو العضلي المعوض.</p>
+                  </div>
                 </div>
 
-                {selectedDay.isRestDay ? (
-                  <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                    <div style={{ fontSize: '50px' }}>🧘‍♂️</div>
-                    <h3 style={{ fontSize: '20px', marginTop: '16px' }}>يوم راحة واستشفاء عضلي</h3>
-                    <p style={{ maxWidth: '450px', margin: '10px auto 0', fontSize: '14px' }}>
-                      الاستشفاء جزء لا يتجزأ من التطور الرياضي. ركز على التمدد الخفيف، المشي، شرب كميات وافرة من الماء، وتغذية جسدك بشكل سليم استعداداً للأيام القادمة.
-                    </p>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {selectedDay.exercises.map((ex: any) => (
-                      <div
-                        key={ex.id}
-                        className="glass-panel glass-panel-hover"
-                        style={{
-                          display: 'flex',
-                          padding: '20px',
-                          gap: '20px',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          {ex.imageUrl && (
-                            <img
-                              src={ex.imageUrl}
-                              alt={ex.name}
-                              style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'cover' }}
-                            />
-                          )}
-                          {ex.anatomyImageUrl && (
-                            <img
-                              src={ex.anatomyImageUrl}
-                              alt="Anatomy"
-                              style={{ width: '80px', height: '80px', borderRadius: '12px', objectFit: 'contain', background: '#090a0f', border: '1px solid var(--border-color)' }}
-                              title="المخطط التشريحي للعضلة المستهدفة"
-                            />
-                          )}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                            <h3 style={{ fontSize: '18px' }}>{ex.name}</h3>
-                            <span className="badge badge-secondary">{ex.targetMuscle}</span>
-                            <span className="badge badge-primary">{ex.category}</span>
-                          </div>
-                          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                            الجولات: <strong>{ex.sets}</strong> | التكرارات: <strong>{ex.reps}</strong> | الوزن: <strong>{ex.weight}</strong>
-                          </p>
-                          {ex.exerciseTips && (
-                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                              💪 نصيحة أداء: {ex.exerciseTips}
-                            </p>
-                          )}
-                          <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-                            {ex.videoUrl && (
-                              <a href={ex.videoUrl} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: 'var(--primary)', textDecoration: 'none', fontWeight: '700' }}>
-                                🎥 شرح يوتيوب شورتس
-                              </a>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Edit / Delete Buttons */}
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <button
-                            onClick={() => setEditingExercise(ex)}
-                            className="secondary-btn"
-                            style={{ padding: '8px 12px', borderColor: 'var(--border-color)' }}
-                            title="تعديل"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteExercise(ex.id)}
-                            className="secondary-btn"
-                            style={{ padding: '8px 12px', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}
-                            title="حذف"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                {/* Day-by-Day Progression List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
+                  {activePlan.dayWorkouts.map((day: any) => {
+                    if (day.isRestDay) return null;
+                    return (
+                      <div key={day.id} className="glass-panel" style={{ padding: '18px', background: 'rgba(255, 255, 255, 0.01)' }}>
+                        <h4 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)', marginBottom: '12px' }}>
+                          📅 {day.title}
+                        </h4>
+                        
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right', fontSize: '12px' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                                <th style={{ padding: '8px', textAlign: 'right' }}>التمرين</th>
+                                <th style={{ padding: '8px' }}>الأسبوع 1</th>
+                                <th style={{ padding: '8px', color: '#10b981' }}>الأسبوع 2 (+تكرارات/أوزان)</th>
+                                <th style={{ padding: '8px', color: 'var(--secondary)' }}>الأسبوع 3 (+جولات)</th>
+                                <th style={{ padding: '8px', color: 'var(--danger)' }}>الأسبوع 4 (الاستشفاء)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {day.exercises.map((ex: any) => {
+                                const isTime = parseRepsToSeconds(ex.reps) !== null;
+                                return (
+                                  <tr key={ex.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                    <td style={{ padding: '10px 8px', fontWeight: '700' }}>
+                                      {ex.name}
+                                    </td>
+                                    {/* W1 */}
+                                    <td style={{ padding: '10px 8px' }}>
+                                      {ex.sets} جولات × {ex.reps} ({ex.weight})
+                                    </td>
+                                    {/* W2 */}
+                                    <td style={{ padding: '10px 8px', color: '#10b981', fontWeight: '600' }}>
+                                      {ex.sets} جولات × {isTime ? `${parseInt(ex.reps) + 15}ث` : `${ex.reps.replace(/(\d+)/g, (m: string) => String(parseInt(m) + 2))} تكرار`} ({ex.weight})
+                                    </td>
+                                    {/* W3 */}
+                                    <td style={{ padding: '10px 8px', color: 'var(--secondary)', fontWeight: '600' }}>
+                                      {ex.sets + 1} جولات × {ex.reps} ({ex.weight})
+                                    </td>
+                                    {/* W4 */}
+                                    <td style={{ padding: '10px 8px', color: 'var(--danger)', fontWeight: '600' }}>
+                                      {ex.sets - 1} جولات × {isTime ? '20ث' : '8 تكرارات'} (خفيف 60%)
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -761,9 +1103,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
 
       {/* EDIT EXERCISE MODAL */}
       {editingExercise && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <form onSubmit={handleEditExerciseSubmit} className="glass-panel" style={{ width: '100%', maxWidth: '450px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <h3 style={{ fontSize: '20px' }}>تعديل تفاصيل التمرين 🛠️</h3>
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={() => setEditingExercise(null)}
+        >
+          <form 
+            onSubmit={handleEditExerciseSubmit} 
+            className="glass-panel" 
+            style={{ width: '100%', maxWidth: '450px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '18px', position: 'relative' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800' }}>تعديل تفاصيل التمرين 🛠️</h3>
+              <button type="button" onClick={() => setEditingExercise(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label>اسم التمرين</label>
@@ -839,108 +1192,305 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
 
       {/* ADD CUSTOM EXERCISE MODAL */}
       {addingCustom && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <form onSubmit={handleAddCustomSubmit} className="glass-panel" style={{ width: '100%', maxWidth: '450px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <h3 style={{ fontSize: '20px' }}>إضافة تمرين مخصص للجدول ➕</h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label>اسم التمرين</label>
-              <input
-                type="text"
-                placeholder="مثال: رفرفة رف جانبي بالدمبلز"
-                value={customExForm.name}
-                onChange={(e) => setCustomExForm({ ...customExForm, name: e.target.value })}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label>الجولات</label>
-                <input
-                  type="number"
-                  value={customExForm.sets}
-                  onChange={(e) => setCustomExForm({ ...customExForm, sets: e.target.value })}
-                  className="input-field"
-                  required
-                />
-              </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label>التكرارات</label>
-                <input
-                  type="text"
-                  placeholder="10-12"
-                  value={customExForm.reps}
-                  onChange={(e) => setCustomExForm({ ...customExForm, reps: e.target.value })}
-                  className="input-field"
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label>الوزن</label>
-              <input
-                type="text"
-                placeholder="10 كجم أو وزن الجسم"
-                value={customExForm.weight}
-                onChange={(e) => setCustomExForm({ ...customExForm, weight: e.target.value })}
-                className="input-field"
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label>العضلة المستهدفة</label>
-                <input
-                  type="text"
-                  placeholder="الأكتاف الجانبية"
-                  value={customExForm.targetMuscle}
-                  onChange={(e) => setCustomExForm({ ...customExForm, targetMuscle: e.target.value })}
-                  className="input-field"
-                />
-              </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label>نوع التمرين</label>
-                <select
-                  value={customExForm.category}
-                  onChange={(e) => setCustomExForm({ ...customExForm, category: e.target.value })}
-                  className="input-field"
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={() => { setAddingCustom(false); setManualCustomInput(false); }}
+        >
+          <div 
+            className="glass-panel animated-fade" 
+            style={{ width: '100%', maxWidth: '950px', height: '80vh', padding: '25px', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid var(--primary)', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800' }}>إضافة تمرين للجدول ➕</h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setManualCustomInput(!manualCustomInput)} 
+                  className="secondary-btn"
+                  style={{ padding: '6px 12px', fontSize: '12px', border: '1px solid var(--secondary)', color: 'var(--secondary)' }}
                 >
-                  <option value="IRON">حديد جيم (IRON)</option>
-                  <option value="CALISTHENICS">مقاومة ووزن جسم (CALISTHENICS)</option>
-                  <option value="YOGA">يوجا (YOGA)</option>
-                  <option value="PILATES">بيلاتس (PILATES)</option>
-                  <option value="HIIT">تمارين شدة عالية (HIIT)</option>
-                  <option value="CARDIO">كارديو (CARDIO)</option>
-                </select>
+                  {manualCustomInput ? '🔍 تصفح مكتبة التمارين' : '✏️ كتابة يدوية بالكامل'}
+                </button>
+                <button onClick={() => { setAddingCustom(false); setManualCustomInput(false); }} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '22px', cursor: 'pointer' }}>×</button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label>نصائح الأداء</label>
-              <textarea
-                placeholder="حافظ على استقامة الظهر ولا تقم بمرجحة الوزن..."
-                value={customExForm.exerciseTips}
-                onChange={(e) => setCustomExForm({ ...customExForm, exerciseTips: e.target.value })}
-                className="input-field"
-                style={{ minHeight: '80px' }}
-              />
-            </div>
+            {manualCustomInput ? (
+              /* Manual Input Form */
+              <form onSubmit={handleAddCustomSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1, overflowY: 'auto', padding: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700' }}>اسم التمرين</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: رفرفة رف جانبي بالدمبلز"
+                    value={customExForm.name}
+                    onChange={(e) => setCustomExForm({ ...customExForm, name: e.target.value })}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700' }}>الجولات</label>
+                    <input
+                      type="number"
+                      value={customExForm.sets}
+                      onChange={(e) => setCustomExForm({ ...customExForm, sets: e.target.value })}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700' }}>التكرارات</label>
+                    <input
+                      type="text"
+                      placeholder="10-12"
+                      value={customExForm.reps}
+                      onChange={(e) => setCustomExForm({ ...customExForm, reps: e.target.value })}
+                      className="input-field"
+                      required
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700' }}>الوزن</label>
+                  <input
+                    type="text"
+                    placeholder="10 كجم أو وزن الجسم"
+                    value={customExForm.weight}
+                    onChange={(e) => setCustomExForm({ ...customExForm, weight: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700' }}>العضلة المستهدفة</label>
+                    <input
+                      type="text"
+                      placeholder="الأكتاف الجانبية"
+                      value={customExForm.targetMuscle}
+                      onChange={(e) => setCustomExForm({ ...customExForm, targetMuscle: e.target.value })}
+                      className="input-field"
+                    />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700' }}>نوع التمرين</label>
+                    <select
+                      value={customExForm.category}
+                      onChange={(e) => setCustomExForm({ ...customExForm, category: e.target.value })}
+                      className="input-field"
+                    >
+                      <option value="IRON">حديد جيم (IRON)</option>
+                      <option value="CALISTHENICS">مقاومة ووزن جسم (CALISTHENICS)</option>
+                      <option value="YOGA">يوجا (YOGA)</option>
+                      <option value="PILATES">بيلاتس (PILATES)</option>
+                      <option value="HIIT">تمارين شدة عالية (HIIT)</option>
+                      <option value="CARDIO">كارديو (CARDIO)</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700' }}>نصائح الأداء</label>
+                  <textarea
+                    placeholder="حافظ على استقامة الظهر ولا تقم بمرجحة الوزن..."
+                    value={customExForm.exerciseTips}
+                    onChange={(e) => setCustomExForm({ ...customExForm, exerciseTips: e.target.value })}
+                    className="input-field"
+                    style={{ minHeight: '80px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                  <button type="submit" className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>إضافة التمرين</button>
+                  <button type="button" onClick={() => { setAddingCustom(false); setManualCustomInput(false); }} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>إلغاء</button>
+                </div>
+              </form>
+            ) : (
+              /* Tree & Selector Panel */
+              <div style={{ display: 'flex', gap: '20px', flex: 1, overflow: 'hidden' }}>
+                {/* Left side: Search & Tree list */}
+                <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', borderRight: '1px solid var(--border-color)', paddingRight: '10px' }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 ابحث في الـ 4,206 تمرين..."
+                    value={customSearchQuery}
+                    onChange={(e) => setCustomSearchQuery(e.target.value)}
+                    className="input-field"
+                    style={{ width: '100%', padding: '10px 14px' }}
+                  />
+                  
+                  {libraryLoading ? (
+                    <div style={{ textAlign: 'center', padding: '30px' }}>جاري تحميل التمارين شجرياً...</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {libraryTree.map((div: any) => {
+                        const filteredChildren = div.children.map((muscle: any) => {
+                          const filteredExercises = muscle.exercises.filter((ex: any) =>
+                            ex.name_en.toLowerCase().includes(customSearchQuery.toLowerCase()) ||
+                            ex.name_ar.toLowerCase().includes(customSearchQuery.toLowerCase())
+                          );
+                          return { ...muscle, exercises: filteredExercises };
+                        }).filter((muscle: any) => muscle.exercises.length > 0);
 
-            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-              <button type="submit" className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>إضافة التمرين</button>
-              <button type="button" onClick={() => setAddingCustom(false)} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>إلغاء</button>
-            </div>
-          </form>
+                        if (filteredChildren.length === 0 && customSearchQuery) return null;
+
+                        const isDivExpanded = expandedDivisions.includes(div.key);
+
+                        return (
+                          <div key={div.key} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px' }}>
+                            <div 
+                              onClick={() => toggleDivision(div.key)}
+                              style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontWeight: '800', fontSize: '13px', color: 'var(--primary)' }}
+                            >
+                              <span>📂 {div.label_ar}</span>
+                              <span>{isDivExpanded ? '▼' : '▲'}</span>
+                            </div>
+                            
+                            {isDivExpanded && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingRight: '10px' }}>
+                                {filteredChildren.map((muscle: any) => {
+                                  const isMuscleExpanded = expandedMuscles.includes(muscle.key) || !!customSearchQuery;
+                                  return (
+                                    <div key={muscle.key}>
+                                      <div 
+                                        onClick={() => toggleMuscle(muscle.key)}
+                                        style={{ display: 'flex', justifyContent: 'space-between', cursor: 'pointer', fontWeight: '700', fontSize: '12px', color: 'var(--secondary)' }}
+                                      >
+                                        <span>💪 {muscle.label_ar}</span>
+                                        <span style={{ fontSize: '10px' }}>{muscle.exercises.length}</span>
+                                      </div>
+                                      
+                                      {isMuscleExpanded && (
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px', marginTop: '6px', paddingRight: '10px' }}>
+                                          {muscle.exercises.map((ex: any) => {
+                                            const isSelected = customExForm.name.startsWith(ex.name_ar);
+                                            return (
+                                              <div
+                                                key={ex.id}
+                                                onClick={() => {
+                                                  setCustomExForm({
+                                                    name: `${ex.name_ar} (${ex.name_en})`,
+                                                    targetMuscle: ex.muscle_ar || ex.muscle_en,
+                                                    category: ex.category || 'IRON',
+                                                    sets: '3',
+                                                    reps: ex.category === 'YOGA' || ex.category === 'CARDIO' ? '30s' : '10-12',
+                                                    weight: 'Bodyweight',
+                                                    exerciseTips: ex.instructions_ar || ex.instructions_en || 'أداء هادئ وتركيز كامل.',
+                                                  });
+                                                }}
+                                                style={{
+                                                  padding: '6px 10px',
+                                                  background: isSelected ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                                                  border: isSelected ? '1px solid var(--primary)' : '1px solid transparent',
+                                                  borderRadius: '5px',
+                                                  cursor: 'pointer',
+                                                  fontSize: '12px',
+                                                  display: 'flex',
+                                                  justifyContent: 'space-between'
+                                                }}
+                                              >
+                                                <span>{ex.name_ar}</span>
+                                                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{ex.equipment_ar}</span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right side: Parameters configuration */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px', overflowY: 'auto' }}>
+                  {customExForm.name ? (
+                    <form onSubmit={handleAddCustomSubmit} className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div>
+                        <span className="badge badge-primary">{customExForm.category}</span>
+                        <h4 style={{ fontSize: '16px', fontWeight: '800', marginTop: '6px' }}>{customExForm.name}</h4>
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>العضلة: {customExForm.targetMuscle}</p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '15px' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: '700' }}>الجولات</label>
+                          <input
+                            type="number"
+                            value={customExForm.sets}
+                            onChange={(e) => setCustomExForm({ ...customExForm, sets: e.target.value })}
+                            className="input-field"
+                            required
+                          />
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '12px', fontWeight: '700' }}>التكرارات</label>
+                          <input
+                            type="text"
+                            value={customExForm.reps}
+                            onChange={(e) => setCustomExForm({ ...customExForm, reps: e.target.value })}
+                            className="input-field"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '700' }}>الوزن المقترح</label>
+                        <input
+                          type="text"
+                          value={customExForm.weight}
+                          onChange={(e) => setCustomExForm({ ...customExForm, weight: e.target.value })}
+                          className="input-field"
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '700' }}>ملاحظات/إرشادات</label>
+                        <textarea
+                          value={customExForm.exerciseTips}
+                          onChange={(e) => setCustomExForm({ ...customExForm, exerciseTips: e.target.value })}
+                          className="input-field"
+                          style={{ minHeight: '60px', fontSize: '12px' }}
+                        />
+                      </div>
+
+                      <button type="submit" className="glow-btn" style={{ justifyContent: 'center', padding: '12px', marginTop: '10px' }}>
+                        أضف هذا التمرين للجدول ➕
+                      </button>
+                    </form>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', border: '2px dashed var(--border-color)', borderRadius: '12px', padding: '20px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                      <span style={{ fontSize: '32px' }}>👈</span>
+                      <p style={{ marginTop: '10px', fontSize: '13px' }}>اختر تمريناً من الشجرة التفاعلية لتعديل جولاته وإضافته لجدولك اليومي.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* BULK IMPORT MODAL */}
       {showImport && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '550px', padding: '30px', border: '1px solid var(--primary)' }}>
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={() => setShowImport(false)}
+        >
+          <div 
+            className="glass-panel" 
+            style={{ width: '100%', maxWidth: '550px', padding: '30px', border: '1px solid var(--primary)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '18px' }}>استيراد قائمة تمارين خارجية 📥</h3>
               <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>×</button>
@@ -983,8 +1533,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
 
       {/* WORKOUT PLANS HISTORY MODAL */}
       {showHistory && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.95)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '700px', padding: '30px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={() => setShowHistory(false)}
+        >
+          <div 
+            className="glass-panel" 
+            style={{ width: '100%', maxWidth: '700px', padding: '30px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '18px' }}>أرشيف وسجل جداولك الرياضية 📅</h3>
               <button onClick={() => setShowHistory(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>×</button>
@@ -1045,8 +1602,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
 
       {/* EXERCISES LIBRARY TREE BROWSER */}
       {showLibrary && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.96)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '1100px', height: '90vh', padding: '30px', display: 'flex', flexDirection: 'column' }}>
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={() => setShowLibrary(false)}
+        >
+          <div 
+            className="glass-panel" 
+            style={{ width: '100%', maxWidth: '1100px', height: '90vh', padding: '30px', display: 'flex', flexDirection: 'column' }}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '20px' }}>
               <div>
@@ -1222,6 +1786,198 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* PREMIUM SLIDE-UP EXERCISE DETAIL SHEET */}
+      {activeExerciseDetail && (
+        <div className="slide-up-modal-overlay" onClick={() => setActiveExerciseDetail(null)}>
+          <div className="slide-up-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <span className="badge badge-secondary" style={{ fontSize: '11px' }}>
+                {activeExerciseDetail.category || 'IRON'}
+              </span>
+              <button 
+                onClick={() => setActiveExerciseDetail(null)} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer', outline: 'none' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Exercise Animation / GIF */}
+            <div style={{ width: '100%', height: '240px', borderRadius: '16px', overflow: 'hidden', background: '#090a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+              {activeExerciseDetail.imageUrl ? (
+                <img 
+                  src={activeExerciseDetail.imageUrl} 
+                  alt={activeExerciseDetail.name} 
+                  style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                />
+              ) : (
+                <span style={{ fontSize: '60px' }}>🏋️‍♂️</span>
+              )}
+            </div>
+
+            {/* Title & target muscle */}
+            <h2 style={{ fontSize: '24px', fontWeight: '900', marginBottom: '8px' }}>
+              {activeExerciseDetail.name}
+            </h2>
+
+            {/* Video demonstration button */}
+            {activeExerciseDetail.videoUrl && (
+              <a
+                href={activeExerciseDetail.videoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="glow-btn"
+                style={{ width: '100%', justifyContent: 'center', textDecoration: 'none', fontSize: '13px', marginBottom: '15px', background: 'linear-gradient(135deg, #ef4444, #b91c1c)', boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)', color: '#fff' }}
+              >
+                🎥 {lang === 'en' ? 'Watch Video Demonstration (YouTube)' : 'شاهد طريقة الأداء بالفيديو (يوتيوب)'}
+              </a>
+            )}
+            
+            {/* Target Muscle anatomical badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              {activeExerciseDetail.anatomyImageUrl && (
+                <img 
+                  src={activeExerciseDetail.anatomyImageUrl} 
+                  alt="Anatomy map" 
+                  style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#090a0f', border: '1px solid var(--border-color)', objectFit: 'contain' }}
+                />
+              )}
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {lang === 'en' ? 'Target Area' : 'العضلة المستهدفة'}
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>
+                  {activeExerciseDetail.targetMuscle}
+                </div>
+              </div>
+            </div>
+
+            {/* Structured details: How to do it */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
+              <div>
+                <h4 style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  📖 {lang === 'en' ? 'How to do it' : 'كيفية أداء التمرين'}
+                </h4>
+                <ul style={{ fontSize: '13px', color: 'var(--text-secondary)', paddingLeft: '20px', paddingRight: '20px', lineHeight: '1.6' }}>
+                  {(activeExerciseDetail.exerciseTips || '')
+                    .split('\n')
+                    .filter((line: string) => line.trim())
+                    .map((step: string, sIdx: number) => (
+                      <li key={sIdx} style={{ marginBottom: '4px' }}>{step}</li>
+                    ))}
+                </ul>
+              </div>
+
+              {/* Dynamic Breathing & benefits based on category */}
+              <div>
+                <h4 style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  🫁 {lang === 'en' ? 'Breathing Tips' : 'نصائح التنفس المرافقة'}
+                </h4>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  {lang === 'en' 
+                    ? 'Inhale during the lowering/eccentric phase, and exhale as you lift/contract the muscle. Keep breathing controlled.'
+                    : 'اسحب شهيقاً عميقاً عند مرحلة إنزال الوزن أو بسط العضلة، وازفر زفيراً قوياً عند مرحلة رفع الوزن والانقباض العضلي.'}
+                </p>
+              </div>
+
+              <div>
+                <h4 style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                  🛡️ {lang === 'en' ? 'Key Benefits' : 'فوائد التمرين الرئيسية'}
+                </h4>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  {lang === 'en'
+                    ? `Strengthens the ${activeExerciseDetail.targetMuscle || 'muscles'}, improves joint stability, and stimulates athletic power.`
+                    : `يعزز قوة عضلات ${activeExerciseDetail.targetMuscle || 'المستهدفة'}، ويقوي المفاصل المرافقة، ويزيد المدى الحركي والأداء.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom action button */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <button 
+                onClick={() => {
+                  const exercises = getSelectedDay()?.exercises || [];
+                  const idx = exercises.findIndex((ex: any) => ex.id === activeExerciseDetail.id);
+                  if (idx !== -1) {
+                    setActiveExerciseIndex(idx);
+                    setShowPlayer(true);
+                  }
+                  setActiveExerciseDetail(null);
+                }}
+                className="glow-btn"
+                style={{ width: '100%', padding: '14px 20px', borderRadius: '30px', justifyContent: 'center' }}
+              >
+                ▶ {lang === 'en' ? 'Start Exercise' : 'ابدأ الحركات الآن'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ALTERNATIVE SWAP SHEET MODAL */}
+      {swapExerciseId && (
+        <div className="slide-up-modal-overlay" onClick={() => setSwapExerciseId(null)}>
+          <div className="slide-up-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '800' }}>
+                🔄 {lang === 'en' ? 'Choose Alternative Exercise' : 'اختر التمرين البديل المناسب'}
+              </h3>
+              <button 
+                onClick={() => setSwapExerciseId(null)} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '24px', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {alternativesLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <div style={{ width: '30px', height: '30px', border: '3px solid var(--border-color)', borderTop: '3px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }} />
+                <p style={{ fontSize: '13px' }}>{lang === 'en' ? 'Searching for matched alternatives...' : 'جاري البحث في قاعدة البيانات عن بدائل مكافئة...'}</p>
+              </div>
+            ) : alternativesList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                {lang === 'en' ? 'No alternatives found for this target area.' : 'لم نجد تمارين بديلة لهذه العضلة حالياً.'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '5px' }}>
+                {alternativesList.map((altEx: any) => (
+                  <div 
+                    key={altEx.id}
+                    className="glass-panel"
+                    style={{ display: 'flex', padding: '12px', gap: '15px', alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+                    onClick={() => handleSwapExercise(altEx)}
+                    onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}
+                  >
+                    <div style={{ width: '50px', height: '50px', borderRadius: '10px', overflow: 'hidden', background: '#090a0f', flexShrink: 0 }}>
+                      {altEx.image_url ? (
+                        <img src={altEx.image_url} alt={altEx.name_en} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>🏋️‍♂️</div>
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '800' }}>
+                        {lang === 'en' ? altEx.name_en : altEx.name_ar}
+                      </h4>
+                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        💪 {lang === 'en' ? 'Equipment: ' : 'الأداة: '} {lang === 'en' ? altEx.equipment_en : altEx.equipment_ar}
+                      </p>
+                    </div>
+                    <button 
+                      className="glow-btn"
+                      style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px' }}
+                    >
+                      {lang === 'en' ? 'Select' : 'اختيار'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

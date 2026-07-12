@@ -12,7 +12,8 @@ import {
   importBulkPlan,
   getPlanHistory,
   activateHistoricalPlan,
-  getLibraryTree
+  getLibraryTree,
+  getAlternatives
 } from '../controllers/workoutController';
 import { protect } from '../middleware/auth';
 
@@ -36,5 +37,6 @@ router.post('/day/:dayId/exercise', addCustomExercise);
 router.put('/exercise/:id', updateExercise);
 router.delete('/exercise/:id', deleteExercise);
 router.post('/exercise/:id/log', logProgress);
+router.get('/exercise/:id/alternatives', getAlternatives);
 
 export default router;

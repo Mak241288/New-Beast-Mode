@@ -251,6 +251,26 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               </div>
             </div>
 
+            {/* Regenerate Plan Section */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+              <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+                🔄 {lang === 'en' ? 'Regenerate Workout & Diet Routine' : 'إعادة توليد وتحديث الخطط الرياضية والغذائية'}
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
+                {lang === 'en' 
+                  ? 'Restart the onboarding questionnaire to generate a brand new personalized schedule from scratch.'
+                  : 'أعد تشغيل استبيان التهيئة والذكاء الاصطناعي لتصميم جدول تمارين وخطة وجبات جديدة كلياً تناسب مستواك الحالي.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => onNavigate('onboarding')}
+                className="glow-btn"
+                style={{ padding: '10px 20px', gap: '8px', display: 'flex', alignItems: 'center' }}
+              >
+                🔄 {lang === 'en' ? 'Start Questionnaire & Generate Plan' : 'بدء الاستبيان وتوليد جدول جديد بالكامل'}
+              </button>
+            </div>
+
             {/* Health & Medical */}
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
               <h3 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
