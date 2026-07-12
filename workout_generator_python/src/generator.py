@@ -59,7 +59,7 @@ def fetch_exercises_for_muscle(muscle, location, equipment_list, level):
     sql = """
     SELECT id, name_en, name_ar, description_en, description_ar, 
            instructions_en, instructions_ar, muscle_en, muscle_ar, 
-           equipment_en, equipment_ar, level, category, rating, source
+           equipment_en, equipment_ar, level, category, rating, source, image_url
     FROM exercises 
     WHERE LOWER(muscle_en) = ?
     """
@@ -104,7 +104,8 @@ def fetch_exercises_for_muscle(muscle, location, equipment_list, level):
             "level": r[11],
             "category": r[12],
             "rating": r[13],
-            "source": r[14]
+            "source": r[14],
+            "image_url": r[15]
         })
     return exercises
 

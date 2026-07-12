@@ -179,7 +179,7 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
                 exercises: {
                   create: day.is_rest_day ? [] : day.exercises.map((ex: any, idx: number) => {
                     const suggestedWeight = getSuggestedWeight(ex.name_en, ex.equipment_en, gender, level || 'intermediate', userWeight);
-                    const imageUrl = getMuscleImage(ex.muscle_en);
+                    const imageUrl = ex.image_url || getMuscleImage(ex.muscle_en);
 
                     return {
                       name: isEn ? (ex.name_en || ex.name_ar) : (ex.name_ar || ex.name_en),

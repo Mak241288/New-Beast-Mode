@@ -18,7 +18,9 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.error || 'شيء ما غير صحيح');
+    const error = new Error(data.error || 'شيء ما غير صحيح') as any;
+    error.status = response.status;
+    throw error;
   }
 
   return data;

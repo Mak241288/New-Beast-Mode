@@ -34,17 +34,18 @@ function App() {
     
     setLoading(true);
     try {
-      // Fetch active workout plan
-      try {
-        await api.getActivePlan();
-        setCurrentView('dashboard');
-      } catch (err) {
-        // No active plan -> route to onboarding
+      await api.getActivePlan();
+      setCurrentView('dashboard');
+    } catch (err: any) {
+      console.error('[App] checkStatus error:', err);
+      if (err.status === 404) {
         setCurrentView('onboarding');
+      } else if (err.status === 401) {
+        handleLogout();
+      } else {
+        // Safe fallback for server errors (500 etc) - stay on dashboard to show existing cached state if possible
+        setCurrentView('dashboard');
       }
-    } catch (err) {
-      // Token expired or invalid
-      handleLogout();
     } finally {
       setLoading(false);
     }
