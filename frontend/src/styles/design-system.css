@@ -22,13 +22,13 @@
   --bg-card-hover: rgba(26, 29, 41, 0.85);
   --bg-input: rgba(10, 11, 16, 0.9);
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-color-glow: rgba(16, 185, 129, 0.3);
+  --border-color-glow: rgba(124, 92, 252, 0.3);
   --text-primary: #f3f4f6;
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
   
-  --primary: #10b981; /* Emerald/Neon Green */
-  --primary-glow: rgba(16, 185, 129, 0.25);
+  --primary: #7C5CFC; /* Electric/Neon Purple */
+  --primary-glow: rgba(124, 92, 252, 0.25);
   --secondary: #f97316; /* Neon Orange */
   --secondary-glow: rgba(249, 115, 22, 0.25);
   --danger: #ef4444;
@@ -48,13 +48,13 @@
   --bg-card-hover: #f8fafc;
   --bg-input: #ffffff;
   --border-color: #cbd5e1;
-  --border-color-glow: rgba(5, 150, 105, 0.4);
+  --border-color-glow: rgba(109, 40, 217, 0.3);
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
 
-  --primary: #047857; /* Deep Emerald for text contrast */
-  --primary-glow: rgba(4, 120, 87, 0.15);
+  --primary: #6D28D9; /* Deep Purple for text contrast */
+  --primary-glow: rgba(109, 40, 217, 0.15);
   --secondary: #c2410c; /* Deep Orange */
   --secondary-glow: rgba(194, 65, 12, 0.15);
   
@@ -120,8 +120,8 @@ body {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: #ffffff;
   border: none;
-  border-radius: var(--border-radius-sm);
-  padding: 12px 24px;
+  border-radius: 9999px; /* Capsule buttons */
+  padding: 12px 28px;
   font-family: var(--font-arabic);
   font-weight: 700;
   cursor: pointer;
@@ -152,8 +152,8 @@ body {
   background: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 12px 24px;
+  border-radius: 9999px; /* Capsule buttons */
+  padding: 12px 28px;
   font-family: var(--font-arabic);
   font-weight: 600;
   cursor: pointer;
@@ -172,8 +172,8 @@ body {
   width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 12px 16px;
+  border-radius: 12px; /* Smoother input corners */
+  padding: 12px 18px;
   color: var(--text-primary);
   font-family: var(--font-arabic);
   font-size: 14px;
@@ -245,7 +245,7 @@ p {
 /* Curved Header styles */
 .curved-header {
   position: relative;
-  background: linear-gradient(135deg, #0d121f, #1b2640);
+  background: linear-gradient(135deg, #0f111a, #2e1065); /* Deep dark purple/indigo */
   padding: 40px 24px 60px;
   border-radius: 0 0 32px 32px;
   overflow: hidden;
@@ -253,8 +253,8 @@ p {
 }
 
 [data-theme='light'] .curved-header {
-  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.15);
+  background: linear-gradient(135deg, #4c1d95, #7c3aed); /* Vibrant premium purple */
+  box-shadow: 0 10px 30px rgba(124, 92, 252, 0.2);
 }
 
 .curved-header-athlete {

@@ -138,6 +138,24 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
     // Sort notes by date descending
     notesHistory.sort((a, b) => b.date.getTime() - a.date.getTime());
 
+    // Fetch user details for BMI calculation
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { height: true, currentWeight: true }
+    });
+
+    let bmiValue = 0;
+    let bmiCategory = 'UNKNOWN';
+    if (user && user.height && user.currentWeight) {
+      const heightInMeters = user.height / 100;
+      bmiValue = user.currentWeight / (heightInMeters * heightInMeters);
+      
+      if (bmiValue < 18.5) bmiCategory = 'UNDERWEIGHT';
+      else if (bmiValue < 25) bmiCategory = 'NORMAL';
+      else if (bmiValue < 30) bmiCategory = 'OVERWEIGHT';
+      else bmiCategory = 'OBESE';
+    }
+
     res.status(200).json({
       weightHistory,
       workoutStats: {
@@ -148,6 +166,12 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
       },
       nutritionStats,
       notesHistory: notesHistory.slice(0, 20), // top 20 notes
+      bmi: {
+        value: parseFloat(bmiValue.toFixed(1)),
+        category: bmiCategory,
+        height: user?.height || 0,
+        weight: user?.currentWeight || 0
+      }
     });
   } catch (error) {
     console.error(error);

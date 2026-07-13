@@ -151,13 +151,14 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
         const pythonPlan = JSON.parse(fileContent);
 
         // For Arabic plans, if instructions_ar is missing, collect for batch translation
+        const isArabic = (text: string): boolean => /[\u0600-\u06FF]/.test(text || '');
         const exercisesToTranslate: any[] = [];
         const isEn = lang === 'en';
         if (!isEn) {
           pythonPlan.forEach((day: any) => {
             if (!day.is_rest_day && day.exercises) {
               day.exercises.forEach((ex: any) => {
-                const hasNoAr = !ex.instructions_ar || ex.instructions_ar.trim() === '' || ex.instructions_ar === ex.instructions_en;
+                const hasNoAr = !ex.instructions_ar || ex.instructions_ar.trim() === '' || !isArabic(ex.instructions_ar) || ex.instructions_ar === ex.instructions_en;
                 if (hasNoAr) {
                   if (!exercisesToTranslate.find(e => e.name_en === ex.name_en)) {
                     exercisesToTranslate.push(ex);
@@ -175,15 +176,15 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
             const prompt = `
             You are an elite sports coach and professional translator.
             Translate the following workout exercise instructions/tips from English to clear, motivating, and correct Arabic.
-            Return a JSON object where the keys are the exercise English names, and the values are the translated Arabic instructions.
+            Return a JSON object where the keys are the exercise IDs (e.g., "ex_0", "ex_1"), and the values are the translated Arabic instructions.
             Keep the formatting simple as bullet points or numbered steps in Arabic. Do not add any extra text or conversational filler, just return the JSON object.
 
             Exercises:
-            ${exercisesToTranslate.map(ex => `Name: ${ex.name_en}\nInstructions: ${ex.instructions_en || 'Perform with controlled movement and proper posture.'}`).join('\n\n')}
+            ${exercisesToTranslate.map((ex, idx) => `ID: ex_${idx}\nName: ${ex.name_en}\nInstructions: ${ex.instructions_en || 'Perform with controlled movement and proper posture.'}`).join('\n\n')}
 
             JSON Output Schema:
             {
-              "Exercise Name": "شرح كيفية الأداء بالعربية..."
+              "ex_0": "شرح كيفية الأداء بالعربية..."
             }
             `;
             
@@ -225,7 +226,8 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
                     const imageUrl = ex.image_url || getMuscleImage(ex.muscle_en);
                     
                     // Retrieve translation or fallbacks
-                    const translatedTips = translationsMap[ex.name_en] || ex.instructions_ar || ex.instructions_en || 'أداء هادئ وتركيز كامل في الحركة.';
+                    const transIdx = exercisesToTranslate.findIndex(e => e.name_en === ex.name_en);
+                    const translatedTips = (transIdx !== -1 ? translationsMap[`ex_${transIdx}`] : null) || (isArabic(ex.instructions_ar) ? ex.instructions_ar : null) || ex.instructions_en || 'أداء هادئ وتركيز كامل في الحركة.';
                     const displayName = isEn 
                       ? (ex.name_en || ex.name_ar) 
                       : (ex.name_ar ? `${ex.name_ar} (${ex.name_en})` : ex.name_en);
@@ -275,27 +277,27 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
 const getAnatomyImage = (muscle: string): string => {
   const m = (muscle || '').toLowerCase();
   if (m.includes('chest') || m.includes('صدر')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Pectoralis_major.png/320px-Pectoralis_major.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/6/6c/Pectoralis_major.png';
   }
   if (m.includes('back') || m.includes('lats') || m.includes('ظهر')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Latissimus_dorsi.png/320px-Latissimus_dorsi.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/7/7d/Latissimus_dorsi.png';
   }
   if (m.includes('shoulder') || m.includes('deltoid') || m.includes('كتف')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Deltoideus.png/320px-Deltoideus.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/9/93/Deltoideus.png';
   }
   if (m.includes('bicep') || m.includes('باي')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Biceps_brachii.png/320px-Biceps_brachii.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/c/c2/Biceps_brachii.png';
   }
   if (m.includes('tricep') || m.includes('تراي')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Triceps_brachii.png/320px-Triceps_brachii.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/8/83/Triceps_brachii.png';
   }
   if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('glute') || m.includes('رجل') || m.includes('فخذ')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Quadriceps_femoris.png/320px-Quadriceps_femoris.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/9/99/Quadriceps.png';
   }
   if (m.includes('ab') || m.includes('core') || m.includes('بطن')) {
-    return 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Rectus_abdominis.png/320px-Rectus_abdominis.png';
+    return 'https://upload.wikimedia.org/wikipedia/commons/9/95/Rectus_abdominis.png';
   }
-  return 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Rectus_abdominis.png/320px-Rectus_abdominis.png';
+  return 'https://upload.wikimedia.org/wikipedia/commons/9/95/Rectus_abdominis.png';
 };
 
 // @route   GET /api/workout/active
@@ -328,16 +330,17 @@ export const getActivePlan = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const mappedDayWorkouts = activePlan.dayWorkouts.map((day) => ({
+    const plainPlan = JSON.parse(JSON.stringify(activePlan));
+    const mappedDayWorkouts = plainPlan.dayWorkouts.map((day: any) => ({
       ...day,
-      exercises: day.exercises.map((ex) => ({
+      exercises: day.exercises.map((ex: any) => ({
         ...ex,
         anatomyImageUrl: getAnatomyImage(ex.targetMuscle || ''),
       })),
     }));
 
     res.status(200).json({
-      ...activePlan,
+      ...plainPlan,
       dayWorkouts: mappedDayWorkouts,
     });
   } catch (error) {
@@ -771,17 +774,17 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
           },
         });
 
-        // Add dynamic anatomy images to response
-        const mappedDayWorkouts = createdPlan.dayWorkouts.map((day) => ({
+        const plainPlan = JSON.parse(JSON.stringify(createdPlan));
+        const mappedDayWorkouts = plainPlan.dayWorkouts.map((day: any) => ({
           ...day,
-          exercises: day.exercises.map((ex) => ({
+          exercises: day.exercises.map((ex: any) => ({
             ...ex,
             anatomyImageUrl: getAnatomyImage(ex.targetMuscle || ''),
           })),
         }));
 
         res.status(201).json({
-          ...createdPlan,
+          ...plainPlan,
           dayWorkouts: mappedDayWorkouts,
         });
 
@@ -823,12 +826,12 @@ export const getPlanHistory = async (req: AuthRequest, res: Response): Promise<v
       },
     });
 
-    // Map anatomy images dynamically
-    const mappedHistory = history.map((plan) => ({
+    const plainHistory = JSON.parse(JSON.stringify(history));
+    const mappedHistory = plainHistory.map((plan: any) => ({
       ...plan,
-      dayWorkouts: plan.dayWorkouts.map((day) => ({
+      dayWorkouts: plan.dayWorkouts.map((day: any) => ({
         ...day,
-        exercises: day.exercises.map((ex) => ({
+        exercises: day.exercises.map((ex: any) => ({
           ...ex,
           anatomyImageUrl: getAnatomyImage(ex.targetMuscle || ''),
         })),
@@ -885,17 +888,17 @@ export const activateHistoricalPlan = async (req: AuthRequest, res: Response): P
       },
     });
 
-    // Map anatomy images
-    const mappedDayWorkouts = updated.dayWorkouts.map((day) => ({
+    const plainUpdated = JSON.parse(JSON.stringify(updated));
+    const mappedDayWorkouts = plainUpdated.dayWorkouts.map((day: any) => ({
       ...day,
-      exercises: day.exercises.map((ex) => ({
+      exercises: day.exercises.map((ex: any) => ({
         ...ex,
         anatomyImageUrl: getAnatomyImage(ex.targetMuscle || ''),
       })),
     }));
 
     res.status(200).json({
-      ...updated,
+      ...plainUpdated,
       dayWorkouts: mappedDayWorkouts,
     });
   } catch (error: any) {

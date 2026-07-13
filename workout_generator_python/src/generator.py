@@ -120,11 +120,194 @@ def fetch_exercises_for_muscle(muscle, location, equipment_list, level):
         })
     return exercises
 
+# Static Warmup & Cooldown routines mapped to day type
+WARMUP_EXERCISES = {
+    "upper": [
+        {
+            "id": 9001,
+            "name_en": "Arm Circles",
+            "name_ar": "دوائر الذراعين للإحماء",
+            "description_en": "Warm up shoulders and chest muscles.",
+            "description_ar": "إحماء مفاصل الكتف وعضلات الصدر.",
+            "instructions_en": "Stand tall, extend arms to sides at shoulder height. Make small circles forward, then backward.",
+            "instructions_ar": "قف مستقيماً ومد ذراعيك جانباً بمستوى كتفيك. قم بعمل دوائر صغيرة للأمام ثم للخلف لتنشيط مفصل الكتف.",
+            "muscle_en": "Shoulders",
+            "muscle_ar": "الأكتاف",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "WARMUP",
+            "rating": 5.0,
+            "source": "Static_Warmup",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Arm_Circles/0.jpg",
+            "sets": 1,
+            "reps_en": "30-45 sec",
+            "reps_ar": "30-45 ثانية"
+        },
+        {
+            "id": 9002,
+            "name_en": "Jumping Jacks",
+            "name_ar": "القفز وفتح الرجلين (Jumping Jacks)",
+            "description_en": "Raise heart rate and warm up full body.",
+            "description_ar": "رفع نبضات القلب وإحماء كامل الجسم.",
+            "instructions_en": "Jump with feet wide while raising hands overhead. Jump back to starting position. Maintain a steady pace.",
+            "instructions_ar": "اقفز مع فتح القدمين جانباً ورفع اليدين فوق الرأس في نفس الوقت، ثم اقفز عائداً لنقطة البداية. حافظ على إيقاع مستمر.",
+            "muscle_en": "Full Body",
+            "muscle_ar": "كامل الجسم",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "WARMUP",
+            "rating": 5.0,
+            "source": "Static_Warmup",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Jumping_Jacks/0.jpg",
+            "sets": 1,
+            "reps_en": "45-60 sec",
+            "reps_ar": "45-60 ثانية"
+        }
+    ],
+    "lower": [
+        {
+            "id": 9003,
+            "name_en": "Standing Hip Circles",
+            "name_ar": "دوائر الورك لليونة الحوض",
+            "description_en": "Warm up hips and lower body joints.",
+            "description_ar": "إحماء مفاصل الحوض والركبة والجزء السفلي.",
+            "instructions_en": "Place hands on hips, stand with feet shoulder-width apart. Rotate your hips in large slow circles.",
+            "instructions_ar": "ضع يديك على خصرك، وقف بقدمين متباعدتين بعرض الكتفين. قم بتدوير حوضك في دوائر واسعة وبطيئة لتليين المفصل.",
+            "muscle_en": "Glutes",
+            "muscle_ar": "الأرداف",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "WARMUP",
+            "rating": 5.0,
+            "source": "Static_Warmup",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Ankle_Circles/0.jpg",
+            "sets": 1,
+            "reps_en": "30-45 sec",
+            "reps_ar": "30-45 ثانية"
+        },
+        {
+            "id": 9002,
+            "name_en": "Jumping Jacks",
+            "name_ar": "القفز وفتح الرجلين (Jumping Jacks)",
+            "description_en": "Raise heart rate and warm up full body.",
+            "description_ar": "رفع نبضات القلب وإحماء كامل الجسم.",
+            "instructions_en": "Jump with feet wide while raising hands overhead. Jump back to starting position. Maintain a steady pace.",
+            "instructions_ar": "اقفز مع فتح القدمين جانباً ورفع اليدين فوق الرأس في نفس الوقت، ثم اقفز عائداً لنقطة البداية. حافظ على إيقاع مستمر.",
+            "muscle_en": "Full Body",
+            "muscle_ar": "كامل الجسم",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "WARMUP",
+            "rating": 5.0,
+            "source": "Static_Warmup",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Jumping_Jacks/0.jpg",
+            "sets": 1,
+            "reps_en": "45-60 sec",
+            "reps_ar": "45-60 ثانية"
+        }
+    ]
+}
+
+COOLDOWN_EXERCISES = {
+    "upper": [
+        {
+            "id": 9004,
+            "name_en": "Behind Head Chest Stretch",
+            "name_ar": "إطالة الصدر والجزء العلوي خلف الرأس",
+            "description_en": "Cool down chest and shoulders after upper workout.",
+            "description_ar": "تهدئة وإطالة عضلات الصدر والكتف بعد التمرين العلوي.",
+            "instructions_en": "Clasp hands behind your head, draw elbows backward until you feel a deep stretch in your chest.",
+            "instructions_ar": "ضع يديك مشبوكتين خلف رأسك، وادفع كوعيك للخلف بلطف حتى تشعر بإطالة مريحة وعميقة في عضلات الصدر والكتف.",
+            "muscle_en": "Chest",
+            "muscle_ar": "الصدر",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "COOLDOWN",
+            "rating": 5.0,
+            "source": "Static_Cooldown",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Chest_Stretch/0.jpg",
+            "sets": 1,
+            "reps_en": "30-45 sec",
+            "reps_ar": "30-45 ثانية"
+        },
+        {
+            "id": 9005,
+            "name_en": "Seated Overhead Stretch",
+            "name_ar": "الإطالة العلوية من الجلوس",
+            "description_en": "Static stretch for spine and upper back recovery.",
+            "description_ar": "إطالة ثابتة ومريحة للعمود الفقري وعضلات الظهر العلوي.",
+            "instructions_en": "Sit comfortably, interlock fingers and push palms upward towards the ceiling, lengthening the spine.",
+            "instructions_ar": "اجلس بوضعية مريحة، اشبك أصابع يديك واضغط براحتيك للأعلى باتجاه السقف لتمديد العمود الفقري والجذع بالكامل.",
+            "muscle_en": "Back",
+            "muscle_ar": "الظهر",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "COOLDOWN",
+            "rating": 5.0,
+            "source": "Static_Cooldown",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Childs_Pose/0.jpg",
+            "sets": 1,
+            "reps_en": "30-45 sec",
+            "reps_ar": "30-45 ثانية"
+        }
+    ],
+    "lower": [
+        {
+            "id": 9006,
+            "name_en": "Lying Glute Stretch",
+            "name_ar": "إطالة عضلات الأرداف مستلقياً",
+            "description_en": "Stretch glutes and hips post workout.",
+            "description_ar": "تهدئة وإطالة عضلات الحوض والأرداف والجلوتس بعد التدريب.",
+            "instructions_en": "Lie on back, cross one ankle over opposite knee, pull the opposite thigh towards your chest.",
+            "instructions_ar": "استلقِ على ظهرك، ضع كاحل قدم واحدة فوق الركبة المعاكسة، ثم اسحب الفخذ المعاكس نحو صدرك برفق لتهدئة عضلات الأرداف.",
+            "muscle_en": "Glutes",
+            "muscle_ar": "الأرداف",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "COOLDOWN",
+            "rating": 5.0,
+            "source": "Static_Cooldown",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Lying_Glute_Stretch/0.jpg",
+            "sets": 1,
+            "reps_en": "30-45 sec",
+            "reps_ar": "30-45 ثانية"
+        },
+        {
+            "id": 9007,
+            "name_en": "Wall Calf Stretch",
+            "name_ar": "إطالة عضلات بطة الرجل (Calf Stretch)",
+            "description_en": "Stretch calves and Achilles tendons.",
+            "description_ar": "إطالة وتمديد عضلة بطة الساق ووتر أكيليس.",
+            "instructions_en": "Place hands on wall, step one leg back keeping heel flat on the floor, lean forward.",
+            "instructions_ar": "ضع يديك على الجدار، خذ خطوة للخلف بقدم واحدة مع الحفاظ على الكعب مسطحاً على الأرض، ثم امل بجسمك للأمام لتمديد بطة الرجل.",
+            "muscle_en": "Calves",
+            "muscle_ar": "الساقين",
+            "equipment_en": "Body Only",
+            "equipment_ar": "وزن الجسم",
+            "level": "beginner",
+            "category": "COOLDOWN",
+            "rating": 5.0,
+            "source": "Static_Cooldown",
+            "image_url": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Calf_Stretch_Elbows_Against_Wall/0.jpg",
+            "sets": 1,
+            "reps_en": "30-45 sec",
+            "reps_ar": "30-45 ثانية"
+        }
+    ]
+}
+
 def determine_sets_reps(goal, category):
     """
     Calculate sets and reps depending on the workout goal.
     """
-    if category.upper() in ["YOGA", "STRETCHING", "CARDIO"]:
+    if category.upper() in ["YOGA", "STRETCHING", "CARDIO", "WARMUP", "COOLDOWN"]:
         # Duration based
         return {"sets": 3, "reps_en": "30-60 sec", "reps_ar": "30-60 ثانية"}
         
@@ -294,6 +477,36 @@ def generate_workout_plan(days_per_week, location, equipment_list, level, goal, 
                         if added_count >= muscle_limit:
                             break
                             
+        # Determine Upper / Lower day type
+        day_type = "upper"
+        day_title_lower = day["name_en"].lower()
+        if any(term in day_title_lower for term in ["legs", "lower", "quad", "posterior", "hamstring", "glute"]):
+            day_type = "lower"
+
+        import copy
+        day_warmups = copy.deepcopy(WARMUP_EXERCISES[day_type])
+        day_cooldowns = copy.deepcopy(COOLDOWN_EXERCISES[day_type])
+
+        main_exercises = day_routine["exercises"]
+        final_exercises = []
+        order_idx = 0
+        for w_ex in day_warmups:
+            w_ex["order"] = order_idx
+            final_exercises.append(w_ex)
+            order_idx += 1
+            
+        for m_ex in main_exercises:
+            m_ex["order"] = order_idx
+            final_exercises.append(m_ex)
+            order_idx += 1
+            
+        for c_ex in day_cooldowns:
+            c_ex["order"] = order_idx
+            final_exercises.append(c_ex)
+            order_idx += 1
+            
+        day_routine["exercises"] = final_exercises
+
         weekly_routine.append(day_routine)
         
     return weekly_routine

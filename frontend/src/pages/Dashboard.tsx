@@ -15,6 +15,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
   const t = translations[lang] || translations.ar;
   const [activePlan, setActivePlan] = useState<any>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
+  const [showDayDetail, setShowDayDetail] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -85,6 +86,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
         let calculatedDay = (diffDays % 7) + 1;
         if (calculatedDay < 1) calculatedDay = 1;
         setSelectedDayIndex(calculatedDay <= 7 ? calculatedDay : 1);
+        setShowDayDetail(true);
       }
     } catch (err: any) {
       setError(err.message || 'لم نتمكن من تحميل جدول التمارين النشط.');
@@ -171,6 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
       setShowImport(false);
       setImportListText('');
       setSelectedDayIndex(1);
+      setShowDayDetail(true);
     } catch (err: any) {
       setError(err.message || 'فشل استيراد الجدول المجمع وتحليله.');
     } finally {
@@ -196,6 +199,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
       setActivePlan(plan);
       setShowHistory(false);
       setSelectedDayIndex(1);
+      setShowDayDetail(true);
     } catch (err: any) {
       setError('فشل تفعيل هذا البرنامج الرياضي.');
     }
@@ -623,27 +627,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
                   {lang === 'en' ? `Duration: ${activePlan.durationWeeks} Weeks` : `المدة: ${activePlan.durationWeeks} أسابيع`}
                 </p>
 
-                {/* Stats row */}
-                <div className="stats-row" style={{ flexDirection: lang === 'en' ? 'row' : 'row' }}>
-                  <div className="stat-badge-glass">
-                    <span>🔥</span>
-                    <span>
-                      {lang === 'en' ? `Streak: ${getStreakCount()} Days` : `الالتزام: ${getStreakCount()} أيام متتالية`}
-                    </span>
-                  </div>
-                  <div className="stat-badge-glass">
-                    <span>🛡️</span>
-                    <span>
-                      {lang === 'en' ? `Level: ${getXPLevel().level}` : `المستوى: ${getXPLevel().level}`}
-                    </span>
-                  </div>
-                  <div className="stat-badge-glass" style={{ color: 'var(--primary)' }}>
-                    <span>⚡</span>
-                    <span>
-                      {getXPLevel().xp} XP
-                    </span>
-                  </div>
-                </div>
+                 {/* Stats row */}
+                 <div className="stats-row" style={{ display: 'flex', gap: '10px' }}>
+                   <div className="stat-badge-glass">
+                     <span>🔥</span>
+                     <span>
+                       {lang === 'en' ? `Streak: ${getStreakCount()} Days` : `الالتزام: ${getStreakCount()} أيام متتالية`}
+                     </span>
+                   </div>
+                 </div>
 
                 {activePlan.weeklyTips && (
                   <p style={{ fontSize: '13px', color: '#60a5fa', marginTop: '16px', background: 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -708,182 +700,222 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
               </button>
             </div>
 
-            {activeTab === 'schedule' && (
-              <div className="timeline-container">
+            {activeTab === 'schedule' && !showDayDetail && (
+              <div className="timeline-container animated-fade">
                 <div className="timeline-line"></div>
-              {activePlan.dayWorkouts.map((day: any) => {
-                const isSelected = day.dayIndex === selectedDayIndex;
-                const isRest = day.isRestDay;
-                
-                // Determine circle timeline status
-                const isCompleted = day.exercises.length > 0 && day.exercises.every((ex: any) => ex.progressLogs && ex.progressLogs.length > 0);
-                const circleClass = isCompleted 
-                  ? 'timeline-circle-completed' 
-                  : isSelected 
-                    ? 'timeline-circle-active' 
-                    : '';
+                {activePlan.dayWorkouts.map((day: any) => {
+                  const isRest = day.isRestDay;
+                  const isCompleted = day.exercises.length > 0 && day.exercises.every((ex: any) => ex.progressLogs && ex.progressLogs.length > 0);
+                  const circleClass = isCompleted 
+                    ? 'timeline-circle-completed' 
+                    : day.dayIndex === selectedDayIndex
+                      ? 'timeline-circle-active' 
+                      : '';
 
-                // Calculate estimated time and calories
-                const totalExercises = day.exercises.length;
-                const estimatedMins = isRest ? 0 : totalExercises * 2 + 10;
-                const estimatedKcal = isRest ? 0 : totalExercises * 15 + 40;
+                  const totalExercises = day.exercises.length;
+                  const estimatedMins = isRest ? 0 : totalExercises * 2 + 10;
+                  const estimatedKcal = isRest ? 0 : totalExercises * 15 + 40;
 
-                // Group exercises into Warm up, Main, Cool down
-                const warmUpEx = day.exercises.filter((ex: any) => 
-                  ['YOGA', 'PILATES', 'HIIT', 'CARDIO'].includes(ex.category) || ex.order < 1
-                );
-                const mainEx = day.exercises.filter((ex: any) => 
-                  !warmUpEx.includes(ex) && ex.order < totalExercises - 1
-                );
-                const coolDownEx = day.exercises.filter((ex: any) => 
-                  !warmUpEx.includes(ex) && !mainEx.includes(ex)
-                );
-
-                return (
-                  <div key={day.id} className="timeline-item">
-                    {/* The circle on the timeline */}
-                    <div className={`timeline-circle ${circleClass}`}></div>
-
-                    {/* The day card itself */}
-                    <div 
-                      className={`day-timeline-card ${isSelected ? 'active' : ''}`}
-                      onClick={() => setSelectedDayIndex(day.dayIndex)}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                          {/* Left Avatar / preview */}
-                          <div style={{ width: '60px', height: '60px', borderRadius: '14px', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                            {isRest ? (
-                              <span style={{ fontSize: '24px' }}>🧘‍♂️</span>
-                            ) : day.exercises[0]?.imageUrl ? (
-                              <img src={day.exercises[0].imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <span style={{ fontSize: '24px' }}>🏋️‍♂️</span>
-                            )}
-                          </div>
-                          <div>
-                            <h3 style={{ fontSize: '18px', fontWeight: '800' }}>
-                              {lang === 'en' ? `Day ${day.dayIndex}: ${day.focusArea}` : `اليوم ${day.dayIndex}: ${day.title}`}
-                            </h3>
-                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                              ⏱️ {estimatedMins} {lang === 'en' ? 'mins' : 'دقيقة'} | 🔥 {estimatedKcal} {lang === 'en' ? 'kcal' : 'سعرة'}
-                            </p>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {isCompleted && (
-                            <span className="badge badge-primary" style={{ fontSize: '10px' }}>
-                              ✅ {lang === 'en' ? 'Completed' : 'مكتمل'}
-                            </span>
-                          )}
-                          <span style={{ color: 'var(--text-muted)', transform: isSelected ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>
-                            ▶
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Expanded Day Details */}
-                      {isSelected && (
-                        <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }} onClick={(e) => e.stopPropagation()}>
-                          
-                          {/* Start Workout Button */}
-                          {!isRest && (
-                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                              <button 
-                                onClick={handleStartWorkout}
-                                className="glow-btn"
-                                style={{
-                                  width: '100%',
-                                  maxWidth: '350px',
-                                  padding: '16px 24px',
-                                  borderRadius: '30px',
-                                  fontSize: '16px',
-                                  background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-                                  boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                🚀 {lang === 'en' ? 'Start Workout' : 'ابدأ الحصة الرياضية'}
-                              </button>
+                  return (
+                    <div key={day.id} className="timeline-item">
+                      <div className={`timeline-circle ${circleClass}`}></div>
+                      <div 
+                        className="day-timeline-card"
+                        style={{ cursor: 'pointer', transition: 'transform 0.2s, border-color 0.2s' }}
+                        onClick={() => {
+                          setSelectedDayIndex(day.dayIndex);
+                          setShowDayDetail(true);
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                            <div style={{ width: '60px', height: '60px', borderRadius: '14px', background: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                              {isRest ? (
+                                <span style={{ fontSize: '24px' }}>🧘‍♂️</span>
+                              ) : day.exercises[0]?.imageUrl ? (
+                                <img src={day.exercises[0].imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <span style={{ fontSize: '24px' }}>🏋️‍♂️</span>
+                              )}
                             </div>
-                          )}
-
-                          {isRest ? (
-                            <div style={{ textAlign: 'center', padding: '20px', background: 'rgba(255,255,255,0.01)', borderRadius: '16px' }}>
-                              <div style={{ fontSize: '40px' }}>🧘‍♂️</div>
-                              <h4 style={{ fontSize: '16px', marginTop: '12px' }}>
-                                {lang === 'en' ? 'Rest & Muscle Recovery Day' : 'يوم راحة مخصص للاستشفاء العضلي'}
-                              </h4>
-                              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px', maxWidth: '400px', margin: '6px auto 0' }}>
-                                {lang === 'en' 
-                                  ? 'Active recovery day. Focus on light walking, stretching, drinking water, and nourishing your body for the next challenges.'
-                                  : 'الاستشفاء جزء لا يتجزأ من التطور الرياضي. ركز على التمدد الخفيف، شرب الماء، والتغذية السليمة استعداداً للحصة القادمة.'}
+                            <div>
+                              <h3 style={{ fontSize: '18px', fontWeight: '800' }}>
+                                {lang === 'en' ? `Day ${day.dayIndex}: ${day.focusArea}` : `اليوم ${day.dayIndex}: ${day.title}`}
+                              </h3>
+                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                ⏱️ {estimatedMins} {lang === 'en' ? 'mins' : 'دقيقة'} | 🔥 {estimatedKcal} {lang === 'en' ? 'kcal' : 'سعرة'}
                               </p>
                             </div>
-                          ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                              
-                              {/* 1. Warm Up Segment */}
-                              {warmUpEx.length > 0 && (
-                                <div>
-                                  <div className="routine-phase-header">
-                                    <span>🔥 {lang === 'en' ? 'Warm Up' : 'محطة الإحماء والتسخين'}</span>
-                                    <span>{warmUpEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {warmUpEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* 2. Main Routine Segment */}
-                              {mainEx.length > 0 && (
-                                <div>
-                                  <div className="routine-phase-header">
-                                    <span>🏋️‍♂️ {lang === 'en' ? 'Main Routine' : 'الجدول التدريبي الأساسي'}</span>
-                                    <span>{mainEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {mainEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx + 10))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* 3. Cool Down Segment */}
-                              {coolDownEx.length > 0 && (
-                                <div>
-                                  <div className="routine-phase-header">
-                                    <span>🧘‍♂️ {lang === 'en' ? 'Cool Down' : 'محطة التهدئة والاطالات'}</span>
-                                    <span>{coolDownEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
-                                  </div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {coolDownEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx + 20))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Add custom manually */}
-                              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
-                                <button 
-                                  onClick={() => setAddingCustom(true)} 
-                                  className="secondary-btn" 
-                                  style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '12px' }}
-                                >
-                                  ➕ {lang === 'en' ? 'Add Custom Exercise' : 'إضافة تمرين يدوي مخصص'}
-                                </button>
-                              </div>
-
-                            </div>
-                          )}
-
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {isCompleted && (
+                              <span className="badge badge-primary" style={{ fontSize: '10px' }}>
+                                ✅ {lang === 'en' ? 'Completed' : 'مكتمل'}
+                              </span>
+                            )}
+                            <span className="badge badge-secondary" style={{ fontSize: '11px', borderRadius: '20px', padding: '6px 12px', background: 'rgba(124, 92, 252, 0.1)', color: 'var(--primary)', border: '1px solid rgba(124, 92, 252, 0.2)' }}>
+                              {lang === 'en' ? 'View Exercises ➔' : 'عرض التمارين ➔'}
+                            </span>
+                          </div>
                         </div>
-                      )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeTab === 'schedule' && showDayDetail && (() => {
+              const day = activePlan.dayWorkouts.find((dw: any) => dw.dayIndex === selectedDayIndex);
+              if (!day) return null;
+              const isRest = day.isRestDay;
+
+              const warmUpEx = day.exercises.filter((ex: any) => 
+                ex.category === 'WARMUP' || 
+                (day.exercises.every((e: any) => e.category !== 'WARMUP') && (['YOGA', 'PILATES', 'HIIT', 'CARDIO'].includes(ex.category) || ex.order < 1))
+              );
+              const coolDownEx = day.exercises.filter((ex: any) => 
+                ex.category === 'COOLDOWN' || 
+                (day.exercises.every((e: any) => e.category !== 'COOLDOWN') && !warmUpEx.includes(ex) && ex.order >= day.exercises.length - 1)
+              );
+              const mainEx = day.exercises.filter((ex: any) => !warmUpEx.includes(ex) && !coolDownEx.includes(ex));
+
+              const totalExercises = day.exercises.length;
+              const estimatedMins = isRest ? 0 : totalExercises * 2 + 10;
+              const estimatedKcal = isRest ? 0 : totalExercises * 15 + 40;
+
+              return (
+                <div className="day-detail-container animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Back button */}
+                  <div>
+                    <button
+                      onClick={() => setShowDayDetail(false)}
+                      className="secondary-btn"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 20px',
+                        borderRadius: '9999px',
+                        border: '1px solid var(--border-color)',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '13px'
+                      }}
+                    >
+                      {lang === 'en' ? '⬅ Back to Days Schedule' : '⬅ العودة لجدول الأسبوع'}
+                    </button>
+                  </div>
+
+                  {/* Day Info Header Card */}
+                  <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden', borderRadius: '16px' }}>
+                    <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '120px', height: '120px', background: 'var(--primary-glow)', filter: 'blur(50px)', opacity: 0.15, pointerEvents: 'none' }}></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                      <div>
+                        <h2 style={{ fontSize: '24px', fontWeight: '900', color: 'var(--text-primary)' }}>
+                          {lang === 'en' ? `Day ${day.dayIndex}: ${day.focusArea}` : `اليوم ${day.dayIndex}: ${day.title}`}
+                        </h2>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                          ⏱️ {estimatedMins} {lang === 'en' ? 'minutes total' : 'دقيقة إجمالية'} | 🔥 {estimatedKcal} {lang === 'en' ? 'calories estimated' : 'سعرة حرارية مقدرة'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-            )}
+
+                  {/* Start Workout Button */}
+                  {!isRest && (
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <button 
+                        onClick={handleStartWorkout}
+                        className="glow-btn"
+                        style={{
+                          width: '100%',
+                          maxWidth: '350px',
+                          padding: '16px 24px',
+                          borderRadius: '30px',
+                          fontSize: '16px',
+                          background: 'linear-gradient(135deg, #7C5CFC, #3b82f6)',
+                          boxShadow: '0 8px 24px rgba(124, 92, 252, 0.35)',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        🚀 {lang === 'en' ? 'Start Workout' : 'ابدأ الحصة الرياضية'}
+                      </button>
+                    </div>
+                  )}
+
+                  {isRest ? (
+                    <div style={{ textAlign: 'center', padding: '40px 20px', background: 'rgba(255,255,255,0.01)', borderRadius: '16px', border: '1px dashed var(--border-color)' }}>
+                      <div style={{ fontSize: '50px' }}>🧘‍♂️</div>
+                      <h4 style={{ fontSize: '18px', marginTop: '15px', fontWeight: '800' }}>
+                        {lang === 'en' ? 'Rest & Muscle Recovery Day' : 'يوم راحة مخصص للاستشفاء العضلي'}
+                      </h4>
+                      <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '8px', maxWidth: '500px', margin: '8px auto 0', lineHeight: '1.6' }}>
+                        {lang === 'en' 
+                          ? 'Active recovery day. Focus on light walking, stretching, drinking water, and nourishing your body for the next challenges.'
+                          : 'الاستشفاء جزء لا يتجزأ من التطور الرياضي. ركز على التمدد الخفيف، شرب الماء، والتغذية السليمة استعداداً للحصة القادمة.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      
+                      {/* 1. Warm Up Segment */}
+                      {warmUpEx.length > 0 && (
+                        <div>
+                          <div className="routine-phase-header" style={{ marginBottom: '10px' }}>
+                            <span>🔥 {lang === 'en' ? 'Warm Up' : 'محطة الإحماء والتسخين'}</span>
+                            <span>{warmUpEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {warmUpEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. Main Routine Segment */}
+                      {mainEx.length > 0 && (
+                        <div>
+                          <div className="routine-phase-header" style={{ marginBottom: '10px' }}>
+                            <span>🏋️‍♂️ {lang === 'en' ? 'Main Routine' : 'الجدول التدريبي الأساسي'}</span>
+                            <span>{mainEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {mainEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx + 10))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. Cool Down Segment */}
+                      {coolDownEx.length > 0 && (
+                        <div>
+                          <div className="routine-phase-header" style={{ marginBottom: '10px' }}>
+                            <span>🧘‍♂️ {lang === 'en' ? 'Cool Down' : 'محطة التهدئة والاطالات'}</span>
+                            <span>{coolDownEx.length} {lang === 'en' ? 'exercises' : 'تمارين'}</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {coolDownEx.map((ex: any, idx: number) => renderTimelineExerciseRow(ex, idx + 20))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Add custom manually */}
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '15px' }}>
+                        <button 
+                          onClick={() => setAddingCustom(true)} 
+                          className="secondary-btn" 
+                          style={{ padding: '10px 20px', fontSize: '13px', borderRadius: '9999px' }}
+                        >
+                          ➕ {lang === 'en' ? 'Add Custom Exercise' : 'إضافة تمرين يدوي مخصص'}
+                        </button>
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {activeTab === 'progression' && (
               <div className="glass-panel animated-fade" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1072,7 +1104,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onLogout, onNavigate
                         </div>
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <label style={{ fontSize: '12px', fontWeight: 'bold' }}>الوزن المستعمل</label>
-                          <input id="weight-input" type="text" defaultValue={ex.weight} className="input-field" style={{ textAlign: 'center' }} />
+                          <select 
+                            id="weight-input" 
+                            defaultValue={ex.weight || 'Bodyweight'} 
+                            className="input-field" 
+                            style={{ 
+                              textAlign: 'center',
+                              background: 'var(--bg-card)',
+                              color: 'var(--text-primary)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '12px',
+                              padding: '10px',
+                              width: '100%',
+                              appearance: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="Bodyweight">{lang === 'en' ? 'Bodyweight' : 'وزن الجسم'}</option>
+                            {(() => {
+                              const opts = [];
+                              for (let w = 2.5; w <= 150; w += 2.5) {
+                                const val = `${w} kg`;
+                                opts.push(<option key={val} value={val}>{val}</option>);
+                              }
+                              if (ex.weight && ex.weight !== 'Bodyweight' && !opts.some(o => o.props.value === ex.weight)) {
+                                opts.unshift(<option key={ex.weight} value={ex.weight}>{ex.weight}</option>);
+                              }
+                              return opts;
+                            })()}
+                          </select>
                         </div>
                       </div>
                     )
