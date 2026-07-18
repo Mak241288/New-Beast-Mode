@@ -19,16 +19,14 @@ model User {
   targetWeight      Float?          // in kg
   medicalConditions String?         // text detailing injuries/ailments
   labResults        String?         // blood tests/health metrics
-  foodAllergies     String?
-  foodPreferences   String?         // e.g. "vegan, high protein"
-  foodDislikes      String?         // e.g. "fish, broccoli"
   workoutLocation   String?         // "HOME" or "GYM"
+  equipment         String?         // comma-separated list of available equipment
+  fitnessGoal       String?         // e.g. "HYPERTROPHY", "LOSE_WEIGHT"
+  fitnessLevel      String?         // e.g. "beginner", "intermediate", "advanced"
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   workoutPlans      WorkoutPlan[]
   weightLogs        WeightLog[]
-  chatMessages      ChatMessage[]
-  nutritionPlans    NutritionPlan[]
 }
 
 model WeightLog {
@@ -106,43 +104,3 @@ model ProgressLog {
   notes         String?  // How the user felt during the exercise
 }
 
-model NutritionPlan {
-  id               Int       @id @default(autoincrement())
-  userId           Int
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date             DateTime
-  caloriesGoal     Int
-  proteinGoal      Int
-  carbsGoal        Int
-  fatGoal          Int
-  breakfast        String    // Recommended breakfast
-  lunch            String    // Recommended lunch
-  dinner           String    // Recommended dinner
-  snacks           String?   // Recommended snacks
-  syncWithWorkout  Boolean   @default(true)
-  waterLoggedMl    Int       @default(0)
-  mealsLogged      MealLog[]
-
-  @@unique([userId, date])
-}
-
-model MealLog {
-  id              Int           @id @default(autoincrement())
-  nutritionPlanId Int
-  nutritionPlan   NutritionPlan @relation(fields: [nutritionPlanId], references: [id], onDelete: Cascade)
-  time            DateTime      @default(now())
-  description     String        // e.g. "Grilled chicken breast, white rice"
-  calories        Int
-  protein         Int
-  carbs           Int
-  fat             Int
-}
-
-model ChatMessage {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sender    String   // "USER" or "AI"
-  text      String
-  timestamp DateTime @default(now())
-}
