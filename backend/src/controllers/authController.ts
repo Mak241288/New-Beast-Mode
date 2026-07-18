@@ -105,10 +105,10 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
         targetWeight: true,
         medicalConditions: true,
         labResults: true,
-        foodAllergies: true,
-        foodPreferences: true,
-        foodDislikes: true,
         workoutLocation: true,
+        fitnessGoal: true,
+        fitnessLevel: true,
+        equipment: true,
         createdAt: true,
       },
     });
@@ -137,10 +137,10 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     targetWeight,
     medicalConditions,
     labResults,
-    foodAllergies,
-    foodPreferences,
-    foodDislikes,
     workoutLocation,
+    fitnessGoal,
+    fitnessLevel,
+    equipment,
   } = req.body;
 
   try {
@@ -174,20 +174,18 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         targetWeight: targetWeight !== undefined ? (targetWeight ? parseFloat(targetWeight) : null) : oldUser.targetWeight,
         medicalConditions: medicalConditions !== undefined ? medicalConditions : oldUser.medicalConditions,
         labResults: labResults !== undefined ? labResults : oldUser.labResults,
-        foodAllergies: foodAllergies !== undefined ? foodAllergies : oldUser.foodAllergies,
-        foodPreferences: foodPreferences !== undefined ? foodPreferences : oldUser.foodPreferences,
-        foodDislikes: foodDislikes !== undefined ? foodDislikes : oldUser.foodDislikes,
         workoutLocation: workoutLocation !== undefined ? workoutLocation : oldUser.workoutLocation,
+        fitnessGoal: fitnessGoal !== undefined ? fitnessGoal : oldUser.fitnessGoal,
+        fitnessLevel: fitnessLevel !== undefined ? fitnessLevel : oldUser.fitnessLevel,
+        equipment: equipment !== undefined ? (Array.isArray(equipment) ? equipment.join(',') : equipment) : oldUser.equipment,
       },
     });
 
     // Determine if AI plan adjustment is needed
-    // Triggered if weight, location, medical, or food preferences change
+    // Triggered if weight, location, or medical conditions change
     const isWeightChanged = parsedWeight !== null && parsedWeight !== oldUser.currentWeight;
     const isLocationChanged = workoutLocation !== undefined && workoutLocation !== oldUser.workoutLocation;
     const isMedicalChanged = medicalConditions !== undefined && medicalConditions !== oldUser.medicalConditions;
-    const isFoodPreferencesChanged = foodPreferences !== undefined && foodPreferences !== oldUser.foodPreferences;
-    const isFoodDislikesChanged = foodDislikes !== undefined && foodDislikes !== oldUser.foodDislikes;
 
     let needsPlanAdjustment = false;
     let adjustmentSuggestion = '';
@@ -198,7 +196,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
 
     if (
       hasActivePlans &&
-      (isWeightChanged || isLocationChanged || isMedicalChanged || isFoodPreferencesChanged || isFoodDislikesChanged)
+      (isWeightChanged || isLocationChanged || isMedicalChanged)
     ) {
       needsPlanAdjustment = true;
 
@@ -207,7 +205,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         adjustmentSuggestion = await getProfileAdviceAI(oldUser, updatedUser);
       } catch (aiErr) {
         console.error('Error generating AI profile advice:', aiErr);
-        adjustmentSuggestion = 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح إعادة توليد جدول التمارين والتغذية ليتناسب مع موقع تمرينك وحالتك البدنية والغذائية المحدثة.';
+        adjustmentSuggestion = 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح إعادة توليد جدول التمارين ليتناسب مع موقع تمرينك وحالتك البدنية المحدثة.';
       }
     }
 
@@ -224,10 +222,10 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         targetWeight: updatedUser.targetWeight,
         medicalConditions: updatedUser.medicalConditions,
         labResults: updatedUser.labResults,
-        foodAllergies: updatedUser.foodAllergies,
-        foodPreferences: updatedUser.foodPreferences,
-        foodDislikes: updatedUser.foodDislikes,
         workoutLocation: updatedUser.workoutLocation,
+        fitnessGoal: updatedUser.fitnessGoal,
+        fitnessLevel: updatedUser.fitnessLevel,
+        equipment: updatedUser.equipment,
       },
       needsPlanAdjustment,
       adjustmentSuggestion,

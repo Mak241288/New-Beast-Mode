@@ -25,7 +25,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   // Step 2: Fitness settings
   const [workoutLocation, setWorkoutLocation] = useState<'HOME' | 'GYM'>('GYM');
   const [equipment, setEquipment] = useState<string[]>([]);
-  const [level, setLevel] = useState('beginner');
+  const [level, setLevel] = useState('intermediate');
+  const [workoutGoal, setWorkoutGoal] = useState('HYPERTROPHY');
   const [targetMuscles, setTargetMuscles] = useState<string[]>([]);
   const [exercisesPerDay, setExercisesPerDay] = useState(5);
   const [restDays, setRestDays] = useState<string[]>([]);
@@ -34,30 +35,25 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   const [medicalConditions, setMedicalConditions] = useState('');
   const [labResults, setLabResults] = useState('');
 
-  // Step 4: Nutrition
-  const [foodAllergies, setFoodAllergies] = useState('');
-  const [foodPreferences, setFoodPreferences] = useState('Balanced');
-  const [foodDislikes, setFoodDislikes] = useState('');
-
-  // Step 5: Plan duration & Start Date
+  // Step 4: Plan duration & Start Date
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
 
   const equipmentList = [
-    { id: 'dumbbells', label: 'دمبلز (Dumbbells)' },
-    { id: 'barbell', label: 'بار وأوزان (Barbell)' },
-    { id: 'bands', label: 'حبال مقاومة (Bands)' },
-    { id: 'pullup', label: 'عقلة منزلية (Pull-up Bar)' },
-    { id: 'cables', label: 'جهاز كيبل (Cables)' },
+    { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز' },
+    { id: 'barbell', label: lang === 'en' ? 'Barbell' : 'بار وأوزان' },
+    { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة' },
+    { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية' },
+    { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات' },
   ];
 
   const muscleGroups = [
-    { id: 'chest', label: 'الصدر (Chest)' },
-    { id: 'back', label: 'الظهر (Back)' },
-    { id: 'shoulders', label: 'الأكتاف (Shoulders)' },
-    { id: 'legs', label: 'الأرجل (Legs)' },
-    { id: 'arms', label: 'الذراعين (Arms)' },
-    { id: 'abs', label: 'البطن (Abs)' },
+    { id: 'chest', label: lang === 'en' ? 'Chest' : 'الصدر' },
+    { id: 'back', label: lang === 'en' ? 'Back' : 'الظهر' },
+    { id: 'shoulders', label: lang === 'en' ? 'Shoulders' : 'الأكتاف' },
+    { id: 'legs', label: lang === 'en' ? 'Legs' : 'الأرجل' },
+    { id: 'arms', label: lang === 'en' ? 'Arms' : 'الذراعين' },
+    { id: 'abs', label: lang === 'en' ? 'Abs/Core' : 'البطن والوسط' },
   ];
 
   const handleMuscleChange = (id: string) => {
@@ -69,13 +65,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   };
 
   const weekdaysList = [
-    { id: 'saturday', label: 'السبت' },
-    { id: 'sunday', label: 'الأحد' },
-    { id: 'monday', label: 'الإثنين' },
-    { id: 'tuesday', label: 'الثلاثاء' },
-    { id: 'wednesday', label: 'الأربعاء' },
-    { id: 'thursday', label: 'الخميس' },
-    { id: 'friday', label: 'الجمعة' },
+    { id: 'saturday', label: lang === 'en' ? 'Sat' : 'السبت' },
+    { id: 'sunday', label: lang === 'en' ? 'Sun' : 'الأحد' },
+    { id: 'monday', label: lang === 'en' ? 'Mon' : 'الإثنين' },
+    { id: 'tuesday', label: lang === 'en' ? 'Tue' : 'الثلاثاء' },
+    { id: 'wednesday', label: lang === 'en' ? 'Wed' : 'الأربعاء' },
+    { id: 'thursday', label: lang === 'en' ? 'Thu' : 'الخميس' },
+    { id: 'friday', label: lang === 'en' ? 'Fri' : 'الجمعة' },
   ];
 
   const handleRestDayChange = (id: string) => {
@@ -95,7 +91,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   };
 
   const handleNext = () => {
-    if (step < 5) setStep(step + 1);
+    if (step < 4) setStep(step + 1);
   };
 
   const handlePrev = () => {
@@ -107,7 +103,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
     setError('');
 
     try {
-      // 1. Save Profile info
+      // 1. Save Profile info (excluding deleted nutrition fields)
       await api.updateProfile({
         gender,
         birthDate: birthDate ? new Date(birthDate) : undefined,
@@ -116,22 +112,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         targetWeight: targetWeight ? parseFloat(targetWeight) : undefined,
         medicalConditions,
         labResults,
-        foodAllergies,
-        foodPreferences,
-        foodDislikes,
         workoutLocation,
+        fitnessGoal: workoutGoal,
+        fitnessLevel: level,
+        equipment,
       });
 
-      // 2. Generate workout plan via Local Python Engine
-      const curW = currentWeight ? parseFloat(currentWeight) : 75;
-      const tarW = targetWeight ? parseFloat(targetWeight) : 75;
-      let calculatedGoal = 'HYPERTROPHY';
-      if (tarW < curW) {
-        calculatedGoal = 'FAT_LOSS';
-      } else if (foodPreferences === 'High Protein') {
-        calculatedGoal = 'STRENGTH';
-      }
-
+      // 2. Generate workout plan via Python Engine
       await api.generatePlan({
         durationWeeks,
         startDate: new Date(startDate),
@@ -139,7 +126,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         equipment,
         level,
         targetMuscles,
-        goal: calculatedGoal,
+        goal: workoutGoal,
         restDays,
         exercisesPerDay,
         daysPerWeek: 7 - restDays.length,
@@ -148,29 +135,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
 
       onComplete();
     } catch (err: any) {
-      setError(err.message || 'فشل توليد الجدول بالذكاء الاصطناعي، يرجى التحقق من المدخلات.');
+      setError(err.message || (lang === 'en' ? 'Failed to generate plan. Please check inputs.' : 'فشل توليد الجدول بالذكاء الاصطناعي، يرجى التحقق من المدخلات.'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex-center" style={{ minHeight: '100vh', padding: '30px 16px', background: 'radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.06) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(249, 115, 22, 0.06) 0%, transparent 40%)' }}>
+    <div className="flex-center" style={{ minHeight: '100vh', padding: '30px 16px', background: 'radial-gradient(circle at 80% 20%, rgba(0, 210, 255, 0.05) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 40%)' }}>
       <div className="glass-panel" style={{ width: '100%', maxWidth: '580px', padding: '35px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         {/* Step Indicator */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>
-              {t.stepOf(step, 5)}
+              {t.stepOf(step, 4)}
             </span>
             <ThemeToggle />
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {[1, 2, 3, 4, 5].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 style={{
-                  width: '32px',
+                  width: '40px',
                   height: '6px',
                   borderRadius: '3px',
                   background: s <= step ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--border-color)',
@@ -192,20 +179,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
           <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
               <Activity size={24} color="var(--primary)" />
-              <h3>البيانات الجسدية الأساسية</h3>
+              <h3 style={{ fontSize: '20px', fontWeight: '800' }}>
+                {lang === 'en' ? 'Physical Bio Metrics' : 'البيانات الجسدية الأساسية'}
+              </h3>
             </div>
 
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700' }}>الجنس</label>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.gender}</label>
                 <select value={gender} onChange={(e) => setGender(e.target.value)} className="input-field">
-                  <option value="MALE">ذكر</option>
-                  <option value="FEMALE">أنثى</option>
+                  <option value="MALE">{lang === 'en' ? 'Male' : 'ذكر'}</option>
+                  <option value="FEMALE">{lang === 'en' ? 'Female' : 'أنثى'}</option>
                 </select>
               </div>
 
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700' }}>تاريخ الميلاد</label>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.birthDate}</label>
                 <input
                   type="date"
                   value={birthDate}
@@ -217,7 +206,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>الطول (سم)</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.height}</label>
               <input
                 type="number"
                 placeholder="175"
@@ -230,7 +219,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
 
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700' }}>الوزن الحالي (كجم)</label>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.currentWeight}</label>
                 <input
                   type="number"
                   placeholder="80"
@@ -242,7 +231,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
               </div>
 
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700' }}>الوزن المستهدف (كجم)</label>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.targetWeight}</label>
                 <input
                   type="number"
                   placeholder="75"
@@ -261,11 +250,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
           <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
               <Compass size={24} color="var(--primary)" />
-              <h3>خيارات التدريب الرياضي</h3>
+              <h3 style={{ fontSize: '20px', fontWeight: '800' }}>
+                {lang === 'en' ? 'Workout Preference & Settings' : 'خيارات التدريب الرياضي'}
+              </h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>مكان التمرين المفضل</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.workoutLocation}</label>
               <div style={{ display: 'flex', gap: '16px' }}>
                 <button
                   type="button"
@@ -273,7 +264,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                   className={workoutLocation === 'GYM' ? 'glow-btn' : 'secondary-btn'}
                   style={{ flex: 1, justifyContent: 'center' }}
                 >
-                  النادي الرياضي (Gym)
+                  {t.gym}
                 </button>
                 <button
                   type="button"
@@ -281,22 +272,33 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                   className={workoutLocation === 'HOME' ? 'glow-btn' : 'secondary-btn'}
                   style={{ flex: 1, justifyContent: 'center' }}
                 >
-                  المنزل (Home)
+                  {t.home}
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>مستوى اللياقة</label>
-              <select value={level} onChange={(e) => setLevel(e.target.value)} className="input-field">
-                <option value="beginner">مبتدئ (فترة انقطاع طويلة أو جديد بالكامل)</option>
-                <option value="intermediate">متوسط (تتدرب بانتظام منذ عدة أشهر)</option>
-                <option value="advanced">متقدم (تتدرب بأوزان ثقيلة وشدة عالية لأكثر من سنة)</option>
-              </select>
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{lang === 'en' ? 'Fitness Level' : 'مستوى اللياقة'}</label>
+                <select value={level} onChange={(e) => setLevel(e.target.value)} className="input-field">
+                  <option value="beginner">{lang === 'en' ? 'Beginner' : 'مبتدئ'}</option>
+                  <option value="intermediate">{lang === 'en' ? 'Intermediate' : 'متوسط'}</option>
+                  <option value="advanced">{lang === 'en' ? 'Advanced' : 'متقدم'}</option>
+                </select>
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.workoutGoal}</label>
+                <select value={workoutGoal} onChange={(e) => setWorkoutGoal(e.target.value)} className="input-field">
+                  <option value="HYPERTROPHY">{lang === 'en' ? 'Hypertrophy (Muscle Gain)' : 'ضخامة عضلية'}</option>
+                  <option value="STRENGTH">{lang === 'en' ? 'Strength & Power' : 'قوة بدنية وعصبية'}</option>
+                  <option value="FAT_LOSS">{lang === 'en' ? 'Fat Loss / Cutting' : 'تنشيف وخسارة دهون'}</option>
+                </select>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>الأدوات والمعدات المتوفرة لديك</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.equipment}</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 {equipmentList.map((item) => (
                   <label
@@ -327,7 +329,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>العضلات المستهدفة للتمرين (اتركه فارغاً لاستهداف الجسم بالكامل)</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.targetMuscles}</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                 {muscleGroups.map((item) => (
                   <label
@@ -338,7 +340,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                       gap: '10px',
                       padding: '12px',
                       background: 'rgba(255, 255, 255, 0.03)',
-                      border: targetMuscles.includes(item.id) ? '1px solid var(--secondary)' : '1px solid var(--border-color)',
+                      border: targetMuscles.includes(item.id) ? '1px solid var(--primary)' : '1px solid var(--border-color)',
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontSize: '13px',
@@ -349,7 +351,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                       type="checkbox"
                       checked={targetMuscles.includes(item.id)}
                       onChange={() => handleMuscleChange(item.id)}
-                      style={{ accentColor: 'var(--secondary)' }}
+                      style={{ accentColor: 'var(--primary)' }}
                     />
                     {item.label}
                   </label>
@@ -358,7 +360,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>أيام الراحة المخصصة (اتركها فارغة للتوزيع التلقائي)</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.restDays}</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
                 {weekdaysList.map((day) => (
                   <label
@@ -398,7 +400,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                 <input
                   type="range"
                   min="3"
-                  max="25"
+                  max="15"
                   value={exercisesPerDay === 0 ? 5 : exercisesPerDay}
                   disabled={exercisesPerDay === 0}
                   onChange={(e) => setExercisesPerDay(parseInt(e.target.value))}
@@ -418,91 +420,37 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
           </div>
         )}
 
-        {/* STEP 3: Medical / Lab Details */}
+        {/* STEP 3: Medical / Injuries */}
         {step === 3 && (
           <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
               <ShieldAlert size={24} color="var(--primary)" />
-              <h3>الملف الصحي والطبي للذكاء الاصطناعي</h3>
+              <h3 style={{ fontSize: '20px', fontWeight: '800' }}>{t.medicalTitle}</h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>الإصابات والآلام البدنية (إن وجدت)</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.medicalInjuries}</label>
               <textarea
-                placeholder="ألم في الركبة اليسرى عند القرفصاء، إصابة سابقة في الكتف الأيمن، إلخ..."
+                placeholder={lang === 'en' ? 'E.g., Left knee pain when squatting, lower back tightness, shoulder impingement...' : 'ألم في الركبة اليسرى عند القرفصاء، إصابة سابقة في الكتف الأيمن، إلخ...'}
                 value={medicalConditions}
                 onChange={(e) => setMedicalConditions(e.target.value)}
                 className="input-field"
-                style={{ minHeight: '100px', resize: 'vertical' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>تفاصيل التحاليل الطبية أو نقص الفيتامينات (إن وجدت)</label>
-              <textarea
-                placeholder="نقص فيتامين د، ارتفاع طفيف بالكوليسترول، فقر دم..."
-                value={labResults}
-                onChange={(e) => setLabResults(e.target.value)}
-                className="input-field"
-                style={{ minHeight: '100px', resize: 'vertical' }}
+                style={{ minHeight: '120px', resize: 'vertical' }}
               />
             </div>
           </div>
         )}
 
-        {/* STEP 4: Diet and Food Preferences */}
+        {/* STEP 4: Plan Length & Start Date */}
         {step === 4 && (
           <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-              <Compass size={24} color="var(--primary)" />
-              <h3>خيارات التغذية والوجبات</h3>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>التفضيل الغذائي الأساسي</label>
-              <select value={foodPreferences} onChange={(e) => setFoodPreferences(e.target.value)} className="input-field">
-                <option value="Balanced">متوازن شامل لكل شيء (Balanced)</option>
-                <option value="High Protein">بروتين عالٍ لبناء العضلات (High Protein)</option>
-                <option value="Vegan">نباتي بالكامل (Vegan)</option>
-                <option value="Vegetarian">نباتي البيض والألبان (Vegetarian)</option>
-                <option value="Keto">كيتو - دهون عالية وكربوهيدرات منخفضة (Keto)</option>
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>حساسية الطعام (إن وجدت)</label>
-              <input
-                type="text"
-                placeholder="حساسية المكسرات، اللاكتوز (الحليب)، الغلوتين، إلخ..."
-                value={foodAllergies}
-                onChange={(e) => setFoodAllergies(e.target.value)}
-                className="input-field"
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>أطعمة تكرهها ولا تريد رؤيتها في الوجبات</label>
-              <textarea
-                placeholder="السمك، البروكلي، البصل، الكوسا..."
-                value={foodDislikes}
-                onChange={(e) => setFoodDislikes(e.target.value)}
-                className="input-field"
-                style={{ minHeight: '80px', resize: 'vertical' }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* STEP 5: Plan Length & Start Date */}
-        {step === 5 && (
-          <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
               <Calendar size={24} color="var(--primary)" />
-              <h3>مدة البرنامج الرياضي وبدايته</h3>
+              <h3 style={{ fontSize: '20px', fontWeight: '800' }}>{lang === 'en' ? 'Program Duration & Start Date' : 'مدة البرنامج الرياضي وبدايته'}</h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>عدد أسابيع البرنامج</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.weeksDuration}</label>
               <div style={{ display: 'flex', gap: '16px' }}>
                 {[4, 8, 12].map((weeks) => (
                   <button
@@ -512,14 +460,14 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                     className={durationWeeks === weeks ? 'glow-btn' : 'secondary-btn'}
                     style={{ flex: 1, justifyContent: 'center' }}
                   >
-                    {weeks} أسابيع
+                    {weeks} {t.weeks}
                   </button>
                 ))}
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>تاريخ بداية الجدول (التقويم)</label>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.startDateLabel}</label>
               <input
                 type="date"
                 value={startDate}
@@ -532,7 +480,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
             <div style={{ background: 'var(--primary-glow)', padding: '16px', borderRadius: '12px', marginTop: '10px', display: 'flex', gap: '12px', border: '1px solid var(--primary)' }}>
               <Check size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
               <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>
-                سيقوم الذكاء الاصطناعي الآن بصياغة جدول تمارين وتغذية متناسق ومخصص 100% لك بناءً على هذه الإجابات. يستغرق التحليل بضع ثوانٍ.
+                {lang === 'en' ? 'The AI engine will now draft a fully customized weekly workout program specifically tailored to your physical metrics, fitness goals, and available equipment.' : 'سيقوم الذكاء الاصطناعي الآن بصياغة جدول تمارين متناسق ومخصص 100% لك بناءً على هذه الإجابات. يستغرق التحليل بضع ثوانٍ.'}
               </p>
             </div>
           </div>
@@ -542,21 +490,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', gap: '16px' }}>
           {step > 1 ? (
             <button onClick={handlePrev} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>
-              <ChevronRight size={18} />
-              السابق
+              {lang === 'en' ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+              {t.prev}
             </button>
           ) : (
             <div style={{ flex: 1 }} />
           )}
 
-          {step < 5 ? (
+          {step < 4 ? (
             <button onClick={handleNext} className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>
-              التالي
-              <ChevronLeft size={18} />
+              {t.next}
+              {lang === 'en' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
           ) : (
             <button onClick={handleFinish} disabled={loading} className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>
-              {loading ? 'جاري بناء خطتك الذكية...' : 'صناعة خطتي الرياضية'}
+              {loading ? (lang === 'en' ? 'Drafting your Plan...' : 'جاري بناء خطتك الذكية...') : t.generateBtn}
               <Check size={18} />
             </button>
           )}

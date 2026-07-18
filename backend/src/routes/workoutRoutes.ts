@@ -10,6 +10,7 @@ import {
   updateDayWorkout,
   upgradePlan,
   importBulkPlan,
+  importFilePlan,
   getPlanHistory,
   activateHistoricalPlan,
   getLibraryTree,
@@ -25,6 +26,7 @@ router.use(protect as any);
 router.post('/generate', generatePlan);
 router.post('/manual', createManualPlan);
 router.post('/import-bulk', importBulkPlan);
+router.post('/import-file', importFilePlan);
 router.get('/history', getPlanHistory);
 router.post('/:id/activate', activateHistoricalPlan);
 router.get('/library-tree', getLibraryTree);

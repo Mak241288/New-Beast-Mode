@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Download, FileText, TrendingUp, Award, BookOpen } from 'lucide-react';
-import { ThemeToggle } from '../components/ThemeToggle';
-import { translations } from '../utils/translations';
 
 interface StatsProps {
   lang: 'ar' | 'en';
-  onNavigate: (view: string) => void;
-  onLogout: () => void;
-  onLanguageChange?: (lang: 'ar' | 'en') => void;
 }
 
-export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLanguageChange }) => {
-  const t = translations[lang] || translations.ar;
+export const Stats: React.FC<StatsProps> = ({ lang }) => {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +16,7 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLang
       const data = await api.getStats();
       setStats(data);
     } catch (err: any) {
-      console.error(err.message || 'فشل جلب الإحصاءات والتقارير.');
+      console.error(err.message || 'Failed to fetch stats.');
     } finally {
       setLoading(false);
     }
@@ -32,11 +26,10 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLang
     fetchStats();
   }, []);
 
-  // Helper to count exercises completed daily for last 7 days
   const getCompletedExercisesByDay = () => {
     if (!stats || !stats.workoutStats || !stats.workoutStats.strengthTrend) return [];
     
-    const days = [];
+    const days: any[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -58,11 +51,10 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLang
     return days;
   };
 
-  // Export to Markdown (.md)
   const exportToMD = () => {
     if (!stats) return;
 
-    let content = `# تقرير إنجازات BeastMode الرياضية والغذائية\n\n`;
+    let content = `# تقرير إنجازات BeastMode الرياضية 📈\n\n`;
     content += `التاريخ: ${new Date().toLocaleDateString('ar-EG')}\n`;
     content += `--------------------------------------------------\n\n`;
 
@@ -88,17 +80,7 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLang
     }
     content += `\n`;
 
-    content += `## 3. سجل الالتزام بالتغذية اليومية:\n`;
-    if (stats.nutritionStats.length === 0) {
-      content += `لا توجد بيانات تغذية مسجلة.\n`;
-    } else {
-      stats.nutritionStats.forEach((n: any) => {
-        content += `- تاريخ: ${new Date(n.date).toLocaleDateString('ar-EG')} | السعرات المستهلكة: ${n.caloriesLogged} / ${n.caloriesGoal} سعرة | المياه: ${n.waterLoggedMl} مل\n`;
-      });
-    }
-    content += `\n`;
-
-    content += `## 4. مفكرة الملاحظات والتقدم:\n`;
+    content += `## 3. مفكرة الملاحظات والتقدم:\n`;
     if (stats.notesHistory.length === 0) {
       content += `لا توجد ملاحظات مسجلة بعد.\n`;
     } else {
@@ -117,14 +99,13 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLang
     document.body.removeChild(link);
   };
 
-  // Export to Microsoft Word (.doc) via HTML blob
   const exportToDoc = () => {
     if (!stats) return;
 
     let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>`;
     html += `<head><title>تقرير BeastMode</title><meta charset="utf-8"></head>`;
     html += `<body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">`;
-    html += `<h1 style="color: #7C5CFC; text-align: center;">تقرير إنجازات BeastMode الرياضية والغذائية</h1>`;
+    html += `<h1 style="color: #00d2ff; text-align: center;">تقرير إنجازات BeastMode الرياضية</h1>`;
     html += `<p style="text-align: center; color: #666;">تاريخ التصدير: ${new Date().toLocaleDateString('ar-EG')}</p>`;
     html += `<hr/>`;
 
@@ -147,9 +128,9 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLang
 
     html += `<h2>3. الملاحظات ومفكرة التقدم اليومي</h2>`;
     stats.notesHistory.forEach((note: any) => {
-      html += `<div style="background-color: #f9f9f9; padding: 10px; margin-bottom: 10px; border-left: 3px solid #7C5CFC;">`;
-      html += `<strong>${new Date(note.date).toLocaleDateString('ar-EG')} - ${note.type}</strong>`;
-      html += `<p>${note.text}</p>`;
+      html += `<div style="background-color: #f9f9f9; padding: 10px; margin-bottom: 10px; border-left: 3px solid #00d2ff;">`;
+      html += `<p style="font-size: 11px; color: #666; margin: 0;">📅 ${new Date(note.date).toLocaleDateString('ar-EG')} - ${note.type}</p>`;
+      html += `<p style="margin: 5px 0 0 0;">${note.text}</p>`;
       html += `</div>`;
     });
 
@@ -165,405 +146,316 @@ export const Stats: React.FC<StatsProps> = ({ lang, onNavigate, onLogout, onLang
     document.body.removeChild(link);
   };
 
-  // Export to PDF (Print style trigger)
   const exportToPDF = () => {
     window.print();
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingBottom: '80px' }}>
-      {/* Navigation Header */}
-      <header className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderRadius: '0 0 20px 20px', borderTop: 'none' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: '800', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          BEASTMODE
-        </h2>
-        <nav style={{ display: 'flex', gap: '15px' }}>
-          <button onClick={() => onNavigate('dashboard')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.workout}</button>
-          <button onClick={() => onNavigate('nutrition')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.nutrition}</button>
-          <button onClick={() => onNavigate('stats')} className="glow-btn" style={{ padding: '8px 16px' }}>{t.stats}</button>
-          <button onClick={() => onNavigate('chat')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.consultation}</button>
-          <button onClick={() => onNavigate('profile')} className="secondary-btn" style={{ padding: '8px 16px' }}>{t.profile}</button>
-        </nav>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {onLanguageChange && (
-            <select
-              value={lang}
-              onChange={(e) => onLanguageChange(e.target.value as 'ar' | 'en')}
-              className="input-field"
-              style={{ width: 'fit-content', padding: '4px 8px', fontSize: '12px', background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-primary)' }}
-            >
-              <option value="ar" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 ع</option>
-              <option value="en" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>🌐 EN</option>
-            </select>
-          )}
-          <ThemeToggle />
-          <button onClick={onLogout} className="secondary-btn" style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.2)' }}>{t.logout}</button>
+    <div style={{ padding: '20px 0' }} className="print-area">
+      <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: '800' }}>{lang === 'en' ? 'Stats & Analytics 📊' : 'الإحصاءات الشاملة وتقارير التقدم 📊'}</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>
+            {lang === 'en' ? 'Analyze your commitment, weight change, and export health reports.' : 'حلل التزامك، وتغير وزنك، وقم بتصدير تقاريرك الطبية والرياضية'}
+          </p>
         </div>
-      </header>
-
-      <main className="container print-area">
-        <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-          <div>
-            <h1 style={{ fontSize: '22px' }}>{lang === 'en' ? 'Stats & Analytics 📊' : 'الإحصاءات الشاملة وتقارير التقدم 📊'}</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>
-              {lang === 'en' ? 'Analyze your commitment, weight change, and export health reports.' : 'حلل التزامك، وتغير وزنك، وقم بتصدير تقاريرك الطبية والرياضية'}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }} className="no-print">
-            <button onClick={exportToMD} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px' }}>
-              <FileText size={16} />
-              Markdown (MD)
-            </button>
-            <button onClick={exportToDoc} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px' }}>
-              <Download size={16} />
-              Word (Doc)
-            </button>
-            <button onClick={exportToPDF} className="glow-btn" style={{ padding: '8px 14px', fontSize: '13px' }}>
-              {lang === 'en' ? 'Print Report (PDF)' : 'طباعة التقرير (PDF)'}
-            </button>
-          </div>
+        <div style={{ display: 'flex', gap: '10px' }} className="no-print">
+          <button onClick={exportToMD} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px' }}>
+            <FileText size={16} />
+            Markdown (MD)
+          </button>
+          <button onClick={exportToDoc} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px' }}>
+            <Download size={16} />
+            Word (Doc)
+          </button>
+          <button onClick={exportToPDF} className="glow-btn" style={{ padding: '8px 14px', fontSize: '13px' }}>
+            {lang === 'en' ? 'Print Report (PDF)' : 'طباعة التقرير (PDF)'}
+          </button>
         </div>
+      </div>
 
-        {loading && <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>{lang === 'en' ? 'Compiling data...' : 'جاري تجميع وتحليل البيانات...'}</div>}
+      {loading && <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>{lang === 'en' ? 'Compiling data...' : 'جاري تجميع وتحليل البيانات...'}</div>}
 
-        {!loading && stats && (
-          <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {!loading && stats && (
+        <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* Weekly Commitment Calendar Tracker Row */}
+          <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h4 style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0, fontWeight: 'bold' }}>
+              📅 {lang === 'en' ? 'Weekly Commitment Overview' : 'نظرة عامة على الالتزام الأسبوعي'}
+            </h4>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+              {['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day, idx) => {
+                const arDays = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
+                const dayName = lang === 'en' ? day : arDays[idx];
+                
+                const hasLog = stats.workoutStats.strengthTrend?.some((log: any) => {
+                  const d = new Date(log.date);
+                  const jsDay = d.getDay();
+                  const mapIdxToJsDay = [6, 0, 1, 2, 3, 4, 5];
+                  return jsDay === mapIdxToJsDay[idx];
+                });
+
+                return (
+                  <div 
+                    key={day} 
+                    style={{ 
+                      flex: 1, 
+                      minWidth: '60px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      padding: '10px 4px', 
+                      background: hasLog ? 'var(--primary-glow)' : 'rgba(255,255,255,0.02)', 
+                      borderRadius: '10px', 
+                      border: hasLog ? '1px solid var(--primary)' : '1px solid var(--border-color)', 
+                      transition: 'all var(--transition-fast)' 
+                    }}
+                  >
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{dayName}</span>
+                    <span style={{ fontSize: '16px' }}>{hasLog ? '✅' : '⚪'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Top row: completion wheel, BMI Widget, and weight change */}
+          <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
             
-            {/* Weekly Commitment Calendar Tracker Row */}
-            <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <h4 style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0, fontWeight: 'bold' }}>
-                📅 {lang === 'en' ? 'Weekly Commitment Overview' : 'نظرة عامة على الالتزام الأسبوعي'}
-              </h4>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-                {['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day, idx) => {
-                  const arDays = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-                  const dayName = lang === 'en' ? day : arDays[idx];
+            {/* Workout Completion Widget */}
+            <div className="glass-panel" style={{ padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ background: 'var(--primary-glow)', padding: '12px', borderRadius: '50%', marginBottom: '16px' }}>
+                <Award size={32} color="var(--primary)" />
+              </div>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                {lang === 'en' ? 'Active Routine Completion Rate' : 'معدل إتمام تمارين الجدول النشط'}
+              </span>
+              <h1 style={{ fontSize: '48px', color: 'var(--primary)', margin: '10px 0', fontWeight: '800' }}>
+                {stats.workoutStats.completionRate.toFixed(0)}%
+              </h1>
+              <p style={{ fontSize: '13px' }}>
+                {lang === 'en' 
+                  ? `Completed ${stats.workoutStats.completedExercises} of ${stats.workoutStats.totalExercises} routine exercises.`
+                  : `أكملت ${stats.workoutStats.completedExercises} من أصل ${stats.workoutStats.totalExercises} تمريناً مجدولاً.`}
+              </p>
+            </div>
+
+            {/* BMI Widget */}
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                <Award size={20} color="var(--primary)" />
+                <h3 style={{ fontSize: '18px', fontWeight: '700' }}>{lang === 'en' ? 'Body Mass Index (BMI)' : 'مؤشر كتلة الجسم (BMI)'}</h3>
+              </div>
+              {stats.bmi && stats.bmi.value > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span style={{ fontSize: '36px', fontWeight: '900', color: 'var(--primary)' }}>
+                      {stats.bmi.value}
+                    </span>
+                    <span className="badge" style={{ 
+                      backgroundColor: 
+                        stats.bmi.category === 'NORMAL' ? 'rgba(16, 185, 129, 0.15)' : 
+                        stats.bmi.category === 'UNDERWEIGHT' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: 
+                        stats.bmi.category === 'NORMAL' ? '#10b981' : 
+                        stats.bmi.category === 'UNDERWEIGHT' ? '#f59e0b' : '#ef4444',
+                      fontSize: '13px',
+                      padding: '6px 12px'
+                    }}>
+                      {stats.bmi.category === 'NORMAL' ? (lang === 'en' ? 'Normal Weight' : 'وزن مثالي') :
+                       stats.bmi.category === 'UNDERWEIGHT' ? (lang === 'en' ? 'Underweight' : 'وزن منخفض') :
+                       stats.bmi.category === 'OVERWEIGHT' ? (lang === 'en' ? 'Overweight' : 'وزن زائد') : 
+                       (lang === 'en' ? 'Obese' : 'سمنة')}
+                    </span>
+                  </div>
+
+                  <div style={{ position: 'relative', height: '8px', borderRadius: '4px', background: 'linear-gradient(to right, #f59e0b 0%, #10b981 35%, #f97316 70%, #ef4444 100%)', marginTop: '10px', marginBottom: '15px' }}>
+                    {(() => {
+                      const minBmi = 15;
+                      const maxBmi = 35;
+                      const percent = Math.min(Math.max(((stats.bmi.value - minBmi) / (maxBmi - minBmi)) * 100, 0), 100);
+                      return (
+                        <div style={{
+                          position: 'absolute',
+                          left: `${percent}%`,
+                          top: '-4px',
+                          width: '16px',
+                          height: '16px',
+                          borderRadius: '50%',
+                          backgroundColor: '#ffffff',
+                          border: '3px solid var(--primary)',
+                          boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+                          transform: 'translateX(-50%)',
+                          transition: 'left 1s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }} />
+                      );
+                    })()}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    <span>{lang === 'en' ? 'Underweight' : 'منخفض'}</span>
+                    <span>{lang === 'en' ? 'Normal' : 'طبيعي'}</span>
+                    <span>{lang === 'en' ? 'Overweight' : 'زائد'}</span>
+                    <span>{lang === 'en' ? 'Obese' : 'سمنة'}</span>
+                  </div>
                   
-                  // Check if progress logged on this day
-                  const hasLog = stats.workoutStats.strengthTrend?.some((log: any) => {
-                    const d = new Date(log.date);
-                    const jsDay = d.getDay();
-                    const mapIdxToJsDay = [6, 0, 1, 2, 3, 4, 5];
-                    return jsDay === mapIdxToJsDay[idx];
-                  });
-
-                  return (
-                    <div 
-                      key={day} 
-                      style={{ 
-                        flex: 1, 
-                        minWidth: '60px', 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        alignItems: 'center', 
-                        gap: '6px', 
-                        padding: '10px 4px', 
-                        background: hasLog ? 'var(--primary-glow)' : 'rgba(255,255,255,0.02)', 
-                        borderRadius: '10px', 
-                        border: hasLog ? '1px solid var(--primary)' : '1px solid var(--border-color)', 
-                        transition: 'all var(--transition-fast)' 
-                      }}
-                    >
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{dayName}</span>
-                      <span style={{ fontSize: '16px' }}>{hasLog ? '✅' : '⚪'}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Top row: completion wheel, BMI Widget, and weight change */}
-            <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-              
-              {/* Workout Completion Widget */}
-              <div className="glass-panel" style={{ padding: '24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ background: 'var(--primary-glow)', padding: '12px', borderRadius: '50%', marginBottom: '16px' }}>
-                  <Award size={32} color="var(--primary)" />
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    {lang === 'en' 
+                      ? `Based on height (${stats.bmi.height} cm) and weight (${stats.bmi.weight} kg).`
+                      : `محسوب بناءً على طولك المسجل (${stats.bmi.height} سم) ووزنك (${stats.bmi.weight} كجم).`}
+                  </p>
                 </div>
-                <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
-                  {lang === 'en' ? 'Active Routine Completion Rate' : 'معدل إتمام تمارين الجدول النشط'}
-                </span>
-                <h1 style={{ fontSize: '48px', color: 'var(--primary)', margin: '10px 0' }}>
-                  {stats.workoutStats.completionRate.toFixed(0)}%
-                </h1>
-                <p style={{ fontSize: '13px' }}>
-                  {lang === 'en' 
-                    ? `Completed ${stats.workoutStats.completedExercises} of ${stats.workoutStats.totalExercises} routine exercises.`
-                    : `أكملت ${stats.workoutStats.completedExercises} من أصل ${stats.workoutStats.totalExercises} تمريناً مجدولاً.`}
+              ) : (
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  {lang === 'en' ? 'No weight/height logs yet.' : 'لا توجد بيانات وزن وطول كافية بعد.'}
                 </p>
-              </div>
-
-              {/* BMI Widget */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                  <Award size={20} color="var(--primary)" />
-                  <h3 style={{ fontSize: '18px' }}>{lang === 'en' ? 'Body Mass Index (BMI)' : 'مؤشر كتلة الجسم (BMI)'}</h3>
-                </div>
-                {stats.bmi && stats.bmi.value > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ fontSize: '36px', fontWeight: '900', color: 'var(--primary)' }}>
-                        {stats.bmi.value}
-                      </span>
-                      <span className="badge" style={{ 
-                        backgroundColor: 
-                          stats.bmi.category === 'NORMAL' ? 'rgba(16, 185, 129, 0.15)' : 
-                          stats.bmi.category === 'UNDERWEIGHT' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                        color: 
-                          stats.bmi.category === 'NORMAL' ? '#10b981' : 
-                          stats.bmi.category === 'UNDERWEIGHT' ? '#f59e0b' : '#ef4444',
-                        fontSize: '13px',
-                        padding: '6px 12px'
-                      }}>
-                        {stats.bmi.category === 'NORMAL' ? (lang === 'en' ? 'Normal Weight' : 'وزن مثالي') :
-                         stats.bmi.category === 'UNDERWEIGHT' ? (lang === 'en' ? 'Underweight' : 'وزن منخفض') :
-                         stats.bmi.category === 'OVERWEIGHT' ? (lang === 'en' ? 'Overweight' : 'وزن زائد') : 
-                         (lang === 'en' ? 'Obese' : 'سمنة')}
-                      </span>
-                    </div>
-
-                    {/* Color range bar */}
-                    <div style={{ position: 'relative', height: '8px', borderRadius: '4px', background: 'linear-gradient(to right, #f59e0b 0%, #10b981 35%, #f97316 70%, #ef4444 100%)', marginTop: '10px', marginBottom: '15px' }}>
-                      {(() => {
-                        const minBmi = 15;
-                        const maxBmi = 35;
-                        const percent = Math.min(Math.max(((stats.bmi.value - minBmi) / (maxBmi - minBmi)) * 100, 0), 100);
-                        return (
-                          <div style={{
-                            position: 'absolute',
-                            left: `${percent}%`,
-                            top: '-4px',
-                            width: '16px',
-                            height: '16px',
-                            borderRadius: '50%',
-                            backgroundColor: '#ffffff',
-                            border: '3px solid var(--primary)',
-                            boxShadow: '0 0 8px rgba(0,0,0,0.5)',
-                            transform: 'translateX(-50%)',
-                            transition: 'left 1s cubic-bezier(0.4, 0, 0.2, 1)'
-                          }} />
-                        );
-                      })()}
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      <span>{lang === 'en' ? 'Underweight' : 'منخفض'}</span>
-                      <span>{lang === 'en' ? 'Normal' : 'طبيعي'}</span>
-                      <span>{lang === 'en' ? 'Overweight' : 'زائد'}</span>
-                      <span>{lang === 'en' ? 'Obese' : 'سمنة'}</span>
-                    </div>
-                    
-                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                      {lang === 'en' 
-                        ? `Based on height (${stats.bmi.height} cm) and weight (${stats.bmi.weight} kg).`
-                        : `محسوب بناءً على طولك المسجل (${stats.bmi.height} سم) ووزنك (${stats.bmi.weight} كجم).`}
-                    </p>
-                  </div>
-                ) : (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {lang === 'en' ? 'No weight/height logs yet.' : 'لا توجد بيانات وزن وطول كافية بعد.'}
-                  </p>
-                )}
-              </div>
-
-              {/* Weight History Tracker (visual list/bar chart) */}
-              <div className="glass-panel" style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                  <TrendingUp size={20} color="var(--secondary)" />
-                  <h3 style={{ fontSize: '18px' }}>{lang === 'en' ? 'Body Weight Trend' : 'منحنى ومراقبة وزن الجسم'}</h3>
-                </div>
-
-                {stats.weightHistory.length === 0 ? (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
-                    {lang === 'en' ? 'No weight logs yet. Add your weight in Profile.' : 'لا يوجد سجل أوزان حتى الآن. أضف وزنك في صفحة الملف الشخصي.'}
-                  </p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    
-                    {/* Visual Bar Graph (Pure CSS) */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '120px', gap: '8px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
-                      {stats.weightHistory.slice(-10).map((log: any, idx: number) => {
-                        const maxW = Math.max(...stats.weightHistory.map((w: any) => w.weight));
-                        const minW = Math.min(...stats.weightHistory.map((w: any) => w.weight)) - 10;
-                        const range = maxW - minW || 1;
-                        const heightPercent = Math.max(((log.weight - minW) / range) * 100, 15);
-
-                        return (
-                          <div key={log.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{log.weight}</span>
-                            <div
-                              style={{
-                                width: '100%',
-                                height: `${heightPercent}px`,
-                                background: 'linear-gradient(to top, var(--primary), var(--secondary))',
-                                borderRadius: '4px 4px 0 0',
-                                opacity: idx === stats.weightHistory.slice(-10).length - 1 ? 1 : 0.7,
-                                boxShadow: idx === stats.weightHistory.slice(-10).length - 1 ? '0 0 10px var(--primary-glow)' : 'none',
-                              }}
-                            />
-                            <span style={{ fontSize: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                              {new Date(log.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG', { day: 'numeric', month: 'numeric' })}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Weight Logs List */}
-                    <div style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {stats.weightHistory.slice().reverse().map((log: any) => (
-                        <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px' }}>
-                          <span>📅 {new Date(log.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG')}</span>
-                          <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{log.weight} {lang === 'en' ? 'kg' : 'كجم'}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                  </div>
-                )}
-              </div>
-
+              )}
             </div>
 
-            {/* Middle row: Calories Intake & Note charts */}
-            <div className="grid-responsive" style={{ gridTemplateColumns: '1fr 1fr' }}>
-              
-              {/* Daily Calories Intake Graph */}
-              <div className="glass-panel" style={{ padding: '24px' }}>
-                <h3 style={{ fontSize: '16px', marginBottom: '20px' }}>
-                  {lang === 'en' ? 'Daily Calories Intake vs Goal (Last 7 Days)' : 'موازنة السعرات للوجبات (آخر 7 أيام)'}
-                </h3>
-                
-                {stats.nutritionStats.length === 0 ? (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
-                    {lang === 'en' ? 'No food logs yet.' : 'لا يوجد سجل تغذية بعد.'}
-                  </p>
-                ) : (
-                  <div>
-                    {/* Vertical Side-by-Side Bar Chart */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '140px', gap: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
-                      {stats.nutritionStats.map((day: any) => {
-                        const maxGoal = Math.max(...stats.nutritionStats.map((d: any) => d.caloriesGoal), 2000);
-                        const pctLogged = Math.min((day.caloriesLogged / maxGoal) * 100, 100);
-                        const pctGoal = Math.min((day.caloriesGoal / maxGoal) * 100, 100);
-
-                        return (
-                          <div key={day.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ display: 'flex', gap: '2px', alignItems: 'flex-end', height: '100px', width: '100%', justifyContent: 'center' }}>
-                              <div style={{ width: '8px', height: `${pctGoal}%`, backgroundColor: 'var(--border-color)', borderRadius: '4px 4px 0 0' }} title={`Goal: ${day.caloriesGoal}`} />
-                              <div style={{ width: '8px', height: `${pctLogged}%`, background: 'linear-gradient(to top, var(--primary), var(--secondary))', borderRadius: '4px 4px 0 0', boxShadow: '0 0 6px var(--primary-glow)' }} title={`Logged: ${day.caloriesLogged}`} />
-                            </div>
-                            <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{day.caloriesLogged}</span>
-                            <span style={{ fontSize: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                              {new Date(day.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG', { weekday: 'short' })}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '15px', fontSize: '11px', color: 'var(--text-muted)', justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ width: '10px', height: '10px', backgroundColor: 'var(--border-color)', borderRadius: '2px' }} />
-                        <span>{lang === 'en' ? 'Goal' : 'الهدف'}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ width: '10px', height: '10px', background: 'linear-gradient(to top, var(--primary), var(--secondary))', borderRadius: '2px' }} />
-                        <span>{lang === 'en' ? 'Consumed' : 'المستهلك'}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Completed Exercises Daily Graph */}
-              <div className="glass-panel" style={{ padding: '24px' }}>
-                <h3 style={{ fontSize: '16px', marginBottom: '20px' }}>
-                  {lang === 'en' ? 'Exercises Completed Daily (Last 7 Days)' : 'التمارين الرياضية المكتملة يومياً (آخر 7 أيام)'}
-                </h3>
-                
-                {getCompletedExercisesByDay().length === 0 ? (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
-                    {lang === 'en' ? 'No workout logs yet.' : 'لا يوجد سجل تمارين بعد.'}
-                  </p>
-                ) : (
-                  <div>
-                    {/* Vertical Completed Exercises Chart */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '140px', gap: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
-                      {getCompletedExercisesByDay().map((day: any) => {
-                        const maxCount = Math.max(...getCompletedExercisesByDay().map((d: any) => d.count), 4);
-                        const pctHeight = Math.max((day.count / maxCount) * 100, 10);
-
-                        return (
-                          <div key={day.dateStr} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <div style={{
-                              width: '12px',
-                              height: `${pctHeight}%`,
-                              background: 'linear-gradient(to top, var(--primary), var(--primary-glow))',
-                              borderRadius: '6px 6px 0 0',
-                              opacity: day.count > 0 ? 1 : 0.2,
-                              boxShadow: day.count > 0 ? '0 0 6px var(--primary-glow)' : 'none',
-                              alignSelf: 'flex-end',
-                              width: '100%',
-                              maxWidth: '16px'
-                            }} />
-                            <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{day.count}</span>
-                            <span style={{ fontSize: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                              {day.displayDate}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
-                      {lang === 'en' ? 'Tracks completed movements from logged routine days.' : 'يتبع الحركات المنجزة فعلياً والمحفوظة في خطة التدريب.'}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-            </div>
-
-            {/* Notes History Timeline */}
+            {/* Weight History Tracker (visual list/bar chart) */}
             <div className="glass-panel" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                <BookOpen size={20} color="var(--primary)" />
-                <h3 style={{ fontSize: '16px' }}>{lang === 'en' ? 'Daily Notes & Achievements Log' : 'مفكرة الإنجاز والملاحظات اليومية'}</h3>
+                <TrendingUp size={20} color="var(--primary)" />
+                <h3 style={{ fontSize: '18px', fontWeight: '700' }}>{lang === 'en' ? 'Body Weight Trend' : 'منحنى ومراقبة وزن الجسم'}</h3>
               </div>
 
-              <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '5px' }}>
-                {stats.notesHistory.length === 0 ? (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
-                    {lang === 'en' ? 'No notes logged yet.' : 'لا توجد ملاحظات مسجلة بعد.'}
-                  </p>
-                ) : (
-                  stats.notesHistory.map((note: any, idx: number) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '12px',
-                        background: 'rgba(255,255,255,0.02)',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        borderRight: '4px solid var(--primary)',
-                        fontSize: '13px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>
-                        <span>📌 {note.type}</span>
-                        <span>{new Date(note.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG')}</span>
+              {stats.weightHistory.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
+                  {lang === 'en' ? 'No weight logs yet. Add your weight in Profile.' : 'لا يوجد سجل أوزان حتى الآن. أضف وزنك في صفحة الملف الشخصي.'}
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', height: '120px', gap: '8px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
+                    {stats.weightHistory.slice(-10).map((log: any, idx: number) => {
+                      const maxW = Math.max(...stats.weightHistory.map((w: any) => w.weight));
+                      const minW = Math.min(...stats.weightHistory.map((w: any) => w.weight)) - 10;
+                      const range = maxW - minW || 1;
+                      const heightPercent = Math.max(((log.weight - minW) / range) * 100, 15);
+
+                      return (
+                        <div key={log.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{log.weight}</span>
+                          <div
+                            style={{
+                              width: '100%',
+                              height: `${heightPercent}px`,
+                              background: 'linear-gradient(to top, var(--primary), var(--secondary))',
+                              borderRadius: '4px 4px 0 0',
+                              opacity: idx === stats.weightHistory.slice(-10).length - 1 ? 1 : 0.7,
+                              boxShadow: idx === stats.weightHistory.slice(-10).length - 1 ? '0 0 10px var(--primary-glow)' : 'none',
+                            }}
+                          />
+                          <span style={{ fontSize: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {new Date(log.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG', { day: 'numeric', month: 'numeric' })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {stats.weightHistory.slice().reverse().map((log: any) => (
+                      <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '13px' }}>
+                        <span>📅 {new Date(log.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG')}</span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{log.weight} {lang === 'en' ? 'kg' : 'كجم'}</span>
                       </div>
-                      <p style={{ color: 'var(--text-primary)', lineHeight: '1.4' }}>{note.text}</p>
-                    </div>
-                  ))
-                )}
-              </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
-        )}
-      </main>
+
+          <div className="grid-responsive" style={{ gridTemplateColumns: '1fr', gap: '20px' }}>
+            
+            {/* Completed Exercises Daily Graph */}
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: '16px', marginBottom: '20px', fontWeight: '700' }}>
+                {lang === 'en' ? 'Exercises Completed Daily (Last 7 Days)' : 'التمارين الرياضية المكتملة يومياً (آخر 7 أيام)'}
+              </h3>
+              
+              {getCompletedExercisesByDay().length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
+                  {lang === 'en' ? 'No workout logs yet.' : 'لا يوجد سجل تمارين بعد.'}
+                </p>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', height: '140px', gap: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
+                    {getCompletedExercisesByDay().map((day: any) => {
+                      const maxCount = Math.max(...getCompletedExercisesByDay().map((d: any) => d.count), 4);
+                      const pctHeight = Math.max((day.count / maxCount) * 100, 10);
+
+                      return (
+                        <div key={day.dateStr} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                          <div style={{
+                            height: `${pctHeight}%`,
+                            background: 'linear-gradient(to top, var(--primary), var(--primary-glow))',
+                            borderRadius: '6px 6px 0 0',
+                            opacity: day.count > 0 ? 1 : 0.2,
+                            boxShadow: day.count > 0 ? '0 0 6px var(--primary-glow)' : 'none',
+                            alignSelf: 'flex-end',
+                            width: '100%',
+                            maxWidth: '24px'
+                          }} />
+                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{day.count}</span>
+                          <span style={{ fontSize: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {day.displayDate}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+                    {lang === 'en' ? 'Tracks completed movements from logged routine days.' : 'يتبع الحركات المنجزة فعلياً والمحفوظة في خطة التدريب.'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Notes History Timeline */}
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <BookOpen size={20} color="var(--primary)" />
+              <h3 style={{ fontSize: '16px', fontWeight: '700' }}>{lang === 'en' ? 'Daily Notes & Achievements Log' : 'مفكرة الإنجاز والملاحظات اليومية'}</h3>
+            </div>
+
+            <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '5px' }}>
+              {stats.notesHistory.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
+                  {lang === 'en' ? 'No notes logged yet.' : 'لا توجد ملاحظات مسجلة بعد.'}
+                </p>
+              ) : (
+                stats.notesHistory.map((note: any, idx: number) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '12px',
+                      background: 'rgba(255,255,255,0.02)',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      borderRight: '4px solid var(--primary)',
+                      fontSize: '13px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>
+                      <span>📌 {note.type}</span>
+                      <span>{new Date(note.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG')}</span>
+                    </div>
+                    <p style={{ color: 'var(--text-primary)', lineHeight: '1.4' }}>{note.text}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 };

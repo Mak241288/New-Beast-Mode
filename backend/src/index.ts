@@ -6,8 +6,6 @@ import dotenv from 'dotenv';
 
 import authRoutes from './routes/authRoutes';
 import workoutRoutes from './routes/workoutRoutes';
-import nutritionRoutes from './routes/nutritionRoutes';
-import chatRoutes from './routes/chatRoutes';
 import statsRoutes from './routes/statsRoutes';
 import syncRoutes from './routes/syncRoutes';
 
@@ -39,8 +37,6 @@ app.use('/api', limiter);
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/workout', workoutRoutes);
-app.use('/api/nutrition', nutritionRoutes);
-app.use('/api/chat', chatRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/sync', syncRoutes);
 

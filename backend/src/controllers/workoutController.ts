@@ -119,7 +119,7 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
     // Resolve days count and other parameters
     // Default workout days per week to 3 or 4
     const daysPerWeek = req.body.daysPerWeek || 3;
-    const finalGoal = goal || 'HYPERTROPHY';
+    const finalGoal = (goal || 'HYPERTROPHY').toUpperCase();
     const finalLocation = workoutLocation || userProfile?.workoutLocation || 'GYM';
 
     // Map equipment array to comma-separated string
@@ -653,20 +653,61 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-// @desc    Import Custom Bulk Exercise List
+// Helper to match exercise name in local SQLite exercises database
+const findMatchingExerciseInDb = (name: string): Promise<any> => {
+  return new Promise((resolve) => {
+    const sqlite3 = require('sqlite3').verbose();
+    const path = require('path');
+    const dbPath = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
+    
+    const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err: any) => {
+      if (err) {
+        resolve(null);
+        return;
+      }
+    });
+
+    const query = `
+      SELECT name_en, name_ar, instructions_en, instructions_ar, 
+             muscle_en, muscle_ar, equipment_en, equipment_ar, 
+             category, image_url
+      FROM exercises 
+      WHERE LOWER(name_en) = LOWER(?) OR LOWER(name_ar) = LOWER(?)
+      LIMIT 1
+    `;
+
+    db.get(query, [name.trim(), name.trim()], (_err: any, row: any) => {
+      if (row) {
+        db.close();
+        resolve(row);
+      } else {
+        // Try fuzzy match
+        const fuzzyQuery = `
+          SELECT name_en, name_ar, instructions_en, instructions_ar, 
+                 muscle_en, muscle_ar, equipment_en, equipment_ar, 
+                 category, image_url
+          FROM exercises 
+          WHERE LOWER(name_en) LIKE LOWER(?) OR LOWER(name_ar) LIKE LOWER(?)
+          LIMIT 1
+        `;
+        db.get(fuzzyQuery, [`%${name.trim()}%`, `%${name.trim()}%`], (_err2: any, row2: any) => {
+          db.close();
+          resolve(row2 || null);
+        });
+      }
+    });
+  });
+};
+
+// @desc    Import Custom Bulk Exercise List using AI Parsing
 // @route   POST /api/workout/import-bulk
 export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
-  const { list, lang } = req.body;
+  const { list, lang, preview, structuredPlan } = req.body;
 
   try {
     if (!userId) {
       res.status(401).json({ error: 'غير مصرح بالدخول' });
-      return;
-    }
-
-    if (!list || typeof list !== 'string') {
-      res.status(400).json({ error: 'الرجاء إدخال قائمة تمارين صالحة.' });
       return;
     }
 
@@ -676,127 +717,356 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
 
     const gender = userProfile?.gender || 'MALE';
     const userWeight = userProfile?.currentWeight || 75;
-    const level = userProfile?.foodPreferences ? 'intermediate' : 'beginner'; // fallback level
+    const level = userProfile?.workoutLocation ? 'intermediate' : 'beginner'; // fallback level
+    const isEn = lang === 'en';
 
-    const { exec } = require('child_process');
-    const path = require('path');
+    // Scenario A: Save pre-structured plan directly to the database
+    if (structuredPlan) {
+      const dayWorkoutsCreate = [];
 
-    const pythonDir = path.join(__dirname, '../../../workout_generator_python');
-    // Escape double quotes for shell safety
-    const escapedList = list.replace(/"/g, '\\"').replace(/\n/g, '\\n');
-    const command = `python src/bulk_importer.py --list "${escapedList}"`;
-
-    console.log(`[WorkoutController] Bulk Import Command: ${command}`);
-
-    exec(command, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
-      if (error) {
-        console.error('[WorkoutController] Bulk Importer Error:', error, stderr);
-        res.status(500).json({ error: 'فشل تشغيل مصنف التمارين محلياً.' });
-        return;
-      }
-
-      try {
-        const pythonExercises = JSON.parse(stdout);
-
-        if (!Array.isArray(pythonExercises) || pythonExercises.length === 0) {
-          res.status(400).json({ error: 'لم نتمكن من التعرف على أي تمارين في القائمة المدخلة.' });
-          return;
-        }
-
-        const isEn = lang === 'en';
-        const exerciseNames = pythonExercises.map((ex: any) => isEn ? `${ex.name_en} (${ex.name_ar})` : `${ex.name_ar} (${ex.name_en})`).join(', ');
-        const prompt = isEn
-          ? `Hello Coach. The user imported the following custom workout routine. Please write a detailed, professional fitness feedback and critique in English (3 to 5 concise and encouraging sentences) about this routine, muscle balance, strengths/weaknesses, and safety tips:\nExercises: ${exerciseNames}`
-          : `مرحباً أيها الكوتش المحترف. قام المستخدم باستيراد الجدول الرياضي التالي. الرجاء كتابة نقد وتقييم فني رياضي مفصل باللغة العربية (بين 3 إلى 5 جمل مركزة ومحفزة) للتمارين التالية، موضحاً مدى توازن العضلات ونقاط القوة والضعف ونصائح هامة للأداء:\nالتمارين: ${exerciseNames}`;
-
-        let critique = isEn
-          ? 'Workout routine imported successfully. Remember to maintain proper form and practice progressive overload.'
-          : 'تم استيراد قائمة التمارين بنجاح. تذكر الحفاظ على الأداء الصحيح وزيادة الأحمال تدريجياً.';
-        try {
-          critique = await callGroq(prompt);
-        } catch (groqErr) {
-          console.error('[WorkoutController] Groq Critique Error:', groqErr);
-        }
-
-        // Deactivate previous plans
-        await prisma.workoutPlan.updateMany({
-          where: { userId, active: true },
-          data: { active: false },
-        });
-
-        // Save new plan to Prisma
-        const createdPlan = await prisma.workoutPlan.create({
-          data: {
-            userId,
-            title: isEn ? `Imported Workout Plan (${new Date().toLocaleDateString('en-US')})` : `جدول تمارين مستورد مخصص (${new Date().toLocaleDateString('ar-EG')})`,
-            durationWeeks: 4,
-            startDate: new Date(),
-            active: true,
-            weeklyTips: critique,
-            isManual: true,
-            dayWorkouts: {
-              create: [
-                {
-                  dayIndex: 1,
-                  title: isEn ? 'Imported Session' : 'الحصة الرياضية المستوردة',
-                  focusArea: 'Imported Routine',
-                  dayTips: isEn ? 'Warm up for 5-10 minutes before starting.' : 'ابدأ بالإحماء لمدة 5-10 دقائق قبل البدء.',
-                  isRestDay: false,
-                  exercises: {
-                    create: pythonExercises.map((ex: any, idx: number) => {
-                      const suggestedWeight = getSuggestedWeight(ex.name_en, ex.equipment_en, gender, level, userWeight);
-                      const imageUrl = ex.image_url || getMuscleImage(ex.muscle_en);
-
-                      return {
-                        name: isEn ? (ex.name_en || ex.name_ar) : (ex.name_ar || ex.name_en),
-                        targetMuscle: isEn ? (ex.muscle_en || ex.muscle_ar) : (ex.muscle_ar || ex.muscle_en),
-                        category: ex.category || 'IRON',
-                        sets: ex.sets || 3,
-                        reps: isEn ? (ex.reps_en || ex.reps_ar || '8-12') : (ex.reps_ar || ex.reps_en || '8-12'),
-                        weight: suggestedWeight,
-                        exerciseTips: isEn ? (ex.instructions_en || 'Controlled performance and focus.') : (ex.instructions_ar || ex.instructions_en || 'أداء هادئ مع التركيز الكامل.'),
-                        order: idx,
-                        imageUrl: imageUrl,
-                        videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent((ex.name_en || '') + ' exercise tutorial shorts')}`,
-                      };
-                    }),
-                  },
-                },
-              ],
-            },
-          },
-          include: {
-            dayWorkouts: {
-              include: {
-                exercises: true,
-              },
-            },
-          },
-        });
-
-        const plainPlan = JSON.parse(JSON.stringify(createdPlan));
-        const mappedDayWorkouts = plainPlan.dayWorkouts.map((day: any) => ({
-          ...day,
-          exercises: day.exercises.map((ex: any) => ({
-            ...ex,
-            anatomyImageUrl: getAnatomyImage(ex.targetMuscle || ''),
-          })),
+      for (const day of structuredPlan.days) {
+        const exercisesCreate = (day.exercises || []).map((ex: any, idx: number) => ({
+          name: ex.name,
+          targetMuscle: ex.targetMuscle || (isEn ? 'Custom' : 'مخصص'),
+          category: ex.category || 'IRON',
+          sets: parseInt(ex.sets) || 3,
+          reps: ex.reps || '10 reps',
+          weight: ex.weight || 'As comfortable',
+          exerciseTips: ex.exerciseTips || '',
+          order: idx,
+          imageUrl: ex.imageUrl || '',
+          videoUrl: ex.videoUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' tutorial')}`
         }));
 
-        res.status(201).json({
-          ...plainPlan,
-          dayWorkouts: mappedDayWorkouts,
+        dayWorkoutsCreate.push({
+          dayIndex: parseInt(day.dayIndex) || 1,
+          title: day.title || (isEn ? `Day ${day.dayIndex}` : `اليوم ${day.dayIndex}`),
+          focusArea: day.focusArea || '',
+          isRestDay: !!day.isRestDay,
+          dayTips: isEn ? 'Warm up for 5-10 minutes before starting.' : 'ابدأ بالإحماء لمدة 5-10 دقائق قبل البدء.',
+          exercises: {
+            create: exercisesCreate
+          }
         });
-
-      } catch (err: any) {
-        console.error('[WorkoutController] Error parsing/saving bulk plan:', err);
-        res.status(500).json({ error: 'فشل معالجة وحفظ الجدول المستورد.' });
       }
+
+      // Deactivate previous plans
+      await prisma.workoutPlan.updateMany({
+        where: { userId, active: true },
+        data: { active: false },
+      });
+
+      const createdPlan = await prisma.workoutPlan.create({
+        data: {
+          userId,
+          title: structuredPlan.title || (isEn ? 'Imported Workout Plan' : 'جدول تمارين مستورد'),
+          durationWeeks: 4,
+          startDate: new Date(),
+          active: true,
+          weeklyTips: isEn 
+            ? 'Workout routine successfully parsed and imported. Remember to follow proper form.'
+            : 'تم حفظ الجدول المستورد بنجاح. تذكر أداء التمارين بالشكل الصحيح.',
+          isManual: true,
+          dayWorkouts: {
+            create: dayWorkoutsCreate
+          }
+        },
+        include: {
+          dayWorkouts: {
+            include: {
+              exercises: true
+            }
+          }
+        }
+      });
+
+      const plainPlan = JSON.parse(JSON.stringify(createdPlan));
+      const mappedDayWorkouts = plainPlan.dayWorkouts.map((d: any) => ({
+        ...d,
+        exercises: d.exercises.map((ex: any) => ({
+          ...ex,
+          anatomyImageUrl: getAnatomyImage(ex.targetMuscle || ''),
+        })),
+      }));
+
+      res.status(200).json({
+        ...plainPlan,
+        dayWorkouts: mappedDayWorkouts
+      });
+      return;
+    }
+
+    // Scenario B: Parse raw text and extract structured plan
+    if (!list || typeof list !== 'string') {
+      res.status(400).json({ error: 'الرجاء إدخال قائمة تمارين صالحة.' });
+      return;
+    }
+
+    const parserPrompt = `
+    You are an expert workout routine parser. The user pasted a workout plan in text format.
+    The text can be in Arabic or English, and it might be copied from a TXT file, Microsoft Word table, Excel sheet, or written manually.
+    It may contain multiple days (e.g., Saturday, Sunday, Day 1, Day 2...), exercise names, sets, reps, and other text.
+
+    Your task is to parse this text and structure it as a clean JSON object.
+    You MUST extract:
+    1. A suitable title for the overall plan.
+    2. A list of days. Each training day should have:
+       - "dayIndex": number (1 for the first day, 2 for the second, up to 7)
+       - "title": a motivating title for the day in the user's language (e.g., "اليوم 1: دفع (تركيز صدر)" or "Day 1: Chest & Shoulders")
+       - "focusArea": target muscles or focus (e.g., "Chest/Triceps" or "صدر وتراي")
+       - "isRestDay": boolean (true if it's a rest day)
+       - "exercises": list of exercises. Each exercise MUST have:
+         - "name": exact name of the exercise in English or Arabic
+         - "sets": number of sets (default to 3 if not mentioned)
+         - "reps": string for reps/duration (e.g., "8-12 reps" or "30 seconds", default to "10 reps")
+
+    Return ONLY a valid JSON object matching this TypeScript structure:
+    {
+      "title": string,
+      "days": Array<{
+        dayIndex: number,
+        title: string,
+        focusArea: string,
+        isRestDay: boolean,
+        exercises: Array<{
+          name: string,
+          sets: number,
+          reps: string
+        }>
+      }>
+    }
+
+    The raw text to parse is:
+    """
+    ${list}
+    """
+    `;
+
+    // Call Groq to parse the raw text into structured days
+    let parsedPlan: any;
+    try {
+      const responseText = await callGroq(parserPrompt, true);
+      parsedPlan = JSON.parse(responseText);
+    } catch (parseErr: any) {
+      console.error('[ImportBulkPlan] Groq Parsing Error:', parseErr);
+      res.status(400).json({ error: 'لم نتمكن من تحليل وتوزيع النص المدخل ذكياً. يرجى التأكد من التنسيق.' });
+      return;
+    }
+
+    if (!parsedPlan || !Array.isArray(parsedPlan.days) || parsedPlan.days.length === 0) {
+      res.status(400).json({ error: 'لم نتمكن من التعرف على أي أيام أو تمارين في القائمة المدخلة.' });
+      return;
+    }
+
+    // Now, for each day and exercise, match with database and build structured preview
+    const processedDays = [];
+
+    for (const day of parsedPlan.days) {
+      const exercisesList = [];
+
+      for (const rawEx of (day.exercises || [])) {
+        // Find matching exercise in SQLite exercises.db
+        const dbMatch = await findMatchingExerciseInDb(rawEx.name);
+        
+        let name = rawEx.name;
+        let targetMuscle = isEn ? 'Custom' : 'مخصص';
+        let category = 'IRON';
+        let exerciseTips = isEn ? 'Controlled performance.' : 'أداء متحكم فيه مع التركيز الحركي.';
+        let imageUrl = '';
+
+        if (dbMatch) {
+          name = isEn 
+            ? (dbMatch.name_en || dbMatch.name_ar) 
+            : (dbMatch.name_ar || dbMatch.name_en);
+          targetMuscle = isEn 
+            ? (dbMatch.muscle_en || dbMatch.muscle_ar) 
+            : (dbMatch.muscle_ar || dbMatch.muscle_en);
+          category = dbMatch.category || 'IRON';
+          exerciseTips = isEn 
+            ? (dbMatch.instructions_en || 'Controlled performance.') 
+            : (dbMatch.instructions_ar || dbMatch.instructions_en || 'أداء متحكم فيه.');
+          imageUrl = dbMatch.image_url || '';
+        }
+
+        const suggestedWeight = getSuggestedWeight(
+          dbMatch ? dbMatch.name_en : rawEx.name, 
+          dbMatch ? dbMatch.equipment_en : 'none', 
+          gender, 
+          level, 
+          userWeight
+        );
+
+        exercisesList.push({
+          name: name,
+          targetMuscle: targetMuscle,
+          category: category,
+          sets: rawEx.sets || 3,
+          reps: rawEx.reps || '10 reps',
+          weight: suggestedWeight,
+          exerciseTips: exerciseTips,
+          imageUrl: imageUrl,
+          videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent((dbMatch ? dbMatch.name_en : rawEx.name) + ' exercise tutorial shorts')}`
+        });
+      }
+
+      processedDays.push({
+        dayIndex: day.dayIndex,
+        title: day.title || (isEn ? `Day ${day.dayIndex}` : `اليوم ${day.dayIndex}`),
+        focusArea: day.focusArea || (isEn ? 'Workout Session' : 'حصة تمرين'),
+        isRestDay: !!day.isRestDay,
+        exercises: exercisesList
+      });
+    }
+
+    const finalPlanResult = {
+      title: parsedPlan.title || (isEn ? `Imported Workout Plan` : `جدول تمارين مستورد`),
+      days: processedDays
+    };
+
+    // If preview is true, return the structured JSON directly
+    if (preview) {
+      res.status(200).json(finalPlanResult);
+      return;
+    }
+
+    // Otherwise, directly write it to the database (legacy behavior)
+    const dayWorkoutsCreate = finalPlanResult.days.map((day) => ({
+      dayIndex: day.dayIndex,
+      title: day.title,
+      focusArea: day.focusArea,
+      isRestDay: day.isRestDay,
+      dayTips: isEn ? 'Warm up for 5-10 minutes before starting.' : 'ابدأ بالإحماء لمدة 5-10 دقائق قبل البدء.',
+      exercises: {
+        create: day.exercises.map((ex, idx) => ({
+          name: ex.name,
+          targetMuscle: ex.targetMuscle,
+          category: ex.category,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight: ex.weight,
+          exerciseTips: ex.exerciseTips,
+          order: idx,
+          imageUrl: ex.imageUrl,
+          videoUrl: ex.videoUrl
+        }))
+      }
+    }));
+
+    await prisma.workoutPlan.updateMany({
+      where: { userId, active: true },
+      data: { active: false },
+    });
+
+    const createdPlan = await prisma.workoutPlan.create({
+      data: {
+        userId,
+        title: finalPlanResult.title,
+        durationWeeks: 4,
+        startDate: new Date(),
+        active: true,
+        weeklyTips: isEn 
+          ? 'Workout routine successfully parsed and imported. Remember to follow proper form.'
+          : 'تم تحليل وتوزيع جدول التمارين بنجاح. تذكر الأداء السليم وتطبيق زيادة الأحمال التدريجية.',
+        isManual: true,
+        dayWorkouts: {
+          create: dayWorkoutsCreate
+        }
+      },
+      include: {
+        dayWorkouts: {
+          include: {
+            exercises: true
+          }
+        }
+      }
+    });
+
+    const plainPlan = JSON.parse(JSON.stringify(createdPlan));
+    const mappedDayWorkouts = plainPlan.dayWorkouts.map((d: any) => ({
+      ...d,
+      exercises: d.exercises.map((ex: any) => ({
+        ...ex,
+        anatomyImageUrl: getAnatomyImage(ex.targetMuscle || ''),
+      })),
+    }));
+
+    res.status(200).json({
+      ...plainPlan,
+      dayWorkouts: mappedDayWorkouts
     });
 
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء استيراد الجدول' });
+  }
+};
+
+// @desc    Import Workout Plan from file (.txt, .docx, .xlsx)
+// @route   POST /api/workout/import-file
+export const importFilePlan = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  const { fileBase64, fileName } = req.body;
+
+  try {
+    if (!userId) {
+      res.status(401).json({ error: 'غير مصرح بالدخول' });
+      return;
+    }
+
+    if (!fileBase64 || !fileName) {
+      res.status(400).json({ error: 'الملف غير صالح أو ناقص.' });
+      return;
+    }
+
+    const { exec } = require('child_process');
+    const path = require('path');
+    const fs = require('fs').promises;
+
+    const ext = path.extname(fileName).toLowerCase();
+    const fileBuffer = Buffer.from(fileBase64.split(',')[1] || fileBase64, 'base64');
+    
+    // Create temporary file path
+    const pythonDir = path.join(__dirname, '../../../workout_generator_python');
+    const tempFileName = `temp_import_${Date.now()}${ext}`;
+    const tempFilePath = path.join(pythonDir, 'data', tempFileName);
+
+    // Make sure data folder exists
+    await fs.mkdir(path.join(pythonDir, 'data'), { recursive: true });
+
+    // Write file
+    await fs.writeFile(tempFilePath, fileBuffer);
+
+    // Execute python parser script
+    const command = `python src/file_parser.py --file "data/${tempFileName}"`;
+
+    exec(command, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
+      // Clean up file immediately
+      try {
+        await fs.unlink(tempFilePath);
+      } catch (unlinkErr) {
+        console.error('Failed to delete temp file:', unlinkErr);
+      }
+
+      if (error) {
+        console.error('[WorkoutController] File Parser Command Error:', error, stderr);
+        res.status(500).json({ error: 'فشل قراءة وتحليل ملف الجدول المدخل.' });
+        return;
+      }
+
+      const extractedText = stdout.trim();
+      if (!extractedText) {
+        res.status(400).json({ error: 'لم نتمكن من استخراج أي نصوص صالحة من الملف المرفق.' });
+        return;
+      }
+
+      // Re-use bulk import logic on extracted text
+      req.body.list = extractedText;
+      return importBulkPlan(req, res);
+    });
+
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: error.message || 'حدث خطأ أثناء استيراد ملف الجدول' });
   }
 };
 
@@ -980,6 +1250,8 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
         id: row.id,
         name_en: row.name_en,
         name_ar: row.name_ar || row.name_en,
+        muscle_en: muscleEn,
+        muscle_ar: muscleAr,
         equipment_en: row.equipment_en || 'None',
         equipment_ar: row.equipment_ar || 'بدون أدوات',
         category: row.category || 'IRON',

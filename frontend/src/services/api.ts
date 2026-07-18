@@ -44,21 +44,13 @@ export const api = {
   logProgress: (exerciseId: number, logData: any) => request(`/workout/exercise/${exerciseId}/log`, { method: 'POST', body: JSON.stringify(logData) }),
   updateDayWorkout: (dayId: number, data: any) => request(`/workout/day/${dayId}`, { method: 'PUT', body: JSON.stringify(data) }),
   upgradePlan: (lang?: string) => request('/workout/upgrade', { method: 'POST', body: JSON.stringify({ lang }) }),
-  importBulkPlan: (list: string, lang?: string) => request('/workout/import-bulk', { method: 'POST', body: JSON.stringify({ list, lang }) }),
+  importBulkPlan: (list: string, lang?: string, preview?: boolean) => request('/workout/import-bulk', { method: 'POST', body: JSON.stringify({ list, lang, preview }) }),
+  importFilePlan: (fileBase64: string, fileName: string, lang?: string, preview?: boolean) => request('/workout/import-file', { method: 'POST', body: JSON.stringify({ fileBase64, fileName, lang, preview }) }),
+  saveStructuredPlan: (structuredPlan: any, lang?: string) => request('/workout/import-bulk', { method: 'POST', body: JSON.stringify({ structuredPlan, lang }) }),
   getPlanHistory: () => request('/workout/history', { method: 'GET' }),
   activateHistoricalPlan: (id: number) => request(`/workout/${id}/activate`, { method: 'POST' }),
   getLibraryTree: () => request('/workout/library-tree', { method: 'GET' }),
 
-  // Nutrition API
-  getNutritionPlan: (date: string) => request(`/nutrition/day?date=${date}`),
-  logMealText: (mealData: any) => request('/nutrition/meal/text', { method: 'POST', body: JSON.stringify(mealData) }),
-  logMealManual: (mealData: any) => request('/nutrition/meal/manual', { method: 'POST', body: JSON.stringify(mealData) }),
-  deleteMealLog: (id: number) => request(`/nutrition/meal/${id}`, { method: 'DELETE' }),
-  logWater: (waterData: any) => request('/nutrition/water', { method: 'POST', body: JSON.stringify(waterData) }),
-
-  // Chat API
-  getChatHistory: () => request('/chat/history'),
-  sendChatMessage: (messageData: any) => request('/chat/message', { method: 'POST', body: JSON.stringify(messageData) }),
 
   // Stats API
   getStats: () => request('/stats'),

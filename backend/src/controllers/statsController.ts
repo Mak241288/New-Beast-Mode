@@ -74,35 +74,8 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
     // Sort strength trend by date
     workoutStats.strengthTrend.sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
 
-    // 3. Nutrition Calories History (last 7 entries)
-    const nutritionPlans = await prisma.nutritionPlan.findMany({
-      where: { userId },
-      orderBy: { date: 'desc' },
-      take: 7,
-      include: {
-        mealsLogged: true,
-      },
-    });
-
-    const nutritionStats = nutritionPlans.reverse().map(plan => {
-      const totalLoggedCalories = plan.mealsLogged.reduce((sum, meal) => sum + meal.calories, 0);
-      const totalLoggedProtein = plan.mealsLogged.reduce((sum, meal) => sum + meal.protein, 0);
-      const totalLoggedCarbs = plan.mealsLogged.reduce((sum, meal) => sum + meal.carbs, 0);
-      const totalLoggedFat = plan.mealsLogged.reduce((sum, meal) => sum + meal.fat, 0);
-
-      return {
-        date: plan.date,
-        caloriesGoal: plan.caloriesGoal,
-        caloriesLogged: totalLoggedCalories,
-        proteinGoal: plan.proteinGoal,
-        proteinLogged: totalLoggedProtein,
-        carbsGoal: plan.carbsGoal,
-        carbsLogged: totalLoggedCarbs,
-        fatGoal: plan.fatGoal,
-        fatLogged: totalLoggedFat,
-        waterLoggedMl: plan.waterLoggedMl,
-      };
-    });
+    // 3. Nutrition Calories History (removed)
+    const nutritionStats: any[] = [];
 
     // 4. Combined Notes History (feelings, workouts, weights)
     const notesHistory: { type: string; date: Date; text: string }[] = [];

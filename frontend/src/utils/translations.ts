@@ -1,12 +1,14 @@
 export const translations = {
   ar: {
     // Navigation / Header
-    workout: "التمارين",
-    nutrition: "التغذية",
-    stats: "الإحصاءات",
-    consultation: "استشارة الذكاء الاصطناعي",
+    dashboard: "الرئيسية",
+    myPlan: "جدولي الرياضي",
+    exerciseLibrary: "مكتبة التمارين",
+    progress: "التقدم والنشاط",
     profile: "الملف الشخصي",
     logout: "تسجيل الخروج",
+    workout: "التمارين",
+    stats: "الإحصاءات",
 
     // Common / Buttons
     save: "حفظ",
@@ -44,18 +46,19 @@ export const translations = {
     medicalTitle: "الملف الصحي والطبي للذكاء الاصطناعي",
     medicalInjuries: "الإصابات والآلام البدنية (إن وجدت)",
     labResults: "نتائج تحاليل الدم أو الهرمونات (اختياري)",
-    nutritionAllergies: "الحساسية والمشاكل الهضمية (إن وجدت)",
-    foodPref: "النمط الغذائي المفضل للوجبات",
-    foodDislikes: "المأكولات التي لا تفضلها أو تود استبعادها",
     weeksDuration: "مدة البرنامج التدريبي بالأسابيع",
     startDateLabel: "تاريخ بدء تطبيق الجدول",
     generateBtn: "توليد برنامج التمارين بالذكاء الاصطناعي ⚡",
+    workoutGoal: "الهدف التدريبي",
+    goalHypertrophy: "ضخامة عضلية (Hypertrophy)",
+    goalStrength: "قوة بدنية (Strength)",
+    goalFatLoss: "خسارة دهون وتنشيف (Fat Loss)",
 
     // Dashboard
     upgradeBtn: "ترقية الجدول",
     historyBtn: "سجل البرامج السابقة",
     importBtn: "استيراد جدول مجمع",
-    libraryBtn: "مكتبة التمارين الشجرية",
+    libraryBtn: "مكتبة التمارين",
     restDayTitle: "يوم راحة واستشفاء عضلي 🧘‍♂️",
     restDayDesc: "الاستشفاء جزء لا يتجزأ من التطور الرياضي. ركز على التمدد الخفيف، المشي، شرب كميات وافرة من الماء، وتغذية جسدك بشكل سليم استعداداً للأيام القادمة.",
     startWorkout: "ابدأ تمرين الوحش",
@@ -84,22 +87,6 @@ export const translations = {
     noActivePlan: "لم نتمكن من تحميل جدول التمارين النشط.",
     generateNewPlanBtn: "توليد جدول جديد بالذكاء الاصطناعي",
 
-    // Nutrition
-    nutritionTracker: "متابع التغذية الذكي بالذكاء الاصطناعي 🍎",
-    calories: "السعرات الحرارية",
-    protein: "البروتين",
-    carbs: "الكربوهيدرات",
-    fats: "الدهون",
-    waterTracker: "تتبع استهلاك المياه اليومي 💧",
-    waterTarget: "الهدف اليومي: 3 لتر",
-    drinkGlass: "شرب كوب ماء (250 مل)",
-    todaysMeals: "وجبات اليوم الرياضية المقترحة 🍽️",
-    todaysMealsRest: "وجبات يوم الراحة المقترحة 🍽️",
-    customMealTitle: "هل تناولت وجبة خارج الخطة؟ ✍️",
-    customMealDesc: "اكتب ما تناولته باللغة العربية البسيطة وسيقوم الذكاء الاصطناعي بتحليله فوراً وحساب السعرات والماكروز وإضافتها ليومك.",
-    customMealPlaceholder: "مثال: أكلت 150 جرام صدر دجاج مشوي مع كوب أرز أبيض وسلطة خضراء...",
-    analyzeMealBtn: "تحليل وإضافة الوجبة بالذكاء الاصطناعي ⚡",
-
     // Stats
     progressAnalytics: "تحليلات التقدم والالتزام الرياضي 📈",
     weightLog: "سجل الوزن البدني وتغيرات كتلة الجسم",
@@ -110,12 +97,6 @@ export const translations = {
     completedDays: "أيام مكتملة",
     restDaysLabelCount: "أيام راحة",
     exportStatsBtn: "تصدير تقرير تقدم الوحش",
-
-    // Consultation
-    aiCoach: "دردشة كوتش الذكاء الاصطناعي 💬",
-    coachDesc: "تحدث مع الكابتن د. صخر، مستشارك الرياضي والطبي الشخصي. اسأله عن بدائل التمارين، تفاصيل الإصابات، أو تعديل نظامك الغذائي.",
-    chatPlaceholderText: "اكتب سؤالك الرياضي أو الطبي هنا للوحش...",
-    send: "إرسال",
 
     // Profile
     profileSettings: "إعدادات الملف الشخصي والبدني 👤",
@@ -128,12 +109,14 @@ export const translations = {
 
   en: {
     // Navigation / Header
-    workout: "Workouts",
-    nutrition: "Nutrition",
-    stats: "Statistics",
-    consultation: "AI Consultation",
+    dashboard: "Dashboard",
+    myPlan: "My Plan",
+    exerciseLibrary: "Exercise Library",
+    progress: "Progress",
     profile: "Profile",
     logout: "Log Out",
+    workout: "Workouts",
+    stats: "Statistics",
 
     // Common / Buttons
     save: "Save",
@@ -171,12 +154,13 @@ export const translations = {
     medicalTitle: "AI Health & Medical Profile",
     medicalInjuries: "Injuries & Physical Pain (if any)",
     labResults: "Blood Analysis or Hormone Labs (optional)",
-    nutritionAllergies: "Food Allergies or Digestive Issues (if any)",
-    foodPref: "Preferred Diet/Nutrition Type",
-    foodDislikes: "Disliked Foods to Exclude",
     weeksDuration: "Program Duration in Weeks",
     startDateLabel: "Program Start Date",
     generateBtn: "Generate AI Workout Program ⚡",
+    workoutGoal: "Training Goal",
+    goalHypertrophy: "Hypertrophy (Muscle Gain)",
+    goalStrength: "Strength Power",
+    goalFatLoss: "Fat Loss & Shred",
 
     // Dashboard
     upgradeBtn: "Upgrade Plan",
@@ -211,22 +195,6 @@ export const translations = {
     noActivePlan: "Failed to load active workout plan.",
     generateNewPlanBtn: "Generate New AI Plan",
 
-    // Nutrition
-    nutritionTracker: "AI Intelligent Nutrition Tracker 🍎",
-    calories: "Calories",
-    protein: "Protein",
-    carbs: "Carbohydrates",
-    fats: "Fats",
-    waterTracker: "Daily Water Intake Tracker 💧",
-    waterTarget: "Daily Target: 3 Litres",
-    drinkGlass: "Drink a glass (250 ml)",
-    todaysMeals: "Suggested Workout Day Meals 🍽️",
-    todaysMealsRest: "Suggested Rest Day Meals 🍽️",
-    customMealTitle: "Had a meal off the plan? ✍️",
-    customMealDesc: "Type what you ate in simple terms and the AI will analyze it instantly, calculate macros, and add them to your day.",
-    customMealPlaceholder: "Example: I ate 150g grilled chicken breast with a cup of white rice and green salad...",
-    analyzeMealBtn: "Analyze & Add Meal via AI ⚡",
-
     // Stats
     progressAnalytics: "Progress & Adherence Analytics 📈",
     weightLog: "Body Weight & Composition Logs",
@@ -237,12 +205,6 @@ export const translations = {
     completedDays: "Completed Days",
     restDaysLabelCount: "Rest Days",
     exportStatsBtn: "Export Progress Report",
-
-    // Consultation
-    aiCoach: "AI Chat Coach 💬",
-    coachDesc: "Chat with Captain Dr. Sakhr, your personal fitness and medical advisor. Ask about exercise alternatives, injury recovery, or nutritional adjustments.",
-    chatPlaceholderText: "Type your training or medical question here...",
-    send: "Send",
 
     // Profile
     profileSettings: "Profile & Physical Settings 👤",
