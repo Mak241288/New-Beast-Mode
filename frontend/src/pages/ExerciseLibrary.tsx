@@ -13,6 +13,12 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
   const [selectedMuscle, setSelectedMuscle] = useState<string>('ALL');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('ALL');
   const [selectedExercise, setSelectedExercise] = useState<any | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('ALL');
+
+  // Add to Plan States
+  const [activePlan, setActivePlan] = useState<any>(null);
+  const [targetDayId, setTargetDayId] = useState<number | ''>('');
+  const [addingToPlan, setAddingToPlan] = useState(false);
 
   const muscleGroups = [
     { id: 'ALL', label: lang === 'en' ? 'All Muscles' : 'كل العضلات' },
@@ -32,6 +38,76 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     { id: 'cable', label: lang === 'en' ? 'Cables' : 'جهاز كيبل' },
     { id: 'band', label: lang === 'en' ? 'Bands' : 'حبال مقاومة' },
   ];
+
+  const difficulties = [
+    { id: 'ALL', label: lang === 'en' ? 'All Levels' : 'كل المستويات' },
+    { id: 'beginner', label: lang === 'en' ? 'Beginner' : 'مبتدئ' },
+    { id: 'intermediate', label: lang === 'en' ? 'Intermediate' : 'متوسط' },
+    { id: 'advanced', label: lang === 'en' ? 'Advanced' : 'متقدم' },
+  ];
+
+  const getSecondaryMuscles = (primary: string) => {
+    const p = (primary || '').toLowerCase();
+    if (p.includes('chest') || p.includes('صدر')) {
+      return lang === 'en' ? 'Triceps, Front Delts' : 'العضلة ثلاثية الرؤوس (ترايسبس)، الأكتاف الأمامية';
+    }
+    if (p.includes('back') || p.includes('lat') || p.includes('ظهر') || p.includes('lats')) {
+      return lang === 'en' ? 'Biceps, Forearms, Rear Delts' : 'العضلة ثنائية الرؤوس (بايسبس)، السواعد، الأكتاف الخلفية';
+    }
+    if (p.includes('shoulder') || p.includes('كتف') || p.includes('trap')) {
+      return lang === 'en' ? 'Triceps, Upper Chest' : 'العضلة ثلاثية الرؤوس (ترايسبس)، أعلى الصدر';
+    }
+    if (p.includes('quad') || p.includes('leg') || p.includes('رجل') || p.includes('فخذ') || p.includes('glute')) {
+      return lang === 'en' ? 'Hamstrings, Glutes, Calves' : 'الأوتار الخلفية، الأرداف، السمانة';
+    }
+    if (p.includes('bicep') || p.includes('arm') || p.includes('ذراع')) {
+      return lang === 'en' ? 'Forearms, Brachialis' : 'السواعد، العضلة العضدية';
+    }
+    if (p.includes('tricep')) {
+      return lang === 'en' ? 'Rear Delts, Forearms' : 'الأكتاف الخلفية، السواعد';
+    }
+    return lang === 'en' ? 'Core stabilizers' : 'عضلات الجذع المساعدة';
+  };
+
+  const getProTip = (primary: string) => {
+    const p = (primary || '').toLowerCase();
+    if (p.includes('chest') || p.includes('صدر')) {
+      return lang === 'en' 
+        ? 'Keep your shoulder blades retracted and elbows at a 45-degree angle to protect your joints.'
+        : 'حافظ على سحب لوحي كتفيك للخلف وضم مرفقيك بزاوية 45 درجة لحماية المفاصل.';
+    }
+    if (p.includes('back') || p.includes('lat') || p.includes('ظهر') || p.includes('lats')) {
+      return lang === 'en'
+        ? 'Focus on pulling with your elbows rather than your hands to isolate the lats.'
+        : 'ركز على السحب عن طريق تحريك مرفقيك للخلف وليس يديك لعزل عضلات الظهر.';
+    }
+    if (p.includes('shoulder') || p.includes('كتف') || p.includes('trap')) {
+      return lang === 'en'
+        ? 'Control the weight on the way down; do not let your elbows drop below shoulder level.'
+        : 'تحكم في الوزن أثناء النزول؛ لا تدع مرفقيك ينزلان عن مستوى الكتف.';
+    }
+    if (p.includes('quad') || p.includes('leg') || p.includes('رجل') || p.includes('فخذ') || p.includes('glute')) {
+      return lang === 'en'
+        ? 'Keep your knees aligned with your toes and drive through the mid-foot.'
+        : 'حافظ على استقامة ركبتيك مع اتجاه أصابع قدميك وادفع بمنتصف القدم.';
+    }
+    if (p.includes('bicep') || p.includes('curl') || p.includes('arm')) {
+      return lang === 'en'
+        ? 'Keep your elbows tucked tight to your torso throughout and avoid swinging.'
+        : 'حافظ على تثبيت كوعك بجانب جذعك طوال الحركة وتجنب أرجحة الجسم.';
+    }
+    return lang === 'en'
+      ? 'Control the negative (eccentric) phase of the movement for maximum efficiency.'
+      : 'تحكم في مسار الحركة السلبي (الرجوع للبداية ببطء) للحصول على أقصى كفاءة.';
+  };
+
+  const getStepList = (instructions: string) => {
+    if (!instructions) return [];
+    return instructions
+      .split(/[.\n]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 5);
+  };
 
   const fetchExercises = async () => {
     setLoading(true);
@@ -60,7 +136,40 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
 
   useEffect(() => {
     fetchExercises();
+    api.getActivePlan().then(setActivePlan).catch(() => null);
   }, []);
+
+  const handleAddToPlan = async () => {
+    if (!selectedExercise || !targetDayId) return;
+    setAddingToPlan(true);
+    try {
+      const name = lang === 'en' ? selectedExercise.name_en : (selectedExercise.name_ar || selectedExercise.name_en);
+      const targetMuscle = lang === 'en' ? selectedExercise.muscle_en : (selectedExercise.muscle_ar || selectedExercise.muscle_en);
+      
+      await api.addCustomExercise(Number(targetDayId), {
+        name,
+        targetMuscle,
+        category: selectedExercise.category || 'IRON',
+        sets: 3,
+        reps: '10-12',
+        weight: 'Bodyweight',
+        exerciseTips: getProTip(selectedExercise.muscle_en),
+        imageUrl: selectedExercise.image_url || null,
+        videoUrl: selectedExercise.video_url || null
+      });
+
+      alert(lang === 'en' 
+        ? `Successfully added "${name}" to your workout plan!`
+        : `تم إضافة "${name}" إلى جدول تمارينك بنجاح!`
+      );
+      setTargetDayId('');
+      setSelectedExercise(null);
+    } catch (err: any) {
+      alert(lang === 'en' ? 'Failed to add exercise to plan.' : 'فشل إضافة التمرين إلى الجدول.');
+    } finally {
+      setAddingToPlan(false);
+    }
+  };
 
   const filteredExercises = exercises.filter((ex) => {
     const nameEn = (ex.name_en || '').toLowerCase();
@@ -89,7 +198,11 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
       equipAr.includes(selectedEquipment) ||
       (selectedEquipment === 'bodyweight' && (equipEn.includes('body only') || equipEn.includes('none')));
 
-    return matchesQuery && matchesMuscle && matchesEquipment;
+    const matchesDifficulty =
+      selectedDifficulty === 'ALL' ||
+      (ex.level || '').toLowerCase() === selectedDifficulty;
+
+    return matchesQuery && matchesMuscle && matchesEquipment && matchesDifficulty;
   });
 
   return (
@@ -158,6 +271,25 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                 }}
               >
                 {eq.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Difficulty Level */}
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+            {difficulties.map((diff) => (
+              <button
+                key={diff.id}
+                onClick={() => setSelectedDifficulty(diff.id)}
+                className={selectedDifficulty === diff.id ? 'glow-btn' : 'secondary-btn'}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  borderRadius: '20px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {diff.label}
               </button>
             ))}
           </div>
@@ -285,7 +417,10 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
               <button
-                onClick={() => setSelectedExercise(null)}
+                onClick={() => {
+                  setSelectedExercise(null);
+                  setTargetDayId('');
+                }}
                 style={{
                   position: 'absolute',
                   top: '15px',
@@ -300,6 +435,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                   cursor: 'pointer',
                   fontSize: '18px',
                   fontWeight: 'bold',
+                  zIndex: 10,
                 }}
               >
                 ✕
@@ -321,8 +457,8 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                   <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border-color)' }}>
                     🏋️‍♂️ {lang === 'en' ? selectedExercise.equipment_en : (selectedExercise.equipment_ar || selectedExercise.equipment_en)}
                   </span>
-                  <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border-color)' }}>
-                    ⚡ {selectedExercise.category}
+                  <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--border-color)', textTransform: 'capitalize' }}>
+                    ⚡ {lang === 'en' ? selectedExercise.level : (selectedExercise.level === 'beginner' ? 'مبتدئ' : selectedExercise.level === 'advanced' ? 'متقدم' : 'متوسط')}
                   </span>
                 </div>
               </div>
@@ -341,48 +477,105 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                 )}
               </div>
 
+              {/* Targeting Stats Table */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div className="glass-panel" style={{ padding: '12px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>🎯 {lang === 'en' ? 'Primary Targets' : 'العضلات الأساسية'}</span>
+                  <h4 style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>
+                    {lang === 'en' ? selectedExercise.muscle_en : (selectedExercise.muscle_ar || selectedExercise.muscle_en)}
+                  </h4>
+                </div>
+                <div className="glass-panel" style={{ padding: '12px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>🤝 {lang === 'en' ? 'Secondary Targets' : 'العضلات المساعدة'}</span>
+                  <h4 style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>
+                    {getSecondaryMuscles(selectedExercise.muscle_en)}
+                  </h4>
+                </div>
+              </div>
+
               {/* Instructions */}
               <div>
                 <h4 style={{ fontSize: '14px', fontWeight: '700', color: 'var(--primary)', marginBottom: '8px' }}>
-                  📝 {lang === 'en' ? 'How to Perform' : 'خطوات الأداء والتعليمات الطبية'}
+                  📝 {lang === 'en' ? 'Step-by-Step Instructions' : 'خطوات الأداء'}
                 </h4>
-                <p
-                  style={{
-                    fontSize: '13px',
-                    color: 'var(--text-secondary)',
-                    lineHeight: '1.6',
-                    whiteSpace: 'pre-line',
-                    background: 'rgba(255,255,255,0.01)',
-                    padding: '15px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
-                  }}
-                >
-                  {lang === 'en'
-                    ? (selectedExercise.instructions_en || selectedExercise.description_en || 'Instructions are coming soon.')
-                    : (selectedExercise.instructions_ar || selectedExercise.description_ar || selectedExercise.instructions_en || 'التعليمات الرياضية والتحذيرات ستتوفر قريباً.')}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  {getStepList(lang === 'en' ? selectedExercise.instructions_en : (selectedExercise.instructions_ar || selectedExercise.instructions_en)).map((step, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '10px', fontSize: '13px', lineHeight: '1.5', color: 'var(--text-secondary)' }}>
+                      <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{idx + 1}.</span>
+                      <span>{step}</span>
+                    </div>
+                  ))}
+                  {getStepList(lang === 'en' ? selectedExercise.instructions_en : (selectedExercise.instructions_ar || selectedExercise.instructions_en)).length === 0 && (
+                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                      {lang === 'en' ? 'No instructions configured.' : 'لا توجد تعليمات مسجلة.'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Pro Tip */}
+              <div className="glass-panel" style={{ padding: '15px', borderLeft: '4px solid var(--primary)', borderRadius: '8px', background: 'rgba(0,210,255,0.02)' }}>
+                <h5 style={{ margin: 0, fontSize: '13px', fontWeight: 'bold', color: 'var(--primary)' }}>💡 Pro Tip / نصيحة الخبراء</h5>
+                <p style={{ margin: '5px 0 0 0', fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                  {getProTip(selectedExercise.muscle_en)}
                 </p>
               </div>
 
+              {/* Add to Plan Section */}
+              {activePlan && (
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', marginTop: '10px' }}>
+                  <h4 style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                    📥 {lang === 'en' ? 'Add to Your Current Plan' : 'إضافة هذا التمرين لجدولك الرياضي'}
+                  </h4>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <select
+                      value={targetDayId || ''}
+                      onChange={(e) => setTargetDayId(Number(e.target.value))}
+                      className="input-field"
+                      style={{ flex: 1, padding: '8px', fontSize: '13px' }}
+                    >
+                      <option value="">{lang === 'en' ? '-- Select a Training Day --' : '-- اختر يوم التدريب --'}</option>
+                      {activePlan.dayWorkouts
+                        .filter((dw: any) => !dw.isRestDay)
+                        .map((dw: any) => (
+                          <option key={dw.id} value={dw.id}>
+                            Day {dw.dayIndex}: {dw.title}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      onClick={handleAddToPlan}
+                      className="glow-btn"
+                      disabled={!targetDayId || addingToPlan}
+                      style={{ padding: '8px 16px', fontSize: '13px' }}
+                    >
+                      {addingToPlan ? (lang === 'en' ? 'Adding...' : 'جاري الإضافة...') : (lang === 'en' ? 'Add' : 'إضافة')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* YouTube Video Link */}
-              <div style={{ marginTop: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
                 <a
                   href={`https://www.youtube.com/results?search_query=${encodeURIComponent((selectedExercise.name_en || '') + ' exercise tutorial shorts')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="glow-btn"
+                  className="secondary-btn"
                   style={{
+                    flex: 1,
                     display: 'inline-flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '8px',
-                    padding: '10px 20px',
+                    padding: '12px',
                     fontSize: '13px',
                     textDecoration: 'none',
                     borderRadius: '12px',
                   }}
                 >
                   <Play size={16} fill="currentColor" />
-                  {lang === 'en' ? 'Watch Video Tutorial' : 'مشاهدة شرح بالفيديو 🎥'}
+                  {lang === 'en' ? 'Watch Video Tutorial' : 'شرح بالفيديو 🎥'}
                   <ExternalLink size={14} />
                 </a>
               </div>

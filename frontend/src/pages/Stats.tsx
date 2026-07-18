@@ -8,6 +8,7 @@ interface StatsProps {
 
 export const Stats: React.FC<StatsProps> = ({ lang }) => {
   const [stats, setStats] = useState<any>(null);
+  const [activePlan, setActivePlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchStats = async () => {
@@ -15,6 +16,8 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
     try {
       const data = await api.getStats();
       setStats(data);
+      const plan = await api.getActivePlan().catch(() => null);
+      setActivePlan(plan);
     } catch (err: any) {
       console.error(err.message || 'Failed to fetch stats.');
     } finally {
@@ -25,6 +28,23 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  const getMonthlyCalendarDays = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+
+    const days = [];
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= totalDays; d++) {
+      days.push(new Date(year, month, d));
+    }
+    return days;
+  };
 
   const getCompletedExercisesByDay = () => {
     if (!stats || !stats.workoutStats || !stats.workoutStats.strengthTrend) return [];
@@ -179,45 +199,88 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
       {!loading && stats && (
         <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Weekly Commitment Calendar Tracker Row */}
-          <div className="glass-panel" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <h4 style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0, fontWeight: 'bold' }}>
-              📅 {lang === 'en' ? 'Weekly Commitment Overview' : 'نظرة عامة على الالتزام الأسبوعي'}
-            </h4>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-              {['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day, idx) => {
-                const arDays = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
-                const dayName = lang === 'en' ? day : arDays[idx];
-                
-                const hasLog = stats.workoutStats.strengthTrend?.some((log: any) => {
-                  const d = new Date(log.date);
-                  const jsDay = d.getDay();
-                  const mapIdxToJsDay = [6, 0, 1, 2, 3, 4, 5];
-                  return jsDay === mapIdxToJsDay[idx];
-                });
+          {/* Workout Calendar Heatmap Row */}
+          <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <style>{`
+              .heatmap-cell-date {
+                font-size: 10px;
+              }
+              @media (min-width: 1024px) {
+                .heatmap-cell-date {
+                  font-size: 15px !important;
+                }
+              }
+            `}</style>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <h4 style={{ fontSize: '15px', color: 'var(--text-primary)', margin: 0, fontWeight: 'bold' }}>
+                📅 {lang === 'en' ? 'Workout Calendar Heatmap' : 'خريطة حرارية لتتبع الالتزام بالتمارين'}
+              </h4>
+              
+              {/* Heatmap Legend */}
+              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '12px', height: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '3px' }}></div>
+                  <span>{lang === 'en' ? 'No Log' : 'لا يوجد سجل'}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '12px', height: '12px', background: '#27272a', border: '1px solid var(--border-color)', borderRadius: '3px' }}></div>
+                  <span>{lang === 'en' ? 'Rest Day' : 'يوم راحة'}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '12px', height: '12px', background: 'var(--primary)', borderRadius: '3px' }}></div>
+                  <span>{lang === 'en' ? 'Completed' : 'مكتمل ⚡'}</span>
+                </div>
+              </div>
+            </div>
 
-                return (
-                  <div 
-                    key={day} 
-                    style={{ 
-                      flex: 1, 
-                      minWidth: '60px', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      gap: '6px', 
-                      padding: '10px 4px', 
-                      background: hasLog ? 'var(--primary-glow)' : 'rgba(255,255,255,0.02)', 
-                      borderRadius: '10px', 
-                      border: hasLog ? '1px solid var(--primary)' : '1px solid var(--border-color)', 
-                      transition: 'all var(--transition-fast)' 
-                    }}
-                  >
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{dayName}</span>
-                    <span style={{ fontSize: '16px' }}>{hasLog ? '✅' : '⚪'}</span>
-                  </div>
-                );
-              })}
+            {/* Calendar Grid */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Weekday headers */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>
+                {(lang === 'en' ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']).map(d => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+
+              {/* Days Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+                {getMonthlyCalendarDays().map((day, idx) => {
+                  if (day === null) {
+                    return <div key={`pad-${idx}`} style={{ aspectRatio: '1', visibility: 'hidden' }}></div>;
+                  }
+
+                  const isCompleted = stats.workoutStats.strengthTrend?.some((log: any) => {
+                    return new Date(log.date).toDateString() === day.toDateString();
+                  });
+
+                  const jsDay = day.getDay();
+                  const planDayIndex = jsDay === 0 ? 7 : jsDay;
+                  const planDay = activePlan?.dayWorkouts?.find((dw: any) => dw.dayIndex === planDayIndex);
+                  const isScheduledRest = planDay?.isRestDay === true;
+
+                  return (
+                    <div 
+                      key={day.toISOString()} 
+                      style={{ 
+                        aspectRatio: '1', 
+                        background: isCompleted ? 'var(--primary)' : isScheduledRest ? '#27272a' : 'rgba(255,255,255,0.02)', 
+                        border: isCompleted ? '1px solid var(--primary)' : '1px solid var(--border-color)', 
+                        borderRadius: '8px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        color: isCompleted ? '#050710' : 'var(--text-secondary)', 
+                        fontWeight: '800',
+                        transition: 'all var(--transition-fast)' 
+                      }}
+                      title={day.toLocaleDateString()}
+                    >
+                      <span className="heatmap-cell-date">{day.getDate()}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

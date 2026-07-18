@@ -40,6 +40,7 @@ export const api = {
   updateExercise: (id: number, data: any) => request(`/workout/exercise/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteExercise: (id: number) => request(`/workout/exercise/${id}`, { method: 'DELETE' }),
   getAlternatives: (id: number) => request(`/workout/exercise/${id}/alternatives`),
+  swapExerciseAI: (id: number, reason: string, lang: string) => request(`/workout/exercise/${id}/swap-ai`, { method: 'POST', body: JSON.stringify({ reason, lang }) }),
   addCustomExercise: (dayId: number, data: any) => request(`/workout/day/${dayId}/exercise`, { method: 'POST', body: JSON.stringify(data) }),
   logProgress: (exerciseId: number, logData: any) => request(`/workout/exercise/${exerciseId}/log`, { method: 'POST', body: JSON.stringify(logData) }),
   updateDayWorkout: (dayId: number, data: any) => request(`/workout/day/${dayId}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -54,6 +55,9 @@ export const api = {
 
   // Stats API
   getStats: () => request('/stats'),
+  getCheckInStatus: (force?: boolean) => request(`/stats/check-in-status${force ? '?force=true' : ''}`),
+  submitCheckIn: (data: any) => request('/stats/check-in', { method: 'POST', body: JSON.stringify(data) }),
+  applyCheckInSuggestions: () => request('/stats/check-in/apply', { method: 'POST' }),
 
   // Sync API
   syncExercises: (rapidApiKey?: string) => request('/sync/exercises', { method: 'POST', body: JSON.stringify({ rapidApiKey }) }),

@@ -16,6 +16,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState('');
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
+
+  // Weekly Check-in States
+  const [checkInDue, setCheckInDue] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [latestCheckIn, setLatestCheckIn] = useState<any>(null);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [checkInFeel, setCheckInFeel] = useState<'EASY' | 'NORMAL' | 'HARD'>('NORMAL');
+  const [checkInCompleted, setCheckInCompleted] = useState<'YES' | 'MOSTLY' | 'NO'>('YES');
+  const [checkInPain, setCheckInPain] = useState('');
+  const [submittingCheckIn, setSubmittingCheckIn] = useState(false);
+  const [hasStartedWorkouts, setHasStartedWorkouts] = useState(false);
+  const [daysRemaining, setDaysRemaining] = useState(0);
 
   // Active Player state
   const [showPlayer, setShowPlayer] = useState(false);
@@ -30,6 +44,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   // Exercise countdown timer (for time-based exercises like Plank)
   const [exerciseSeconds, setExerciseSeconds] = useState(0);
   const [isExerciseTimerActive, setIsExerciseTimerActive] = useState(false);
+
+  const handleGeneratePlan = async () => {
+    const isComplete = profile && profile.fitnessGoal && profile.fitnessLevel && profile.daysPerWeek;
+    if (!isComplete) {
+      setProfileError(lang === 'en' ? 'Please complete your profile first.' : 'يرجى إكمال ملفك الشخصي أولاً.');
+      return;
+    }
+
+    setProfileError('');
+    setRegenerating(true);
+    setLoadingMessage(lang === 'en' ? 'Building your personalized plan...' : 'جاري بناء جدولك الرياضي المخصص...');
+    try {
+      await api.generatePlan({
+        durationWeeks: 4,
+        startDate: new Date(),
+        workoutLocation: profile.workoutLocation || 'GYM',
+        equipment: profile.equipment ? profile.equipment.split(',') : [],
+        level: profile.fitnessLevel,
+        goal: profile.fitnessGoal,
+        daysPerWeek: parseInt(profile.daysPerWeek) || 4,
+        lang,
+      });
+      onNavigate('my-plan');
+    } catch (err: any) {
+      alert(err.message || (lang === 'en' ? 'Failed to generate plan.' : 'فشل توليد الخطة الرياضية.'));
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -54,12 +97,115 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         if (calculatedDay < 1) calculatedDay = 1;
         setSelectedDayIndex(calculatedDay <= 7 ? calculatedDay : 1);
       }
+
+      // Fetch check-in status
+      try {
+        const status = await api.getCheckInStatus();
+        setCheckInDue(status.due);
+        setLatestCheckIn(status.latestCheckIn);
+        setHasStartedWorkouts(status.hasStartedWorkouts);
+        setDaysRemaining(status.daysRemaining);
+      } catch (checkInErr) {
+        console.error('Failed to fetch check-in status:', checkInErr);
+      }
     } catch (err: any) {
       console.error(err);
       setError(err.message || (lang === 'en' ? 'Could not load active workout routine.' : 'لم نتمكن من تحميل جدول التمارين النشط.'));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmitCheckIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingCheckIn(true);
+    try {
+      const res = await api.submitCheckIn({
+        workoutFeel: checkInFeel,
+        sessionsCompleted: checkInCompleted,
+        painNotes: checkInPain,
+        lang
+      });
+      if (res.success) {
+        alert(lang === 'en' 
+          ? 'Check-in submitted successfully! Your recommendation is ready on the dashboard.'
+          : 'تم إرسال التقييم بنجاح! اقتراح الكوتش جاهز الآن على لوحة التحكم.'
+        );
+        setShowCheckInModal(false);
+        setCheckInDue(false);
+        setLatestCheckIn(res.checkIn);
+        setDaysRemaining(7);
+        setHasStartedWorkouts(true);
+        setCheckInPain('');
+      }
+    } catch (err: any) {
+      alert(lang === 'en' ? 'Failed to submit check-in.' : 'فشل إرسال التقييم الأسبوعي.');
+    } finally {
+      setSubmittingCheckIn(false);
+    }
+  };
+
+  const handleApplySuggestions = async () => {
+    setSubmittingCheckIn(true);
+    try {
+      const res = await api.applyCheckInSuggestions();
+      if (res.success) {
+        alert(res.message);
+        // Reload dashboard details
+        fetchDashboardData();
+      }
+    } catch (err: any) {
+      alert(lang === 'en' ? 'Failed to apply suggestions.' : 'فشل تطبيق التعديلات.');
+    } finally {
+      setSubmittingCheckIn(false);
+    }
+  };
+
+  const formatProfileSummary = () => {
+    if (!profile) return '';
+    
+    // Map goals
+    const goalMapEn: any = {
+      HYPERTROPHY: 'Build Muscle',
+      LOSE_WEIGHT: 'Lose Weight',
+      STRENGTH: 'Power & Strength',
+      ENDURANCE: 'Cardio & Endurance',
+      ATHLETICISM: 'Athletic Performance'
+    };
+    const goalMapAr: any = {
+      HYPERTROPHY: 'بناء عضلات',
+      LOSE_WEIGHT: 'خسارة وزن',
+      STRENGTH: 'قوة بدنية',
+      ENDURANCE: 'قوة تحمل',
+      ATHLETICISM: 'أداء رياضي متكامل'
+    };
+
+    // Map levels
+    const levelMapEn: any = {
+      beginner: 'Beginner',
+      intermediate: 'Intermediate',
+      advanced: 'Advanced'
+    };
+    const levelMapAr: any = {
+      beginner: 'مبتدئ',
+      intermediate: 'متوسط',
+      advanced: 'متقدم'
+    };
+
+    const goal = lang === 'en' 
+      ? (goalMapEn[profile.fitnessGoal] || profile.fitnessGoal || 'Build Muscle')
+      : (goalMapAr[profile.fitnessGoal] || profile.fitnessGoal || 'بناء عضلات');
+
+    const level = lang === 'en'
+      ? (levelMapEn[profile.fitnessLevel] || profile.fitnessLevel || 'Intermediate')
+      : (levelMapAr[profile.fitnessLevel] || profile.fitnessLevel || 'متوسط');
+
+    const days = profile.daysPerWeek || '4';
+    const daysStr = lang === 'en' ? `${days} days/week` : `${days} أيام/الأسبوع`;
+
+    return lang === 'en'
+      ? `Goal: ${goal} · ${level} · ${daysStr}`
+      : `الهدف: ${goal} · ${level} · ${daysStr}`;
   };
 
   useEffect(() => {
@@ -298,12 +444,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       {/* Header Info Panel */}
       <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#fff' }}>
-            {lang === 'en' ? 'Welcome Back, Beast! ⚡' : 'مرحباً بعودتك، أيها البطل! ⚡'}
+          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <span>{lang === 'en' ? 'Welcome Back, Beast! ⚡' : 'مرحباً بعودتك، أيها البطل! ⚡'}</span>
+            <span 
+              onClick={async () => {
+                setCheckInLoading(true);
+                try {
+                  const status = await api.getCheckInStatus(true);
+                  setCheckInDue(status.due);
+                  setHasStartedWorkouts(status.hasStartedWorkouts);
+                  setDaysRemaining(status.daysRemaining);
+                  setShowCheckInModal(true);
+                } catch (err) {
+                  alert('Failed to force checkin');
+                } finally {
+                  setCheckInLoading(false);
+                }
+              }}
+              style={{ fontSize: '10px', color: 'var(--text-muted)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'normal' }}
+            >
+              {checkInLoading ? '...' : (lang === 'en' ? '[Test Check-In ⚡]' : '[تجربة التقييم الأسبوعي ⚡]')}
+            </span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
             {lang === 'en' ? 'Fuel your consistency, crush today\'s limit, and activate BEASTMODE.' : 'زد من التزامك، وحطم أرقامك القياسية اليوم، ودع الوحش الذي بداخلك يستيقظ.'}
           </p>
+          {profile && (profile.fitnessGoal || profile.fitnessLevel) && (
+            <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🎯</span>
+              <span>{formatProfileSummary()}</span>
+            </div>
+          )}
         </div>
 
         {/* Workout Location Toggle */}
@@ -338,7 +509,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         <div className="glass-panel text-center" style={{ padding: '50px', marginBottom: '24px', border: '1px solid var(--primary)' }}>
           <div style={{ fontSize: '32px', animation: 'spin 2s linear infinite' }}>🔄</div>
           <h3 style={{ marginTop: '15px' }}>
-            {lang === 'en' ? 'Regenerating Workout Plan...' : 'جاري إعادة توليد وتحديث خطتك الرياضية بالذكاء الاصطناعي...'}
+            {loadingMessage || (lang === 'en' ? 'Regenerating Workout Plan...' : 'جاري إعادة توليد وتحديث خطتك الرياضية بالذكاء الاصطناعي...')}
           </h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '5px' }}>
             {lang === 'en' ? 'Tailoring exercises based on your preferred location.' : 'نقوم بتوزيع التمارين والأدوات لتناسب موقع تمرينك الجديد.'}
@@ -357,16 +528,126 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
           <Award size={48} color="var(--primary)" style={{ opacity: 0.8 }} />
           <h3>{lang === 'en' ? 'Setup Your Program' : 'صمم برنامجك الرياضي'}</h3>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            {lang === 'en' ? 'Please complete the onboarding steps to generate your first workout routine.' : 'يرجى إكمال خطوات التهيئة البسيطة لتوليد خطة تمارين مخصصة لك بالكامل.'}
+            {lang === 'en' ? 'Generate a customized weekly plan using your profile details, or complete the onboarding steps.' : 'قم بتوليد جدول تمارين أسبوعي مخصص باستخدام تفاصيل ملفك الشخصي، أو أكمل خطوات التهيئة.'}
           </p>
-          <button onClick={() => onNavigate('onboarding')} className="glow-btn">
-            {lang === 'en' ? 'Start Onboarding' : 'ابدأ الآن ⚡'}
-          </button>
+          
+          {profileError && (
+            <div style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 'bold', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <span>⚠️ {profileError}</span>
+              <button 
+                onClick={() => onNavigate('profile')} 
+                style={{ background: 'transparent', border: 'none', color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}
+              >
+                {lang === 'en' ? 'Go to Profile page' : 'الذهاب لصفحة الملف الشخصي'}
+              </button>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
+            <button onClick={handleGeneratePlan} className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>
+              ⚡ {lang === 'en' ? 'Generate Plan' : 'توليد الجدول ⚡'}
+            </button>
+            <button onClick={() => onNavigate('onboarding')} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>
+              {lang === 'en' ? 'Start Onboarding' : 'خطوات التهيئة'}
+            </button>
+          </div>
         </div>
       )}
 
       {!loading && !regenerating && activePlan && (
         <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          {/* Weekly Check-In Card / Coach Feedback Card */}
+          {(() => {
+            if (latestCheckIn && !latestCheckIn.applied) {
+              return (
+                <div className="glass-panel animated-fade" style={{ padding: '24px', borderLeft: '5px solid var(--primary)', background: 'rgba(0, 210, 255, 0.03)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '24px' }}>🤖</span>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                        {lang === 'en' ? 'Coach AI Weekly Feedback' : 'نصيحة مدرب الذكاء الاصطناعي الأسبوعية'}
+                      </h4>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                        {new Date(latestCheckIn.date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: '13.5px', lineHeight: '1.6', color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: '15px' }}>
+                    "{latestCheckIn.aiRecommendation}"
+                  </p>
+                  <button
+                    onClick={handleApplySuggestions}
+                    disabled={submittingCheckIn}
+                    className="glow-btn"
+                    style={{ padding: '8px 16px', fontSize: '12.5px' }}
+                  >
+                    {submittingCheckIn ? (lang === 'en' ? 'Applying...' : 'جاري التطبيق...') : (lang === 'en' ? 'Apply Suggestions ⚡' : 'تطبيق التعديلات المقترحة ⚡')}
+                  </button>
+                </div>
+              );
+            }
+
+            if (checkInDue) {
+              return (
+                <div className="glass-panel animated-fade" style={{ padding: '20px', border: '1px solid var(--primary)', background: 'var(--primary-glow)', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                    <div>
+                      <span className="badge" style={{ background: 'var(--primary)', color: '#050710', fontWeight: 'bold' }}>
+                        📅 {lang === 'en' ? 'Weekly AI Check-In' : 'التقييم الأسبوعي بالذكاء الاصطناعي'}
+                      </span>
+                      <h3 style={{ fontSize: '17px', fontWeight: '900', marginTop: '8px' }}>
+                        {lang === 'en' ? 'How was your fitness progress this week?' : 'كيف كان تقدمك الرياضي هذا الأسبوع؟'}
+                      </h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '12.5px', marginTop: '4px', maxWidth: '600px', lineHeight: '1.5' }}>
+                        {lang === 'en' ? 'Your coach wants to review your workouts, pain notes, and consistency to customize your plan for the upcoming week!' : 'يرغب مدرب الذكاء الاصطناعي في مراجعة أدائك وتحديث خطتك التدريبية لتناسب مدى راحتك وتطور قوتك!'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowCheckInModal(true)}
+                      className="glow-btn"
+                      style={{ padding: '10px 22px', fontSize: '13.5px' }}
+                    >
+                      {lang === 'en' ? 'Check In Now ⚡' : 'ابدأ التقييم الآن ⚡'}
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            // Locked Check-In Card
+            return (
+              <div className="glass-panel animated-fade" style={{ padding: '20px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.01)', opacity: 0.6, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                  <div>
+                    <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontWeight: 'bold' }}>
+                      🔒 {lang === 'en' ? 'Weekly AI Check-In' : 'التقييم الأسبوعي بالذكاء الاصطناعي'}
+                    </span>
+                    <h3 style={{ fontSize: '17px', fontWeight: '900', marginTop: '8px', color: 'var(--text-secondary)' }}>
+                      {hasStartedWorkouts 
+                        ? (lang === 'en' ? `Next check-in available in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}` : `التقييم الأسبوعي القادم متاح خلال ${daysRemaining} أيام`)
+                        : (lang === 'en' ? 'Check-in locked' : 'التقييم الأسبوعي مقفل')
+                      }
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '12.5px', marginTop: '4px', maxWidth: '600px', lineHeight: '1.5' }}>
+                      {hasStartedWorkouts 
+                        ? (lang === 'en' ? 'Your weekly progress assessment is being scheduled. Stay consistent to unlock coaching feedback!' : 'يتم إعداد تقييم تقدمك الرياضي حالياً. استمر في تمرينك لفتح نصائح المدرب!')
+                        : (lang === 'en' ? 'Start and log your first active workout session to initiate the weekly check-in schedule!' : 'ابدأ وسجّل جولتك الأولى في التمرين لتفعيل جدول التقييم الأسبوعي الخاص بك!')
+                      }
+                    </p>
+                  </div>
+                  <button
+                    disabled
+                    className="secondary-btn"
+                    style={{ padding: '10px 22px', fontSize: '13.5px', opacity: 0.5, cursor: 'not-allowed' }}
+                  >
+                    {lang === 'en' ? 'Locked 🔒' : 'مغلق 🔒'}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Top Widgets Row: Streak & Level */}
           <div className="grid-responsive" style={{ gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             {/* Streak Counter */}
@@ -662,6 +943,98 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
               );
             })()}
           </div>
+        </div>
+      )}
+
+      {/* CHECK-IN MODAL */}
+      {showCheckInModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(5, 7, 16, 0.96)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <form
+            onSubmit={handleSubmitCheckIn}
+            className="glass-panel animated-fade"
+            style={{ width: '100%', maxWidth: '480px', padding: '24px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '20px' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '800' }}>
+                📅 {lang === 'en' ? 'Weekly AI Check-In' : 'التقييم الأسبوعي للمدرب'}
+              </h3>
+              <button type="button" onClick={() => setShowCheckInModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* Question 1: How did workouts feel? */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold' }}>
+                1. {lang === 'en' ? 'How did your workouts feel this week?' : 'كيف شعرت بصعوبة التمارين هذا الأسبوع؟'}
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                {(['EASY', 'NORMAL', 'HARD'] as const).map((feel) => {
+                  const labelEn = feel === 'EASY' ? 'Too Easy' : feel === 'NORMAL' ? 'Just Right' : 'Too Hard';
+                  const labelAr = feel === 'EASY' ? 'سهل جداً' : feel === 'NORMAL' ? 'مناسب' : 'صعب جداً';
+                  const active = checkInFeel === feel;
+                  return (
+                    <button
+                      key={feel}
+                      type="button"
+                      onClick={() => setCheckInFeel(feel)}
+                      className={active ? 'glow-btn' : 'secondary-btn'}
+                      style={{ padding: '8px', fontSize: '12px', justifyContent: 'center' }}
+                    >
+                      {lang === 'en' ? labelEn : labelAr}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Question 2: Did you complete all sessions? */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold' }}>
+                2. {lang === 'en' ? 'Did you complete all planned sessions?' : 'هل أكملت جميع الجلسات المجدولة؟'}
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                {(['YES', 'MOSTLY', 'NO'] as const).map((comp) => {
+                  const labelEn = comp === 'YES' ? 'Yes' : comp === 'MOSTLY' ? 'Mostly' : 'No';
+                  const labelAr = comp === 'YES' ? 'نعم بالكامل' : comp === 'MOSTLY' ? 'معظمها' : 'لا';
+                  const active = checkInCompleted === comp;
+                  return (
+                    <button
+                      key={comp}
+                      type="button"
+                      onClick={() => setCheckInCompleted(comp)}
+                      className={active ? 'glow-btn' : 'secondary-btn'}
+                      style={{ padding: '8px', fontSize: '12px', justifyContent: 'center' }}
+                    >
+                      {lang === 'en' ? labelEn : labelAr}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Question 3: Pain / Discomfort */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold' }}>
+                3. {lang === 'en' ? 'Any pain or discomfort? (Optional)' : 'هل تشعر بأي ألم أو إصابة؟ (اختياري)'}
+              </label>
+              <textarea
+                value={checkInPain}
+                onChange={(e) => setCheckInPain(e.target.value)}
+                placeholder={lang === 'en' ? 'E.g., lower back tightness, knee pain...' : 'مثال: ألم خفيف في أسفل الظهر، أو الركبة...'}
+                className="input-field"
+                rows={3}
+                style={{ resize: 'none', padding: '10px', fontSize: '13px' }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={submittingCheckIn}
+              className="glow-btn"
+              style={{ justifyContent: 'center', padding: '12px', fontSize: '14px', marginTop: '10px' }}
+            >
+              {submittingCheckIn ? (lang === 'en' ? 'Analyzing with AI...' : 'جاري التحليل بالذكاء الاصطناعي...') : (lang === 'en' ? 'Submit Check-In' : 'إرسال التقييم الأسبوعي')}
+            </button>
+          </form>
         </div>
       )}
     </div>

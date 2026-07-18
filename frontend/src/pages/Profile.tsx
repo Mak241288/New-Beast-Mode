@@ -20,7 +20,22 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     targetWeight: '',
     medicalConditions: '',
     workoutLocation: 'GYM',
+    fitnessGoal: 'HYPERTROPHY',
+    fitnessLevel: 'intermediate',
+    daysPerWeek: '4',
+    equipment: '',
+    age: '',
+    workoutReminder: false,
+    reminderTime: '08:00',
   });
+
+  const equipmentList = [
+    { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز' },
+    { id: 'barbell', label: lang === 'en' ? 'Barbell' : 'بار وأوزان' },
+    { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة' },
+    { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية' },
+    { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات' },
+  ];
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,6 +70,13 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         height: data.height || '',
         currentWeight: data.currentWeight || '',
         targetWeight: data.targetWeight || '',
+        fitnessGoal: data.fitnessGoal || 'HYPERTROPHY',
+        fitnessLevel: data.fitnessLevel || 'intermediate',
+        daysPerWeek: data.daysPerWeek || '4',
+        equipment: data.equipment || '',
+        age: data.age || '',
+        workoutReminder: data.workoutReminder || false,
+        reminderTime: data.reminderTime || '08:00',
       });
     } catch (err) {
       console.error('Failed to load profile:', err);
@@ -70,6 +92,17 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProfile((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEquipmentChange = (id: string) => {
+    const currentEquip = profile.equipment ? profile.equipment.split(',').filter(Boolean) : [];
+    let updated: string[];
+    if (currentEquip.includes(id)) {
+      updated = currentEquip.filter((item: string) => item !== id);
+    } else {
+      updated = [...currentEquip, id];
+    }
+    setProfile((prev: any) => ({ ...prev, equipment: updated.join(',') }));
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -220,6 +253,24 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               </div>
             </div>
 
+            {/* Age Card */}
+            <div className="glass-panel" style={{ padding: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                🎂 {lang === 'en' ? 'Age' : 'العمر'}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                <input
+                  type="number"
+                  name="age"
+                  value={profile.age}
+                  onChange={handleInputChange}
+                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '24px', fontWeight: '800', width: '90px', padding: 0 }}
+                  placeholder="--"
+                />
+                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'years' : 'سنة'}</span>
+              </div>
+            </div>
+
             {/* Current Weight Card */}
             <div className="glass-panel" style={{ padding: '16px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: '0 0 10px rgba(0, 210, 255, 0.05)' }}>
               <span style={{ fontSize: '11px', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
@@ -320,6 +371,76 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               </div>
             </div>
 
+            {/* Workout Program Preferences */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <h3 style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', margin: 0 }}>
+                🏋️‍♂️ {lang === 'en' ? 'Workout Plan Settings' : 'إعدادات البرنامج والجدول الرياضي'}
+              </h3>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                    {lang === 'en' ? 'Fitness Goal' : 'الهدف الرياضي'}
+                  </label>
+                  <select name="fitnessGoal" value={profile.fitnessGoal || 'HYPERTROPHY'} onChange={handleInputChange} className="input-field">
+                    <option value="HYPERTROPHY">{lang === 'en' ? 'Build Muscle / Hypertrophy' : 'بناء عضلات / تضخيم'}</option>
+                    <option value="LOSE_WEIGHT">{lang === 'en' ? 'Lose Weight / Fat Loss' : 'خسارة وزن / حرق دهون'}</option>
+                    <option value="STRENGTH">{lang === 'en' ? 'Power & Strength' : 'زيادة القوة البدنية'}</option>
+                    <option value="ENDURANCE">{lang === 'en' ? 'Cardio & Endurance' : 'لياقة وقوة تحمل'}</option>
+                    <option value="ATHLETICISM">{lang === 'en' ? 'Athletic Performance' : 'أداء رياضي متكامل'}</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                    {lang === 'en' ? 'Fitness Level' : 'المستوى الرياضي'}
+                  </label>
+                  <select name="fitnessLevel" value={profile.fitnessLevel || 'intermediate'} onChange={handleInputChange} className="input-field">
+                    <option value="beginner">{lang === 'en' ? 'Beginner' : 'مبتدئ'}</option>
+                    <option value="intermediate">{lang === 'en' ? 'Intermediate' : 'متوسط'}</option>
+                    <option value="advanced">{lang === 'en' ? 'Advanced' : 'متقدم'}</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                    {lang === 'en' ? 'Days Per Week' : 'أيام التمرين أسبوعياً'}
+                  </label>
+                  <select name="daysPerWeek" value={profile.daysPerWeek || '4'} onChange={handleInputChange} className="input-field">
+                    {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                      <option key={num} value={num}>
+                        {num} {lang === 'en' ? 'days/week' : 'أيام في الأسبوع'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Equipment Preferences */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <h3 style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', margin: 0 }}>
+                🛠️ {lang === 'en' ? 'Available Equipment' : 'المعدات والأدوات الرياضية المتاحة لديك'}
+              </h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '5px' }}>
+                {equipmentList.map((equip) => {
+                  const currentEquip = profile.equipment ? profile.equipment.split(',').filter(Boolean) : [];
+                  const isChecked = currentEquip.includes(equip.id);
+                  return (
+                    <button
+                      key={equip.id}
+                      type="button"
+                      onClick={() => handleEquipmentChange(equip.id)}
+                      className={isChecked ? 'glow-btn' : 'secondary-btn'}
+                      style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '8px', cursor: 'pointer' }}
+                    >
+                      {equip.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Health & Medical Section */}
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <h3 style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', margin: 0 }}>
@@ -334,6 +455,77 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                 style={{ minHeight: '60px', resize: 'vertical', fontSize: '13px' }}
                 placeholder={lang === 'en' ? 'E.g., Lower back pain, shoulder injury...' : 'مثال: آلام أسفل الظهر، إصابة كتف...'}
               />
+            </div>
+
+            {/* Notifications Section */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h3 style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', margin: 0 }}>
+                🔔 {lang === 'en' ? 'Notifications' : 'الإشعارات والتنبيهات'}
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Workout Reminder Toggle */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '13px', fontWeight: 'bold', margin: 0 }}>
+                      {lang === 'en' ? 'Workout Reminder' : 'تذكير موعد التمرين اليومي'}
+                    </h4>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '11.5px', margin: '2px 0 0 0' }}>
+                      {lang === 'en' ? 'Receive a daily email to keep you consistent with your program.' : 'استلم بريداً إلكترونياً يومياً لتذكيرك بأداء تمرينك والحفاظ على استمراريتك.'}
+                    </p>
+                  </div>
+                  
+                  {/* Toggle Switch */}
+                  <div 
+                    onClick={() => setProfile((prev: any) => ({ ...prev, workoutReminder: !prev.workoutReminder }))}
+                    style={{
+                      width: '50px',
+                      height: '26px',
+                      borderRadius: '13px',
+                      background: profile.workoutReminder ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                      padding: '3px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: profile.workoutReminder ? 'flex-end' : 'flex-start',
+                      transition: 'all 0.3s ease',
+                      border: '1px solid ' + (profile.workoutReminder ? 'var(--primary)' : 'var(--border-color)')
+                    }}
+                  >
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: '#fff',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                      transition: 'all 0.3s ease'
+                    }} />
+                  </div>
+                </div>
+
+                {/* Time Picker (Shown only if workoutReminder is true) */}
+                {profile.workoutReminder && (
+                  <div className="animated-fade" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '10px 15px', borderRadius: '10px', border: '1px solid var(--border-color)', alignSelf: 'flex-start' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                      ⏰ {lang === 'en' ? 'Preferred Time:' : 'وقت التذكير المفضل:'}
+                    </label>
+                    <input
+                      type="time"
+                      name="reminderTime"
+                      value={profile.reminderTime || '08:00'}
+                      onChange={handleInputChange}
+                      className="input-field"
+                      style={{ width: '120px', padding: '6px', fontSize: '13px' }}
+                    />
+                  </div>
+                )}
+
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '4px' }}>
+                  {lang === 'en' 
+                    ? 'Email notifications are optional and can be turned off at any time.'
+                    : 'تنبيهات البريد الإلكتروني اختيارية ويمكن إيقاف تفعيلها في أي وقت.'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

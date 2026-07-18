@@ -92,7 +92,7 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
   const userId = req.user?.id;
 
   try {
-    const user = await prisma.user.findUnique({
+    const user = await (prisma as any).user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -109,6 +109,10 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
         fitnessGoal: true,
         fitnessLevel: true,
         equipment: true,
+        age: true,
+        daysPerWeek: true,
+        workoutReminder: true,
+        reminderTime: true,
         createdAt: true,
       },
     });
@@ -141,10 +145,14 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     fitnessGoal,
     fitnessLevel,
     equipment,
+    age,
+    daysPerWeek,
+    workoutReminder,
+    reminderTime,
   } = req.body;
 
   try {
-    const oldUser = await prisma.user.findUnique({ where: { id: userId } });
+    const oldUser = await (prisma as any).user.findUnique({ where: { id: userId } }) as any;
     if (!oldUser) {
       res.status(404).json({ error: 'المستخدم غير موجود' });
       return;
@@ -163,7 +171,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     // Update User
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await (prisma as any).user.update({
       where: { id: userId },
       data: {
         name: name !== undefined ? name : oldUser.name,
@@ -178,6 +186,10 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         fitnessGoal: fitnessGoal !== undefined ? fitnessGoal : oldUser.fitnessGoal,
         fitnessLevel: fitnessLevel !== undefined ? fitnessLevel : oldUser.fitnessLevel,
         equipment: equipment !== undefined ? (Array.isArray(equipment) ? equipment.join(',') : equipment) : oldUser.equipment,
+        age: age !== undefined ? (age ? parseInt(age) : null) : oldUser.age,
+        daysPerWeek: daysPerWeek !== undefined ? (daysPerWeek ? parseInt(daysPerWeek) : null) : oldUser.daysPerWeek,
+        workoutReminder: workoutReminder !== undefined ? Boolean(workoutReminder) : oldUser.workoutReminder,
+        reminderTime: reminderTime !== undefined ? reminderTime : oldUser.reminderTime,
       },
     });
 
@@ -226,6 +238,8 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         fitnessGoal: updatedUser.fitnessGoal,
         fitnessLevel: updatedUser.fitnessLevel,
         equipment: updatedUser.equipment,
+        age: updatedUser.age,
+        daysPerWeek: updatedUser.daysPerWeek,
       },
       needsPlanAdjustment,
       adjustmentSuggestion,

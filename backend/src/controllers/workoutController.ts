@@ -394,7 +394,7 @@ export const deleteExercise = async (req: AuthRequest, res: Response): Promise<v
 // @route   POST /api/workout/day/:dayId/exercise
 export const addCustomExercise = async (req: AuthRequest, res: Response): Promise<void> => {
   const dayWorkoutId = parseInt(req.params.dayId);
-  const { name, targetMuscle, category, sets, reps, weight, exerciseTips } = req.body;
+  const { name, targetMuscle, category, sets, reps, weight, exerciseTips, imageUrl, videoUrl } = req.body;
 
   try {
     // Find highest order to place at the end
@@ -416,8 +416,8 @@ export const addCustomExercise = async (req: AuthRequest, res: Response): Promis
         weight: weight || 'Bodyweight',
         exerciseTips: exerciseTips || '',
         order: newOrder,
-        imageUrl: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60',
-        videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise tutorial shorts')}`,
+        imageUrl: imageUrl || 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60',
+        videoUrl: videoUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise tutorial shorts')}`,
       },
     });
 
@@ -1192,7 +1192,7 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
   });
 
   const query = `
-    SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, category, image_url, instructions_ar, instructions_en
+    SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, level, category, image_url, instructions_ar, instructions_en
     FROM exercises 
     ORDER BY muscle_en ASC, rating DESC
   `;
@@ -1254,6 +1254,7 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
         muscle_ar: muscleAr,
         equipment_en: row.equipment_en || 'None',
         equipment_ar: row.equipment_ar || 'بدون أدوات',
+        level: row.level || 'intermediate',
         category: row.category || 'IRON',
         image_url: row.image_url || getMuscleImage(muscleEn),
         instructions_en: row.instructions_en || '',
@@ -1352,4 +1353,82 @@ export const getAlternatives = async (req: AuthRequest, res: Response): Promise<
     res.status(500).json({ error: 'حدث خطأ غير متوقع أثناء البحث عن بدائل.' });
   }
 };
+
+// @desc    Swap exercise using AI based on a reason
+// @route   POST /api/workout/exercise/:id/swap-ai
+export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  const exerciseId = parseInt(req.params.id);
+  const { reason, lang } = req.body;
+
+  try {
+    if (!userId) {
+      res.status(401).json({ error: 'غير مصرح بالدخول' });
+      return;
+    }
+
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: exerciseId },
+      include: {
+        dayWorkout: true
+      }
+    });
+
+    if (!exercise) {
+      res.status(404).json({ error: 'التمرين غير موجود' });
+      return;
+    }
+
+    const userProfile = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    const userEquip = userProfile?.equipment ? userProfile.equipment.split(',').filter(Boolean) : [];
+    
+    // Call AI service to suggest swap
+    const { suggestSwapAI } = require('../services/aiService');
+    const aiResult = await suggestSwapAI(
+      exercise.name,
+      exercise.targetMuscle || '',
+      exercise.category || '',
+      reason,
+      userEquip,
+      lang || 'ar'
+    );
+
+    // Search library for matching image and video URLs
+    const libraryMatch = await prisma.exerciseLibrary.findFirst({
+      where: {
+        name: { equals: aiResult.name }
+      }
+    });
+
+    // Update exercise in DB
+    const updated = await prisma.exercise.update({
+      where: { id: exerciseId },
+      data: {
+        name: aiResult.name,
+        targetMuscle: aiResult.targetMuscle || exercise.targetMuscle,
+        category: aiResult.category || exercise.category,
+        sets: aiResult.sets ? parseInt(aiResult.sets) : exercise.sets,
+        reps: aiResult.reps || exercise.reps,
+        weight: aiResult.weight || exercise.weight,
+        exerciseTips: aiResult.exerciseTips || exercise.exerciseTips,
+        imageUrl: libraryMatch?.imageUrl || exercise.imageUrl,
+        videoUrl: libraryMatch?.videoUrl || exercise.videoUrl
+      }
+    });
+
+    res.json({
+      success: true,
+      exercise: updated,
+      explanation: aiResult.explanation
+    });
+
+  } catch (err: any) {
+    console.error('[workoutController] AI Swap Error:', err);
+    res.status(500).json({ error: err.message || 'فشل استبدال التمرين بالذكاء الاصطناعي.' });
+  }
+};
+
 

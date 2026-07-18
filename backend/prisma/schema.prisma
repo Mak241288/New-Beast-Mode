@@ -23,6 +23,10 @@ model User {
   equipment         String?         // comma-separated list of available equipment
   fitnessGoal       String?         // e.g. "HYPERTROPHY", "LOSE_WEIGHT"
   fitnessLevel      String?         // e.g. "beginner", "intermediate", "advanced"
+  age               Int?            // user's age
+  daysPerWeek       Int?            // days per week of workout
+  workoutReminder   Boolean         @default(false)
+  reminderTime      String?         // e.g. "08:00"
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   workoutPlans      WorkoutPlan[]
@@ -102,5 +106,16 @@ model ProgressLog {
   repsCompleted String   // e.g. "12,11,10"
   weightUsed    String?  // e.g. "15kg, 15kg, 15kg"
   notes         String?  // How the user felt during the exercise
+}
+
+model CheckIn {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  date              DateTime @default(now())
+  workoutFeel       String   // EASY, NORMAL, HARD
+  sessionsCompleted String   // YES, MOSTLY, NO
+  painNotes         String?
+  aiRecommendation  String?
+  applied           Boolean  @default(false)
 }
 

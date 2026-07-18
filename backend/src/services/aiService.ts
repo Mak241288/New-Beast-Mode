@@ -22,27 +22,41 @@ export const callGroq = async (prompt: string, jsonMode: boolean = false, custom
     ? customMessages 
     : [{ role: 'user', content: prompt }];
 
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${groqKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages,
-      temperature: 0.3,
-      ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-    }),
-  });
+  const makeRequest = async (modelName: string) => {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${groqKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages,
+        temperature: 0.3,
+        ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+      }),
+    });
 
-  const data: any = await response.json();
-  if (!response.ok) {
-    console.error('[Groq Error Details]:', data);
-    throw new Error(data.error?.message || 'فشلت عملية التوليد عبر Groq');
+    const data: any = await response.json();
+    if (!response.ok) {
+      console.error(`[Groq Error Details for ${modelName}]:`, data);
+      throw new Error(data.error?.message || 'فشلت عملية التوليد عبر Groq');
+    }
+
+    return data.choices[0]?.message?.content || '';
+  };
+
+  try {
+    return await makeRequest('llama-3.3-70b-versatile');
+  } catch (error: any) {
+    console.warn('[callGroq] Primary model llama-3.3-70b-versatile failed, retrying with fallback llama-3.1-8b-instant...', error.message);
+    try {
+      return await makeRequest('llama-3.1-8b-instant');
+    } catch (fallbackError: any) {
+      console.error('[callGroq] Fallback model llama-3.1-8b-instant also failed:', fallbackError.message);
+      throw fallbackError;
+    }
   }
-
-  return data.choices[0]?.message?.content || '';
 };
 
 // 1. Generate Workout Plan using AI (66 years experience Coach & PT)
@@ -212,3 +226,90 @@ export const upgradeWorkoutPlanAI = async (userId: number, activePlanTitle: stri
     throw new Error('فشل ترقية الجدول الرياضي بالذكاء الاصطناعي.');
   }
 };
+
+/**
+ * AI-powered exercise swap generator based on user reason and equipment
+ */
+export const suggestSwapAI = async (
+  exerciseName: string,
+  targetMuscle: string,
+  equipment: string,
+  reason: string,
+  userEquipment: string[],
+  lang: 'ar' | 'en'
+): Promise<any> => {
+  const isEn = lang === 'en';
+  
+  const systemPrompt = `
+  You are an expert sports coach. You need to swap a workout exercise with a suitable replacement based on a user's constraint or reason.
+  
+  Requirements:
+  1. The new exercise must target the SAME muscle group: "${targetMuscle || 'Same as original'}".
+  2. The new exercise must ONLY use the equipment available to the user: ${JSON.stringify(userEquipment)}.
+  3. The new exercise should directly address the user's reason for swapping: "${reason}".
+  4. Respond strictly with a JSON object in the following format:
+  {
+    "name": "Name of the new exercise in ${isEn ? 'English' : 'Arabic'}",
+    "targetMuscle": "Muscle group in ${isEn ? 'English' : 'Arabic'}",
+    "category": "IRON" or "CALISTHENICS" or "HIIT" or "CARDIO",
+    "sets": number (e.g. 3 or 4),
+    "reps": "reps string (e.g. '10-12', '12', 'Max')",
+    "weight": "suggested weight in ${isEn ? 'English' : 'Arabic'} (e.g. 'دمبلز 10 كجم' or 'Dumbbells 10kg')",
+    "exerciseTips": "Form instructions or safety tips in ${isEn ? 'English' : 'Arabic'}",
+    "explanation": "One-line friendly explanation in ${isEn ? 'English' : 'Arabic'} of why this is a good alternative based on the user's reason (e.g., 'Targeting the chest safely using dumbbells instead of barbell to match your equipment.')."
+  }
+
+  Do not output any extra text, only return the JSON object.
+  `;
+
+  const prompt = `
+  Original Exercise: ${exerciseName}
+  Original Equipment: ${equipment}
+  Reason for swapping: "${reason}"
+  User's available equipment: ${userEquipment.join(', ')}
+  `;
+
+  const responseText = await callGroq(prompt, true, [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: prompt }
+  ]);
+
+  try {
+    return JSON.parse(responseText);
+  } catch (err) {
+    console.error('Failed to parse AI swap response:', responseText);
+    throw new Error('فشل تحليل رد الذكاء الاصطناعي للاستبدال.');
+  }
+};
+
+export const suggestCheckInRecommendation = async (
+  workoutFeel: string,
+  sessionsCompleted: string,
+  painNotes: string,
+  planSummary: string,
+  lang: string
+): Promise<string> => {
+  const isEn = lang === 'en';
+  const systemPrompt = `
+  You are an expert fitness coach and personal trainer.
+  The client is completing their weekly check-in. Give them a direct, supportive, and motivational coach recommendation in 2 to 3 sentences.
+  Focus on:
+  - Validating their feeling: workouts felt "${workoutFeel}" (Too Easy / Just Right / Too Hard) and they finished "${sessionsCompleted}" (Yes / Mostly / No) of their sessions.
+  - Suggesting an action: making it harder (raising sets/reps), keeping it the same, or adjusting for pain "${painNotes || 'None'}".
+  Write the response in ${isEn ? 'English' : 'Arabic'}. Do not output any JSON or extra metadata, just return the 2-3 sentence recommendation.
+  `;
+
+  const userPrompt = `
+  User weekly feedback:
+  - Workouts felt: ${workoutFeel}
+  - Completed sessions: ${sessionsCompleted}
+  - Pain/Discomfort notes: ${painNotes || 'None'}
+  - Active Plan summary: ${planSummary}
+  `;
+
+  return await callGroq(userPrompt, false, [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt }
+  ]);
+};
+

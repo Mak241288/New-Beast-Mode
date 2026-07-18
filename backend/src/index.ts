@@ -22,7 +22,8 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json()); // Parses incoming JSON requests
+app.use(express.json({ limit: '10mb' })); // Parses incoming JSON requests
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Rate Limiting to prevent brute-force and DDoS
 const limiter = rateLimit({
