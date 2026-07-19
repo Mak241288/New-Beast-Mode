@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Download, FileText, TrendingUp, Award, BookOpen } from 'lucide-react';
+import { Download, FileText, TrendingUp, Award, BookOpen, Flame, Dumbbell, Timer } from 'lucide-react';
 
 interface StatsProps {
   lang: 'ar' | 'en';
@@ -199,6 +199,61 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
       {!loading && stats && (
         <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
+          {/* Top Widgets Row: Streak, Workouts, Minutes, Exercises */}
+          <div className="grid-responsive-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '20px' }}>
+            {/* Streak Counter */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Flame size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Workout Streak' : 'أيام الالتزام'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ef4444', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalStreak || 0} {lang === 'en' ? 'Days' : 'يوم'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Total Workouts */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Dumbbell size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Total Workouts' : 'إجمالي الحصص'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#3b82f6', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalWorkouts || 0} {lang === 'en' ? 'Sessions' : 'حصة'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Estimated Minutes */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Timer size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Estimated Minutes' : 'دقائق التمرين'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#f59e0b', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalMinutes || 0} {lang === 'en' ? 'Min' : 'دقيقة'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Completed Exercises */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Award size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Completed Exercises' : 'التمارين المنجزة'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#10b981', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalExercises || 0} {lang === 'en' ? 'Exs' : 'تمرين'}
+                </h2>
+              </div>
+            </div>
+          </div>
+
           {/* Workout Calendar Heatmap Row */}
           <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <style>{`

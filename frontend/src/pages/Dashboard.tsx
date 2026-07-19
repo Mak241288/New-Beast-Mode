@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Activity, Calendar } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar } from 'lucide-react';
 import { translations } from '../utils/translations';
 
 interface DashboardProps {
@@ -12,6 +12,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const t = translations[lang] || translations.ar;
   const [activePlan, setActivePlan] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
@@ -85,6 +86,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       // Fetch user profile
       const prof = await api.getProfile();
       setProfile(prof);
+
+      // Fetch stats
+      try {
+        const statsData = await api.getStats();
+        setStats(statsData);
+      } catch (statsErr) {
+        console.error('Failed to fetch stats:', statsErr);
+      }
 
       if (plan && plan.dayWorkouts.length > 0) {
         // Calculate today's day index based on start date
@@ -212,38 +221,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
     fetchDashboardData();
   }, []);
 
-  const getStreakCount = () => {
-    if (!activePlan || !activePlan.dayWorkouts) return 0;
-    const loggedDates = new Set<string>();
-    activePlan.dayWorkouts.forEach((day: any) => {
-      day.exercises.forEach((ex: any) => {
-        if (ex.progressLogs) {
-          ex.progressLogs.forEach((log: any) => {
-            const dateStr = new Date(log.date).toDateString();
-            loggedDates.add(dateStr);
-          });
-        }
-      });
-    });
-    return loggedDates.size;
-  };
-
-  const getXPLevel = () => {
-    if (!activePlan || !activePlan.dayWorkouts) return { level: lang === 'en' ? 'Newbie' : 'مبتدئ', xp: 0 };
-    let totalLogs = 0;
-    activePlan.dayWorkouts.forEach((day: any) => {
-      day.exercises.forEach((ex: any) => {
-        if (ex.progressLogs) {
-          totalLogs += ex.progressLogs.length;
-        }
-      });
-    });
-    const xp = totalLogs * 10;
-    let levelName = lang === 'en' ? 'Newbie' : 'مبتدئ';
-    if (xp >= 100 && xp < 500) levelName = lang === 'en' ? 'Challenger' : 'متحدي';
-    else if (xp >= 500) levelName = lang === 'en' ? 'Beast Mode' : 'الوحش ⚡';
-    return { level: levelName, xp };
-  };
+  // Active Plan and profile fetching and handling logic
 
   const handleLocationToggle = async (newLoc: 'GYM' | 'HOME') => {
     setRegenerating(true);
@@ -435,8 +413,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
     return () => clearInterval(interval);
   }, [isExerciseTimerActive, exerciseSeconds]);
 
-  const streak = getStreakCount();
-  const xpInfo = getXPLevel();
   const todayWorkout = getSelectedDay();
 
   return (
@@ -648,33 +624,56 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
             );
           })()}
 
-          {/* Top Widgets Row: Streak & Level */}
-          <div className="grid-responsive" style={{ gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          {/* Top Widgets Row: Streak, Workouts, Minutes, Exercises */}
+          <div className="grid-responsive-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '20px' }}>
             {/* Streak Counter */}
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '15px', borderRadius: '16px' }}>
-                <Flame size={32} />
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Flame size={28} />
               </div>
               <div>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Active Workout Streak' : 'الأيام المتتالية للالتزام'}</span>
-                <h2 style={{ fontSize: '28px', fontWeight: '900', color: '#ef4444', marginTop: '2px' }}>
-                  {streak} {lang === 'en' ? 'Days' : 'يوم متتالي'}
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Workout Streak' : 'أيام الالتزام'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ef4444', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalStreak || 0} {lang === 'en' ? 'Days' : 'يوم'}
                 </h2>
               </div>
             </div>
 
-            {/* XP Level */}
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <div style={{ background: 'var(--primary-glow)', color: 'var(--primary)', padding: '15px', borderRadius: '16px' }}>
-                <Activity size={32} />
+            {/* Total Workouts */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Dumbbell size={28} />
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Beast Tier Level' : 'مستوى القوة والخبرة'}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold' }}>{xpInfo.xp} XP</span>
-                </div>
-                <h2 style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)', marginTop: '2px' }}>
-                  {xpInfo.level}
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Total Workouts' : 'إجمالي الحصص'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#3b82f6', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalWorkouts || 0} {lang === 'en' ? 'Sessions' : 'حصة'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Estimated Minutes */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Timer size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Estimated Minutes' : 'دقائق التمرين'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#f59e0b', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalMinutes || 0} {lang === 'en' ? 'Min' : 'دقيقة'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Completed Exercises */}
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Award size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Completed Exercises' : 'التمارين المنجزة'}</span>
+                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#10b981', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalExercises || 0} {lang === 'en' ? 'Exs' : 'تمرين'}
                 </h2>
               </div>
             </div>

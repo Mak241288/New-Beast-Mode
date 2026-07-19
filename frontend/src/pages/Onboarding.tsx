@@ -33,7 +33,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
 
   // Step 3: Health / Medical
   const [medicalConditions, setMedicalConditions] = useState('');
-  const [labResults, setLabResults] = useState('');
 
   // Step 4: Plan duration & Start Date
   const [durationWeeks, setDurationWeeks] = useState(4);
@@ -111,7 +110,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         currentWeight: currentWeight ? parseFloat(currentWeight) : undefined,
         targetWeight: targetWeight ? parseFloat(targetWeight) : undefined,
         medicalConditions,
-        labResults,
         workoutLocation,
         fitnessGoal: workoutGoal,
         fitnessLevel: level,
