@@ -18,6 +18,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   // Step 1: Basic Info
   const [gender, setGender] = useState('MALE');
   const [birthDate, setBirthDate] = useState('');
+  const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
   const [currentWeight, setCurrentWeight] = useState('');
   const [targetWeight, setTargetWeight] = useState('');
@@ -90,7 +91,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   };
 
   const handleNext = () => {
-    if (step < 4) setStep(step + 1);
+    if (step < 5) setStep(step + 1);
   };
 
   const handlePrev = () => {
@@ -106,6 +107,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
       await api.updateProfile({
         gender,
         birthDate: birthDate ? new Date(birthDate) : undefined,
+        age: age ? parseInt(age) : undefined,
         height: height ? parseFloat(height) : undefined,
         currentWeight: currentWeight ? parseFloat(currentWeight) : undefined,
         targetWeight: targetWeight ? parseFloat(targetWeight) : undefined,
@@ -146,16 +148,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>
-              {t.stepOf(step, 4)}
+              {t.stepOf(step, 5)}
             </span>
             <ThemeToggle />
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <div
                 key={s}
                 style={{
-                  width: '40px',
+                  width: '32px',
                   height: '6px',
                   borderRadius: '3px',
                   background: s <= step ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--border-color)',
@@ -178,7 +180,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
               <Activity size={24} color="var(--primary)" />
               <h3 style={{ fontSize: '20px', fontWeight: '800' }}>
-                {lang === 'en' ? 'Physical Bio Metrics' : 'البيانات الجسدية الأساسية'}
+                {lang === 'en' ? 'Basic Bio Details' : 'البيانات الشخصية الأساسية'}
               </h3>
             </div>
 
@@ -197,44 +199,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                   type="date"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="input-field"
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.height}</label>
-              <input
-                type="number"
-                placeholder="175"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.currentWeight}</label>
-                <input
-                  type="number"
-                  placeholder="80"
-                  value={currentWeight}
-                  onChange={(e) => setCurrentWeight(e.target.value)}
-                  className="input-field"
-                  required
-                />
-              </div>
-
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <label style={{ fontSize: '13px', fontWeight: '700' }}>{t.targetWeight}</label>
-                <input
-                  type="number"
-                  placeholder="75"
-                  value={targetWeight}
-                  onChange={(e) => setTargetWeight(e.target.value)}
                   className="input-field"
                   required
                 />
@@ -439,8 +403,71 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
           </div>
         )}
 
-        {/* STEP 4: Plan Length & Start Date */}
+        {/* STEP 4: Body Stats Collection */}
         {step === 4 && (
+          <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+              <Activity size={24} color="var(--primary)" />
+              <h3 style={{ fontSize: '20px', fontWeight: '800' }}>
+                {lang === 'en' ? 'Body Stats & Metrics' : 'مقاييس وإحصائيات الجسم'}
+              </h3>
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{lang === 'en' ? 'Age' : 'العمر'}</label>
+                <input
+                  type="number"
+                  placeholder="25"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{lang === 'en' ? 'Height (cm)' : 'الطول (سم)'}</label>
+                <input
+                  type="number"
+                  placeholder="175"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  className="input-field"
+                  required
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '16px' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{lang === 'en' ? 'Current Weight (kg)' : 'الوزن الحالي (كجم)'}</label>
+                <input
+                  type="number"
+                  placeholder="80"
+                  value={currentWeight}
+                  onChange={(e) => setCurrentWeight(e.target.value)}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700' }}>{lang === 'en' ? 'Goal Weight (kg, optional)' : 'الوزن المستهدف (كجم، اختياري)'}</label>
+                <input
+                  type="number"
+                  placeholder="75"
+                  value={targetWeight}
+                  onChange={(e) => setTargetWeight(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 5: Plan Length & Start Date */}
+        {step === 5 && (
           <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
               <Calendar size={24} color="var(--primary)" />
@@ -495,7 +522,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
             <div style={{ flex: 1 }} />
           )}
 
-          {step < 4 ? (
+          {step < 5 ? (
             <button onClick={handleNext} className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>
               {t.next}
               {lang === 'en' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
