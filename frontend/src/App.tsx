@@ -17,6 +17,7 @@ function App() {
   const [currentView, setCurrentView] = useState<string>('dashboard');
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState<'ar' | 'en'>(localStorage.getItem('lang') === 'en' ? 'en' : 'ar');
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
 
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
@@ -55,11 +56,12 @@ function App() {
     
     setLoading(true);
     try {
-      // 1. Verify if user has already completed onboarding by checking profile data
+      // 1. Verify if user has already completed onboarding by checking onboardingCompleted flag
       const profile = await api.getProfile();
-      const onboardingCompleted = !!(profile.gender || profile.height || profile.currentWeight || profile.workoutLocation);
+      const isCompleted = !!profile.onboardingCompleted;
+      setOnboardingCompleted(isCompleted);
 
-      if (!onboardingCompleted) {
+      if (!isCompleted) {
         setCurrentView('onboarding');
       } else {
         // If onboarding is completed, fetch active plan but do not force onboarding if the plan doesn't exist
@@ -256,7 +258,7 @@ function App() {
         )}
 
         {currentView === 'myplan' && (
-          <MyPlan lang={lang} onNavigate={navigateTo} />
+          <MyPlan lang={lang} onNavigate={navigateTo} onboardingCompleted={onboardingCompleted} />
         )}
 
         {currentView === 'library' && (

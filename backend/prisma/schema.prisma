@@ -29,6 +29,7 @@ model User {
   reminderTime      String?         // e.g. "08:00"
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  onboardingCompleted Boolean       @default(false)
   workoutPlans      WorkoutPlan[]
   weightLogs        WeightLog[]
 }

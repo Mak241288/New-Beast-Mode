@@ -308,14 +308,16 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
             </div>
 
             {/* Quick Reset Questionnaire Button */}
-            <button
-              type="button"
-              onClick={() => onNavigate('onboarding')}
-              className="secondary-btn"
-              style={{ padding: '12px', justifyContent: 'center', gap: '8px', fontSize: '12px', borderColor: 'rgba(255,255,255,0.08)' }}
-            >
-              🔄 {lang === 'en' ? 'Reset & Re-generate Plan' : 'إعادة تهيئة الاستبيان بالكامل'}
-            </button>
+            {(!profile || !profile.onboardingCompleted) && (
+              <button
+                type="button"
+                onClick={() => onNavigate('onboarding')}
+                className="secondary-btn"
+                style={{ padding: '12px', justifyContent: 'center', gap: '8px', fontSize: '12px', borderColor: 'rgba(255,255,255,0.08)' }}
+              >
+                🔄 {lang === 'en' ? 'Reset & Re-generate Plan' : 'إعادة تهيئة الاستبيان بالكامل'}
+              </button>
+            )}
           </div>
 
           {/* RIGHT COLUMN: Settings Details Form */}

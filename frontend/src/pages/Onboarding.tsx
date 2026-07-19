@@ -116,6 +116,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         fitnessGoal: workoutGoal,
         fitnessLevel: level,
         equipment,
+        onboardingCompleted: true,
       });
 
       // 2. Generate workout plan via Python Engine

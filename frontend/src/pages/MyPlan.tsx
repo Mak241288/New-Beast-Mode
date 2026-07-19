@@ -6,9 +6,10 @@ import { translations } from '../utils/translations';
 interface MyPlanProps {
   lang: 'ar' | 'en';
   onNavigate: (view: string) => void;
+  onboardingCompleted?: boolean;
 }
 
-export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
+export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingCompleted }) => {
   const t = translations[lang] || translations.ar;
   const [activePlan, setActivePlan] = useState<any>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
@@ -885,9 +886,15 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
               ? 'You have not configured a workout routine yet. Let the AI generate one for you now!' 
               : 'لم تقم بتهيئة جدول تمارينك الرياضية بعد. دع الذكاء الاصطناعي يقوم بتوليد جدول تمارين مناسب لك الآن!'}
           </p>
-          <button onClick={() => onNavigate('onboarding')} className="glow-btn">
-            {lang === 'en' ? 'Create My Plan' : 'إنشاء جدول تمارين جديد'}
-          </button>
+          {!onboardingCompleted ? (
+            <button onClick={() => onNavigate('onboarding')} className="glow-btn">
+              {lang === 'en' ? 'Create My Plan' : 'إنشاء جدول تمارين جديد'}
+            </button>
+          ) : (
+            <button onClick={() => onNavigate('dashboard')} className="glow-btn">
+              {lang === 'en' ? 'Generate My Plan' : 'توليد خطتي الرياضية'}
+            </button>
+          )}
         </div>
       )}
 

@@ -114,6 +114,7 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
         workoutReminder: true,
         reminderTime: true,
         createdAt: true,
+        onboardingCompleted: true,
       },
     });
 
@@ -149,6 +150,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     daysPerWeek,
     workoutReminder,
     reminderTime,
+    onboardingCompleted,
   } = req.body;
 
   try {
@@ -190,6 +192,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         daysPerWeek: daysPerWeek !== undefined ? (daysPerWeek ? parseInt(daysPerWeek) : null) : oldUser.daysPerWeek,
         workoutReminder: workoutReminder !== undefined ? Boolean(workoutReminder) : oldUser.workoutReminder,
         reminderTime: reminderTime !== undefined ? reminderTime : oldUser.reminderTime,
+        onboardingCompleted: onboardingCompleted !== undefined ? Boolean(onboardingCompleted) : oldUser.onboardingCompleted,
       },
     });
 

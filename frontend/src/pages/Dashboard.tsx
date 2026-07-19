@@ -521,9 +521,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
             <button onClick={handleGeneratePlan} className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>
               ⚡ {lang === 'en' ? 'Generate Plan' : 'توليد الجدول ⚡'}
             </button>
-            <button onClick={() => onNavigate('onboarding')} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>
-              {lang === 'en' ? 'Start Onboarding' : 'خطوات التهيئة'}
-            </button>
+            {(!profile || !profile.onboardingCompleted) && (
+              <button onClick={() => onNavigate('onboarding')} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>
+                {lang === 'en' ? 'Start Onboarding' : 'خطوات التهيئة'}
+              </button>
+            )}
           </div>
         </div>
       )}
