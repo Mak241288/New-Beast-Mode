@@ -19,6 +19,65 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
       orderBy: { date: 'asc' },
     });
 
+    // Fetch all progress logs historically for this user (across all active or inactive plans)
+    const allLogs = await prisma.progressLog.findMany({
+      where: {
+        exercise: {
+          dayWorkout: {
+            plan: {
+              userId
+            }
+          }
+        }
+      },
+      orderBy: { date: 'asc' }
+    });
+
+    // Calculate global streak (consecutive days of completed workouts)
+    let globalStreak = 0;
+    if (allLogs.length > 0) {
+      const uniqueDates = Array.from(new Set(allLogs.map(log => {
+        const d = new Date(log.date);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime();
+      }))).sort((a, b) => a - b);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      const todayTime = today.getTime();
+      const yesterdayTime = yesterday.getTime();
+      const lastLogTime = uniqueDates[uniqueDates.length - 1];
+
+      if (lastLogTime === todayTime || lastLogTime === yesterdayTime) {
+        globalStreak = 1;
+        let checkTime = lastLogTime;
+        for (let i = uniqueDates.length - 2; i >= 0; i--) {
+          const prevTime = uniqueDates[i];
+          const diffDays = Math.round((checkTime - prevTime) / (1000 * 60 * 60 * 24));
+          if (diffDays === 1) {
+            globalStreak++;
+            checkTime = prevTime;
+          } else if (diffDays > 1) {
+            break;
+          }
+        }
+      }
+    }
+
+    // Calculate global workouts (number of unique calendar days with logged exercises)
+    const loggedDays = new Set(allLogs.map(log => new Date(log.date).toDateString()));
+    const globalWorkouts = loggedDays.size;
+
+    // Calculate estimated global minutes (each completed set takes ~2 minutes)
+    const totalSets = allLogs.reduce((sum, log) => sum + log.completedSets, 0);
+    const globalMinutes = totalSets * 2;
+
+    // Calculate total completed exercises historically
+    const globalExercises = allLogs.length;
+
     // 2. Active Workout Plan completion stats
     const activeWorkoutPlan = await prisma.workoutPlan.findFirst({
       where: { userId, active: true },
@@ -136,6 +195,10 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
         completedExercises: workoutStats.completedExercises,
         completionRate: workoutStats.completionRate,
         strengthTrend: workoutStats.strengthTrend,
+        globalStreak,
+        globalWorkouts,
+        globalMinutes,
+        globalExercises,
       },
       nutritionStats,
       notesHistory: notesHistory.slice(0, 20), // top 20 notes
