@@ -735,7 +735,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {activePlan.dayWorkouts.map((dw: any) => {
                 const isSelected = dw.dayIndex === selectedDayIndex;
-                const hasLogged = dw.exercises.some((ex: any) => ex.progressLogs && ex.progressLogs.length > 0);
+                
+                // Calculate the exact date for this dayIndex in the current week
+                const start = new Date(activePlan.startDate);
+                start.setHours(0, 0, 0, 0);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                let currentWeek = Math.floor(diffDays / 7);
+                if (currentWeek < 0) currentWeek = 0;
+                
+                const targetDate = new Date(start);
+                targetDate.setDate(start.getDate() + (currentWeek * 7) + (dw.dayIndex - 1));
+
+                const hasLogged = dw.exercises.some((ex: any) => 
+                  ex.progressLogs && ex.progressLogs.some((log: any) => 
+                    new Date(log.date).toDateString() === targetDate.toDateString()
+                  )
+                );
 
                 return (
                   <div
