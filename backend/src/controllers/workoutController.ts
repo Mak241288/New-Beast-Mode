@@ -133,7 +133,9 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
     const fs = require('fs').promises;
 
     const pythonDir = path.join(__dirname, '../../../workout_generator_python');
-    const command = `python src/generator.py --days ${daysPerWeek} --location ${finalLocation} --equipment "${equipStr}" --level ${level || 'intermediate'} --goal ${finalGoal} --muscles "${muscleStr}" --rest-days "${restDaysStr}" --limit ${exercisesLimit}`;
+    const planFileName = `generated_plan_${userId}.json`;
+    const planFilePath = path.join(pythonDir, 'data/processed', planFileName);
+    const command = `python src/generator.py --days ${daysPerWeek} --location ${finalLocation} --equipment "${equipStr}" --level ${level || 'intermediate'} --goal ${finalGoal} --muscles "${muscleStr}" --rest-days "${restDaysStr}" --limit ${exercisesLimit} --output "data/processed/${planFileName}"`;
 
     console.log(`[WorkoutController] Executing: ${command}`);
 
@@ -145,10 +147,17 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
         return;
       }
 
+      let pythonPlan: any;
       try {
-        const planFilePath = path.join(pythonDir, 'data/processed/generated_plan.json');
         const fileContent = await fs.readFile(planFilePath, 'utf-8');
-        const pythonPlan = JSON.parse(fileContent);
+        pythonPlan = JSON.parse(fileContent);
+
+        // Delete temporary user-specific plan file
+        try {
+          await fs.unlink(planFilePath);
+        } catch (err) {
+          console.error('[WorkoutController] Error deleting temp plan file:', err);
+        }
 
         // For Arabic plans, if instructions_ar is missing, collect for batch translation
         const isArabic = (text: string): boolean => /[\u0600-\u06FF]/.test(text || '');
@@ -352,9 +361,20 @@ export const getActivePlan = async (req: AuthRequest, res: Response): Promise<vo
 // @route   PUT /api/workout/exercise/:id
 export const updateExercise = async (req: AuthRequest, res: Response): Promise<void> => {
   const exerciseId = parseInt(req.params.id);
+  const userId = req.user?.id;
   const { sets, reps, weight, name, targetMuscle, exerciseTips, imageUrl, videoUrl } = req.body;
 
   try {
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: exerciseId },
+      include: { dayWorkout: { include: { plan: true } } }
+    });
+
+    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+      res.status(403).json({ error: 'غير مصرح لك بتعديل هذا التمرين' });
+      return;
+    }
+
     const updated = await prisma.exercise.update({
       where: { id: exerciseId },
       data: {
@@ -379,8 +399,19 @@ export const updateExercise = async (req: AuthRequest, res: Response): Promise<v
 // @route   DELETE /api/workout/exercise/:id
 export const deleteExercise = async (req: AuthRequest, res: Response): Promise<void> => {
   const exerciseId = parseInt(req.params.id);
+  const userId = req.user?.id;
 
   try {
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: exerciseId },
+      include: { dayWorkout: { include: { plan: true } } }
+    });
+
+    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+      res.status(403).json({ error: 'غير مصرح لك بحذف هذا التمرين' });
+      return;
+    }
+
     await prisma.exercise.delete({
       where: { id: exerciseId },
     });
@@ -394,9 +425,20 @@ export const deleteExercise = async (req: AuthRequest, res: Response): Promise<v
 // @route   POST /api/workout/day/:dayId/exercise
 export const addCustomExercise = async (req: AuthRequest, res: Response): Promise<void> => {
   const dayWorkoutId = parseInt(req.params.dayId);
+  const userId = req.user?.id;
   const { name, targetMuscle, category, sets, reps, weight, exerciseTips, imageUrl, videoUrl } = req.body;
 
   try {
+    const day = await prisma.dayWorkout.findUnique({
+      where: { id: dayWorkoutId },
+      include: { plan: true }
+    });
+
+    if (!day || day.plan.userId !== userId) {
+      res.status(403).json({ error: 'غير مصرح لك بإضافة تمرين لهذا اليوم' });
+      return;
+    }
+
     // Find highest order to place at the end
     const lastExercise = await prisma.exercise.findFirst({
       where: { dayWorkoutId },
@@ -431,9 +473,20 @@ export const addCustomExercise = async (req: AuthRequest, res: Response): Promis
 // @route   POST /api/workout/exercise/:id/log
 export const logProgress = async (req: AuthRequest, res: Response): Promise<void> => {
   const exerciseId = parseInt(req.params.id);
+  const userId = req.user?.id;
   const { completedSets, repsCompleted, weightUsed, notes } = req.body;
 
   try {
+    const exercise = await prisma.exercise.findUnique({
+      where: { id: exerciseId },
+      include: { dayWorkout: { include: { plan: true } } }
+    });
+
+    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+      res.status(403).json({ error: 'غير مصرح لك بتسجيل تقدم هذا التمرين' });
+      return;
+    }
+
     const log = await prisma.progressLog.create({
       data: {
         exerciseId,
@@ -503,9 +556,20 @@ export const createManualPlan = async (req: AuthRequest, res: Response): Promise
 // @route   PUT /api/workout/day/:dayId
 export const updateDayWorkout = async (req: AuthRequest, res: Response): Promise<void> => {
   const dayId = parseInt(req.params.dayId);
+  const userId = req.user?.id;
   const { title, focusArea, isRestDay, dayTips } = req.body;
 
   try {
+    const day = await prisma.dayWorkout.findUnique({
+      where: { id: dayId },
+      include: { plan: true }
+    });
+
+    if (!day || day.plan.userId !== userId) {
+      res.status(403).json({ error: 'غير مصرح لك بتعديل هذا اليوم' });
+      return;
+    }
+
     const updated = await prisma.dayWorkout.update({
       where: { id: dayId },
       data: {
@@ -1292,14 +1356,16 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
 export const getAlternatives = async (req: AuthRequest, res: Response): Promise<void> => {
   const { id } = req.params;
   const exerciseId = parseInt(id);
+  const userId = req.user?.id;
 
   try {
     const targetExercise = await prisma.exercise.findUnique({
-      where: { id: exerciseId }
+      where: { id: exerciseId },
+      include: { dayWorkout: { include: { plan: true } } }
     });
 
-    if (!targetExercise) {
-      res.status(404).json({ error: 'التمرين غير موجود' });
+    if (!targetExercise || targetExercise.dayWorkout.plan.userId !== userId) {
+      res.status(403).json({ error: 'غير مصرح لك بمشاهدة بدائل هذا التمرين' });
       return;
     }
 
@@ -1370,12 +1436,16 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
     const exercise = await prisma.exercise.findUnique({
       where: { id: exerciseId },
       include: {
-        dayWorkout: true
+        dayWorkout: {
+          include: {
+            plan: true
+          }
+        }
       }
     });
 
-    if (!exercise) {
-      res.status(404).json({ error: 'التمرين غير موجود' });
+    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+      res.status(403).json({ error: 'التمرين غير موجود أو غير مصرح لك بتعديله' });
       return;
     }
 

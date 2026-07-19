@@ -521,6 +521,7 @@ def main():
     parser.add_argument("--muscles", type=str, default="", help="Comma-separated target muscles (chest, back, shoulders, legs, arms, abs)")
     parser.add_argument("--rest-days", type=str, default="", help="Comma-separated rest days (e.g. friday,sunday)")
     parser.add_argument("--limit", type=int, default=0, help="Number of exercises per training day")
+    parser.add_argument("--output", type=str, default="", help="Path to write the output JSON file")
     
     args = parser.parse_args()
     
@@ -564,7 +565,8 @@ def main():
             print()
             
     # Output to temporary file for backend use
-    output_path = os.path.join(BASE_DIR, "data", "processed", "generated_plan.json")
+    output_path = args.output if args.output else os.path.join(BASE_DIR, "data", "processed", "generated_plan.json")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(plan, f, ensure_ascii=False, indent=2)
     print(f"[SUCCESS] Saved plan JSON to: {output_path}")
