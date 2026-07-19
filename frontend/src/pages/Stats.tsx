@@ -495,7 +495,7 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
 
           </div>
 
-          <div className="grid-responsive" style={{ gridTemplateColumns: '1fr', gap: '20px' }}>
+          <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
             
             {/* Completed Exercises Daily Graph */}
             <div className="glass-panel" style={{ padding: '24px' }}>
@@ -538,6 +538,49 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
                   <p style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
                     {lang === 'en' ? 'Tracks completed movements from logged routine days.' : 'يتبع الحركات المنجزة فعلياً والمحفوظة في خطة التدريب.'}
                   </p>
+                </div>
+              )}
+            </div>
+
+            {/* Personal Records Table */}
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <Award size={20} color="var(--primary)" />
+                <h3 style={{ fontSize: '16px', fontWeight: '700' }}>
+                  {lang === 'en' ? 'Personal Records (PR) 🏆' : 'الأرقام القياسية الشخصية 🏆'}
+                </h3>
+              </div>
+
+              {!stats.personalRecords || stats.personalRecords.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
+                  {lang === 'en' ? 'No personal records logged yet.' : 'لا توجد أرقام قياسية مسجلة بعد.'}
+                </p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: lang === 'en' ? 'left' : 'right' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                        <th style={{ padding: '10px 5px' }}>{lang === 'en' ? 'Exercise' : 'التمرين'}</th>
+                        <th style={{ padding: '10px 5px' }}>{lang === 'en' ? 'Max Weight' : 'أقصى وزن'}</th>
+                        <th style={{ padding: '10px 5px' }}>{lang === 'en' ? 'Reps' : 'التكرار'}</th>
+                        <th style={{ padding: '10px 5px' }}>{lang === 'en' ? 'Date' : 'التاريخ'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.personalRecords.map((pr: any, idx: number) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                          <td style={{ padding: '12px 5px', fontWeight: 'bold' }}>{pr.exercise}</td>
+                          <td style={{ padding: '12px 5px', color: 'var(--primary)', fontWeight: 'bold' }}>
+                            {pr.weight} {lang === 'en' ? 'kg' : 'كجم'}
+                          </td>
+                          <td style={{ padding: '12px 5px', color: 'var(--text-secondary)' }}>{pr.reps}</td>
+                          <td style={{ padding: '12px 5px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                            {new Date(pr.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
