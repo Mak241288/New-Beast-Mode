@@ -55,17 +55,35 @@ function App() {
     
     setLoading(true);
     try {
-      await api.getActivePlan();
-      // Keep currentView if it is already set to something valid, otherwise default to dashboard
-      const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile'];
-      if (!validViews.includes(currentView)) {
-        setCurrentView('dashboard');
+      // 1. Verify if user has already completed onboarding by checking profile data
+      const profile = await api.getProfile();
+      const onboardingCompleted = !!(profile.gender || profile.height || profile.currentWeight || profile.workoutLocation);
+
+      if (!onboardingCompleted) {
+        setCurrentView('onboarding');
+      } else {
+        // If onboarding is completed, fetch active plan but do not force onboarding if the plan doesn't exist
+        try {
+          await api.getActivePlan();
+          const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile'];
+          if (!validViews.includes(currentView)) {
+            setCurrentView('dashboard');
+          }
+        } catch (planErr: any) {
+          console.error('[App] getActivePlan error:', planErr);
+          if (planErr.status === 401) {
+            handleLogout();
+          } else {
+            const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile'];
+            if (!validViews.includes(currentView)) {
+              setCurrentView('dashboard');
+            }
+          }
+        }
       }
     } catch (err: any) {
       console.error('[App] checkStatus error:', err);
-      if (err.status === 404) {
-        setCurrentView('onboarding');
-      } else if (err.status === 401) {
+      if (err.status === 401) {
         handleLogout();
       } else {
         setCurrentView('dashboard');
