@@ -30,8 +30,49 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
           }
         }
       },
+      include: {
+        exercise: true
+      },
       orderBy: { date: 'asc' }
     });
+
+    // Calculate Personal Records (PR)
+    // Keep only the heaviest weight (and corresponding reps/date) per exercise
+    const prMap = new Map<string, { exercise: string; weight: number; reps: number; date: Date }>();
+
+    allLogs.forEach(log => {
+      const exerciseName = log.exercise.name;
+      const weights = log.weightUsed ? log.weightUsed.split(',') : [];
+      const reps = log.repsCompleted ? log.repsCompleted.split(',') : [];
+
+      let maxWeight = -1;
+      let maxWeightReps = 0;
+
+      weights.forEach((wStr, idx) => {
+        const weightVal = parseFloat(wStr.replace(/[^0-9.]/g, '')) || 0;
+        const repVal = parseInt(reps[idx]) || 0;
+        if (weightVal > maxWeight) {
+          maxWeight = weightVal;
+          maxWeightReps = repVal;
+        } else if (weightVal === maxWeight && repVal > maxWeightReps) {
+          maxWeightReps = repVal;
+        }
+      });
+
+      if (maxWeight > 0) {
+        const existing = prMap.get(exerciseName);
+        if (!existing || maxWeight > existing.weight) {
+          prMap.set(exerciseName, {
+            exercise: exerciseName,
+            weight: maxWeight,
+            reps: maxWeightReps,
+            date: log.date
+          });
+        }
+      }
+    });
+
+    const personalRecords = Array.from(prMap.values());
 
     // Calculate global streak (consecutive days of completed workouts)
     let globalStreak = 0;
@@ -200,6 +241,7 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
         globalMinutes,
         globalExercises,
       },
+      personalRecords,
       nutritionStats,
       notesHistory: notesHistory.slice(0, 20), // top 20 notes
       bmi: {
