@@ -13,7 +13,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
   const [activePlan, setActivePlan] = useState<any>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   // Modals / Views state
   const [editingExercise, setEditingExercise] = useState<any | null>(null);
@@ -86,12 +85,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
 
   const fetchActivePlan = async () => {
     setLoading(true);
-    setError('');
     try {
       const plan = await api.getActivePlan();
       setActivePlan(plan);
     } catch (err: any) {
-      setError(err.message || (lang === 'en' ? 'No active plan loaded.' : 'لم نتمكن من تحميل جدول التمارين النشط.'));
+      console.error('Failed to load active plan:', err);
     } finally {
       setLoading(false);
     }
@@ -705,7 +703,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
     if (!file) return;
 
     setFileLoading(true);
-    setError('');
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -734,7 +731,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
   const handleImportBulk = async () => {
     if (!importListText.trim()) return;
     setImportLoading(true);
-    setError('');
     try {
       // Request structured plan preview (second arg is lang, third arg is preview=true)
       const previewPlan = await api.importBulkPlan(importListText, lang, true);
@@ -785,7 +781,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
       const res = await api.getPlanHistory();
       setHistoryList(res || []);
     } catch (err: any) {
-      setError(lang === 'en' ? 'Failed to fetch history.' : 'فشل جلب سجل الخطط السابقة.');
+      alert(lang === 'en' ? 'Failed to fetch history.' : 'فشل جلب سجل الخطط السابقة.');
     } finally {
       setHistoryLoading(false);
     }
@@ -798,7 +794,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
       setShowHistory(false);
       setSelectedDayIndex(1);
     } catch (err: any) {
-      setError(lang === 'en' ? 'Failed to activate plan.' : 'فشل تفعيل هذا البرنامج الرياضي.');
+      alert(lang === 'en' ? 'Failed to activate plan.' : 'فشل تفعيل هذا البرنامج الرياضي.');
     }
   };
 
@@ -854,7 +850,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
         </div>
 
         {/* Quick Tools */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button onClick={handleRegeneratePlan} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <RefreshCw size={16} />
             {lang === 'en' ? 'Regenerate Plan' : 'إعادة توليد الجدول ⚡'}
@@ -880,7 +876,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate }) => {
         </div>
       )}
 
-      {error && !activePlan && (
+      {!loading && !activePlan && (
         <div className="glass-panel text-center" style={{ padding: '40px', maxWidth: '500px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
           <AlertCircle size={48} color="var(--danger)" style={{ opacity: 0.8 }} />
           <h3>{lang === 'en' ? 'No Active Plan Found' : 'لا يوجد جدول رياضي نشط'}</h3>

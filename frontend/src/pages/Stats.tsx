@@ -290,53 +290,61 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
             </div>
 
             {/* Calendar Grid */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Weekday headers */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>
-                {(lang === 'en' ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']).map(d => (
-                  <div key={d}>{d}</div>
-                ))}
+            {(!stats.workoutStats.strengthTrend || stats.workoutStats.strengthTrend.length === 0) ? (
+              <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                {lang === 'en' 
+                  ? 'No logged exercises yet. Perform workouts on your Dashboard to see your weekly heatmap progress!' 
+                  : 'لا يوجد تمارين مسجلة بعد. قم بأداء تمارينك من لوحة التحكم لتشاهد خريطة التزامك الأسبوعي هنا!'}
               </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Weekday headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>
+                  {(lang === 'en' ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] : ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']).map(d => (
+                    <div key={d}>{d}</div>
+                  ))}
+                </div>
 
-              {/* Days Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-                {getMonthlyCalendarDays().map((day, idx) => {
-                  if (day === null) {
-                    return <div key={`pad-${idx}`} style={{ aspectRatio: '1', visibility: 'hidden' }}></div>;
-                  }
+                {/* Days Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+                  {getMonthlyCalendarDays().map((day, idx) => {
+                    if (day === null) {
+                      return <div key={`pad-${idx}`} style={{ aspectRatio: '1', visibility: 'hidden' }}></div>;
+                    }
 
-                  const isCompleted = stats.workoutStats.strengthTrend?.some((log: any) => {
-                    return new Date(log.date).toDateString() === day.toDateString();
-                  });
+                    const isCompleted = stats.workoutStats.strengthTrend?.some((log: any) => {
+                      return new Date(log.date).toDateString() === day.toDateString();
+                    });
 
-                  const jsDay = day.getDay();
-                  const planDayIndex = jsDay === 0 ? 7 : jsDay;
-                  const planDay = activePlan?.dayWorkouts?.find((dw: any) => dw.dayIndex === planDayIndex);
-                  const isScheduledRest = planDay?.isRestDay === true;
+                    const jsDay = day.getDay();
+                    const planDayIndex = jsDay === 0 ? 7 : jsDay;
+                    const planDay = activePlan?.dayWorkouts?.find((dw: any) => dw.dayIndex === planDayIndex);
+                    const isScheduledRest = planDay?.isRestDay === true;
 
-                  return (
-                    <div 
-                      key={day.toISOString()} 
-                      style={{ 
-                        aspectRatio: '1', 
-                        background: isCompleted ? 'var(--primary)' : isScheduledRest ? '#27272a' : 'rgba(255,255,255,0.02)', 
-                        border: isCompleted ? '1px solid var(--primary)' : '1px solid var(--border-color)', 
-                        borderRadius: '8px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        color: isCompleted ? '#050710' : 'var(--text-secondary)', 
-                        fontWeight: '800',
-                        transition: 'all var(--transition-fast)' 
-                      }}
-                      title={day.toLocaleDateString()}
-                    >
-                      <span className="heatmap-cell-date">{day.getDate()}</span>
-                    </div>
-                  );
-                })}
+                    return (
+                      <div 
+                        key={day.toISOString()} 
+                        style={{ 
+                          aspectRatio: '1', 
+                          background: isCompleted ? 'var(--primary)' : isScheduledRest ? '#27272a' : 'rgba(255,255,255,0.02)', 
+                          border: isCompleted ? '1px solid var(--primary)' : '1px solid var(--border-color)', 
+                          borderRadius: '8px', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          color: isCompleted ? '#050710' : 'var(--text-secondary)', 
+                          fontWeight: '800',
+                          transition: 'all var(--transition-fast)' 
+                        }}
+                        title={day.toLocaleDateString()}
+                      >
+                        <span className="heatmap-cell-date">{day.getDate()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Top row: completion wheel, BMI Widget, and weight change */}

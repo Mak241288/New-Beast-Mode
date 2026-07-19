@@ -233,3 +233,10 @@ html[dir="ltr"] .main-content {
     color: #000 !important;
   }
 }
+
+@media (max-width: 576px) {
+  .grid-responsive-stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+}

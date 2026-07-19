@@ -16,7 +16,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
-  const [error, setError] = useState('');
   const [loadingMessage, setLoadingMessage] = useState('');
   const [profileError, setProfileError] = useState('');
 
@@ -77,7 +76,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
 
   const fetchDashboardData = async () => {
     setLoading(true);
-    setError('');
     try {
       // Fetch plan
       const plan = await api.getActivePlan();
@@ -119,7 +117,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || (lang === 'en' ? 'Could not load active workout routine.' : 'لم نتمكن من تحميل جدول التمارين النشط.'));
     } finally {
       setLoading(false);
     }
@@ -208,6 +205,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
     const level = lang === 'en'
       ? (levelMapEn[profile.fitnessLevel] || profile.fitnessLevel || 'Intermediate')
       : (levelMapAr[profile.fitnessLevel] || profile.fitnessLevel || 'متوسط');
+
 
     const days = profile.daysPerWeek || '4';
     const daysStr = lang === 'en' ? `${days} days/week` : `${days} أيام/الأسبوع`;
@@ -499,7 +497,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         </div>
       )}
 
-      {error && !activePlan && !regenerating && (
+      {!loading && !activePlan && !regenerating && (
         <div className="glass-panel text-center" style={{ padding: '40px', maxWidth: '500px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
           <Award size={48} color="var(--primary)" style={{ opacity: 0.8 }} />
           <h3>{lang === 'en' ? 'Setup Your Program' : 'صمم برنامجك الرياضي'}</h3>
