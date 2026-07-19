@@ -5,7 +5,8 @@ import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
 import { getProfileAdviceAI } from '../services/aiService';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'beastmode_super_secret_jwt_key_2026_fitness_nutrition';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('[Auth] JWT_SECRET environment variable is not set!');
 
 // Generates JWT Token
 const generateToken = (id: number, email: string) => {
