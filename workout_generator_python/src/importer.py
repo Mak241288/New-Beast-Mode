@@ -268,14 +268,14 @@ def setup_database():
     )
     """)
     
-    # Migration: Add image_url column to existing database if it doesn't exist
-    try:
-        cursor.execute("ALTER TABLE exercises ADD COLUMN image_url TEXT")
-        conn.commit()
-        print("  [+] Database migration: Added image_url column successfully.")
-    except sqlite3.OperationalError:
-        # Column already exists, ignore
-        pass
+    # Migration: Add MuscleWiki columns to existing database if they don't exist
+    for col in ['image_url', 'secondary_muscles_en', 'secondary_muscles_ar', 'common_mistakes_en', 'common_mistakes_ar', 'gif_url']:
+        try:
+            cursor.execute(f"ALTER TABLE exercises ADD COLUMN {col} TEXT")
+            conn.commit()
+            print(f"  [+] Database migration: Added {col} column successfully.")
+        except sqlite3.OperationalError:
+            pass
         
     conn.commit()
     return conn

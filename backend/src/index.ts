@@ -9,8 +9,13 @@ import workoutRoutes from './routes/workoutRoutes';
 import statsRoutes from './routes/statsRoutes';
 import syncRoutes from './routes/syncRoutes';
 
+import { logger, initCrashTracking } from './services/logger';
+
 // Load environment variables
 dotenv.config();
+
+// Initialize Crash & Exception Tracking
+initCrashTracking();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,14 +31,25 @@ app.use(express.json({ limit: '10mb' })); // Parses incoming JSON requests
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Rate Limiting to prevent brute-force and DDoS
-const limiter = rateLimit({
+const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests from this IP, please try again after 15 minutes.' },
+  message: { error: 'تم تجاوز عدد الطلبات المسموح بها، يرجى المحاولة بعد 15 دقيقة.' },
 });
-app.use('/api', limiter);
+app.use('/api', globalLimiter);
+
+// Strict Rate Limiter for Login & Register to prevent Brute-Force & Credential Stuffing
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 10, // Max 10 attempts per IP per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'تم تجاوز عدد محاولات تسجيل الدخول المسموح بها. يرجى الانتظار والتحقق بعد 15 دقيقة للحفاظ على أمان حسابك.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Register routes
 app.use('/api/auth', authRoutes);
@@ -63,10 +79,10 @@ app.get('/api/health', (_req, res) => {
 
 // Global Error Handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err.stack);
+  logger.error('Unhandled API Endpoint Error', err);
   res.status(500).json({
     status: 'error',
-    message: 'Something went wrong on the server',
+    message: 'حدث خطأ غير متوقع في الخادم، يرجى المحاولة لاحقاً',
   });
 });
 

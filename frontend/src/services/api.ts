@@ -15,10 +15,15 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
     headers,
   });
 
-  const data = await response.json();
+  let data: any = {};
+  try {
+    data = await response.json();
+  } catch (parseErr) {
+    data = {};
+  }
 
   if (!response.ok) {
-    const error = new Error(data.error || 'شيء ما غير صحيح') as any;
+    const error = new Error(data.error || `خطأ في السيرفر (${response.status})، يرجى المحاولة لاحقاً`) as any;
     error.status = response.status;
     throw error;
   }

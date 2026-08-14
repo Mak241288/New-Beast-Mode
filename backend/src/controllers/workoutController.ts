@@ -1256,7 +1256,7 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
   });
 
   const query = `
-    SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, level, category, image_url, instructions_ar, instructions_en
+    SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, level, category, image_url, instructions_ar, instructions_en, secondary_muscles_en, secondary_muscles_ar, common_mistakes_en, common_mistakes_ar, gif_url, youtube_url, anatomy_image_url
     FROM exercises 
     ORDER BY muscle_en ASC, rating DESC
   `;
@@ -1288,6 +1288,43 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
       }
     };
 
+    const getSecondaryFallback = (mEn: string) => {
+      const m = (mEn || '').toLowerCase();
+      if (m.includes('chest')) return { en: 'Triceps Brachii, Anterior Deltoids', ar: 'العضلة ثلاثية الرؤوس (ترايسبس)، الأكتاف الأمامية' };
+      if (m.includes('back') || m.includes('lat')) return { en: 'Biceps Brachii, Rear Deltoids, Forearms', ar: 'العضلة ثنائية الرؤوس (بايسبس)، الأكتاف الخلفية، السواعد' };
+      if (m.includes('shoulder') || m.includes('trap')) return { en: 'Triceps Brachii, Upper Chest, Trapezius', ar: 'العضلة ثلاثية الرؤوس (ترايسبس)، أعلى الصدر، الترابيس' };
+      if (m.includes('quad') || m.includes('leg')) return { en: 'Gluteus Maximus, Hamstrings, Calves', ar: 'عضلات الأرداف (الجلوتس)، الفخذ الخلفي، السمانة' };
+      if (m.includes('hamstring') || m.includes('glute')) return { en: 'Lower Back, Calves', ar: 'أسفل الظهر، السمانة' };
+      if (m.includes('bicep') || m.includes('arm')) return { en: 'Brachialis, Forearms', ar: 'العضلة العضدية (براكياليس)، السواعد' };
+      if (m.includes('tricep')) return { en: 'Anconeus, Rear Delts', ar: 'العضلة العكسية للكوع، الأكتاف الخلفية' };
+      if (m.includes('ab') || m.includes('core')) return { en: 'Obliques, Hip Flexors', ar: 'العضلات المائلة (الخواصر)، قابضات الورك' };
+      return { en: 'Stabilizer Core Muscles', ar: 'عضلات الجذع المساعدة' };
+    };
+
+    const getMistakesFallback = (mEn: string) => {
+      const m = (mEn || '').toLowerCase();
+      if (m.includes('chest')) return {
+        en: '1. Bouncing weight off chest.\n2. Flaring elbows out 90 degrees.\n3. Arching lower back excessively.',
+        ar: '1. أرجحة الوزن والارتطام بعظمة الصدر.\n2. فتح المرفقين بزاوية 90 درجة حادة.\n3. تقويس أسفل الظهر بشكل مبالغ فيه.'
+      };
+      if (m.includes('back') || m.includes('lat')) return {
+        en: '1. Pulling with arms instead of driving elbows down.\n2. Swinging torso for momentum.\n3. Rounding upper spine.',
+        ar: '1. السحب بقوة اليدين بدلاً من قيادة الكوع لأسفل.\n2. أرجحة الجذع واستخدام قوة الدفع.\n3. تحدب أعلى الظهر أثناء السحب.'
+      };
+      if (m.includes('shoulder') || m.includes('trap')) return {
+        en: '1. Dropping elbows too far below shoulder parallel.\n2. Shrugging shoulders up during press.\n3. Arching back during overhead presses.',
+        ar: '1. نزول الكوع لمستوى أسفل من الكتف.\n2. رفع الكتفين نحو الأذنين أثناء الضغط.\n3. الانحناء المائل للخلف أثناء الضغط العالي.'
+      };
+      if (m.includes('quad') || m.includes('leg')) return {
+        en: '1. Allowing knees to collapse inward.\n2. Raising heels off ground.\n3. Partial depth without reaching parallel.',
+        ar: '1. دخول الركبتين للداخل أثناء الحركة.\n2. رفع الكعبين عن الأرض.\n3. النزول الجزئي دون الوصول لمستوى التوازي.'
+      };
+      return {
+        en: '1. Moving too fast without controlling eccentric phase.\n2. Holding breath during heavy reps.\n3. Sacrificing form for heavier weight.',
+        ar: '1. السرعة الزائدة وعدم التحكم في النزول.\n2. حبس النفس طوال الحركة.\n3. التضحية بالتكنيك مقابل زيادة الوزن.'
+      };
+    };
+
     rows.forEach((row) => {
       const muscleEn = row.muscle_en || 'Other';
       const muscleAr = row.muscle_ar || 'أخرى';
@@ -1310,21 +1347,29 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
         };
       }
 
+      const secFallback = getSecondaryFallback(muscleEn);
+      const errFallback = getMistakesFallback(muscleEn);
+      const ytUrl = row.youtube_url || `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' ' + (row.equipment_en || '') + ' exercise form tutorial')}`;
+
       musclesGroup[muscleEn].exercises.push({
         id: row.id,
         name_en: row.name_en,
         name_ar: row.name_ar || row.name_en,
         muscle_en: muscleEn,
         muscle_ar: muscleAr,
+        secondary_muscles_en: row.secondary_muscles_en || secFallback.en,
+        secondary_muscles_ar: row.secondary_muscles_ar || secFallback.ar,
+        common_mistakes_en: row.common_mistakes_en || errFallback.en,
+        common_mistakes_ar: row.common_mistakes_ar || errFallback.ar,
         equipment_en: row.equipment_en || 'None',
         equipment_ar: row.equipment_ar || 'بدون أدوات',
         level: row.level || 'intermediate',
         category: row.category || 'IRON',
-        image_url: row.image_url || getMuscleImage(muscleEn),
-        instructions_en: row.instructions_en || '',
-        instructions_ar: row.instructions_ar || '',
-        video_url: `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' exercise tutorial shorts')}`,
-        anatomy_image_url: getAnatomyImage(muscleEn)
+        image_url: row.gif_url || row.image_url || null,
+        gif_url: row.gif_url || row.image_url || null,
+        anatomy_image_url: row.anatomy_image_url || null,
+        youtube_url: ytUrl,
+        video_url: ytUrl
       });
     });
 

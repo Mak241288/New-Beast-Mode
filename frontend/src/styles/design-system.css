@@ -492,3 +492,51 @@ body[dir='rtl'] .routine-exercise-card:hover {
   }
 }
 
+/* MuscleWiki Interactive Body Map Styles */
+.muscle-node {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.muscle-node path,
+.muscle-node circle,
+.muscle-node rect {
+  transition: all 0.25s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.muscle-node:hover path,
+.muscle-node:hover circle,
+.muscle-node:hover rect {
+  fill: var(--primary) !important;
+  filter: drop-shadow(0 0 12px var(--primary));
+  transform: scale(1.02);
+}
+
+.muscle-node.active-muscle path,
+.muscle-node.active-muscle circle,
+.muscle-node.active-muscle rect {
+  fill: var(--primary) !important;
+  stroke: #ffffff !important;
+  stroke-width: 2.5px !important;
+  filter: drop-shadow(0 0 16px var(--primary-glow));
+  animation: musclePulse 2s infinite alternate ease-in-out;
+}
+
+@keyframes musclePulse {
+  0% {
+    filter: drop-shadow(0 0 8px var(--primary));
+  }
+  100% {
+    filter: drop-shadow(0 0 20px var(--primary-glow));
+  }
+}
+
+.btn-chip {
+  outline: none;
+}
+.btn-chip:hover {
+  background: var(--primary-glow) !important;
+  border-color: var(--primary) !important;
+}
+
+

@@ -13,40 +13,71 @@ const generateToken = (id: number, email: string) => {
   return jwt.sign({ id, email }, JWT_SECRET, { expiresIn: '30d' });
 };
 
+// Input Validation Helpers
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 export const register = async (req: AuthRequest, res: Response): Promise<void> => {
   const { name, email, password } = req.body;
 
   try {
-    if (!name || !email || !password) {
+    // 1. Sanitization
+    const cleanName = (name || '').trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    if (!cleanName || !cleanEmail || !cleanPassword) {
       res.status(400).json({ error: 'الرجاء إدخال الاسم، البريد الإلكتروني وكلمة المرور' });
       return;
     }
 
-    const userExists = await prisma.user.findUnique({ where: { email } });
+    if (!isValidEmail(cleanEmail)) {
+      res.status(400).json({ error: 'صيغة البريد الإلكتروني غير صحيحة' });
+      return;
+    }
+
+    if (cleanPassword.length < 8) {
+      res.status(400).json({ error: 'كلمة المرور يجب أن تتكون من 8 أحرف على الأقل' });
+      return;
+    }
+
+    const userExists = await prisma.user.findUnique({ where: { email: cleanEmail } });
     if (userExists) {
       res.status(400).json({ error: 'البريد الإلكتروني مسجل بالفعل' });
       return;
     }
 
-    // Hash password
+    // Hash password with strong salt
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(cleanPassword, salt);
 
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
+        name: cleanName,
+        email: cleanEmail,
         password: hashedPassword,
       },
+    });
+
+    const token = generateToken(user.id, user.email);
+
+    // Set HttpOnly Cookie for security
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 Hours
     });
 
     res.status(201).json({
       id: user.id,
       name: user.name,
       email: user.email,
-      token: generateToken(user.id, user.email),
+      token,
     });
   } catch (error) {
     res.status(500).json({ error: 'حدث خطأ أثناء إنشاء الحساب' });
@@ -59,28 +90,49 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
   try {
-    if (!email || !password) {
+    // 1. Sanitization
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    if (!cleanEmail || !cleanPassword) {
       res.status(400).json({ error: 'الرجاء إدخال البريد الإلكتروني وكلمة المرور' });
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      res.status(400).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+    if (!isValidEmail(cleanEmail)) {
+      res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      res.status(400).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+    // 2. Query user with exact clean email
+    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    if (!user) {
+      // Generic error message to prevent User Enumeration
+      res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
       return;
     }
+
+    const isMatch = await bcrypt.compare(cleanPassword, user.password);
+    if (!isMatch) {
+      res.status(401).json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' });
+      return;
+    }
+
+    const token = generateToken(user.id, user.email);
+
+    // Set HttpOnly Cookie for security
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 Hours
+    });
 
     res.status(200).json({
       id: user.id,
       name: user.name,
       email: user.email,
-      token: generateToken(user.id, user.email),
+      token,
     });
   } catch (error) {
     res.status(500).json({ error: 'حدث خطأ أثناء تسجيل الدخول' });

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Dumbbell, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 interface LoginProps {
   onSuccess: (token: string) => void;
@@ -12,26 +12,60 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const validateInputs = (): boolean => {
+    const cleanEmail = email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      setError('يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)');
+      return false;
+    }
+
+    if (!isLogin) {
+      if (name.trim().length < 2) {
+        setError('يرجى إدخال اسم كامل صحيح (حرفين على الأقل)');
+        return false;
+      }
+      if (password.length < 8) {
+        setError('كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل');
+        return false;
+      }
+    }
+
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!validateInputs()) return;
+
     setLoading(true);
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
     try {
       if (isLogin) {
-        const data = await api.login({ email, password });
-        localStorage.setItem('token', data.token);
+        const data = await api.login({ email: cleanEmail, password: cleanPassword });
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
         onSuccess(data.token);
       } else {
-        const data = await api.register({ name, email, password });
-        localStorage.setItem('token', data.token);
+        const data = await api.register({ name: name.trim(), email: cleanEmail, password: cleanPassword });
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
         onSuccess(data.token);
       }
     } catch (err: any) {
-      setError(err.message || 'حدث خطأ ما، يرجى المحاولة لاحقاً');
+      setError(err.message || 'حدث خطأ أثناء الاتصال بالسيرفر، يرجى المحاولة لاحقاً');
     } finally {
       setLoading(false);
     }
@@ -96,14 +130,21 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
             <div style={{ position: 'relative' }}>
               <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field"
-                style={{ paddingRight: '45px', textAlign: 'left', direction: 'ltr' }}
+                style={{ paddingRight: '45px', paddingLeft: '45px', textAlign: 'left', direction: 'ltr' }}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 0 }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 

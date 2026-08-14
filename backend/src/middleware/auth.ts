@@ -14,9 +14,16 @@ export interface AuthRequest extends Request {
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   let token: string | undefined;
 
-  // Check for token in Authorization header
+  // Check for token in Authorization header or Cookies
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  } else if ((req as any).cookies && (req as any).cookies.token) {
+    token = (req as any).cookies.token;
+  } else if (req.headers.cookie) {
+    const match = req.headers.cookie.match(/(?:^|;\s*)token=([^;]*)/);
+    if (match) {
+      token = match[1];
+    }
   }
 
   if (!token) {

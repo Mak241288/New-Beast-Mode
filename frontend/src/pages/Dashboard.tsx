@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info } from 'lucide-react';
 import { translations } from '../utils/translations';
+import { MuscleWikiModal } from '../components/MuscleWikiModal';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -18,6 +19,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [regenerating, setRegenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [profileError, setProfileError] = useState('');
+  const [wikiExercise, setWikiExercise] = useState<any | null>(null);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -710,14 +712,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {todayWorkout.exercises.map((ex: any) => (
-                    <div key={ex.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '13px' }}>
+                    <div
+                      key={ex.id}
+                      onClick={() => setWikiExercise({
+                        ...ex,
+                        name_en: ex.name,
+                        name_ar: ex.name,
+                        muscle_en: ex.targetMuscle || 'Chest',
+                        instructions_ar: ex.exerciseTips || '',
+                        image_url: ex.imageUrl || null,
+                      })}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ color: 'var(--primary)' }}>●</span>
                         <span style={{ fontWeight: 'bold' }}>{ex.name}</span>
+                        <span className="badge" style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--primary)', padding: '2px 8px' }}>
+                          💡 MuscleWiki Guide
+                        </span>
                       </div>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                        {ex.sets} {t.sets} × {ex.reps} ({ex.weight || 'Bodyweight'})
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          {ex.sets} {t.sets} × {ex.reps} ({ex.weight || 'Bodyweight'})
+                        </span>
+                        <Info size={16} style={{ color: 'var(--primary)' }} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1052,6 +1082,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
             </button>
           </form>
         </div>
+      )}
+
+      {/* MuscleWiki Detail Modal */}
+      {wikiExercise && (
+        <MuscleWikiModal
+          exercise={wikiExercise}
+          lang={lang}
+          onClose={() => setWikiExercise(null)}
+        />
       )}
     </div>
   );

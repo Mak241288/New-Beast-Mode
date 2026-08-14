@@ -1,0 +1,21 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+
+# Environment files
+.env
+.env.local
+*.env
+
+# SQLite Database & Backups
+prisma/*.db
+prisma/*.db-journal
+backups/
+*.db.bak
+
+# Logs & Crash Reports
+*.log
+logs/
+npm-debug.log*

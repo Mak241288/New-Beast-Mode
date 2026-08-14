@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { translations } from '../utils/translations';
+import { MuscleWikiModal } from '../components/MuscleWikiModal';
 
 interface MyPlanProps {
   lang: 'ar' | 'en';
@@ -2046,113 +2047,20 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         </div>
       )}
 
-      {/* EXERCISE DETAILS MODAL */}
+      {/* MuscleWiki Exercise Guide Modal */}
       {viewingExercise && (
-        <div 
-          style={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            bottom: 0, 
-            background: 'rgba(5, 7, 16, 0.95)', 
-            zIndex: 1100, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            padding: '20px' 
-          }} 
-          onClick={() => setViewingExercise(null)}
-        >
-          <div 
-            className="glass-panel animated-fade" 
-            style={{ 
-              width: '100%', 
-              maxWidth: '520px', 
-              padding: '24px', 
-              border: '1px solid var(--primary)', 
-              maxHeight: '90vh', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '15px' 
-            }} 
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-              <div>
-                <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{viewingExercise.name}</h3>
-                <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold' }}>
-                  🎯 {viewingExercise.targetMuscle} | {viewingExercise.category}
-                </span>
-              </div>
-              <button 
-                onClick={() => setViewingExercise(null)} 
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '16px' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '15px', paddingRight: '5px' }}>
-              {/* Image Preview */}
-              <div style={{ width: '100%', height: '240px', borderRadius: '12px', overflow: 'hidden', background: '#0e111a', border: '1px solid var(--border-color)', position: 'relative' }}>
-                <img 
-                  src={viewingExercise.imageUrl || 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500'} 
-                  alt={viewingExercise.name} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                />
-              </div>
-
-              {/* Stats Box */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t.sets}</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--primary)' }}>{viewingExercise.sets}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t.reps}</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--primary)' }}>{viewingExercise.reps}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{t.weight}</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--primary)' }}>{viewingExercise.weight || 'Bodyweight'}</div>
-                </div>
-              </div>
-
-              {/* Performance Tips / Instructions */}
-              <div>
-                <h4 style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: 'var(--text-primary)' }}>
-                  💡 {lang === 'en' ? 'Performance Instructions' : 'تعليمات ونقاط أداء التمرين'}
-                </h4>
-                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.6', background: 'rgba(0,0,0,0.15)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)', whiteSpace: 'pre-wrap' }}>
-                  {viewingExercise.exerciseTips || (lang === 'en' ? 'No detailed tips configured for this exercise.' : 'لا توجد تعليمات مسجلة لهذا التمرين حالياً.')}
-                </p>
-              </div>
-
-              {/* Video Play Button */}
-              {viewingExercise.videoUrl && (
-                <a 
-                  href={viewingExercise.videoUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="glow-btn"
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none', padding: '12px' }}
-                >
-                  <span>📺</span>
-                  {lang === 'en' ? 'Watch Video Guide' : 'مشاهدة الفيديو التعليمي'}
-                </a>
-              )}
-            </div>
-
-            <button 
-              onClick={() => setViewingExercise(null)} 
-              className="secondary-btn" 
-              style={{ justifyContent: 'center', padding: '10px' }}
-            >
-              {lang === 'en' ? 'Close' : 'إغلاق'}
-            </button>
-          </div>
-        </div>
+        <MuscleWikiModal
+          exercise={{
+            ...viewingExercise,
+            name_en: viewingExercise.name,
+            name_ar: viewingExercise.name,
+            muscle_en: viewingExercise.targetMuscle || 'Chest',
+            instructions_ar: viewingExercise.exerciseTips || '',
+            image_url: viewingExercise.imageUrl || null,
+          }}
+          lang={lang}
+          onClose={() => setViewingExercise(null)}
+        />
       )}
     </div>
   );
