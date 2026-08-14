@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Download, FileText, TrendingUp, Award, BookOpen, Flame, Dumbbell, Timer } from 'lucide-react';
+import { exportWeightLogsToCSV } from '../utils/exportUtils';
 
 interface StatsProps {
   lang: 'ar' | 'en';
@@ -179,7 +180,15 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
             {lang === 'en' ? 'Analyze your commitment, weight change, and export health reports.' : 'حلل التزامك، وتغير وزنك، وقم بتصدير تقاريرك الطبية والرياضية'}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }} className="no-print">
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }} className="no-print">
+          <button 
+            onClick={() => exportWeightLogsToCSV(stats.weightHistory || [], lang)} 
+            className="secondary-btn" 
+            style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Download size={16} />
+            <span>CSV</span>
+          </button>
           <button onClick={exportToMD} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px' }}>
             <FileText size={16} />
             Markdown (MD)

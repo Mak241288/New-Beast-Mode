@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 interface LoginProps {
   onSuccess: (token: string) => void;
+  onBack?: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
+export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -73,8 +74,18 @@ export const Login: React.FC<LoginProps> = ({ onSuccess }) => {
 
   return (
     <div className="flex-center" style={{ minHeight: '100vh', padding: '20px', background: 'radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 40%)' }}>
-      <div style={{ position: 'absolute', top: '20px', left: '20px' }}>
+      <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <ThemeToggle />
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="secondary-btn"
+            style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <ArrowRight size={14} />
+            <span>الرئيسية</span>
+          </button>
+        )}
       </div>
 
       <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '420px', padding: '40px 30px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>

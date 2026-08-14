@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle } from 'lucide-react';
 import { translations } from '../utils/translations';
+import { triggerTestNotification } from '../utils/notifications';
+import { exportFullDataJSON } from '../utils/exportUtils';
 
 interface ProfileProps {
   lang: 'ar' | 'en';
@@ -56,6 +58,13 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   // Performance test state
   const [testingPerformance, setTestingPerformance] = useState(false);
   const [performanceOutput, setPerformanceOutput] = useState('');
+
+  // Export Data & Delete Account State
+  const [exportingData, setExportingData] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [testingNotification, setTestingNotification] = useState(false);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -170,6 +179,53 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
       setPerformanceOutput(lang === 'en' ? `Test failed: ${err.message}` : `فشل تشغيل الاختبار: ${err.message || 'حدث خطأ غير متوقع'}`);
     } finally {
       setTestingPerformance(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setTestingNotification(true);
+    try {
+      const success = await triggerTestNotification(lang);
+      if (!success) {
+        alert(lang === 'en' 
+          ? 'Notification permission not granted. Please allow notifications in browser settings.' 
+          : 'لم يتم منح إذن الإشعارات. يرجى تفعيل الإشعارات من إعدادات المتصفح.');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTestingNotification(false);
+    }
+  };
+
+  const handleExportUserData = async () => {
+    setExportingData(true);
+    try {
+      const data = await api.exportUserData();
+      exportFullDataJSON(data);
+    } catch (err: any) {
+      alert(lang === 'en' ? 'Failed to export user data.' : 'فشل تصدير بيانات المستخدم.');
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const requiredConfirmation = lang === 'en' ? 'DELETE' : 'حذف';
+    if (deleteConfirmText.trim() !== requiredConfirmation) {
+      alert(lang === 'en' ? 'Please type "DELETE" to confirm.' : 'يرجى كتابة كلمة "حذف" للتأكيد.');
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      await api.deleteAccount();
+      localStorage.removeItem('token');
+      alert(lang === 'en' ? 'Account and all records deleted successfully.' : 'تم حذف الحساب وكافة سجلاتك نهائياً.');
+      window.location.reload();
+    } catch (err: any) {
+      alert(lang === 'en' ? 'Failed to delete account.' : 'فشل حذف الحساب.');
+      setDeletingAccount(false);
     }
   };
 
@@ -470,10 +526,10 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
                   <div>
                     <h4 style={{ fontSize: '13px', fontWeight: 'bold', margin: 0 }}>
-                      {lang === 'en' ? 'Workout Reminder' : 'تذكير موعد التمرين اليومي'}
+                      {lang === 'en' ? 'Workout Web & Push Reminders' : 'تذكيرات التمارين الذكية (Web Push)'}
                     </h4>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '11.5px', margin: '2px 0 0 0' }}>
-                      {lang === 'en' ? 'Receive a daily email to keep you consistent with your program.' : 'استلم بريداً إلكترونياً يومياً لتذكيرك بأداء تمرينك والحفاظ على استمراريتك.'}
+                      {lang === 'en' ? 'Receive daily notifications on your device to stay committed to your training schedule.' : 'استلم تنبيهات يومية على متصفحك وهاتفك لتذكيرك بموعد التدريب وتحفيزك على الاستمرار.'}
                     </p>
                   </div>
                   
@@ -505,28 +561,72 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                   </div>
                 </div>
 
-                {/* Time Picker (Shown only if workoutReminder is true) */}
+                {/* Time Picker and Test Button */}
                 {profile.workoutReminder && (
-                  <div className="animated-fade" style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '10px 15px', borderRadius: '10px', border: '1px solid var(--border-color)', alignSelf: 'flex-start' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
-                      ⏰ {lang === 'en' ? 'Preferred Time:' : 'وقت التذكير المفضل:'}
-                    </label>
-                    <input
-                      type="time"
-                      name="reminderTime"
-                      value={profile.reminderTime || '08:00'}
-                      onChange={handleInputChange}
-                      className="input-field"
-                      style={{ width: '120px', padding: '6px', fontSize: '13px' }}
-                    />
+                  <div className="animated-fade" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                        ⏰ {lang === 'en' ? 'Preferred Time:' : 'وقت التذكير المفضل:'}
+                      </label>
+                      <input
+                        type="time"
+                        name="reminderTime"
+                        value={profile.reminderTime || '08:00'}
+                        onChange={handleInputChange}
+                        className="input-field"
+                        style={{ width: '120px', padding: '6px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={testingNotification}
+                      onClick={handleTestNotification}
+                      className="secondary-btn"
+                      style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Bell size={13} color="var(--primary)" />
+                      <span>{testingNotification ? (lang === 'en' ? 'Testing...' : 'جاري الاختبار...') : (lang === 'en' ? 'Test Notification' : 'اختبار التنبيه 🔔')}</span>
+                    </button>
                   </div>
                 )}
+              </div>
+            </div>
 
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '4px' }}>
-                  {lang === 'en' 
-                    ? 'Email notifications are optional and can be turned off at any time.'
-                    : 'تنبيهات البريد الإلكتروني اختيارية ويمكن إيقاف تفعيلها في أي وقت.'}
-                </span>
+            {/* Privacy & Account Control Section */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <h3 style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', margin: 0 }}>
+                <Lock size={16} color="var(--primary)" />
+                {lang === 'en' ? 'Data Privacy & Account Control' : 'الخصوصية وإدارة بيانات الحساب'}
+              </h3>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                {lang === 'en'
+                  ? 'Download your full training history and health logs or permanently remove your account from our database.'
+                  : 'يمكنك تصدير كافة سجلاتك الرياضية وقياساتك بملف واحد أو حذف حسابك نهائياً من قاعدة البيانات.'}
+              </p>
+
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  disabled={exportingData}
+                  onClick={handleExportUserData}
+                  className="secondary-btn"
+                  style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Download size={15} color="var(--primary)" />
+                  <span>{exportingData ? (lang === 'en' ? 'Exporting...' : 'جاري التصدير...') : (lang === 'en' ? 'Export All My Data (JSON)' : 'تصدير كافة بياناتي 📦')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="secondary-btn"
+                  style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                >
+                  <Trash2 size={15} />
+                  <span>{lang === 'en' ? 'Delete Account Permanently' : 'حذف الحساب نهائياً ⚠️'}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -668,6 +768,62 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               </button>
               <button onClick={() => setShowAdjustmentModal(false)} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>
                 {lang === 'en' ? 'Keep Old Plan' : 'إبقاء الجدول القديم'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE ACCOUNT CONFIRMATION MODAL */}
+      {showDeleteModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.95)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '480px', padding: '30px', border: '1px solid var(--danger)', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', padding: '15px', borderRadius: '50%', width: '60px', height: '60px', margin: '0 auto 15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <AlertTriangle size={32} />
+            </div>
+
+            <h2 style={{ fontSize: '20px', fontWeight: '800', color: 'var(--danger)', marginBottom: '10px' }}>
+              {lang === 'en' ? 'Delete Account Permanently?' : 'هل أنت متأكد من حذف الحساب نهائياً؟'}
+            </h2>
+
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '15px', lineHeight: 1.6 }}>
+              {lang === 'en'
+                ? 'This action cannot be undone. All your workout routines, weight history, progress logs, and personal settings will be permanently wiped.'
+                : 'هذا الإجراء لا يمكن التراجع عنه. سيتم مسح كافة جداولك الرياضية وسجلات الأوزان وسجل التقدم نهائياً من الخوادم.'}
+            </p>
+
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '10px', marginBottom: '20px', textAlign: lang === 'en' ? 'left' : 'right' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>
+                {lang === 'en' ? 'Type "DELETE" to confirm:' : 'اكتب كلمة "حذف" في الخانة للتأكيد:'}
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={lang === 'en' ? 'DELETE' : 'حذف'}
+                className="input-field"
+                style={{ borderColor: 'var(--danger)', textAlign: 'center', fontWeight: 'bold', letterSpacing: '1px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                disabled={deletingAccount || deleteConfirmText.trim() !== (lang === 'en' ? 'DELETE' : 'حذف')}
+                onClick={handleDeleteAccount}
+                className="glow-btn"
+                style={{ flex: 1, justifyContent: 'center', background: 'var(--danger)', borderColor: 'var(--danger)', opacity: deleteConfirmText.trim() !== (lang === 'en' ? 'DELETE' : 'حذف') ? 0.5 : 1 }}
+              >
+                {deletingAccount ? (lang === 'en' ? 'Deleting...' : 'جاري الحذف...') : (lang === 'en' ? 'Confirm Deletion' : 'تأكيد الحذف النهائي')}
+              </button>
+              <button
+                type="button"
+                disabled={deletingAccount}
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+                className="secondary-btn"
+                style={{ flex: 1, justifyContent: 'center' }}
+              >
+                {lang === 'en' ? 'Cancel' : 'إلغاء'}
               </button>
             </div>
           </div>

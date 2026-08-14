@@ -1,8 +1,9 @@
-const CACHE_NAME = 'beastmode-cache-v1';
+const CACHE_NAME = 'beastmode-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/favicon.svg'
 ];
 
 // Install Event
@@ -38,13 +39,12 @@ self.addEventListener('fetch', (event) => {
   // Only cache GET requests
   if (event.request.method !== 'GET') return;
   
-  // Skip API requests to avoid caching dynamic DB responses (handled by dynamic state)
+  // Skip API requests to avoid caching dynamic DB responses
   if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone and store in cache if it's a valid asset
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseClone);
@@ -54,5 +54,60 @@ self.addEventListener('fetch', (event) => {
       .catch(() => {
         return caches.match(event.request);
       })
+  );
+});
+
+// Push Event - Handles server-pushed notifications
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'BeastMode AI 🏋️‍♂️',
+    body: 'حان وقت تدريبك اليومي! جهز نفسك لبناء عضلاتك.',
+    icon: '/favicon.svg',
+    badge: '/favicon.svg',
+    tag: 'workout-reminder',
+    url: '/'
+  };
+
+  if (event.data) {
+    try {
+      data = Object.assign(data, event.data.json());
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/favicon.svg',
+      badge: data.badge || '/favicon.svg',
+      tag: data.tag || 'workout-reminder',
+      data: { url: data.url || '/' },
+      vibrate: [200, 100, 200],
+      actions: [
+        { action: 'open_plan', title: 'افتح الجدول ⚡' },
+        { action: 'dismiss', title: 'لاحقاً' }
+      ]
+    })
+  );
+});
+
+// Notification Click Event
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') return;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
   );
 });

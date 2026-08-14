@@ -305,3 +305,116 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     res.status(500).json({ error: 'حدث خطأ أثناء تحديث الملف الشخصي' });
   }
 };
+
+// @desc    Export All User Data (GDPR Data Portability)
+// @route   GET /api/auth/export-data
+export const exportUserData = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'غير مصرح' });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        gender: true,
+        birthDate: true,
+        height: true,
+        currentWeight: true,
+        targetWeight: true,
+        medicalConditions: true,
+        labResults: true,
+        workoutLocation: true,
+        equipment: true,
+        fitnessGoal: true,
+        fitnessLevel: true,
+        age: true,
+        daysPerWeek: true,
+        workoutReminder: true,
+        reminderTime: true,
+        createdAt: true,
+        updatedAt: true,
+        onboardingCompleted: true,
+        weightLogs: {
+          orderBy: { date: 'asc' },
+        },
+        workoutPlans: {
+          include: {
+            dayWorkouts: {
+              include: {
+                exercises: {
+                  include: {
+                    progressLogs: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    const checkIns = await prisma.checkIn.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+    });
+
+    const exportPayload = {
+      app: 'BeastMode AI Fitness',
+      exportDate: new Date().toISOString(),
+      user,
+      checkIns,
+    };
+
+    res.json(exportPayload);
+  } catch (error: any) {
+    console.error('[exportUserData] Error:', error);
+    res.status(500).json({ error: 'فشل تصدير بيانات المستخدم' });
+  }
+};
+
+// @desc    Delete Account & All Associated Data Permanently
+// @route   DELETE /api/auth/account
+export const deleteAccount = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  if (!userId) {
+    res.status(401).json({ error: 'غير مصرح' });
+    return;
+  }
+
+  try {
+    // 1. Delete standalone CheckIns
+    await prisma.checkIn.deleteMany({
+      where: { userId },
+    });
+
+    // 2. Delete User (Cascades to WeightLogs, WorkoutPlans, DayWorkouts, Exercises, ProgressLogs)
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    // Clear Auth Cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    res.json({ success: true, message: 'تم حذف الحساب وكافة البيانات المرتبطة به نهائياً.' });
+  } catch (error: any) {
+    console.error('[deleteAccount] Error:', error);
+    res.status(500).json({ error: 'فشل حذف الحساب. يرجى المحاولة لاحقاً.' });
+  }
+};
+

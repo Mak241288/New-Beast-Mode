@@ -1,7 +1,12 @@
 import { Response } from 'express';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
-import { upgradeWorkoutPlanAI, callGroq } from '../services/aiService';
+import { 
+  upgradeWorkoutPlanAI, 
+  translateExerciseInstructionsBatch, 
+  parseBulkWorkoutText, 
+  suggestSwapAI 
+} from '../services/aiService';
 
 // Helper to get muscle-specific Unsplash image URLs
 const getMuscleImage = (muscle: string): string => {
@@ -178,27 +183,16 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
           });
         }
 
-        // Call Gemini (Groq Llama) to translate instructions in one batch
+        // Call Gemini to translate instructions in one batch with Token Cache & DB Write-Back
         let translationsMap: Record<string, string> = {};
         if (exercisesToTranslate.length > 0) {
           try {
-            const prompt = `
-            You are an elite sports coach and professional translator.
-            Translate the following workout exercise instructions/tips from English to clear, motivating, and correct Arabic.
-            Return a JSON object where the keys are the exercise IDs (e.g., "ex_0", "ex_1"), and the values are the translated Arabic instructions.
-            Keep the formatting simple as bullet points or numbered steps in Arabic. Do not add any extra text or conversational filler, just return the JSON object.
-
-            Exercises:
-            ${exercisesToTranslate.map((ex, idx) => `ID: ex_${idx}\nName: ${ex.name_en}\nInstructions: ${ex.instructions_en || 'Perform with controlled movement and proper posture.'}`).join('\n\n')}
-
-            JSON Output Schema:
-            {
-              "ex_0": "شرح كيفية الأداء بالعربية..."
-            }
-            `;
-            
-            const responseText = await callGroq(prompt, true);
-            translationsMap = JSON.parse(responseText);
+            const batchPayload = exercisesToTranslate.map((ex, idx) => ({
+              id: `ex_${idx}`,
+              name_en: ex.name_en,
+              instructions_en: ex.instructions_en || 'Perform with controlled movement and proper posture.',
+            }));
+            translationsMap = await translateExerciseInstructionsBatch(batchPayload);
           } catch (err) {
             console.error('[Batch Translation Error]:', err);
           }
@@ -866,53 +860,12 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const parserPrompt = `
-    You are an expert workout routine parser. The user pasted a workout plan in text format.
-    The text can be in Arabic or English, and it might be copied from a TXT file, Microsoft Word table, Excel sheet, or written manually.
-    It may contain multiple days (e.g., Saturday, Sunday, Day 1, Day 2...), exercise names, sets, reps, and other text.
-
-    Your task is to parse this text and structure it as a clean JSON object.
-    You MUST extract:
-    1. A suitable title for the overall plan.
-    2. A list of days. Each training day should have:
-       - "dayIndex": number (1 for the first day, 2 for the second, up to 7)
-       - "title": a motivating title for the day in the user's language (e.g., "اليوم 1: دفع (تركيز صدر)" or "Day 1: Chest & Shoulders")
-       - "focusArea": target muscles or focus (e.g., "Chest/Triceps" or "صدر وتراي")
-       - "isRestDay": boolean (true if it's a rest day)
-       - "exercises": list of exercises. Each exercise MUST have:
-         - "name": exact name of the exercise in English or Arabic
-         - "sets": number of sets (default to 3 if not mentioned)
-         - "reps": string for reps/duration (e.g., "8-12 reps" or "30 seconds", default to "10 reps")
-
-    Return ONLY a valid JSON object matching this TypeScript structure:
-    {
-      "title": string,
-      "days": Array<{
-        dayIndex: number,
-        title: string,
-        focusArea: string,
-        isRestDay: boolean,
-        exercises: Array<{
-          name: string,
-          sets: number,
-          reps: string
-        }>
-      }>
-    }
-
-    The raw text to parse is:
-    """
-    ${list}
-    """
-    `;
-
-    // Call Groq to parse the raw text into structured days
+    // Call Gemini Structured Parser
     let parsedPlan: any;
     try {
-      const responseText = await callGroq(parserPrompt, true);
-      parsedPlan = JSON.parse(responseText);
+      parsedPlan = await parseBulkWorkoutText(list);
     } catch (parseErr: any) {
-      console.error('[ImportBulkPlan] Groq Parsing Error:', parseErr);
+      console.error('[ImportBulkPlan] Parsing Error:', parseErr);
       res.status(400).json({ error: 'لم نتمكن من تحليل وتوزيع النص المدخل ذكياً. يرجى التأكد من التنسيق.' });
       return;
     }
@@ -1501,7 +1454,6 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
     const userEquip = userProfile?.equipment ? userProfile.equipment.split(',').filter(Boolean) : [];
     
     // Call AI service to suggest swap
-    const { suggestSwapAI } = require('../services/aiService');
     const aiResult = await suggestSwapAI(
       exercise.name,
       exercise.targetMuscle || '',
@@ -1525,7 +1477,7 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
         name: aiResult.name,
         targetMuscle: aiResult.targetMuscle || exercise.targetMuscle,
         category: aiResult.category || exercise.category,
-        sets: aiResult.sets ? parseInt(aiResult.sets) : exercise.sets,
+        sets: typeof aiResult.sets === 'number' ? aiResult.sets : (aiResult.sets ? parseInt(String(aiResult.sets)) : exercise.sets),
         reps: aiResult.reps || exercise.reps,
         weight: aiResult.weight || exercise.weight,
         exerciseTips: aiResult.exerciseTips || exercise.exerciseTips,

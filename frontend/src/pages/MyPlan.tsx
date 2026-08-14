@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
+import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
 
 interface MyPlanProps {
   lang: 'ar' | 'en';
@@ -869,6 +870,28 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
             <History size={16} />
             {t.historyBtn}
           </button>
+          {activePlan && (
+            <>
+              <button 
+                onClick={() => exportWorkoutPlanToCSV(activePlan, lang)} 
+                className="secondary-btn" 
+                title={lang === 'en' ? 'Export CSV' : 'تصدير إكسل'}
+                style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Download size={16} />
+                <span>{lang === 'en' ? 'Export CSV' : 'تصدير CSV'}</span>
+              </button>
+              <button 
+                onClick={triggerPrint} 
+                className="secondary-btn" 
+                title={lang === 'en' ? 'Print Workout Plan' : 'طباعة الجدول الورقي'}
+                style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Printer size={16} />
+                <span>{lang === 'en' ? 'Print Sheet' : 'طباعة الجدول 🖨️'}</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

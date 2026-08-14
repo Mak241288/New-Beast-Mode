@@ -1,4 +1,20 @@
+import { GoogleGenAI } from '@google/genai';
+import path from 'path';
+import sqlite3 from 'sqlite3';
+import crypto from 'crypto';
 import prisma from './db';
+import {
+  PROMPT_SYSTEM_COACH,
+  PROMPT_SYSTEM_SWAP,
+  PROMPT_SYSTEM_CHECKIN,
+  PROMPT_SYSTEM_TRANSLATOR,
+  PROMPT_SYSTEM_BULK_PARSER,
+  PROMPT_SYSTEM_PROFILE_ADVICE,
+} from './promptTemplates';
+
+// ============================================================================
+// Types & Interfaces
+// ============================================================================
 
 export interface WorkoutPlanOptions {
   durationWeeks: number;
@@ -6,11 +22,316 @@ export interface WorkoutPlanOptions {
   workoutLocation: 'HOME' | 'GYM';
   equipment: string[];
   level: string; // beginner, intermediate, advanced
-  additionalQuestions: any; // medical conditions, goals etc.
+  additionalQuestions?: any;
 }
 
+export interface WorkoutPlanExercise {
+  name: string;
+  targetMuscle: string;
+  category: string;
+  sets: number;
+  reps: string;
+  weight: string;
+  exerciseTips: string;
+}
+
+export interface WorkoutPlanDay {
+  dayIndex: number;
+  title: string;
+  focusArea: string;
+  dayTips: string;
+  isRestDay: boolean;
+  exercises: WorkoutPlanExercise[];
+}
+
+export interface WorkoutPlanResponse {
+  title: string;
+  weeklyTips: string;
+  days: WorkoutPlanDay[];
+}
+
+export interface ExerciseSwapResponse {
+  name: string;
+  targetMuscle: string;
+  category: string;
+  sets: number;
+  reps: string;
+  weight: string;
+  exerciseTips: string;
+  explanation: string;
+}
+
+export interface BulkParsedExercise {
+  name: string;
+  sets: number;
+  reps: string;
+}
+
+export interface BulkParsedDay {
+  dayIndex: number;
+  title: string;
+  focusArea: string;
+  isRestDay: boolean;
+  exercises: BulkParsedExercise[];
+}
+
+export interface BulkParsedPlanResponse {
+  days: BulkParsedDay[];
+}
+
+// ============================================================================
+// Schemas for Gemini Strict Structured Outputs
+// ============================================================================
+
+export const WORKOUT_PLAN_SCHEMA = {
+  type: 'object',
+  properties: {
+    title: { type: 'string', description: 'Comprehensive title of the progressive workout plan' },
+    weeklyTips: { type: 'string', description: 'Weekly guidance on recovery, progressive overload, and form' },
+    days: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          dayIndex: { type: 'integer', description: 'Day index starting from 1' },
+          title: { type: 'string', description: 'Daily routine title (e.g. Day 1: Chest & Triceps Blast)' },
+          focusArea: { type: 'string', description: 'Target muscle groups for this day' },
+          dayTips: { type: 'string', description: 'Specific warm-up or recovery advice for today' },
+          isRestDay: { type: 'boolean', description: 'True if active recovery or rest day' },
+          exercises: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: 'Exercise name (Arabic + English where applicable)' },
+                targetMuscle: { type: 'string', description: 'Primary targeted muscle group' },
+                category: { type: 'string', description: 'IRON, YOGA, PILATES, HIIT, CARDIO, CALISTHENICS' },
+                sets: { type: 'integer', description: 'Number of sets (typically 3-4)' },
+                reps: { type: 'string', description: 'Target reps range or duration (e.g. 8-12 reps or 45s)' },
+                weight: { type: 'string', description: 'Suggested starting weight or Bodyweight' },
+                exerciseTips: { type: 'string', description: 'Execution cues and form safety tips' },
+              },
+              required: ['name', 'targetMuscle', 'category', 'sets', 'reps', 'weight', 'exerciseTips'],
+            },
+          },
+        },
+        required: ['dayIndex', 'title', 'focusArea', 'dayTips', 'isRestDay', 'exercises'],
+      },
+    },
+  },
+  required: ['title', 'weeklyTips', 'days'],
+};
+
+export const EXERCISE_SWAP_SCHEMA = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', description: 'Name of the replacement exercise' },
+    targetMuscle: { type: 'string', description: 'Muscle group targeted' },
+    category: { type: 'string', description: 'IRON, CALISTHENICS, HIIT, CARDIO, YOGA, PILATES' },
+    sets: { type: 'integer', description: 'Target sets count' },
+    reps: { type: 'string', description: 'Reps range string (e.g. 10-12 or Max)' },
+    weight: { type: 'string', description: 'Suggested weight or Bodyweight' },
+    exerciseTips: { type: 'string', description: 'Actionable performance and safety tips' },
+    explanation: { type: 'string', description: 'Concise explanation why this exercise solves the user constraint' },
+  },
+  required: ['name', 'targetMuscle', 'category', 'sets', 'reps', 'weight', 'exerciseTips', 'explanation'],
+};
+
+export const BULK_PLAN_SCHEMA = {
+  type: 'object',
+  properties: {
+    days: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          dayIndex: { type: 'integer' },
+          title: { type: 'string' },
+          focusArea: { type: 'string' },
+          isRestDay: { type: 'boolean' },
+          exercises: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                sets: { type: 'integer' },
+                reps: { type: 'string' },
+              },
+              required: ['name', 'sets', 'reps'],
+            },
+          },
+        },
+        required: ['dayIndex', 'title', 'focusArea', 'isRestDay', 'exercises'],
+      },
+    },
+  },
+  required: ['days'],
+};
+
+export const BATCH_TRANSLATION_SCHEMA = {
+  type: 'object',
+  properties: {
+    translations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Original exercise identifier key (e.g. ex_0)' },
+          name_ar: { type: 'string', description: 'Arabic name for exercise' },
+          instructions_ar: { type: 'string', description: 'Translated instructions in Arabic' },
+        },
+        required: ['id', 'instructions_ar'],
+      },
+    },
+  },
+  required: ['translations'],
+};
+
+// ============================================================================
+// In-Memory Token-Saving Cache (LRU-style with TTL)
+// ============================================================================
+
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const memoryCache = new Map<string, CacheEntry<any>>();
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 Hours
+const MAX_CACHE_SIZE = 1000;
+
+function getFromCache<T>(key: string): T | null {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return entry.value as T;
+}
+
+function setInCache<T>(key: string, value: T, ttlMs = CACHE_TTL_MS): void {
+  if (memoryCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = memoryCache.keys().next().value;
+    if (firstKey) memoryCache.delete(firstKey);
+  }
+  memoryCache.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
+
+function hashKey(prefix: string, data: any): string {
+  return `${prefix}:${crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex')}`;
+}
+
+// ============================================================================
+// Local SQLite Database Helpers (`exercises.db`)
+// ============================================================================
+
+const EXERCISES_DB_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
+
+export const getExercisesDbConnection = (): sqlite3.Database => {
+  return new sqlite3.Database(EXERCISES_DB_PATH, sqlite3.OPEN_READWRITE, (err) => {
+    if (err) {
+      console.warn('[SQLite] Could not connect in READWRITE mode, falling back to READONLY:', err.message);
+    }
+  });
+};
+
 /**
- * Generic helper to make calls to Groq API using Llama 3.3 70B model (OpenAI compatible)
+ * Searches local SQLite database for exercises matching criteria.
+ */
+export const searchLocalExercises = (
+  query: string,
+  muscle?: string,
+  equipment?: string,
+  limit: number = 8
+): Promise<any[]> => {
+  return new Promise((resolve) => {
+    const db = getExercisesDbConnection();
+    let sql = `
+      SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, category, instructions_en, instructions_ar, image_url
+      FROM exercises
+      WHERE (name_en LIKE ? OR name_ar LIKE ? OR muscle_en LIKE ? OR muscle_ar LIKE ?)
+    `;
+    const q = `%${query.trim()}%`;
+    const params: any[] = [q, q, q, q];
+
+    if (muscle) {
+      sql += ` AND (muscle_en LIKE ? OR muscle_ar LIKE ?)`;
+      params.push(`%${muscle}%`, `%${muscle}%`);
+    }
+
+    if (equipment && equipment !== 'ALL') {
+      sql += ` AND (equipment_en LIKE ? OR equipment_ar LIKE ?)`;
+      params.push(`%${equipment}%`, `%${equipment}%`);
+    }
+
+    sql += ` ORDER BY rating DESC LIMIT ?`;
+    params.push(limit);
+
+    db.all(sql, params, (err, rows) => {
+      db.close();
+      if (err) {
+        console.error('[searchLocalExercises Error]:', err);
+        resolve([]);
+      } else {
+        resolve(rows || []);
+      }
+    });
+  });
+};
+
+/**
+ * Persists translated Arabic instructions back to SQLite DB.
+ * Token-saving permanent write-back.
+ */
+export const saveArabicTranslationToDb = (name_en: string, instructions_ar: string, name_ar?: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (!name_en || !instructions_ar) {
+      resolve(false);
+      return;
+    }
+    const db = getExercisesDbConnection();
+    const sql = `
+      UPDATE exercises 
+      SET instructions_ar = ?,
+          name_ar = CASE WHEN (name_ar IS NULL OR name_ar = '' OR name_ar = name_en) AND ? IS NOT NULL THEN ? ELSE name_ar END
+      WHERE LOWER(name_en) = LOWER(?)
+    `;
+    db.run(sql, [instructions_ar, name_ar || null, name_ar || null, name_en.trim()], function (err) {
+      db.close();
+      if (err) {
+        console.error(`[saveArabicTranslationToDb] Failed to update '${name_en}':`, err.message);
+        resolve(false);
+      } else {
+        if (this.changes > 0) {
+          console.log(`[DB Write-Back] Cached Arabic instructions permanently for '${name_en}'.`);
+        }
+        resolve(true);
+      }
+    });
+  });
+};
+
+// ============================================================================
+// Core Gemini & Fallback AI Engine
+// ============================================================================
+
+let genAIClient: GoogleGenAI | null = null;
+
+export const getGenAI = (): GoogleGenAI => {
+  if (!genAIClient) {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      console.warn('[Gemini] GEMINI_API_KEY is not set in environment variables.');
+    }
+    genAIClient = new GoogleGenAI({ apiKey: geminiKey || '' });
+  }
+  return genAIClient;
+};
+
+/**
+ * Standard Groq API Fallback helper (Llama 3.3 70B & 3.1 8B)
  */
 export const callGroq = async (prompt: string, jsonMode: boolean = false, customMessages: any[] = []): Promise<string> => {
   const groqKey = process.env.GROQ_API_KEY || '';
@@ -18,8 +339,8 @@ export const callGroq = async (prompt: string, jsonMode: boolean = false, custom
     throw new Error('مفتاح Groq API غير متوفر في ملف البيئة .env');
   }
 
-  const messages = customMessages.length > 0 
-    ? customMessages 
+  const messages = customMessages.length > 0
+    ? customMessages
     : [{ role: 'user', content: prompt }];
 
   const makeRequest = async (modelName: string) => {
@@ -59,257 +380,439 @@ export const callGroq = async (prompt: string, jsonMode: boolean = false, custom
   }
 };
 
-// 1. Generate Workout Plan using AI (66 years experience Coach & PT)
-export const generateWorkoutPlanAI = async (userId: number, options: WorkoutPlanOptions) => {
+/**
+ * Executes a Gemini request with Strict Structured JSON output and automatic fallback.
+ */
+export const callGeminiStructured = async <T>(
+  prompt: string,
+  schema: any,
+  systemInstruction?: string,
+  options?: {
+    temperature?: number;
+    thinkingBudget?: number;
+    model?: string;
+  }
+): Promise<T> => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const modelName = options?.model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+  if (geminiKey) {
+    try {
+      const ai = getGenAI();
+      const config: any = {
+        responseMimeType: 'application/json',
+        responseSchema: schema,
+        temperature: options?.temperature !== undefined ? options.temperature : 0.4,
+      };
+
+      if (systemInstruction) {
+        config.systemInstruction = systemInstruction;
+      }
+
+      if (options?.thinkingBudget !== undefined && options.thinkingBudget > 0) {
+        config.thinkingConfig = { thinkingBudget: options.thinkingBudget };
+      }
+
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config,
+      });
+
+      const responseText = response.text || '';
+      return JSON.parse(responseText) as T;
+    } catch (geminiError: any) {
+      console.warn(`[callGeminiStructured] Gemini failed (${geminiError.message}). Falling back to Groq LLaMA...`);
+    }
+  }
+
+  // Fallback path via Groq
+  const fullPrompt = systemInstruction
+    ? `${systemInstruction}\n\nStrictly output valid JSON matching this schema: ${JSON.stringify(schema)}\n\n${prompt}`
+    : `${prompt}\n\nStrictly output valid JSON matching schema.`;
+
+  const fallbackText = await callGroq(fullPrompt, true);
+  // Clean potential markdown wrappers if Groq added any
+  const cleanedText = fallbackText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  return JSON.parse(cleanedText) as T;
+};
+
+/**
+ * Executes a Gemini text request with low latency and automatic fallback.
+ */
+export const callGeminiText = async (
+  prompt: string,
+  systemInstruction?: string,
+  options?: {
+    temperature?: number;
+    model?: string;
+  }
+): Promise<string> => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const modelName = options?.model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+  if (geminiKey) {
+    try {
+      const ai = getGenAI();
+      const config: any = {
+        temperature: options?.temperature !== undefined ? options.temperature : 0.3,
+      };
+
+      if (systemInstruction) {
+        config.systemInstruction = systemInstruction;
+      }
+
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config,
+      });
+
+      return (response.text || '').trim();
+    } catch (geminiError: any) {
+      console.warn(`[callGeminiText] Gemini failed (${geminiError.message}). Falling back to Groq...`);
+    }
+  }
+
+  const customMessages: any[] = [];
+  if (systemInstruction) {
+    customMessages.push({ role: 'system', content: systemInstruction });
+  }
+  customMessages.push({ role: 'user', content: prompt });
+
+  return await callGroq(prompt, false, customMessages);
+};
+
+// ============================================================================
+// Service Business Functions
+// ============================================================================
+
+// 1. Generate Full Workout Plan using Deep Reasoning & Structured Schema
+export const generateWorkoutPlanAI = async (userId: number, options: WorkoutPlanOptions): Promise<WorkoutPlanResponse> => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('المستخدم غير موجود');
 
-  const prompt = `
-  أنت مدرب رياضي وطبيب علاج طبيعي عريق جداً ولديك خبرة 66 عاماً في تدريب الأبطال وتأهيل الرياضيين.
-  نريد تصميم جدول رياضي متكامل للمستخدم التالي بياناته:
-  - الاسم: ${user.name}
-  - الجنس: ${user.gender || 'غير حدد'}
-  - الوزن الحالي: ${user.currentWeight || 'غير محدد'} كجم، الوزن المستهدف: ${user.targetWeight || 'غير محدد'} كجم
-  - الطول: ${user.height || 'غير محدد'} سم
-  - مكان التمرين المفضل: ${options.workoutLocation}
-  - الأدوات المتوفرة لدى المستخدم: ${options.equipment.join(', ') || 'وزن الجسم فقط'}
-  - مستوى اللياقة البدنية: ${options.level}
-  - الحالة الصحية والإصابات: ${user.medicalConditions || 'سليم ولا يعاني من إصابات'}
-  - تاريخ بداية الجدول: ${options.startDate.toDateString()}
-  - عدد أسابيع البرنامج: ${options.durationWeeks} أسابيع.
+  const lang = (user as any).preferredLanguage === 'en' ? 'en' : 'ar';
+  const isEn = lang === 'en';
 
-  أعد النتيجة بصيغة JSON حصراً مطابقة تماماً للمواصفات التالية:
-  {
-    "title": "عنوان الجدول الرياضي الإجمالي المبتكر للأسابيع بالكامل",
-    "weeklyTips": "النصيحة الأسبوعية العامة للالتزام والاستمرار",
-    "days": [
-      {
-        "dayIndex": 1,
-        "title": "مسمى اليوم الجذاب والحماسي (مثال: اليوم 1: تفجير الصدر والتراي)",
-        "focusArea": "العضلات المستهدفة اليوم (مثال: الصدر، الأكتاف، الترايسبس)",
-        "dayTips": "نصائح إحماء وتأهيل خاصة بهذا اليوم",
-        "isRestDay": false,
-        "exercises": [
-          {
-            "name": "اسم التمرين باللغة العربية مع الاسم الإنجليزي",
-            "targetMuscle": "العضلة المستهدفة بدقة",
-            "category": "تصنيف التمرين: IRON، YOGA، PILATES، HIIT، CARDIO، CALISTHENICS",
-            "sets": 3,
-            "reps": "تكرارات أو زمن متطور (مثال: 8-10 تكرار أو 30 ثانية)",
-            "weight": "الوزن المقترح (مثال: 10 كجم أو وزن الجسم)",
-            "exerciseTips": "نصائح دقيقة للأداء الصحيح للتمرين"
-          }
-        ]
-      }
-    ]
-  }
-  `;
+  const userContextPrompt = isEn ? `
+Generate a ${options.durationWeeks}-week structured workout plan for:
+- Client: ${user.name} (${user.gender || 'Not specified'})
+- Weight: ${user.currentWeight || 'N/A'} kg -> Goal Weight: ${user.targetWeight || 'N/A'} kg, Height: ${user.height || 'N/A'} cm
+- Location: ${options.workoutLocation}
+- Equipment Available: ${options.equipment.join(', ') || 'Bodyweight only'}
+- Fitness Level: ${options.level}
+- Medical / Injuries: ${user.medicalConditions || 'None'}
+- Start Date: ${options.startDate.toDateString()}
+
+Ensure balanced volume, optimal split, and injury-safe exercise selection.
+` : `
+صمم برنامجاً تدريبياً متكاملاً لمدة ${options.durationWeeks} أسابيع للمتدرب:
+- الاسم: ${user.name} (${user.gender || 'غير محدد'})
+- الوزن: ${user.currentWeight || 'غير محدد'} كجم -> المستهدف: ${user.targetWeight || 'غير محدد'} كجم، الطول: ${user.height || 'غير محدد'} سم
+- مكان التمرين: ${options.workoutLocation}
+- الأدوات المتوفرة: ${options.equipment.join(', ') || 'وزن الجسم فقط'}
+- المستوى البدني: ${options.level}
+- الحالة الصحية والإصابات: ${user.medicalConditions || 'سليم ولا يعاني من إصابات'}
+- تاريخ البداية: ${options.startDate.toDateString()}
+
+راعِ موازنة الأحمال التدريبية وتوزيع المجموعات وترتيب التمارين المركبة قبل العزل.
+`;
 
   try {
-    const resultText = await callGroq(prompt, true);
-    return JSON.parse(resultText);
-  } catch (error) {
-    console.error('Error generating workout plan via Groq:', error);
+    return await callGeminiStructured<WorkoutPlanResponse>(
+      userContextPrompt,
+      WORKOUT_PLAN_SCHEMA,
+      PROMPT_SYSTEM_COACH(lang),
+      {
+        temperature: 0.7,
+        thinkingBudget: 1024, // Deep reasoning for workout balance & injury accommodation
+      }
+    );
+  } catch (error: any) {
+    console.error('[generateWorkoutPlanAI] Error:', error);
     throw new Error('فشل توليد الجدول الرياضي بالذكاء الاصطناعي.');
   }
 };
 
-// 2. AI Profile Adjustment Advice
-export const getProfileAdviceAI = async (oldUser: any, updatedUser: any): Promise<string> => {
-  const prompt = `
-  أنت مدرب رياضي وطبيب علاج طبيعي بخبرة 66 عاماً.
-  المستخدم قام بتحديث ملفه الشخصي كالتالي:
-  - الوزن السابق: ${oldUser.currentWeight || 'غير محدد'} كجم، الوزن الجديد: ${updatedUser.currentWeight || 'غير محدد'} كجم.
-  - موقع التمرين السابق: ${oldUser.workoutLocation || 'غير محدد'}، الجديد: ${updatedUser.workoutLocation || 'غير محدد'}.
-  - الحالة الطبية/الإصابات السابقة: ${oldUser.medicalConditions || 'لا يوجد'}، الجديدة: ${updatedUser.medicalConditions || 'لا يوجد'}.
+// 2. AI Profile Adjustment Advice (Fast Path)
+export const getProfileAdviceAI = async (oldUser: any, updatedUser: any, lang: 'ar' | 'en' = 'ar'): Promise<string> => {
+  const isEn = lang === 'en';
 
-  بناءً على هذه التغييرات، اكتب فقرة قصيرة وجذابة باللغة العربية تشرح فيها للمستخدم:
-  1. تأثير هذه التغييرات على برنامجه الرياضي الحالي.
-  2. ما يقترحه الخبير الرياضي من تعديلات (مثال: إذا تغير الوزن أو مكان التمرين أو أصيب بمفصل).
-  اجعل الأسلوب محفزاً ومهنياً للغاية ولا يتجاوز 150 كلمة.
-  `;
+  // Check cache for identical delta to save tokens
+  const cacheKey = hashKey('profile_advice', {
+    w1: oldUser.currentWeight,
+    w2: updatedUser.currentWeight,
+    loc1: oldUser.workoutLocation,
+    loc2: updatedUser.workoutLocation,
+    med1: oldUser.medicalConditions,
+    med2: updatedUser.medicalConditions,
+    lang,
+  });
+
+  const cached = getFromCache<string>(cacheKey);
+  if (cached) return cached;
+
+  const prompt = isEn ? `
+Client profile updated:
+- Previous Weight: ${oldUser.currentWeight || 'N/A'} kg -> New: ${updatedUser.currentWeight || 'N/A'} kg
+- Previous Location: ${oldUser.workoutLocation || 'N/A'} -> New: ${updatedUser.workoutLocation || 'N/A'}
+- Medical / Injury Changes: ${oldUser.medicalConditions || 'None'} -> New: ${updatedUser.medicalConditions || 'None'}
+Provide a concise, encouraging advice paragraph on how this impacts their routine.
+` : `
+تحديثات الملف الشخصي للمتدرب:
+- الوزن السابق: ${oldUser.currentWeight || 'غير محدد'} كجم -> الجديد: ${updatedUser.currentWeight || 'غير محدد'} كجم.
+- موقع التمرين السابق: ${oldUser.workoutLocation || 'غير محدد'} -> الجديد: ${updatedUser.workoutLocation || 'غير محدد'}.
+- الحالة الطبية/الإصابات: ${oldUser.medicalConditions || 'لا يوجد'} -> الجديدة: ${updatedUser.medicalConditions || 'لا يوجد'}.
+اكتب فقرة قصيرة ومحفزة توضح تأثير ذلك على خطته التدريبية.
+`;
 
   try {
-    return await callGroq(prompt, false);
+    const advice = await callGeminiText(prompt, PROMPT_SYSTEM_PROFILE_ADVICE(lang), {
+      temperature: 0.2, // Ultra-fast, zero-overhead
+    });
+    setInCache(cacheKey, advice);
+    return advice;
   } catch (error) {
-    console.error('Error generating AI profile advice via Groq:', error);
-    return 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح إعادة توليد جدول التمارين ليتناسب مع موقع تمرينك وحالتك البدنية المحدثة.';
+    console.error('[getProfileAdviceAI] Error:', error);
+    return isEn
+      ? 'Based on your updated profile, we recommend regenerating or adjusting your workout routine to align with your current fitness condition and equipment.'
+      : 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح مواءمة جدول التمارين ليتناسب مع موقع تمرينك وحالتك البدنية المحدثة.';
   }
 };
 
-// 3. Upgrade Workout Plan (Progressive Overload)
-export const upgradeWorkoutPlanAI = async (userId: number, activePlanTitle: string, completionRate: number, lang?: string) => {
+// 3. Upgrade Workout Plan (Progressive Overload with Reasoning)
+export const upgradeWorkoutPlanAI = async (
+  userId: number,
+  activePlanTitle: string,
+  completionRate: number,
+  lang: 'ar' | 'en' = 'ar'
+): Promise<WorkoutPlanResponse> => {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('المستخدم غير موجود');
 
   const isEn = lang === 'en';
   const prompt = isEn ? `
-  You are an expert fitness coach and physical therapist with 66 years of experience.
-  The user ${user.name} successfully finished the previous workout plan titled "${activePlanTitle}".
-  - Adherence rate: ${completionRate.toFixed(1)}%.
-  - Fitness state: ${user.currentWeight ? 'Weight: ' + user.currentWeight + ' kg' : ''}, Location: ${user.workoutLocation || 'GYM'}.
-
-  Based on this achievement, generate a completely new, progressive workout routine representing the "next level" (Progressive Overload).
-  - If adherence was high (>75%), increase difficulty, sets/reps, or weights.
-  - If adherence was low, focus on building fundamentals and adapting difficult exercises.
-  
-  You MUST return the entire response in English.
-
-  Format the output strictly as a JSON object matching this structure:
-  {
-    "title": "Title of the new progressive workout plan",
-    "weeklyTips": "New weekly tips for handling the extra intensity or maintaining consistency",
-    "days": [
-      {
-        "dayIndex": 1,
-        "title": "Motivating and attractive name of the training day",
-        "focusArea": "Targeted muscles",
-        "dayTips": "Warm-up and recovery tips for this day",
-        "isRestDay": false,
-        "exercises": [
-          {
-            "name": "Exercise name",
-            "targetMuscle": "Target muscle",
-            "category": "Exercise category: IRON, YOGA, PILATES, HIIT, CARDIO, CALISTHENICS",
-            "sets": 3,
-            "reps": "Target reps or time (e.g. '8-10 reps' or '30s')",
-            "weight": "Suggested weight (e.g. '17.5kg' or 'Bodyweight')",
-            "exerciseTips": "Performance tip for correct form"
-          }
-        ]
-      }
-    ]
-  }
-  ` : `
-  أنت مدرب رياضي وطبيب علاج طبيعي بخبرة 66 عاماً.
-  المستخدم ${user.name} أنهى بنجاح جدول التمارين السابق الذي عنوانه "${activePlanTitle}".
-  - نسبة الالتزام الإجمالية بإدخال التمارين وإكمالها: ${completionRate.toFixed(1)}%.
-  - مستوى لياقته: ${user.currentWeight ? 'الوزن الحالي: ' + user.currentWeight + ' كجم' : ''}، موقع تمرينه: ${user.workoutLocation || 'GYM'}.
-
-  بناءً على هذا الإنجاز، نريد توليد جدول تمارين جديد تماماً يمثل "المرحلة القادمة" المتطورة (Progressive Overload).
-  - إذا كانت نسبة التزامه عالية (>75%)، زد مستوى الشدة والأوزان أو التمارين تدريجياً.
-  - إذا كانت نسبة الالتزام منخفضة، ركز على بناء الأساسيات وتعديل التمارين الصعبة لجعلها أكثر إتاحة وحماساً.
-  - التزم بمسميات أيام وأسابيع جذابة ومحفزة للغاية باللغة العربية.
-
-  أعد النتيجة بصيغة JSON حصراً مطابقة تماماً للمواصفات التالية:
-  {
-    "title": "عنوان الجدول الرياضي الجديد المتطور لرفع الصعوبة تدريجياً",
-    "weeklyTips": "نصائح الأسبوع الجديد للتعامل مع الصعوبة الإضافية أو الاستمرار",
-    "days": [
-      {
-        "dayIndex": 1,
-        "title": "مسمى اليوم الجديد الجذاب والمحفز",
-        "focusArea": "العضلات المستهدفة",
-        "dayTips": "نصائح إحماء واستشفاء خاصة بهذا اليوم",
-        "isRestDay": false,
-        "exercises": [
-          {
-            "name": "اسم التمرين باللغة العربية مع الاسم الإنجليزي",
-            "targetMuscle": "العضلة المستهدفة بدقة",
-            "category": "تصنيف التمرين: IRON، YOGA، PILATES، HIIT، CARDIO، CALISTHENICS",
-            "sets": 3,
-            "reps": "تكرارات أو زمن متطور (مثال: زيادة جولة أو تقليل تكرارات مع رفع أوزان)",
-            "weight": "الوزن الجديد المقترح المتطور (مثال: زيادة 2.5 كجم عن السابق أو إبقاء وزن الجسم للمقاومة)",
-            "exerciseTips": "نصائح دقيقة للأداء الصحيح للنسخة المطورة من التمرين"
-          }
-        ]
-      }
-    ]
-  }
-  `;
+Client ${user.name} finished plan "${activePlanTitle}" with adherence rate: ${completionRate.toFixed(1)}%.
+- Weight: ${user.currentWeight ? user.currentWeight + ' kg' : 'N/A'}, Location: ${user.workoutLocation || 'GYM'}.
+Generate a progressive overload routine representing the next phase.
+- If adherence > 75%, increase difficulty, sets, or progressive weights.
+- If adherence < 75%, reinforce fundamentals and adapt challenging movements.
+` : `
+المتدرب ${user.name} أنهى جدول "${activePlanTitle}" بنسبة التزام: ${completionRate.toFixed(1)}%.
+- الوزن: ${user.currentWeight ? user.currentWeight + ' كجم' : 'غير محدد'}، موقع التمرين: ${user.workoutLocation || 'GYM'}.
+صمم جدولاً جديداً يمثل المرحلة التالية المتطورة (Progressive Overload).
+- إذا كان الالتزام مرتفعاً (>75%) زد الشدة والأحمال التراكمية.
+- إذا كان منخفضاً ركز على تصحيح التكنيك والأساسيات.
+`;
 
   try {
-    const resultText = await callGroq(prompt, true);
-    return JSON.parse(resultText);
-  } catch (error) {
-    console.error('Error upgrading workout plan via Groq:', error);
+    return await callGeminiStructured<WorkoutPlanResponse>(
+      prompt,
+      WORKOUT_PLAN_SCHEMA,
+      PROMPT_SYSTEM_COACH(lang),
+      {
+        temperature: 0.6,
+        thinkingBudget: 1024,
+      }
+    );
+  } catch (error: any) {
+    console.error('[upgradeWorkoutPlanAI] Error:', error);
     throw new Error('فشل ترقية الجدول الرياضي بالذكاء الاصطناعي.');
   }
 };
 
-/**
- * AI-powered exercise swap generator based on user reason and equipment
- */
+// 4. AI Exercise Swap with DB-First Heuristic Search & Caching
 export const suggestSwapAI = async (
   exerciseName: string,
   targetMuscle: string,
   equipment: string,
   reason: string,
   userEquipment: string[],
-  lang: 'ar' | 'en'
-): Promise<any> => {
+  lang: 'ar' | 'en' = 'ar'
+): Promise<ExerciseSwapResponse> => {
   const isEn = lang === 'en';
-  
-  const systemPrompt = `
-  You are an expert sports coach. You need to swap a workout exercise with a suitable replacement based on a user's constraint or reason.
-  
-  Requirements:
-  1. The new exercise must target the SAME muscle group: "${targetMuscle || 'Same as original'}".
-  2. The new exercise must ONLY use the equipment available to the user: ${JSON.stringify(userEquipment)}.
-  3. The new exercise should directly address the user's reason for swapping: "${reason}".
-  4. Respond strictly with a JSON object in the following format:
-  {
-    "name": "Name of the new exercise in ${isEn ? 'English' : 'Arabic'}",
-    "targetMuscle": "Muscle group in ${isEn ? 'English' : 'Arabic'}",
-    "category": "IRON" or "CALISTHENICS" or "HIIT" or "CARDIO",
-    "sets": number (e.g. 3 or 4),
-    "reps": "reps string (e.g. '10-12', '12', 'Max')",
-    "weight": "suggested weight in ${isEn ? 'English' : 'Arabic'} (e.g. 'دمبلز 10 كجم' or 'Dumbbells 10kg')",
-    "exerciseTips": "Form instructions or safety tips in ${isEn ? 'English' : 'Arabic'}",
-    "explanation": "One-line friendly explanation in ${isEn ? 'English' : 'Arabic'} of why this is a good alternative based on the user's reason (e.g., 'Targeting the chest safely using dumbbells instead of barbell to match your equipment.')."
+
+  // 1. Check in-memory cache for exact swap
+  const cacheKey = hashKey('exercise_swap', {
+    ex: exerciseName.toLowerCase().trim(),
+    m: targetMuscle.toLowerCase().trim(),
+    r: reason.toLowerCase().trim(),
+    eq: userEquipment.sort(),
+    lang,
+  });
+
+  const cached = getFromCache<ExerciseSwapResponse>(cacheKey);
+  if (cached) {
+    console.log(`[Token Saver] Serving exercise swap for '${exerciseName}' directly from Cache!`);
+    return cached;
   }
 
-  Do not output any extra text, only return the JSON object.
-  `;
+  // 2. DB-First Search: Fetch 3-5 real candidate exercises from SQLite database
+  const dbCandidates = await searchLocalExercises(
+    targetMuscle || exerciseName,
+    targetMuscle,
+    userEquipment.length === 1 && userEquipment[0] === 'BODYWEIGHT' ? 'BODYWEIGHT' : undefined,
+    5
+  );
 
-  const prompt = `
-  Original Exercise: ${exerciseName}
-  Original Equipment: ${equipment}
-  Reason for swapping: "${reason}"
-  User's available equipment: ${userEquipment.join(', ')}
-  `;
+  const candidatesContext = dbCandidates.length > 0
+    ? `\nVerified exercises available in local database to choose from:\n${dbCandidates.map(c => `- ${c.name_en} (${c.name_ar || 'بدون اسم عربي'}) | Equipment: ${c.equipment_en} | Muscle: ${c.muscle_en}`).join('\n')}`
+    : '';
 
-  const responseText = await callGroq(prompt, true, [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: prompt }
-  ]);
+  const prompt = isEn ? `
+Target Muscle: ${targetMuscle || 'Same as original'}
+Original Exercise: ${exerciseName} (Original Equipment: ${equipment})
+Swap Reason: "${reason}"
+Client Available Equipment: ${userEquipment.join(', ')}
+${candidatesContext}
+
+Select the best replacement exercise addressing the reason and matching the available equipment.
+` : `
+العضلة المستهدفة: ${targetMuscle || 'نفس العضلة الأصلية'}
+التمرين الأصلي: ${exerciseName} (الأداة الأصلية: ${equipment})
+سبب الاستبدال: "${reason}"
+الأدوات المتاحة للمتدرب: ${userEquipment.join(', ')}
+${candidatesContext}
+
+اختر أفضل تمرين بديل يعالج سبب الاستبدال بدقة ويلتزم بالأدوات المتوفرة.
+`;
 
   try {
-    return JSON.parse(responseText);
-  } catch (err) {
-    console.error('Failed to parse AI swap response:', responseText);
-    throw new Error('فشل تحليل رد الذكاء الاصطناعي للاستبدال.');
+    const result = await callGeminiStructured<ExerciseSwapResponse>(
+      prompt,
+      EXERCISE_SWAP_SCHEMA,
+      PROMPT_SYSTEM_SWAP(lang),
+      {
+        temperature: 0.3,
+      }
+    );
+
+    setInCache(cacheKey, result);
+    return result;
+  } catch (err: any) {
+    console.error('[suggestSwapAI] Error:', err);
+    throw new Error('فشل استبدال التمرين بالذكاء الاصطناعي.');
   }
 };
 
+// 5. Weekly Check-In Recommendation (Fast Path & Caching)
 export const suggestCheckInRecommendation = async (
   workoutFeel: string,
   sessionsCompleted: string,
   painNotes: string,
   planSummary: string,
-  lang: string
+  lang: 'ar' | 'en' = 'ar'
 ): Promise<string> => {
   const isEn = lang === 'en';
-  const systemPrompt = `
-  You are an expert fitness coach and personal trainer.
-  The client is completing their weekly check-in. Give them a direct, supportive, and motivational coach recommendation in 2 to 3 sentences.
-  Focus on:
-  - Validating their feeling: workouts felt "${workoutFeel}" (Too Easy / Just Right / Too Hard) and they finished "${sessionsCompleted}" (Yes / Mostly / No) of their sessions.
-  - Suggesting an action: making it harder (raising sets/reps), keeping it the same, or adjusting for pain "${painNotes || 'None'}".
-  Write the response in ${isEn ? 'English' : 'Arabic'}. Do not output any JSON or extra metadata, just return the 2-3 sentence recommendation.
-  `;
 
-  const userPrompt = `
-  User weekly feedback:
-  - Workouts felt: ${workoutFeel}
-  - Completed sessions: ${sessionsCompleted}
-  - Pain/Discomfort notes: ${painNotes || 'None'}
-  - Active Plan summary: ${planSummary}
-  `;
+  const cacheKey = hashKey('checkin_rec', {
+    feel: workoutFeel,
+    sess: sessionsCompleted,
+    pain: (painNotes || '').toLowerCase().trim(),
+    lang,
+  });
 
-  return await callGroq(userPrompt, false, [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: userPrompt }
-  ]);
+  const cached = getFromCache<string>(cacheKey);
+  if (cached) return cached;
+
+  const prompt = isEn ? `
+Client Weekly Feedback:
+- Sensation: Workouts felt "${workoutFeel}"
+- Adherence: Completed sessions: "${sessionsCompleted}"
+- Pain/Discomfort notes: "${painNotes || 'None'}"
+- Plan Context: ${planSummary}
+` : `
+تقييم المتدرب الأسبوعي:
+- إحساس التمارين: "${workoutFeel}"
+- الالتزام بالحصص: "${sessionsCompleted}"
+- ملاحظات الألم/الإصابة: "${painNotes || 'لا يوجد'}"
+- سياق الجدول: ${planSummary}
+`;
+
+  try {
+    const recommendation = await callGeminiText(prompt, PROMPT_SYSTEM_CHECKIN(lang), {
+      temperature: 0.2,
+    });
+    setInCache(cacheKey, recommendation);
+    return recommendation;
+  } catch (error) {
+    console.error('[suggestCheckInRecommendation] Error:', error);
+    return isEn
+      ? 'Great job keeping up with your workouts this week! Maintain your form and listen to your body.'
+      : 'أداء رائع في الالتزام بتمارين هذا الأسبوع! حافظ على الاستمرارية وأداء التمارين بتكنيك سليم.';
+  }
 };
 
+// 6. Batch Exercise Instructions Translator with SQLite Permanent Write-Back
+export const translateExerciseInstructionsBatch = async (
+  exercises: Array<{ id: string; name_en: string; instructions_en: string }>
+): Promise<Record<string, string>> => {
+  if (!exercises || exercises.length === 0) return {};
+
+  const translationsMap: Record<string, string> = {};
+  const neededTranslations: typeof exercises = [];
+
+  // 1. Check in-memory cache first
+  for (const ex of exercises) {
+    const cached = getFromCache<string>(`trans:${ex.name_en.toLowerCase()}`);
+    if (cached) {
+      translationsMap[ex.id] = cached;
+    } else {
+      neededTranslations.push(ex);
+    }
+  }
+
+  if (neededTranslations.length === 0) {
+    console.log(`[Token Saver] All ${exercises.length} exercise translations served from Cache!`);
+    return translationsMap;
+  }
+
+  const prompt = `
+Translate the following exercise instructions from English to clear, motivating Arabic bullet points:
+${neededTranslations.map(e => `[ID: ${e.id}] Name: ${e.name_en}\nInstructions: ${e.instructions_en || 'Controlled motion with proper form.'}`).join('\n\n')}
+`;
+
+  try {
+    const result = await callGeminiStructured<{ translations: Array<{ id: string; name_ar?: string; instructions_ar: string }> }>(
+      prompt,
+      BATCH_TRANSLATION_SCHEMA,
+      PROMPT_SYSTEM_TRANSLATOR,
+      { temperature: 0.2 }
+    );
+
+    if (result && Array.isArray(result.translations)) {
+      for (const item of result.translations) {
+        translationsMap[item.id] = item.instructions_ar;
+        const matchingEx = neededTranslations.find(e => e.id === item.id);
+        if (matchingEx) {
+          // Store in memory cache
+          setInCache(`trans:${matchingEx.name_en.toLowerCase()}`, item.instructions_ar);
+          // Permanent DB Write-back: saves tokens permanently for all future users!
+          saveArabicTranslationToDb(matchingEx.name_en, item.instructions_ar, item.name_ar).catch(() => {});
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('[translateExerciseInstructionsBatch] Error:', error.message);
+  }
+
+  return translationsMap;
+};
+
+// 7. Bulk Workout Text Importer Parser
+export const parseBulkWorkoutText = async (rawText: string): Promise<BulkParsedPlanResponse> => {
+  const prompt = `
+Parse the following unstructured workout list into days, focus areas, rest days, exercises, sets, and reps:
+"""
+${rawText}
+"""
+`;
+
+  return await callGeminiStructured<BulkParsedPlanResponse>(
+    prompt,
+    BULK_PLAN_SCHEMA,
+    PROMPT_SYSTEM_BULK_PARSER,
+    { temperature: 0.1 }
+  );
+};

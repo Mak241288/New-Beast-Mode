@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from './services/api';
 import { Login } from './pages/Login';
+import { LandingPage } from './pages/LandingPage';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { TermsOfService } from './pages/TermsOfService';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { MyPlan } from './pages/MyPlan';
@@ -9,12 +12,19 @@ import { Stats } from './pages/Stats';
 import { Profile } from './pages/Profile';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe } from 'lucide-react';
+import { initWorkoutReminderScheduler } from './utils/notifications';
 
 import './App.css';
 
 function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [currentView, setCurrentView] = useState<string>(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (['privacy', 'terms', 'login', 'dashboard', 'myplan', 'library', 'stats', 'profile'].includes(hash)) {
+      return hash;
+    }
+    return token ? 'dashboard' : 'landing';
+  });
   const [loading, setLoading] = useState(true);
   const [lang, setLang] = useState<'ar' | 'en'>(localStorage.getItem('lang') === 'en' ? 'en' : 'ar');
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
@@ -35,14 +45,14 @@ function App() {
       if (event.state && event.state.view) {
         setCurrentView(event.state.view);
       } else {
-        setCurrentView('dashboard');
+        setCurrentView(token ? 'dashboard' : 'landing');
       }
     };
 
     window.history.replaceState({ view: currentView }, '', `#${currentView}`);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -56,18 +66,26 @@ function App() {
     
     setLoading(true);
     try {
-      // 1. Verify if user has already completed onboarding by checking onboardingCompleted flag
+      // 1. Verify if user has completed onboarding
       const profile = await api.getProfile();
       const isCompleted = !!profile.onboardingCompleted;
       setOnboardingCompleted(isCompleted);
 
+      // Initialize background reminder scheduler
+      if (profile.workoutReminder && profile.reminderTime) {
+        initWorkoutReminderScheduler({
+          enabled: profile.workoutReminder,
+          time: profile.reminderTime,
+          lang,
+        });
+      }
+
       if (!isCompleted) {
         setCurrentView('onboarding');
       } else {
-        // If onboarding is completed, fetch active plan but do not force onboarding if the plan doesn't exist
         try {
           await api.getActivePlan();
-          const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile'];
+          const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms'];
           if (!validViews.includes(currentView)) {
             setCurrentView('dashboard');
           }
@@ -76,7 +94,7 @@ function App() {
           if (planErr.status === 401) {
             handleLogout();
           } else {
-            const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile'];
+            const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms'];
             if (!validViews.includes(currentView)) {
               setCurrentView('dashboard');
             }
@@ -101,12 +119,13 @@ function App() {
 
   const handleLoginSuccess = (newToken: string) => {
     setToken(newToken);
+    setCurrentView('dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     setToken(null);
-    setCurrentView('dashboard');
+    setCurrentView('landing');
   };
 
   const handleOnboardingComplete = () => {
@@ -122,14 +141,39 @@ function App() {
     );
   }
 
-  // Auth Guard
+  // Unauthenticated Views (Landing, Login, Privacy, Terms)
   if (!token) {
-    return <Login onSuccess={handleLoginSuccess} />;
+    if (currentView === 'privacy') {
+      return <PrivacyPolicy lang={lang} onBack={() => navigateTo('landing')} />;
+    }
+    if (currentView === 'terms') {
+      return <TermsOfService lang={lang} onBack={() => navigateTo('landing')} />;
+    }
+    if (currentView === 'login') {
+      return <Login onSuccess={handleLoginSuccess} onBack={() => navigateTo('landing')} />;
+    }
+    return (
+      <LandingPage
+        lang={lang}
+        onGetStarted={() => navigateTo('login')}
+        onLogin={() => navigateTo('login')}
+        onLanguageChange={handleLanguageChange}
+        onNavigateToLegal={(page) => navigateTo(page)}
+      />
+    );
   }
 
   // Onboarding Guard
   if (currentView === 'onboarding') {
     return <Onboarding lang={lang} onComplete={handleOnboardingComplete} />;
+  }
+
+  // Authenticated Legal Views
+  if (currentView === 'privacy') {
+    return <PrivacyPolicy lang={lang} onBack={() => navigateTo('profile')} />;
+  }
+  if (currentView === 'terms') {
+    return <TermsOfService lang={lang} onBack={() => navigateTo('profile')} />;
   }
 
   // Translation mapping for navigation
@@ -155,7 +199,9 @@ function App() {
       {/* DESKTOP SIDEBAR */}
       <aside className="sidebar glass-panel no-print">
         <div>
-          <div className="sidebar-logo">BEASTMODE</div>
+          <div className="sidebar-logo" onClick={() => navigateTo('dashboard')} style={{ cursor: 'pointer' }}>
+            BEASTMODE
+          </div>
           <nav className="nav-menu">
             {menuItems.map((item) => (
               <button
@@ -221,7 +267,10 @@ function App() {
 
       {/* MOBILE HEADER */}
       <header className="mobile-header glass-panel no-print">
-        <span style={{ fontWeight: '900', fontSize: '18px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <span 
+          onClick={() => navigateTo('dashboard')}
+          style={{ fontWeight: '900', fontSize: '18px', cursor: 'pointer', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+        >
           BEASTMODE
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
