@@ -1193,9 +1193,16 @@ export const activateHistoricalPlan = async (req: AuthRequest, res: Response): P
   }
 };
 
+let cachedLibraryTreeData: any = null;
+
 // @desc    Get Exercises Library in Tree Hierarchy (Shajara)
 // @route   GET /api/workout/library-tree
 export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<void> => {
+  if (cachedLibraryTreeData) {
+    res.status(200).json(cachedLibraryTreeData);
+    return;
+  }
+
   const sqlite3 = require('sqlite3').verbose();
   const path = require('path');
   const dbPath = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
@@ -1345,6 +1352,7 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
       };
     });
 
+    cachedLibraryTreeData = treeData;
     res.status(200).json(treeData);
   });
 };

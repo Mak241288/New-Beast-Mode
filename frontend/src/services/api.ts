@@ -1,7 +1,7 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
-// Helper to handle requests with token
-const request = async (endpoint: string, options: RequestInit = {}) => {
+// Helper to handle requests with token and safety timeout
+const request = async (endpoint: string, options: RequestInit = {}, timeoutMs = 15000) => {
   const token = localStorage.getItem('token');
   
   const headers = {
@@ -10,25 +10,45 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  let data: any = {};
   try {
-    data = await response.json();
-  } catch (parseErr) {
-    data = {};
-  }
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
 
-  if (!response.ok) {
-    const error = new Error(data.error || `خطأ في السيرفر (${response.status})، يرجى المحاولة لاحقاً`) as any;
-    error.status = response.status;
-    throw error;
-  }
+    let data: any = {};
+    try {
+      data = await response.json();
+    } catch (parseErr) {
+      data = {};
+    }
 
-  return data;
+    if (!response.ok) {
+      const error = new Error(data.error || `خطأ في السيرفر (${response.status})، يرجى المحاولة لاحقاً`) as any;
+      error.status = response.status;
+      throw error;
+    }
+
+    return data;
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      const timeoutError = new Error('استغرق الخادم وقتاً طويلاً للرد، تأكد من تشغيل السيرفر المحلي (Port 5000)') as any;
+      timeoutError.status = 408;
+      throw timeoutError;
+    }
+    if (err.message && err.message.includes('Failed to fetch')) {
+      const networkError = new Error('تعذر الاتصال بالخادم، يرجى التأكد من تشغيل Backend Server على المنفذ 5000') as any;
+      networkError.status = 503;
+      throw networkError;
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 };
 
 export const api = {

@@ -11,7 +11,7 @@ interface MyPlanProps {
   onboardingCompleted?: boolean;
 }
 
-export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingCompleted }) => {
+export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingCompleted: _onboardingCompleted }) => {
   const t = translations[lang] || translations.ar;
   const [activePlan, setActivePlan] = useState<any>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
@@ -22,6 +22,39 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [addingCustom, setAddingCustom] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showManualBuilder, setShowManualBuilder] = useState(false);
+  const [manualTitle, setManualTitle] = useState(lang === 'en' ? 'Custom Gym Routine' : 'جدولي التدريبي اليدوي');
+  const [manualActiveDayIdx, setManualActiveDayIdx] = useState(1);
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualDays, setManualDays] = useState([
+    { dayIndex: 1, title: lang === 'en' ? 'Chest & Triceps' : 'الصدر والترايسبس', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [
+      { name: lang === 'en' ? 'Barbell Bench Press' : 'بنش برس بالبار مستوي', targetMuscle: 'Chest', sets: 4, reps: '8-10', weight: 'Barbell' },
+      { name: lang === 'en' ? 'Incline Dumbbell Press' : 'ضغط دمبلز مائل للأعلى', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Cable Tricep Pushdown' : 'دفع كيبل ترايسبس لأسفل', targetMuscle: 'Triceps', sets: 3, reps: '12-15', weight: 'Cable' },
+    ] },
+    { dayIndex: 2, title: lang === 'en' ? 'Back & Biceps' : 'الظهر والبايسبس', focusArea: lang === 'en' ? 'Back, Biceps' : 'ظهر، بايسبس', isRestDay: false, exercises: [
+      { name: lang === 'en' ? 'Lat Pulldown' : 'سحب عالي للظهر (لاتس)', targetMuscle: 'Back', sets: 4, reps: '10-12', weight: 'Cable' },
+      { name: lang === 'en' ? 'Seated Cable Row' : 'سحب أرضي للظهر بالكيبل', targetMuscle: 'Back', sets: 3, reps: '10-12', weight: 'Cable' },
+      { name: lang === 'en' ? 'Dumbbell Bicep Curl' : 'تبادل بايسبس بالدمبلز', targetMuscle: 'Biceps', sets: 3, reps: '12', weight: 'Dumbbells' },
+    ] },
+    { dayIndex: 3, title: lang === 'en' ? 'Rest & Recovery' : 'يوم راحة واستشفاء', focusArea: lang === 'en' ? 'Recovery' : 'استشفاء', isRestDay: true, exercises: [] },
+    { dayIndex: 4, title: lang === 'en' ? 'Shoulders & Abs' : 'الأكتاف والبطن', focusArea: lang === 'en' ? 'Shoulders, Abs' : 'أكتاف، بطن', isRestDay: false, exercises: [
+      { name: lang === 'en' ? 'Overhead Shoulder Press' : 'ضغط أكتاف بالدمبلز جالس', targetMuscle: 'Shoulders', sets: 4, reps: '8-10', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Dumbbell Lateral Raise' : 'رفرفة جانبية للأكتاف', targetMuscle: 'Shoulders', sets: 3, reps: '12-15', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Hanging Leg Raise' : 'رفع الأرجل على العقله للبطن', targetMuscle: 'Abs', sets: 3, reps: '15', weight: 'Bodyweight' },
+    ] },
+    { dayIndex: 5, title: lang === 'en' ? 'Legs & Calves' : 'الأرجل والسمانة', focusArea: lang === 'en' ? 'Legs, Calves' : 'أرجل، سمانة', isRestDay: false, exercises: [
+      { name: lang === 'en' ? 'Barbell Squat' : 'سكوات بالبار (قرفصاء)', targetMuscle: 'Quadriceps', sets: 4, reps: '8-10', weight: 'Barbell' },
+      { name: lang === 'en' ? 'Leg Press' : 'دفع أرجل بجهاز المكبس', targetMuscle: 'Quadriceps', sets: 3, reps: '10-12', weight: 'Machine' },
+      { name: lang === 'en' ? 'Standing Calf Raise' : 'رفع السمانة واقفاً', targetMuscle: 'Calves', sets: 4, reps: '15', weight: 'Machine' },
+    ] },
+    { dayIndex: 6, title: lang === 'en' ? 'Arms & Core' : 'الذراعين والبطن', focusArea: lang === 'en' ? 'Arms, Core' : 'ذراعين، بطن', isRestDay: false, exercises: [
+      { name: lang === 'en' ? 'EZ-Bar Skullcrusher' : 'ترايسبس بالبار المتعرج استلقاء', targetMuscle: 'Triceps', sets: 3, reps: '10-12', weight: 'Barbell' },
+      { name: lang === 'en' ? 'Hammer Curls' : 'شاكوش بالدمبلز (هامر)', targetMuscle: 'Biceps', sets: 3, reps: '12', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Plank' : 'تمرين البلانك للبطن', targetMuscle: 'Abs', sets: 3, reps: '60s', weight: 'Bodyweight' },
+    ] },
+    { dayIndex: 7, title: lang === 'en' ? 'Rest Day' : 'يوم راحة', focusArea: lang === 'en' ? 'Recovery' : 'استشفاء', isRestDay: true, exercises: [] },
+  ]);
   
   // Alternatives State
   const [swapExerciseId, setSwapExerciseId] = useState<number | null>(null);
@@ -854,13 +887,17 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
         {/* Quick Tools */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={() => setShowManualBuilder(true)} className="glow-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Plus size={16} />
+            <span>{lang === 'en' ? 'Create Custom Plan ✍️' : 'تصميم جدول يدوي ✍️'}</span>
+          </button>
           <button onClick={handleRegeneratePlan} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <RefreshCw size={16} />
             {lang === 'en' ? 'Regenerate Plan' : 'إعادة توليد الجدول ⚡'}
           </button>
-          <button onClick={handleUpgradePlan} className="glow-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button onClick={handleUpgradePlan} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Sparkles size={16} />
-            {lang === 'en' ? 'AI Upgrade (Next Level)' : 'ترقية الذكاء الاصطناعي'}
+            {lang === 'en' ? 'AI Upgrade' : 'ترقية بالذكاء الاصطناعي'}
           </button>
           <button onClick={() => setShowImport(true)} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Upload size={16} />
@@ -907,18 +944,17 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           <h3>{lang === 'en' ? 'No Active Plan Found' : 'لا يوجد جدول رياضي نشط'}</h3>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
             {lang === 'en' 
-              ? 'You have not configured a workout routine yet. Let the AI generate one for you now!' 
-              : 'لم تقم بتهيئة جدول تمارينك الرياضية بعد. دع الذكاء الاصطناعي يقوم بتوليد جدول تمارين مناسب لك الآن!'}
+              ? 'You have not configured a workout routine yet. You can design one manually or let AI generate it!' 
+              : 'لم تقم بتهيئة جدول تمارينك الرياضية بعد. يمكنك تصميمه يدوياً بالكامل أو توليده بالذكاء الاصطناعي!'}
           </p>
-          {!onboardingCompleted ? (
-            <button onClick={() => onNavigate('onboarding')} className="glow-btn">
-              {lang === 'en' ? 'Create My Plan' : 'إنشاء جدول تمارين جديد'}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button onClick={() => setShowManualBuilder(true)} className="glow-btn">
+              {lang === 'en' ? 'Design Plan Manually ✍️' : 'تصميم جدول يدوي ✍️'}
             </button>
-          ) : (
-            <button onClick={() => onNavigate('dashboard')} className="glow-btn">
-              {lang === 'en' ? 'Generate My Plan' : 'توليد خطتي الرياضية'}
+            <button onClick={() => onNavigate('dashboard')} className="secondary-btn">
+              {lang === 'en' ? 'Generate with AI ⚡' : 'توليد بالذكاء الاصطناعي ⚡'}
             </button>
-          )}
+          </div>
         </div>
       )}
 
@@ -2070,6 +2106,343 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         </div>
       )}
 
+      {/* MANUAL WORKOUT PLAN BUILDER MODAL */}
+      {showManualBuilder && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 1150,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            overflowY: 'auto',
+          }}
+          onClick={() => setShowManualBuilder(false)}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: '100%',
+              maxWidth: '840px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: '24px',
+              padding: '28px',
+              border: '1px solid rgba(0, 210, 255, 0.3)',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(6, 8, 20, 0.99))',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>✍️</span>
+                  <span>{lang === 'en' ? 'Custom Workout Plan Builder' : 'منشئ ومصمم الجدول الرياضي اليدوي'}</span>
+                </h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                  {lang === 'en' ? 'Design your weekly training days, assign exercises, and sets/reps freely.' : 'صمم جدولك الأسبوعي يدوياً، حدد التمارين لكل يوم، والجولات والتكرارات بحرية تامة.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowManualBuilder(false)}
+                className="secondary-btn"
+                style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Plan Title & Summary */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                {lang === 'en' ? 'Plan Title' : 'اسم الجدول التدريبي:'}
+              </label>
+              <input
+                type="text"
+                value={manualTitle}
+                onChange={(e) => setManualTitle(e.target.value)}
+                placeholder={lang === 'en' ? 'E.g., Hypertrophy Push Pull Legs' : 'مثال: جدول التضخيم 5 أيام (Push Pull Legs)'}
+                className="input-field"
+                style={{ padding: '12px', borderRadius: '10px', fontSize: '15px', border: '1px solid var(--border-color)' }}
+              />
+            </div>
+
+            {/* Day Selector Tabs (Days 1 to 7) */}
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
+              {manualDays.map((day) => {
+                const isActive = day.dayIndex === manualActiveDayIdx;
+                return (
+                  <button
+                    key={day.dayIndex}
+                    type="button"
+                    onClick={() => setManualActiveDayIdx(day.dayIndex)}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      border: isActive ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                      background: isActive ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
+                      color: isActive ? '#050710' : (day.isRestDay ? 'var(--text-muted)' : 'var(--text-primary)'),
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <span>{lang === 'en' ? `Day ${day.dayIndex}` : `اليوم ${day.dayIndex}`}</span>
+                    {day.isRestDay && <span style={{ fontSize: '10px', opacity: 0.8 }}>💤</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Day Editor */}
+            {(() => {
+              const currentDay = manualDays.find(d => d.dayIndex === manualActiveDayIdx) || manualDays[0];
+              const dayIdx = manualDays.findIndex(d => d.dayIndex === manualActiveDayIdx);
+
+              const updateCurrentDay = (field: string, val: any) => {
+                const updated = [...manualDays];
+                updated[dayIdx] = { ...updated[dayIdx], [field]: val };
+                setManualDays(updated);
+              };
+
+              const addExercise = () => {
+                const updated = [...manualDays];
+                updated[dayIdx].exercises.push({
+                  name: lang === 'en' ? 'New Exercise' : 'تمرين جديد',
+                  targetMuscle: lang === 'en' ? 'Chest' : 'الصدر',
+                  sets: 3,
+                  reps: '10-12',
+                  weight: 'Bodyweight',
+                });
+                setManualDays(updated);
+              };
+
+              const removeExercise = (exIdx: number) => {
+                const updated = [...manualDays];
+                updated[dayIdx].exercises.splice(exIdx, 1);
+                setManualDays(updated);
+              };
+
+              const updateExercise = (exIdx: number, field: string, val: any) => {
+                const updated = [...manualDays];
+                updated[dayIdx].exercises[exIdx] = {
+                  ...updated[dayIdx].exercises[exIdx],
+                  [field]: val,
+                };
+                setManualDays(updated);
+              };
+
+              return (
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '18px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Day Config Header */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr', gap: '10px', alignItems: 'center' }}>
+                    <div>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                        {lang === 'en' ? 'Day Title' : 'عنوان اليوم التدريبي:'}
+                      </label>
+                      <input
+                        type="text"
+                        value={currentDay.title}
+                        onChange={(e) => updateCurrentDay('title', e.target.value)}
+                        className="input-field"
+                        style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                        {lang === 'en' ? 'Focus Muscle Group' : 'التركيز العضلي:'}
+                      </label>
+                      <input
+                        type="text"
+                        value={currentDay.focusArea}
+                        onChange={(e) => updateCurrentDay('focusArea', e.target.value)}
+                        placeholder="صدر وترايسبس..."
+                        className="input-field"
+                        style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                        {lang === 'en' ? 'Rest Day?' : 'يوم راحة؟'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => updateCurrentDay('isRestDay', !currentDay.isRestDay)}
+                        className={currentDay.isRestDay ? 'primary-btn' : 'secondary-btn'}
+                        style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '8px', width: '100%' }}
+                      >
+                        {currentDay.isRestDay ? (lang === 'en' ? '💤 Rest' : '💤 راحة') : (lang === 'en' ? '🏋️ Training' : '🏋️ تمرين')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Exercises List */}
+                  {!currentDay.isRestDay ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ fontSize: '14px', margin: 0, color: 'var(--primary)', fontWeight: 'bold' }}>
+                          🏋️ {lang === 'en' ? `Day Exercises (${currentDay.exercises.length})` : `تمارين اليوم (${currentDay.exercises.length})`}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={addExercise}
+                          className="secondary-btn"
+                          style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Plus size={14} />
+                          <span>{lang === 'en' ? 'Add Exercise' : 'إضافة تمرين +'}</span>
+                        </button>
+                      </div>
+
+                      {currentDay.exercises.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '13px', border: '1px dashed var(--border-color)', borderRadius: '10px' }}>
+                          {lang === 'en' ? 'No exercises added to this day yet. Click Add Exercise!' : 'لم تقم بإضافة تمارين لهذا اليوم بعد. اضغط على إضافة تمرين!'}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {currentDay.exercises.map((ex, exIdx) => (
+                            <div
+                              key={exIdx}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: '3fr 2fr 1fr 1fr 40px',
+                                gap: '8px',
+                                alignItems: 'center',
+                                padding: '10px 12px',
+                                background: 'rgba(255,255,255,0.03)',
+                                borderRadius: '10px',
+                                border: '1px solid var(--border-color)',
+                              }}
+                            >
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder={lang === 'en' ? 'Exercise name' : 'اسم التمرين'}
+                                  value={ex.name}
+                                  onChange={(e) => updateExercise(exIdx, 'name', e.target.value)}
+                                  className="input-field"
+                                  style={{ padding: '6px 10px', fontSize: '12px', width: '100%' }}
+                                />
+                              </div>
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder={lang === 'en' ? 'Target Muscle' : 'العضلة المستهدفة'}
+                                  value={ex.targetMuscle}
+                                  onChange={(e) => updateExercise(exIdx, 'targetMuscle', e.target.value)}
+                                  className="input-field"
+                                  style={{ padding: '6px 10px', fontSize: '12px', width: '100%' }}
+                                />
+                              </div>
+                              <div>
+                                <input
+                                  type="number"
+                                  placeholder="Sets"
+                                  value={ex.sets}
+                                  onChange={(e) => updateExercise(exIdx, 'sets', parseInt(e.target.value) || 3)}
+                                  className="input-field"
+                                  style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center' }}
+                                />
+                              </div>
+                              <div>
+                                <input
+                                  type="text"
+                                  placeholder="Reps"
+                                  value={ex.reps}
+                                  onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
+                                  className="input-field"
+                                  style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center' }}
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeExercise(exIdx)}
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: 'none',
+                                  color: '#ef4444',
+                                  borderRadius: '6px',
+                                  height: '32px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                      💤 {lang === 'en' ? 'This is marked as a full rest and recovery day.' : 'هذا اليوم مخصص للراحة واستشفاء الألياف العضلية وتجديد مخازن الجليكوجين.'}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Save Action Footer */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowManualBuilder(false)}
+                className="secondary-btn"
+                style={{ flex: 1, padding: '14px', borderRadius: '12px', fontSize: '14px', justifyContent: 'center' }}
+              >
+                {lang === 'en' ? 'Cancel' : 'إلغاء'}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!manualTitle.trim()) {
+                    alert(lang === 'en' ? 'Please provide a plan title' : 'يرجى كتابة اسم للجدول الرياضي');
+                    return;
+                  }
+                  setManualSaving(true);
+                  try {
+                    await api.saveStructuredPlan({
+                      title: manualTitle,
+                      days: manualDays,
+                    }, lang);
+                    alert(lang === 'en' ? 'Custom workout plan saved and activated! ⚡' : 'تم حفظ وتفعيل جدولك الرياضي اليدوي بنجاح! ⚡');
+                    setShowManualBuilder(false);
+                    fetchActivePlan();
+                  } catch (err: any) {
+                    alert(err.message || (lang === 'en' ? 'Failed to save custom plan' : 'فشل حفظ الجدول اليدوي'));
+                  } finally {
+                    setManualSaving(false);
+                  }
+                }}
+                disabled={manualSaving}
+                className="glow-btn"
+                style={{ flex: 2, padding: '14px', borderRadius: '12px', fontSize: '15px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Sparkles size={18} />
+                <span>{manualSaving ? (lang === 'en' ? 'Saving Plan...' : 'جاري الحفظ...') : (lang === 'en' ? 'Save & Activate Custom Plan ⚡' : 'حفظ وتفعيل الجدول اليدوي ⚡')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MuscleWiki Exercise Guide Modal */}
       {viewingExercise && (
         <MuscleWikiModal
@@ -2088,3 +2461,4 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     </div>
   );
 };
+

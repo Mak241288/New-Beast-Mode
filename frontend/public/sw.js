@@ -1,4 +1,4 @@
-const CACHE_NAME = 'beastmode-cache-v2';
+const CACHE_NAME = 'beastmode-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -10,8 +10,9 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching App Shell...');
-      return cache.addAll(ASSETS_TO_CACHE);
+      return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
+        console.warn('[Service Worker] Non-fatal cache pre-fetch error:', err);
+      });
     })
   );
   self.skipWaiting();
@@ -34,25 +35,48 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event (Network first, fallback to Cache)
+// Fetch Event (Network first, safe fallback)
 self.addEventListener('fetch', (event) => {
   // Only cache GET requests
   if (event.request.method !== 'GET') return;
   
-  // Skip API requests to avoid caching dynamic DB responses
-  if (event.request.url.includes('/api/')) return;
+  const url = event.request.url;
 
+  // Skip API requests and Vite dev server requests
+  if (
+    url.includes('/api/') || 
+    url.includes('/@vite/') || 
+    url.includes('/@fs/') || 
+    url.includes('/node_modules/') ||
+    url.includes('?t=') ||
+    url.includes('.hot-update.')
+  ) {
+    return;
+  }
+
+  // Handle standard resources
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseClone);
-        });
+        // Only cache valid 200 responses
+        if (response && response.status === 200 && response.type === 'basic') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request);
+      .catch(async () => {
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // If navigating to an HTML page and offline, serve cached root
+        if (event.request.mode === 'navigate') {
+          return (await caches.match('/index.html')) || (await caches.match('/'));
+        }
+        return new Response('Network Error / Offline', { status: 503, statusText: 'Offline' });
       })
   );
 });

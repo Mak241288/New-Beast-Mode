@@ -58,15 +58,20 @@ function App() {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
 
+  const [initError, setInitError] = useState<string | null>(null);
+
   const checkStatus = async () => {
     if (!token) {
       setLoading(false);
+      setInitError(null);
       return;
     }
     
     setLoading(true);
+    setInitError(null);
+
     try {
-      // 1. Verify if user has completed onboarding
+      // Fast single-pass profile verification
       const profile = await api.getProfile();
       const isCompleted = !!profile.onboardingCompleted;
       setOnboardingCompleted(isCompleted);
@@ -83,22 +88,9 @@ function App() {
       if (!isCompleted) {
         setCurrentView('onboarding');
       } else {
-        try {
-          await api.getActivePlan();
-          const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms'];
-          if (!validViews.includes(currentView)) {
-            setCurrentView('dashboard');
-          }
-        } catch (planErr: any) {
-          console.error('[App] getActivePlan error:', planErr);
-          if (planErr.status === 401) {
-            handleLogout();
-          } else {
-            const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms'];
-            if (!validViews.includes(currentView)) {
-              setCurrentView('dashboard');
-            }
-          }
+        const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms'];
+        if (!validViews.includes(currentView)) {
+          setCurrentView('dashboard');
         }
       }
     } catch (err: any) {
@@ -106,7 +98,8 @@ function App() {
       if (err.status === 401) {
         handleLogout();
       } else {
-        setCurrentView('dashboard');
+        // If server connection error or timeout, set init error message
+        setInitError(err.message || (lang === 'en' ? 'Unable to reach backend server.' : 'تعذر الاتصال بالخادم المحلي.'));
       }
     } finally {
       setLoading(false);
@@ -136,7 +129,41 @@ function App() {
     return (
       <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: '15px' }}>
         <div style={{ width: '40px', height: '40px', border: '4px solid var(--border-color)', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-        <h3>جاري تهيئة بيئة تدريب الوحوش...</h3>
+        <h3 style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
+          {lang === 'en' ? 'Loading BeastMode workspace...' : 'جاري تهيئة بيئة تدريب الوحوش...'}
+        </h3>
+      </div>
+    );
+  }
+
+  if (initError && token) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100vh', padding: '20px' }}>
+        <div className="glass-panel" style={{ maxWidth: '480px', width: '100%', padding: '30px', textAlign: 'center', borderRadius: '16px' }}>
+          <div style={{ fontSize: '40px', marginBottom: '15px' }}>⚡⚠️</div>
+          <h3 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>
+            {lang === 'en' ? 'Connection Issue' : 'تعذر الاتصال بالخادم'}
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6, marginBottom: '20px' }}>
+            {initError}
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button 
+              onClick={() => checkStatus()} 
+              className="primary-btn" 
+              style={{ padding: '10px 24px', fontSize: '14px', borderRadius: '8px' }}
+            >
+              {lang === 'en' ? 'Retry Connection 🔄' : 'إعادة المحاولة 🔄'}
+            </button>
+            <button 
+              onClick={handleLogout} 
+              className="secondary-btn" 
+              style={{ padding: '10px 20px', fontSize: '14px', borderRadius: '8px' }}
+            >
+              {lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

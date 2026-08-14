@@ -79,46 +79,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // Fetch plan
-      const plan = await api.getActivePlan();
-      setActivePlan(plan);
+      // Fetch plan, profile, stats, and check-in status in parallel (Fast Concurrent Load)
+      const [planRes, profRes, statsRes, checkInRes] = await Promise.allSettled([
+        api.getActivePlan(),
+        api.getProfile(),
+        api.getStats(),
+        api.getCheckInStatus(),
+      ]);
 
-      // Fetch user profile
-      const prof = await api.getProfile();
-      setProfile(prof);
-
-      // Fetch stats
-      try {
-        const statsData = await api.getStats();
-        setStats(statsData);
-      } catch (statsErr) {
-        console.error('Failed to fetch stats:', statsErr);
+      // 1. Process Plan
+      if (planRes.status === 'fulfilled' && planRes.value) {
+        const plan = planRes.value;
+        setActivePlan(plan);
+        if (plan.dayWorkouts && plan.dayWorkouts.length > 0) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const start = new Date(plan.startDate);
+          start.setHours(0, 0, 0, 0);
+          const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+          let calculatedDay = (diffDays % 7) + 1;
+          if (calculatedDay < 1) calculatedDay = 1;
+          setSelectedDayIndex(calculatedDay <= 7 ? calculatedDay : 1);
+        }
       }
 
-      if (plan && plan.dayWorkouts.length > 0) {
-        // Calculate today's day index based on start date
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const start = new Date(plan.startDate);
-        start.setHours(0, 0, 0, 0);
-        const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-        let calculatedDay = (diffDays % 7) + 1;
-        if (calculatedDay < 1) calculatedDay = 1;
-        setSelectedDayIndex(calculatedDay <= 7 ? calculatedDay : 1);
+      // 2. Process Profile
+      if (profRes.status === 'fulfilled' && profRes.value) {
+        setProfile(profRes.value);
       }
 
-      // Fetch check-in status
-      try {
-        const status = await api.getCheckInStatus();
-        setCheckInDue(status.due);
+      // 3. Process Stats
+      if (statsRes.status === 'fulfilled' && statsRes.value) {
+        setStats(statsRes.value);
+      }
+
+      // 4. Process Check-in Status
+      if (checkInRes.status === 'fulfilled' && checkInRes.value) {
+        const status = checkInRes.value;
+        setCheckInDue(!!status.due);
         setLatestCheckIn(status.latestCheckIn);
-        setHasStartedWorkouts(status.hasStartedWorkouts);
-        setDaysRemaining(status.daysRemaining);
-      } catch (checkInErr) {
-        console.error('Failed to fetch check-in status:', checkInErr);
+        setHasStartedWorkouts(!!status.hasStartedWorkouts);
+        setDaysRemaining(status.daysRemaining || 0);
       }
     } catch (err: any) {
-      console.error(err);
+      console.error('[Dashboard] Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
