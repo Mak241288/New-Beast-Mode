@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { trackEvent } from '../utils/analytics';
 
 interface InteractiveBodyMapProps {
   lang: 'ar' | 'en';
@@ -9,9 +10,14 @@ interface InteractiveBodyMapProps {
 export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
   lang,
   selectedMuscle,
-  onSelectMuscle,
+  onSelectMuscle: parentOnSelectMuscle,
 }) => {
   const [viewMode, setViewMode] = useState<'front' | 'back'>('front');
+
+  const handleSelectMuscle = (muscleKey: string) => {
+    trackEvent('muscle_selected_bodymap', { muscle: muscleKey, viewMode });
+    parentOnSelectMuscle(muscleKey);
+  };
 
   // Muscle labels in AR/EN
   const muscleLabels: Record<string, { ar: string; en: string }> = {
@@ -67,7 +73,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
           {/* Reset button */}
           {selectedMuscle !== 'ALL' && (
             <button
-              onClick={() => onSelectMuscle('ALL')}
+              onClick={() => handleSelectMuscle('ALL')}
               className="secondary-btn"
               style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', color: 'var(--primary)' }}
             >
@@ -108,7 +114,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
             <g className="body-map-front">
               {/* Shoulders (Left & Right Deltoids) */}
               <g
-                onClick={() => onSelectMuscle('shoulders')}
+                onClick={() => handleSelectMuscle('shoulders')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('shoulders') ? 'active-muscle' : ''}`}
               >
@@ -119,7 +125,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Chest (Pectoralis Major) */}
               <g
-                onClick={() => onSelectMuscle('chest')}
+                onClick={() => handleSelectMuscle('chest')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('chest') ? 'active-muscle' : ''}`}
               >
@@ -130,7 +136,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Biceps (Left & Right Biceps Brachii) */}
               <g
-                onClick={() => onSelectMuscle('biceps')}
+                onClick={() => handleSelectMuscle('biceps')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('biceps') ? 'active-muscle' : ''}`}
               >
@@ -141,7 +147,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Forearms (Left & Right) */}
               <g
-                onClick={() => onSelectMuscle('forearms')}
+                onClick={() => handleSelectMuscle('forearms')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('forearms') ? 'active-muscle' : ''}`}
               >
@@ -151,7 +157,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Abs & Core (Abdominals) */}
               <g
-                onClick={() => onSelectMuscle('abs')}
+                onClick={() => handleSelectMuscle('abs')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('abs') ? 'active-muscle' : ''}`}
               >
@@ -161,7 +167,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Quadriceps (Front Legs/Quads) */}
               <g
-                onClick={() => onSelectMuscle('legs')}
+                onClick={() => handleSelectMuscle('legs')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('legs') ? 'active-muscle' : ''}`}
               >
@@ -172,7 +178,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Calves Front */}
               <g
-                onClick={() => onSelectMuscle('calves')}
+                onClick={() => handleSelectMuscle('calves')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('calves') ? 'active-muscle' : ''}`}
               >
@@ -187,7 +193,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
             <g className="body-map-back">
               {/* Trapezius (Traps) */}
               <g
-                onClick={() => onSelectMuscle('traps')}
+                onClick={() => handleSelectMuscle('traps')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('traps') ? 'active-muscle' : ''}`}
               >
@@ -197,7 +203,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Triceps (Rear Arms) */}
               <g
-                onClick={() => onSelectMuscle('triceps')}
+                onClick={() => handleSelectMuscle('triceps')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('triceps') ? 'active-muscle' : ''}`}
               >
@@ -208,7 +214,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Lats & Upper/Lower Back */}
               <g
-                onClick={() => onSelectMuscle('back')}
+                onClick={() => handleSelectMuscle('back')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('back') ? 'active-muscle' : ''}`}
               >
@@ -218,7 +224,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Glutes (Arse / Buttocks) */}
               <g
-                onClick={() => onSelectMuscle('glutes')}
+                onClick={() => handleSelectMuscle('glutes')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('glutes') ? 'active-muscle' : ''}`}
               >
@@ -229,7 +235,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Hamstrings (Rear Thighs) */}
               <g
-                onClick={() => onSelectMuscle('hamstrings')}
+                onClick={() => handleSelectMuscle('hamstrings')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('hamstrings') ? 'active-muscle' : ''}`}
               >
@@ -240,7 +246,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
               {/* Calves (Gastrocnemius Rear) */}
               <g
-                onClick={() => onSelectMuscle('calves')}
+                onClick={() => handleSelectMuscle('calves')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('calves') ? 'active-muscle' : ''}`}
               >
@@ -258,7 +264,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
         {Object.keys(muscleLabels).map((key) => (
           <button
             key={key}
-            onClick={() => onSelectMuscle(key)}
+            onClick={() => handleSelectMuscle(key)}
             className={`btn-chip ${isSelected(key) ? 'active' : ''}`}
             style={{
               padding: '6px 14px',

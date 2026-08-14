@@ -1,6 +1,7 @@
 {
-  "short_name": "BeastMode",
-  "name": "BeastMode - AI Workout & Nutrition Coach",
+  "short_name": "BeastMode AI",
+  "name": "BeastMode AI — Workout & Nutrition Gym Coach",
+  "description": "AI-Powered Personalized Workout & Nutrition Planner with Offline Gym Sync.",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/2964/2964514.png",
@@ -13,5 +14,6 @@
   "background_color": "#0d0e12",
   "theme_color": "#10b981",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "categories": ["fitness", "health", "sports", "lifestyle"]
 }
