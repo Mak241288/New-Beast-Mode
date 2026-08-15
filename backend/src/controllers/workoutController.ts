@@ -7,6 +7,7 @@ import {
   parseBulkWorkoutText, 
   suggestSwapAI 
 } from '../services/aiService';
+import { validateNumericId, sanitizeString, sanitizeInt, escapeLikeQuery } from '../utils/validation';
 
 // Helper to get muscle-specific Unsplash image URLs
 const getMuscleImage = (muscle: string): string => {
@@ -354,9 +355,14 @@ export const getActivePlan = async (req: AuthRequest, res: Response): Promise<vo
 // @desc    Update exercise details (Manual Customization)
 // @route   PUT /api/workout/exercise/:id
 export const updateExercise = async (req: AuthRequest, res: Response): Promise<void> => {
-  const exerciseId = parseInt(req.params.id);
+  const exerciseId = validateNumericId(req.params.id);
   const userId = req.user?.id;
   const { sets, reps, weight, name, targetMuscle, exerciseTips, imageUrl, videoUrl } = req.body;
+
+  if (!exerciseId) {
+    res.status(400).json({ error: 'معرّف التمرين غير صالح' });
+    return;
+  }
 
   try {
     const exercise = await prisma.exercise.findUnique({
@@ -372,14 +378,14 @@ export const updateExercise = async (req: AuthRequest, res: Response): Promise<v
     const updated = await prisma.exercise.update({
       where: { id: exerciseId },
       data: {
-        sets: sets ? parseInt(sets) : undefined,
-        reps,
-        weight,
-        name,
-        targetMuscle,
-        exerciseTips,
-        imageUrl,
-        videoUrl,
+        sets: sets !== undefined ? sanitizeInt(sets, 3, 1, 50) : undefined,
+        reps: reps !== undefined ? sanitizeString(reps, 50) : undefined,
+        weight: weight !== undefined ? sanitizeString(weight, 100) : undefined,
+        name: name !== undefined ? sanitizeString(name, 150) : undefined,
+        targetMuscle: targetMuscle !== undefined ? sanitizeString(targetMuscle, 100) : undefined,
+        exerciseTips: exerciseTips !== undefined ? sanitizeString(exerciseTips, 1000) : undefined,
+        imageUrl: imageUrl !== undefined ? sanitizeString(imageUrl, 500) : undefined,
+        videoUrl: videoUrl !== undefined ? sanitizeString(videoUrl, 500) : undefined,
       },
     });
 
@@ -392,8 +398,13 @@ export const updateExercise = async (req: AuthRequest, res: Response): Promise<v
 // @desc    Delete an exercise from plan
 // @route   DELETE /api/workout/exercise/:id
 export const deleteExercise = async (req: AuthRequest, res: Response): Promise<void> => {
-  const exerciseId = parseInt(req.params.id);
+  const exerciseId = validateNumericId(req.params.id);
   const userId = req.user?.id;
+
+  if (!exerciseId) {
+    res.status(400).json({ error: 'معرّف التمرين غير صالح' });
+    return;
+  }
 
   try {
     const exercise = await prisma.exercise.findUnique({
@@ -418,9 +429,14 @@ export const deleteExercise = async (req: AuthRequest, res: Response): Promise<v
 // @desc    Add custom exercise to a Day
 // @route   POST /api/workout/day/:dayId/exercise
 export const addCustomExercise = async (req: AuthRequest, res: Response): Promise<void> => {
-  const dayWorkoutId = parseInt(req.params.dayId);
+  const dayWorkoutId = validateNumericId(req.params.dayId);
   const userId = req.user?.id;
   const { name, targetMuscle, category, sets, reps, weight, exerciseTips, imageUrl, videoUrl } = req.body;
+
+  if (!dayWorkoutId) {
+    res.status(400).json({ error: 'معرّف اليوم غير صالح' });
+    return;
+  }
 
   try {
     const day = await prisma.dayWorkout.findUnique({
@@ -440,20 +456,21 @@ export const addCustomExercise = async (req: AuthRequest, res: Response): Promis
     });
 
     const newOrder = lastExercise ? lastExercise.order + 1 : 0;
+    const cleanName = sanitizeString(name, 150, 'تمرين مخصص');
 
     const newEx = await prisma.exercise.create({
       data: {
         dayWorkoutId,
-        name,
-        targetMuscle: targetMuscle || 'عضلة عامة',
-        category: category || 'IRON',
-        sets: sets ? parseInt(sets) : 3,
-        reps: reps || '10-12',
-        weight: weight || 'Bodyweight',
-        exerciseTips: exerciseTips || '',
+        name: cleanName,
+        targetMuscle: sanitizeString(targetMuscle, 100, 'عضلة عامة'),
+        category: sanitizeString(category, 50, 'IRON'),
+        sets: sanitizeInt(sets, 3, 1, 50),
+        reps: sanitizeString(reps, 50, '10-12'),
+        weight: sanitizeString(weight, 100, 'Bodyweight'),
+        exerciseTips: sanitizeString(exerciseTips, 1000, ''),
         order: newOrder,
-        imageUrl: imageUrl || 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60',
-        videoUrl: videoUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise tutorial shorts')}`,
+        imageUrl: sanitizeString(imageUrl, 500, 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=60'),
+        videoUrl: sanitizeString(videoUrl, 500, `https://www.youtube.com/results?search_query=${encodeURIComponent(cleanName + ' exercise tutorial shorts')}`),
       },
     });
 
@@ -466,9 +483,14 @@ export const addCustomExercise = async (req: AuthRequest, res: Response): Promis
 // @desc    Log progress for an exercise
 // @route   POST /api/workout/exercise/:id/log
 export const logProgress = async (req: AuthRequest, res: Response): Promise<void> => {
-  const exerciseId = parseInt(req.params.id);
+  const exerciseId = validateNumericId(req.params.id);
   const userId = req.user?.id;
   const { completedSets, repsCompleted, weightUsed, notes } = req.body;
+
+  if (!exerciseId) {
+    res.status(400).json({ error: 'معرّف التمرين غير صالح' });
+    return;
+  }
 
   try {
     const exercise = await prisma.exercise.findUnique({
@@ -484,10 +506,10 @@ export const logProgress = async (req: AuthRequest, res: Response): Promise<void
     const log = await prisma.progressLog.create({
       data: {
         exerciseId,
-        completedSets: parseInt(completedSets),
-        repsCompleted,
-        weightUsed,
-        notes,
+        completedSets: sanitizeInt(completedSets, 3, 1, 50),
+        repsCompleted: sanitizeString(repsCompleted, 100, ''),
+        weightUsed: sanitizeString(weightUsed, 100, ''),
+        notes: sanitizeString(notes, 1000, ''),
       },
     });
 
@@ -748,7 +770,8 @@ const findMatchingExerciseInDb = (name: string): Promise<any> => {
           WHERE LOWER(name_en) LIKE LOWER(?) OR LOWER(name_ar) LIKE LOWER(?)
           LIMIT 1
         `;
-        db.get(fuzzyQuery, [`%${name.trim()}%`, `%${name.trim()}%`], (_err2: any, row2: any) => {
+        const safeSearch = `%${escapeLikeQuery(name.trim())}%`;
+        db.get(fuzzyQuery, [safeSearch, safeSearch], (_err2: any, row2: any) => {
           db.close();
           resolve(row2 || null);
         });
@@ -1135,7 +1158,12 @@ export const getPlanHistory = async (req: AuthRequest, res: Response): Promise<v
 // @route   POST /api/workout/:id/activate
 export const activateHistoricalPlan = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
-  const planId = parseInt(req.params.id);
+  const planId = validateNumericId(req.params.id);
+
+  if (!planId) {
+    res.status(400).json({ error: 'معرّف البرنامج الرياضي غير صالح' });
+    return;
+  }
 
   try {
     if (!userId) {
