@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
@@ -2670,46 +2670,49 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           {/* Table Headers */}
                           <div style={{
                             display: 'grid',
-                            gridTemplateColumns: 'minmax(220px, 3fr) minmax(130px, 1.5fr) 110px 100px minmax(120px, 1.5fr) 40px',
-                            gap: '10px',
+                            gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 38px',
+                            gap: '8px',
                             padding: '6px 12px',
                             fontSize: '11px',
                             fontWeight: 'bold',
                             color: 'var(--text-secondary)',
                             textTransform: 'uppercase',
                           }}>
-                            <div>{lang === 'en' ? 'Exercise Name (Auto Search 🔍)' : 'اسم التمرين (بحث ذكي 🔍)'}</div>
-                            <div>{lang === 'en' ? 'Target Muscle' : 'العضلة المستهدفة 🎯'}</div>
+                            <div>{lang === 'en' ? 'Exercise (Search 🔍)' : 'اسم التمرين (بحث ذكي 🔍)'}</div>
+                            <div>{lang === 'en' ? 'Muscle' : 'العضلة 🎯'}</div>
+                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Mode' : 'النوع ⏱️/🔢'}</div>
                             <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Sets' : 'الجولات 🔢'}</div>
-                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Reps' : 'التكرارات 🔄'}</div>
-                            <div>{lang === 'en' ? 'Equipment / Weight' : 'الأداة / الوزن 🏋️'}</div>
+                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Reps / Time' : 'التكرار أو المدة ⏱️'}</div>
+                            <div>{lang === 'en' ? 'Equipment' : 'الأداة 🏋️'}</div>
                             <div></div>
                           </div>
 
                           {/* Exercise Rows */}
                           {currentDay.exercises.map((ex, exIdx) => {
                             const isSugActive = manualRowSuggestions && manualRowSuggestions.dayIdx === dayIdx && manualRowSuggestions.exIdx === exIdx;
+                            const isTimed = (ex as any).isTimed || (typeof ex.reps === 'string' && (ex.reps.includes('s') || ex.reps.includes('m') || ex.reps.includes('sec') || ex.reps.includes('ثانية') || ex.reps.includes('دقيقة')));
+
                             return (
                               <div
                                 key={exIdx}
                                 style={{
                                   position: 'relative',
                                   display: 'grid',
-                                  gridTemplateColumns: 'minmax(220px, 3fr) minmax(130px, 1.5fr) 110px 100px minmax(120px, 1.5fr) 40px',
-                                  gap: '10px',
+                                  gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 38px',
+                                  gap: '8px',
                                   alignItems: 'center',
                                   padding: '10px 12px',
-                                  background: 'rgba(255,255,255,0.03)',
+                                  background: isTimed ? 'rgba(0, 210, 255, 0.04)' : 'rgba(255,255,255,0.03)',
                                   borderRadius: '12px',
-                                  border: '1px solid var(--border-color)',
-                                  transition: 'border-color 0.2s',
+                                  border: isTimed ? '1px solid rgba(0, 210, 255, 0.3)' : '1px solid var(--border-color)',
+                                  transition: 'all 0.2s',
                                 }}
                               >
                                 {/* Exercise Name Input with Floating Suggestions */}
                                 <div style={{ position: 'relative' }}>
                                   <input
                                     type="text"
-                                    placeholder={lang === 'en' ? 'Search 4,200+ exercises...' : 'ابحث بين 4,207 تمرين (بنش، سكوات...)'}
+                                    placeholder={lang === 'en' ? 'Search 4,200+ exercises...' : 'ابحث بين 4,207 تمرين (بنش، بلانك...)'}
                                     value={ex.name}
                                     onChange={(e) => handleRowNameSearch(e.target.value, exIdx)}
                                     onFocus={() => {
@@ -2741,45 +2744,53 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                         overflowY: 'auto',
                                       }}
                                     >
-                                      {manualRowSuggestions.list.map((sug, sIdx) => (
-                                        <div
-                                          key={sIdx}
-                                          onClick={() => selectRowSuggestion(sug, exIdx)}
-                                          style={{
-                                            padding: '10px 12px',
-                                            cursor: 'pointer',
-                                            borderBottom: sIdx === manualRowSuggestions.list.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.06)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            gap: '8px',
-                                            transition: 'background 0.15s',
-                                          }}
-                                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 210, 255, 0.12)'}
-                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                        >
-                                          <div>
-                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
-                                              {lang === 'ar' ? (sug.name_ar || sug.name_en) : (sug.name_en || sug.name_ar)}
-                                            </div>
-                                            {sug.name_en && (
-                                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                                                {sug.name_en}
+                                      {manualRowSuggestions.list.map((sug, sIdx) => {
+                                        const isCardioOrHold = (sug.muscle_en || '').toLowerCase().includes('cardio') || (sug.name_en || '').toLowerCase().includes('plank') || (sug.name_en || '').toLowerCase().includes('hold') || (sug.name_en || '').toLowerCase().includes('run');
+                                        return (
+                                          <div
+                                            key={sIdx}
+                                            onClick={() => selectRowSuggestion(sug, exIdx)}
+                                            style={{
+                                              padding: '10px 12px',
+                                              cursor: 'pointer',
+                                              borderBottom: sIdx === manualRowSuggestions.list.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'space-between',
+                                              gap: '8px',
+                                              transition: 'background 0.15s',
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 210, 255, 0.12)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                          >
+                                            <div>
+                                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
+                                                {lang === 'ar' ? (sug.name_ar || sug.name_en) : (sug.name_en || sug.name_ar)}
                                               </div>
-                                            )}
-                                          </div>
-                                          <div style={{ display: 'flex', gap: '4px' }}>
-                                            <span style={{ fontSize: '10px', background: 'rgba(0, 210, 255, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '6px' }}>
-                                              {sug.muscle_ar || sug.muscle_en || 'عضلات'}
-                                            </span>
-                                            {sug.equipment_en && (
-                                              <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-secondary)', padding: '2px 6px', borderRadius: '6px' }}>
-                                                {sug.equipment_en}
+                                              {sug.name_en && (
+                                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                  {sug.name_en}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                              {isCardioOrHold && (
+                                                <span style={{ fontSize: '10px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', padding: '2px 6px', borderRadius: '6px' }}>
+                                                  ⏱️ مؤقت
+                                                </span>
+                                              )}
+                                              <span style={{ fontSize: '10px', background: 'rgba(0, 210, 255, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '6px' }}>
+                                                {sug.muscle_ar || sug.muscle_en || 'عضلات'}
                                               </span>
-                                            )}
+                                              {sug.equipment_en && (
+                                                <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-secondary)', padding: '2px 6px', borderRadius: '6px' }}>
+                                                  {sug.equipment_en}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -2806,12 +2817,57 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                   </select>
                                 </div>
 
+                                {/* Mode Switch: Timed vs Reps */}
+                                <div style={{ textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const nextTimed = !isTimed;
+                                      updateExercise(exIdx, 'isTimed', nextTimed);
+                                      if (nextTimed) {
+                                        updateExercise(exIdx, 'reps', '45s');
+                                      } else {
+                                        updateExercise(exIdx, 'reps', '10-12');
+                                      }
+                                    }}
+                                    style={{
+                                      padding: '6px 8px',
+                                      fontSize: '11px',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      fontWeight: 'bold',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '4px',
+                                      width: '100%',
+                                      border: isTimed ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)',
+                                      background: isTimed ? 'rgba(0, 210, 255, 0.15)' : 'rgba(255,255,255,0.05)',
+                                      color: isTimed ? 'var(--primary)' : 'var(--text-secondary)',
+                                      transition: 'all 0.2s',
+                                    }}
+                                    title={isTimed ? 'تمرين يعتمد على المؤقت الزمني' : 'تمرين يعتمد على عدد التكرارات'}
+                                  >
+                                    {isTimed ? (
+                                      <>
+                                        <Timer size={12} />
+                                        <span>مؤقت</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span>🔢</span>
+                                        <span>تكرار</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+
                                 {/* Sets Controls */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
                                   <button
                                     type="button"
                                     onClick={() => updateExercise(exIdx, 'sets', Math.max(1, (parseInt(String(ex.sets)) || 3) - 1))}
-                                    style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                   >
                                     -
                                   </button>
@@ -2820,27 +2876,49 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                     value={ex.sets}
                                     onChange={(e) => updateExercise(exIdx, 'sets', parseInt(e.target.value) || 3)}
                                     className="input-field"
-                                    style={{ padding: '6px 4px', fontSize: '12px', width: '38px', textAlign: 'center', borderRadius: '6px' }}
+                                    style={{ padding: '6px 2px', fontSize: '12px', width: '34px', textAlign: 'center', borderRadius: '6px' }}
                                   />
                                   <button
                                     type="button"
                                     onClick={() => updateExercise(exIdx, 'sets', (parseInt(String(ex.sets)) || 3) + 1)}
-                                    style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                   >
                                     +
                                   </button>
                                 </div>
 
-                                {/* Reps Presets */}
+                                {/* Reps or Time Duration Input & Quick Selector */}
                                 <div>
-                                  <input
-                                    type="text"
-                                    placeholder="10-12"
-                                    value={ex.reps}
-                                    onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
-                                    className="input-field"
-                                    style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center', borderRadius: '8px' }}
-                                  />
+                                  {isTimed ? (
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                      <select
+                                        value={ex.reps}
+                                        onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
+                                        className="input-field"
+                                        style={{ padding: '6px 4px', fontSize: '11px', width: '100%', borderRadius: '8px', background: 'rgba(0, 210, 255, 0.08)', color: 'var(--primary)', fontWeight: 'bold' }}
+                                      >
+                                        <option value="30s" style={{ background: '#0f172a' }}>⏱️ 30 ثانية</option>
+                                        <option value="45s" style={{ background: '#0f172a' }}>⏱️ 45 ثانية</option>
+                                        <option value="60s" style={{ background: '#0f172a' }}>⏱️ 60 ثانية</option>
+                                        <option value="90s" style={{ background: '#0f172a' }}>⏱️ 90 ثانية</option>
+                                        <option value="2 mins" style={{ background: '#0f172a' }}>⏱️ 2 دقيقة</option>
+                                        <option value="5 mins" style={{ background: '#0f172a' }}>⏱️ 5 دقائق</option>
+                                        <option value="10 mins" style={{ background: '#0f172a' }}>⏱️ 10 دقائق</option>
+                                        <option value="15 mins" style={{ background: '#0f172a' }}>⏱️ 15 دقيقة</option>
+                                        <option value="20 mins" style={{ background: '#0f172a' }}>⏱️ 20 دقيقة</option>
+                                        <option value="30 mins" style={{ background: '#0f172a' }}>⏱️ 30 دقيقة</option>
+                                      </select>
+                                    </div>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      placeholder="10-12"
+                                      value={ex.reps}
+                                      onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
+                                      className="input-field"
+                                      style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center', borderRadius: '8px' }}
+                                    />
+                                  )}
                                 </div>
 
                                 {/* Equipment / Weight Selector */}
@@ -2849,13 +2927,14 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                     value={ex.weight || 'Dumbbells'}
                                     onChange={(e) => updateExercise(exIdx, 'weight', e.target.value)}
                                     className="input-field"
-                                    style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
+                                    style={{ padding: '8px 8px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
                                   >
                                     <option value="Barbell" style={{ background: '#0f172a' }}>بار حديد (Barbell)</option>
                                     <option value="Dumbbells" style={{ background: '#0f172a' }}>دمبلز (Dumbbells)</option>
                                     <option value="Cable" style={{ background: '#0f172a' }}>كيبل (Cable)</option>
                                     <option value="Machine" style={{ background: '#0f172a' }}>أجهزة (Machine)</option>
                                     <option value="Bodyweight" style={{ background: '#0f172a' }}>وزن الجسم (Bodyweight)</option>
+                                    <option value="Cardio Machine" style={{ background: '#0f172a' }}>جهاز كارديو (Cardio)</option>
                                   </select>
                                 </div>
 
