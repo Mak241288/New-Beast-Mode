@@ -368,18 +368,32 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         ];
   }, [exercise, isAr]);
 
-  // Video URLs extraction
+  // Video URLs extraction & Security Sanitizer (Prevents javascript: URI XSS)
   const { youtubeUrl, videoEmbedUrl } = useMemo(() => {
     if (!exercise) return { youtubeUrl: '', videoEmbedUrl: null };
 
-    const rawVideo = exercise.youtube_url || exercise.video_url || '';
+    const rawVideo = String(exercise.youtube_url || exercise.video_url || '').trim();
+    
+    // Strict URL Protocol Validation: Only allow http: and https: protocols
+    const isSafeUrl = (url: string): boolean => {
+      try {
+        const parsed = new URL(url, window.location.origin);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    };
+
     const match = rawVideo.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/);
-    const directId = match && match[2].length === 11 ? match[2] : null;
+    const directId = match && match[2].length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(match[2]) ? match[2] : null;
 
     const searchQuery = encodeURIComponent(`${exercise.name_en || name || 'exercise'} tutorial proper form`);
-    const ytUrl = rawVideo.includes('watch?v=')
-      ? rawVideo
-      : `https://www.youtube.com/results?search_query=${searchQuery}`;
+    const fallbackSearchUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
+
+    let ytUrl = fallbackSearchUrl;
+    if (rawVideo && isSafeUrl(rawVideo) && rawVideo.includes('watch?v=')) {
+      ytUrl = rawVideo;
+    }
 
     const embedUrl = directId
       ? `https://www.youtube-nocookie.com/embed/${directId}?autoplay=1&rel=0`
