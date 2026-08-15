@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Play, CheckCircle2, Dumbbell, ShieldAlert, Youtube, Activity, Video } from 'lucide-react';
+import { X, Play, CheckCircle2, Dumbbell, ShieldAlert, Youtube, Activity } from 'lucide-react';
 
 interface MuscleWikiModalProps {
   exercise: any;
@@ -277,11 +277,29 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         ];
   }
 
-  const cleanSearchQuery = encodeURIComponent(`${exercise.name_en || name} exercise proper form technique`);
-  const youtubeUrl = exercise.youtube_url || `https://www.youtube.com/results?search_query=${cleanSearchQuery}`;
-  const videoEmbedUrl = `https://www.youtube-nocookie.com/embed?listType=search&list=${cleanSearchQuery}&autoplay=1`;
+  // Extract YouTube ID if valid direct URL
+  const getYouTubeId = (url: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  };
+
+  const directVideoId = getYouTubeId(exercise.youtube_url || exercise.video_url || '');
+  const cleanSearchQuery = encodeURIComponent(`${exercise.name_en || name} exercise tutorial proper form`);
+  const youtubeUrl = exercise.youtube_url && exercise.youtube_url.includes('watch?v=') 
+    ? exercise.youtube_url 
+    : `https://www.youtube.com/results?search_query=${cleanSearchQuery}`;
+
+  const videoEmbedUrl = directVideoId 
+    ? `https://www.youtube-nocookie.com/embed/${directVideoId}?autoplay=1`
+    : null;
 
   const mediaSource = exercise.gif_url || exercise.image_url;
+
+  const handleOpenVideo = () => {
+    window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div
@@ -350,10 +368,8 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
             </div>
 
             {/* YouTube Watch Link */}
-            <a
-              href={youtubeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={handleOpenVideo}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -361,16 +377,16 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
                 background: 'rgba(239, 68, 68, 0.15)',
                 color: '#ef4444',
                 border: '1px solid rgba(239, 68, 68, 0.35)',
-                padding: '5px 12px',
+                padding: '6px 14px',
                 borderRadius: '20px',
                 fontSize: '12px',
                 fontWeight: 'bold',
-                textDecoration: 'none',
+                cursor: 'pointer',
               }}
             >
-              <Youtube size={15} color="#ef4444" />
-              <span>{isAr ? 'شرح التكنيك على YouTube 🔴' : 'YouTube Tutorial 🔴'}</span>
-            </a>
+              <Youtube size={16} color="#ef4444" />
+              <span>{isAr ? 'مشاهدة الفيديو على YouTube 🔴' : 'Watch on YouTube 🔴'}</span>
+            </button>
           </div>
 
           <h2 style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 10px 0', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
@@ -400,7 +416,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
           {/* Motion Video / GIF / Interactive Media Player */}
           <div style={{ position: 'relative', height: '220px', background: 'rgba(0,0,0,0.5)', borderRadius: '18px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-            {showVideoEmbed ? (
+            {showVideoEmbed && videoEmbedUrl ? (
               <iframe
                 src={videoEmbedUrl}
                 title={name}
@@ -417,46 +433,46 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
                   onError={() => setImgFailed(true)}
                 />
                 <button
-                  onClick={() => setShowVideoEmbed(true)}
+                  onClick={() => videoEmbedUrl ? setShowVideoEmbed(true) : handleOpenVideo()}
                   style={{
                     position: 'absolute',
                     bottom: '8px',
                     right: isAr ? 'auto' : '8px',
                     left: isAr ? '8px' : 'auto',
-                    background: 'rgba(0,0,0,0.7)',
+                    background: 'rgba(0,0,0,0.8)',
                     color: '#fff',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
+                    border: '1px solid rgba(239, 68, 68, 0.5)',
+                    padding: '6px 10px',
+                    borderRadius: '8px',
                     fontSize: '11px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
+                    gap: '6px',
                   }}
                 >
-                  <Video size={12} />
-                  <span>{isAr ? 'مشغل الفيديو 🎥' : 'Play Video'}</span>
+                  <Youtube size={14} color="#ef4444" />
+                  <span>{isAr ? 'فيديو YouTube 🎥' : 'Play YouTube'}</span>
                 </button>
               </>
             ) : (
               <div style={{ textAlign: 'center', padding: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(0, 210, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <Dumbbell size={24} />
+                <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  <Youtube size={26} />
                 </div>
                 <div>
-                  <h5 style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)' }}>{name}</h5>
+                  <h5 style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', fontWeight: 'bold' }}>{name}</h5>
                   <p style={{ margin: '3px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    {isAr ? 'عرض توضيحي للتكنيك' : 'Technique & Form Guide'}
+                    {isAr ? 'فيديو توضيحي تفاعلي للأداء الصحيح' : 'Interactive Technique & Form Video'}
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowVideoEmbed(true)}
+                  onClick={() => videoEmbedUrl ? setShowVideoEmbed(true) : handleOpenVideo()}
                   className="glow-btn"
-                  style={{ padding: '6px 14px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                  style={{ padding: '8px 18px', fontSize: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none' }}
                 >
-                  <Play size={12} fill="#fff" />
-                  <span>{isAr ? 'تشغيل الفيديو التوضيحي 🎥' : 'Watch Video Demo 🎥'}</span>
+                  <Play size={13} fill="#fff" />
+                  <span>{isAr ? 'مشاهدة الفيديو على YouTube 🔴' : 'Watch on YouTube 🔴'}</span>
                 </button>
               </div>
             )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
@@ -26,32 +26,38 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [manualTitle, setManualTitle] = useState(lang === 'en' ? 'Custom Gym Routine' : 'جدولي التدريبي اليدوي');
   const [manualActiveDayIdx, setManualActiveDayIdx] = useState(1);
   const [manualSaving, setManualSaving] = useState(false);
+  const [manualRowSuggestions, setManualRowSuggestions] = useState<{ dayIdx: number; exIdx: number; list: any[] } | null>(null);
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [manualDays, setManualDays] = useState([
-    { dayIndex: 1, title: lang === 'en' ? 'Chest & Triceps' : 'الصدر والترايسبس', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [
+    { dayIndex: 1, title: lang === 'en' ? 'Push (Chest & Triceps)' : 'دفع (صدر وترايسبس وأكتاف)', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [
       { name: lang === 'en' ? 'Barbell Bench Press' : 'بنش برس بالبار مستوي', targetMuscle: 'Chest', sets: 4, reps: '8-10', weight: 'Barbell' },
       { name: lang === 'en' ? 'Incline Dumbbell Press' : 'ضغط دمبلز مائل للأعلى', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Dumbbell Lateral Raise' : 'رفرفة جانبية للأكتاف بالدمبلز', targetMuscle: 'Shoulders', sets: 3, reps: '12-15', weight: 'Dumbbells' },
       { name: lang === 'en' ? 'Cable Tricep Pushdown' : 'دفع كيبل ترايسبس لأسفل', targetMuscle: 'Triceps', sets: 3, reps: '12-15', weight: 'Cable' },
     ] },
-    { dayIndex: 2, title: lang === 'en' ? 'Back & Biceps' : 'الظهر والبايسبس', focusArea: lang === 'en' ? 'Back, Biceps' : 'ظهر، بايسبس', isRestDay: false, exercises: [
+    { dayIndex: 2, title: lang === 'en' ? 'Pull (Back & Biceps)' : 'سحب (ظهر وبايسبس)', focusArea: lang === 'en' ? 'Back, Biceps' : 'ظهر، بايسبس', isRestDay: false, exercises: [
       { name: lang === 'en' ? 'Lat Pulldown' : 'سحب عالي للظهر (لاتس)', targetMuscle: 'Back', sets: 4, reps: '10-12', weight: 'Cable' },
       { name: lang === 'en' ? 'Seated Cable Row' : 'سحب أرضي للظهر بالكيبل', targetMuscle: 'Back', sets: 3, reps: '10-12', weight: 'Cable' },
       { name: lang === 'en' ? 'Dumbbell Bicep Curl' : 'تبادل بايسبس بالدمبلز', targetMuscle: 'Biceps', sets: 3, reps: '12', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Face Pulls' : 'سحب حبل للكتف الخلفي والترابيس', targetMuscle: 'Shoulders', sets: 3, reps: '15', weight: 'Cable' },
     ] },
-    { dayIndex: 3, title: lang === 'en' ? 'Rest & Recovery' : 'يوم راحة واستشفاء', focusArea: lang === 'en' ? 'Recovery' : 'استشفاء', isRestDay: true, exercises: [] },
-    { dayIndex: 4, title: lang === 'en' ? 'Shoulders & Abs' : 'الأكتاف والبطن', focusArea: lang === 'en' ? 'Shoulders, Abs' : 'أكتاف، بطن', isRestDay: false, exercises: [
-      { name: lang === 'en' ? 'Overhead Shoulder Press' : 'ضغط أكتاف بالدمبلز جالس', targetMuscle: 'Shoulders', sets: 4, reps: '8-10', weight: 'Dumbbells' },
-      { name: lang === 'en' ? 'Dumbbell Lateral Raise' : 'رفرفة جانبية للأكتاف', targetMuscle: 'Shoulders', sets: 3, reps: '12-15', weight: 'Dumbbells' },
-      { name: lang === 'en' ? 'Hanging Leg Raise' : 'رفع الأرجل على العقله للبطن', targetMuscle: 'Abs', sets: 3, reps: '15', weight: 'Bodyweight' },
-    ] },
-    { dayIndex: 5, title: lang === 'en' ? 'Legs & Calves' : 'الأرجل والسمانة', focusArea: lang === 'en' ? 'Legs, Calves' : 'أرجل، سمانة', isRestDay: false, exercises: [
+    { dayIndex: 3, title: lang === 'en' ? 'Legs & Abs' : 'أرجل وبطن وكور', focusArea: lang === 'en' ? 'Legs, Abs' : 'أرجل، بطن', isRestDay: false, exercises: [
       { name: lang === 'en' ? 'Barbell Squat' : 'سكوات بالبار (قرفصاء)', targetMuscle: 'Quadriceps', sets: 4, reps: '8-10', weight: 'Barbell' },
       { name: lang === 'en' ? 'Leg Press' : 'دفع أرجل بجهاز المكبس', targetMuscle: 'Quadriceps', sets: 3, reps: '10-12', weight: 'Machine' },
       { name: lang === 'en' ? 'Standing Calf Raise' : 'رفع السمانة واقفاً', targetMuscle: 'Calves', sets: 4, reps: '15', weight: 'Machine' },
+      { name: lang === 'en' ? 'Hanging Leg Raise' : 'رفع الأرجل على العقله للبطن', targetMuscle: 'Abs', sets: 3, reps: '15', weight: 'Bodyweight' },
     ] },
-    { dayIndex: 6, title: lang === 'en' ? 'Arms & Core' : 'الذراعين والبطن', focusArea: lang === 'en' ? 'Arms, Core' : 'ذراعين، بطن', isRestDay: false, exercises: [
+    { dayIndex: 4, title: lang === 'en' ? 'Rest & Recovery' : 'يوم راحة واستشفاء', focusArea: lang === 'en' ? 'Recovery' : 'استشفاء', isRestDay: true, exercises: [] },
+    { dayIndex: 5, title: lang === 'en' ? 'Upper Body Power' : 'جزء علوي شامل', focusArea: lang === 'en' ? 'Upper Body' : 'جزء علوي', isRestDay: false, exercises: [
+      { name: lang === 'en' ? 'Overhead Shoulder Press' : 'ضغط أكتاف بالدمبلز جالس', targetMuscle: 'Shoulders', sets: 4, reps: '8-10', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Dumbbell Chest Fly' : 'تفتيح صدر بالدمبلز مستوي', targetMuscle: 'Chest', sets: 3, reps: '12-15', weight: 'Dumbbells' },
+      { name: lang === 'en' ? 'Barbell Bicep Curl' : 'بايسبس بالبار مستقيم', targetMuscle: 'Biceps', sets: 3, reps: '10-12', weight: 'Barbell' },
       { name: lang === 'en' ? 'EZ-Bar Skullcrusher' : 'ترايسبس بالبار المتعرج استلقاء', targetMuscle: 'Triceps', sets: 3, reps: '10-12', weight: 'Barbell' },
-      { name: lang === 'en' ? 'Hammer Curls' : 'شاكوش بالدمبلز (هامر)', targetMuscle: 'Biceps', sets: 3, reps: '12', weight: 'Dumbbells' },
-      { name: lang === 'en' ? 'Plank' : 'تمرين البلانك للبطن', targetMuscle: 'Abs', sets: 3, reps: '60s', weight: 'Bodyweight' },
+    ] },
+    { dayIndex: 6, title: lang === 'en' ? 'Lower Body & Core' : 'جزء سفلي وبطن', focusArea: lang === 'en' ? 'Lower Body' : 'جزء سفلي', isRestDay: false, exercises: [
+      { name: lang === 'en' ? 'Romanian Deadlift' : 'ديدليفت روماني بالبار (أرجل خلفية)', targetMuscle: 'Hamstrings', sets: 4, reps: '8-10', weight: 'Barbell' },
+      { name: lang === 'en' ? 'Leg Extension' : 'فرد أرجل أمامي بالجهاز', targetMuscle: 'Quadriceps', sets: 3, reps: '12-15', weight: 'Machine' },
+      { name: lang === 'en' ? 'Plank' : 'تمرين البلانك للبطن والكور', targetMuscle: 'Abs', sets: 3, reps: '60s', weight: 'Bodyweight' },
     ] },
     { dayIndex: 7, title: lang === 'en' ? 'Rest Day' : 'يوم راحة', focusArea: lang === 'en' ? 'Recovery' : 'استشفاء', isRestDay: true, exercises: [] },
   ]);
@@ -2113,8 +2119,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.88)',
-            backdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.90)',
+            backdropFilter: 'blur(12px)',
             zIndex: 1150,
             display: 'flex',
             alignItems: 'center',
@@ -2122,49 +2128,238 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
             padding: '16px',
             overflowY: 'auto',
           }}
-          onClick={() => setShowManualBuilder(false)}
+          onClick={() => {
+            setShowManualBuilder(false);
+            setManualRowSuggestions(null);
+          }}
         >
           <div
             className="glass-card"
             style={{
               width: '100%',
-              maxWidth: '840px',
-              maxHeight: '90vh',
+              maxWidth: '960px',
+              maxHeight: '92vh',
               overflowY: 'auto',
               borderRadius: '24px',
-              padding: '28px',
-              border: '1px solid rgba(0, 210, 255, 0.3)',
-              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(6, 8, 20, 0.99))',
+              padding: '24px',
+              border: '1px solid rgba(0, 210, 255, 0.35)',
+              background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.98), rgba(4, 7, 18, 0.99))',
               display: 'flex',
               flexDirection: 'column',
-              gap: '20px',
+              gap: '18px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 210, 255, 0.1)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
               <div>
-                <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>✍️</span>
-                  <span>{lang === 'en' ? 'Custom Workout Plan Builder' : 'منشئ ومصمم الجدول الرياضي اليدوي'}</span>
-                </h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-                  {lang === 'en' ? 'Design your weekly training days, assign exercises, and sets/reps freely.' : 'صمم جدولك الأسبوعي يدوياً، حدد التمارين لكل يوم، والجولات والتكرارات بحرية تامة.'}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 210, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                    <Dumbbell size={20} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '20px', fontWeight: '900', margin: 0, color: '#fff', letterSpacing: '-0.3px' }}>
+                      {lang === 'en' ? 'Custom Workout Plan Architect' : 'منشئ ومصمم الجدول التدريبي المتقدم ✍️'}
+                    </h2>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                      {lang === 'en' ? 'Design days 1–7 freely, search 4,200+ exercises with instant autocomplete.' : 'صمم أيامك التدريبية بحرية، مع بحث فوري واقتراحات تلقائية من 4,207 تمرين.'}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => setShowManualBuilder(false)}
-                className="secondary-btn"
-                style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                ✕
-              </button>
+
+              {/* Header Actions: Starter Templates & Close */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplatesModal(!showTemplatesModal)}
+                  className="glow-btn"
+                  style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Sparkles size={14} />
+                  <span>{lang === 'en' ? 'Load Ready Template 📋' : 'تطبيق قالب جاهز 📋'}</span>
+                </button>
+                <button
+                  onClick={() => setShowManualBuilder(false)}
+                  className="secondary-btn"
+                  style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {/* Plan Title & Summary */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Template Selector Drawer */}
+            {showTemplatesModal && (
+              <div style={{ background: 'rgba(0, 210, 255, 0.05)', border: '1px solid rgba(0, 210, 255, 0.25)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ margin: 0, fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold' }}>
+                    ⚡ {lang === 'en' ? 'Choose a Pro Workout Split Template to Auto-Fill:' : 'اختر قالباً تدريبياً معتمداً للتعبئة الفورية بنقرة واحدة:'}
+                  </h4>
+                  <button onClick={() => setShowTemplatesModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px' }}>
+                  {[
+                    { key: 'ppl', titleEn: 'Push Pull Legs (6 Days)', titleAr: 'Push Pull Legs (6 أيام)', desc: 'صدر/ترايسبس - ظهر/بايسبس - أرجل' },
+                    { key: 'upper_lower', titleEn: 'Upper / Lower (4 Days)', titleAr: 'علوي / سفلي (4 أيام)', desc: 'يومان علوي + يومان سفلي + 3 راحة' },
+                    { key: 'full_body', titleEn: 'Full Body 3x (3 Days)', titleAr: 'كامل الجسم (3 أيام)', desc: '3 أيام شاملة مع يوم راحة بين كل يوم' },
+                    { key: 'arnold', titleEn: 'Arnold Split (6 Days)', titleAr: 'جدول أرنولد (6 أيام)', desc: 'صدر وظهر - أكتاف وذراعين - أرجل' },
+                    { key: 'bro_split', titleEn: 'Bro Split (5 Days)', titleAr: 'عضلة كل يوم (5 أيام)', desc: 'صدر - ظهر - أرجل - أكتاف - ذراعين' },
+                  ].map((tpl) => (
+                    <button
+                      key={tpl.key}
+                      type="button"
+                      onClick={() => {
+                        if (tpl.key === 'ppl') {
+                          setManualTitle(lang === 'en' ? 'PPL Hypertrophy 6-Day Split' : 'جدول بوش بول ليجز (PPL 6 أيام)');
+                          setManualDays([
+                            { dayIndex: 1, title: 'Push Day A (Chest & Triceps)', focusArea: 'صدر، ترايسبس، كتف أمامي', isRestDay: false, exercises: [
+                              { name: 'Barbell Bench Press', targetMuscle: 'Chest', sets: 4, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Incline Dumbbell Press', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Dumbbells' },
+                              { name: 'Dumbbell Lateral Raise', targetMuscle: 'Shoulders', sets: 4, reps: '12-15', weight: 'Dumbbells' },
+                              { name: 'Cable Tricep Pushdown', targetMuscle: 'Triceps', sets: 3, reps: '12-15', weight: 'Cable' },
+                            ] },
+                            { dayIndex: 2, title: 'Pull Day A (Back & Biceps)', focusArea: 'ظهر، بايسبس، كتف خلفي', isRestDay: false, exercises: [
+                              { name: 'Lat Pulldown', targetMuscle: 'Back', sets: 4, reps: '10-12', weight: 'Cable' },
+                              { name: 'Seated Cable Row', targetMuscle: 'Back', sets: 3, reps: '10-12', weight: 'Cable' },
+                              { name: 'Face Pulls', targetMuscle: 'Shoulders', sets: 3, reps: '15', weight: 'Cable' },
+                              { name: 'Barbell Bicep Curl', targetMuscle: 'Biceps', sets: 3, reps: '10-12', weight: 'Barbell' },
+                            ] },
+                            { dayIndex: 3, title: 'Legs Day A (Quads & Abs)', focusArea: 'أرجل أمامية، بطن', isRestDay: false, exercises: [
+                              { name: 'Barbell Squat', targetMuscle: 'Quadriceps', sets: 4, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Leg Press', targetMuscle: 'Quadriceps', sets: 3, reps: '10-12', weight: 'Machine' },
+                              { name: 'Standing Calf Raise', targetMuscle: 'Calves', sets: 4, reps: '15', weight: 'Machine' },
+                              { name: 'Hanging Leg Raise', targetMuscle: 'Abs', sets: 3, reps: '15', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 4, title: 'Push Day B (Shoulders & Chest)', focusArea: 'أكتاف، صدر، ترايسبس', isRestDay: false, exercises: [
+                              { name: 'Overhead Shoulder Press', targetMuscle: 'Shoulders', sets: 4, reps: '8-10', weight: 'Dumbbells' },
+                              { name: 'Dumbbell Chest Fly', targetMuscle: 'Chest', sets: 3, reps: '12-15', weight: 'Dumbbells' },
+                              { name: 'Dips', targetMuscle: 'Triceps', sets: 3, reps: '10-12', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 5, title: 'Pull Day B (Upper Back & Rear Delts)', focusArea: 'ظهر، بايسبس', isRestDay: false, exercises: [
+                              { name: 'Bent Over Barbell Row', targetMuscle: 'Back', sets: 4, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Hammer Curls', targetMuscle: 'Biceps', sets: 3, reps: '12', weight: 'Dumbbells' },
+                              { name: 'Hyperextensions', targetMuscle: 'Back', sets: 3, reps: '15', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 6, title: 'Legs Day B (Hamstrings & Glutes)', focusArea: 'أرجل خلفية، سمانة', isRestDay: false, exercises: [
+                              { name: 'Romanian Deadlift', targetMuscle: 'Hamstrings', sets: 4, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Leg Curl', targetMuscle: 'Hamstrings', sets: 3, reps: '12', weight: 'Machine' },
+                              { name: 'Plank', targetMuscle: 'Abs', sets: 3, reps: '60s', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 7, title: 'Rest & Active Recovery', focusArea: 'استشفاء كامل', isRestDay: true, exercises: [] },
+                          ]);
+                        } else if (tpl.key === 'upper_lower') {
+                          setManualTitle(lang === 'en' ? 'Upper / Lower 4-Day Split' : 'جدول علوي / سفلي (4 أيام)');
+                          setManualDays([
+                            { dayIndex: 1, title: 'Upper Body Power', focusArea: 'صدر، ظهر، أكتاف، ذراعين', isRestDay: false, exercises: [
+                              { name: 'Barbell Bench Press', targetMuscle: 'Chest', sets: 4, reps: '6-8', weight: 'Barbell' },
+                              { name: 'Lat Pulldown', targetMuscle: 'Back', sets: 4, reps: '8-10', weight: 'Cable' },
+                              { name: 'Overhead Shoulder Press', targetMuscle: 'Shoulders', sets: 3, reps: '8-10', weight: 'Dumbbells' },
+                              { name: 'Barbell Bicep Curl', targetMuscle: 'Biceps', sets: 3, reps: '10-12', weight: 'Barbell' },
+                            ] },
+                            { dayIndex: 2, title: 'Lower Body Strength', focusArea: 'أرجل، سمانة، بطن', isRestDay: false, exercises: [
+                              { name: 'Barbell Squat', targetMuscle: 'Quadriceps', sets: 4, reps: '6-8', weight: 'Barbell' },
+                              { name: 'Romanian Deadlift', targetMuscle: 'Hamstrings', sets: 3, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Standing Calf Raise', targetMuscle: 'Calves', sets: 4, reps: '15', weight: 'Machine' },
+                              { name: 'Hanging Leg Raise', targetMuscle: 'Abs', sets: 3, reps: '15', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 3, title: 'Rest & Recovery', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                            { dayIndex: 4, title: 'Upper Body Hypertrophy', focusArea: 'صدر، ظهر، أكتاف، ذراعين', isRestDay: false, exercises: [
+                              { name: 'Incline Dumbbell Press', targetMuscle: 'Chest', sets: 4, reps: '10-12', weight: 'Dumbbells' },
+                              { name: 'Seated Cable Row', targetMuscle: 'Back', sets: 4, reps: '10-12', weight: 'Cable' },
+                              { name: 'Dumbbell Lateral Raise', targetMuscle: 'Shoulders', sets: 4, reps: '12-15', weight: 'Dumbbells' },
+                              { name: 'Cable Tricep Pushdown', targetMuscle: 'Triceps', sets: 3, reps: '12-15', weight: 'Cable' },
+                            ] },
+                            { dayIndex: 5, title: 'Lower Body Hypertrophy', focusArea: 'أرجل، سمانة، بطن', isRestDay: false, exercises: [
+                              { name: 'Leg Press', targetMuscle: 'Quadriceps', sets: 4, reps: '10-12', weight: 'Machine' },
+                              { name: 'Leg Extension', targetMuscle: 'Quadriceps', sets: 3, reps: '12-15', weight: 'Machine' },
+                              { name: 'Leg Curl', targetMuscle: 'Hamstrings', sets: 3, reps: '12-15', weight: 'Machine' },
+                              { name: 'Plank', targetMuscle: 'Abs', sets: 3, reps: '60s', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 6, title: 'Rest Day', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                            { dayIndex: 7, title: 'Rest Day', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                          ]);
+                        } else if (tpl.key === 'full_body') {
+                          setManualTitle(lang === 'en' ? 'Full Body 3-Day Foundation' : 'جدول كامل الجسم (3 أيام)');
+                          setManualDays([
+                            { dayIndex: 1, title: 'Full Body Workout A', focusArea: 'كامل الجسم', isRestDay: false, exercises: [
+                              { name: 'Barbell Squat', targetMuscle: 'Quadriceps', sets: 3, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Barbell Bench Press', targetMuscle: 'Chest', sets: 3, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Lat Pulldown', targetMuscle: 'Back', sets: 3, reps: '10-12', weight: 'Cable' },
+                              { name: 'Overhead Shoulder Press', targetMuscle: 'Shoulders', sets: 3, reps: '10-12', weight: 'Dumbbells' },
+                            ] },
+                            { dayIndex: 2, title: 'Rest & Recovery', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                            { dayIndex: 3, title: 'Full Body Workout B', focusArea: 'كامل الجسم', isRestDay: false, exercises: [
+                              { name: 'Romanian Deadlift', targetMuscle: 'Hamstrings', sets: 3, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Incline Dumbbell Press', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Dumbbells' },
+                              { name: 'Seated Cable Row', targetMuscle: 'Back', sets: 3, reps: '10-12', weight: 'Cable' },
+                              { name: 'Dumbbell Lateral Raise', targetMuscle: 'Shoulders', sets: 3, reps: '12-15', weight: 'Dumbbells' },
+                            ] },
+                            { dayIndex: 4, title: 'Rest & Recovery', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                            { dayIndex: 5, title: 'Full Body Workout C', focusArea: 'كامل الجسم', isRestDay: false, exercises: [
+                              { name: 'Leg Press', targetMuscle: 'Quadriceps', sets: 3, reps: '10-12', weight: 'Machine' },
+                              { name: 'Dips', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Bodyweight' },
+                              { name: 'Barbell Bicep Curl', targetMuscle: 'Biceps', sets: 3, reps: '12', weight: 'Barbell' },
+                              { name: 'Plank', targetMuscle: 'Abs', sets: 3, reps: '60s', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 6, title: 'Rest Day', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                            { dayIndex: 7, title: 'Rest Day', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                          ]);
+                        } else {
+                          // Arnold / Bro Split
+                          setManualTitle(lang === 'en' ? 'Arnold Classic Split (6 Days)' : 'جدول أرنولد الكلاسيكي (6 أيام)');
+                          setManualDays([
+                            { dayIndex: 1, title: 'Chest & Back (Antagonist)', focusArea: 'صدر، ظهر', isRestDay: false, exercises: [
+                              { name: 'Barbell Bench Press', targetMuscle: 'Chest', sets: 4, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Incline Dumbbell Press', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Dumbbells' },
+                              { name: 'Lat Pulldown', targetMuscle: 'Back', sets: 4, reps: '10-12', weight: 'Cable' },
+                              { name: 'Seated Cable Row', targetMuscle: 'Back', sets: 3, reps: '10-12', weight: 'Cable' },
+                            ] },
+                            { dayIndex: 2, title: 'Shoulders & Arms', focusArea: 'أكتاف، بايسبس، ترايسبس', isRestDay: false, exercises: [
+                              { name: 'Overhead Shoulder Press', targetMuscle: 'Shoulders', sets: 4, reps: '8-10', weight: 'Dumbbells' },
+                              { name: 'Dumbbell Lateral Raise', targetMuscle: 'Shoulders', sets: 4, reps: '12-15', weight: 'Dumbbells' },
+                              { name: 'Barbell Bicep Curl', targetMuscle: 'Biceps', sets: 3, reps: '10-12', weight: 'Barbell' },
+                              { name: 'Cable Tricep Pushdown', targetMuscle: 'Triceps', sets: 3, reps: '12-15', weight: 'Cable' },
+                            ] },
+                            { dayIndex: 3, title: 'Legs & Calves', focusArea: 'أرجل، سمانة، بطن', isRestDay: false, exercises: [
+                              { name: 'Barbell Squat', targetMuscle: 'Quadriceps', sets: 4, reps: '8-10', weight: 'Barbell' },
+                              { name: 'Romanian Deadlift', targetMuscle: 'Hamstrings', sets: 3, reps: '10-12', weight: 'Barbell' },
+                              { name: 'Leg Press', targetMuscle: 'Quadriceps', sets: 3, reps: '10-12', weight: 'Machine' },
+                              { name: 'Hanging Leg Raise', targetMuscle: 'Abs', sets: 3, reps: '15', weight: 'Bodyweight' },
+                            ] },
+                            { dayIndex: 4, title: 'Chest & Back B', focusArea: 'صدر، ظهر', isRestDay: false, exercises: [
+                              { name: 'Dumbbell Bench Press', targetMuscle: 'Chest', sets: 4, reps: '10-12', weight: 'Dumbbells' },
+                              { name: 'Bent Over Barbell Row', targetMuscle: 'Back', sets: 4, reps: '8-10', weight: 'Barbell' },
+                            ] },
+                            { dayIndex: 5, title: 'Shoulders & Arms B', focusArea: 'أكتاف، ذراعين', isRestDay: false, exercises: [
+                              { name: 'Arnold Press', targetMuscle: 'Shoulders', sets: 4, reps: '10-12', weight: 'Dumbbells' },
+                              { name: 'Hammer Curls', targetMuscle: 'Biceps', sets: 3, reps: '12', weight: 'Dumbbells' },
+                            ] },
+                            { dayIndex: 6, title: 'Legs B', focusArea: 'أرجل، بطن', isRestDay: false, exercises: [
+                              { name: 'Leg Extension', targetMuscle: 'Quadriceps', sets: 4, reps: '12-15', weight: 'Machine' },
+                              { name: 'Leg Curl', targetMuscle: 'Hamstrings', sets: 4, reps: '12-15', weight: 'Machine' },
+                            ] },
+                            { dayIndex: 7, title: 'Rest & Recovery', focusArea: 'استشفاء', isRestDay: true, exercises: [] },
+                          ]);
+                        }
+                        setShowTemplatesModal(false);
+                      }}
+                      className="secondary-btn"
+                      style={{ padding: '10px 12px', borderRadius: '10px', textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px' }}
+                    >
+                      <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '12px' }}>{lang === 'en' ? tpl.titleEn : tpl.titleAr}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{tpl.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Plan Title Input */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                {lang === 'en' ? 'Plan Title' : 'اسم الجدول التدريبي:'}
+                {lang === 'en' ? 'Workout Routine Name:' : 'اسم ومسمى الجدول التدريبي:'}
               </label>
               <input
                 type="text"
@@ -2172,43 +2367,54 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 onChange={(e) => setManualTitle(e.target.value)}
                 placeholder={lang === 'en' ? 'E.g., Hypertrophy Push Pull Legs' : 'مثال: جدول التضخيم 5 أيام (Push Pull Legs)'}
                 className="input-field"
-                style={{ padding: '12px', borderRadius: '10px', fontSize: '15px', border: '1px solid var(--border-color)' }}
+                style={{ padding: '12px 14px', borderRadius: '12px', fontSize: '14px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.03)' }}
               />
             </div>
 
             {/* Day Selector Tabs (Days 1 to 7) */}
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '6px' }}>
+            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
               {manualDays.map((day) => {
                 const isActive = day.dayIndex === manualActiveDayIdx;
+                const count = day.exercises ? day.exercises.length : 0;
                 return (
                   <button
                     key={day.dayIndex}
                     type="button"
-                    onClick={() => setManualActiveDayIdx(day.dayIndex)}
+                    onClick={() => {
+                      setManualActiveDayIdx(day.dayIndex);
+                      setManualRowSuggestions(null);
+                    }}
                     style={{
-                      padding: '8px 14px',
-                      borderRadius: '10px',
-                      fontSize: '12px',
+                      padding: '10px 16px',
+                      borderRadius: '12px',
+                      fontSize: '13px',
                       fontWeight: 'bold',
                       cursor: 'pointer',
                       border: isActive ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                      background: isActive ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
+                      background: isActive ? 'linear-gradient(135deg, var(--primary), #00a8ff)' : 'rgba(255,255,255,0.04)',
                       color: isActive ? '#050710' : (day.isRestDay ? 'var(--text-muted)' : 'var(--text-primary)'),
                       whiteSpace: 'nowrap',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px',
+                      gap: '6px',
                       transition: 'all 0.2s',
+                      boxShadow: isActive ? '0 4px 15px var(--primary-glow)' : 'none',
                     }}
                   >
                     <span>{lang === 'en' ? `Day ${day.dayIndex}` : `اليوم ${day.dayIndex}`}</span>
-                    {day.isRestDay && <span style={{ fontSize: '10px', opacity: 0.8 }}>💤</span>}
+                    {day.isRestDay ? (
+                      <span style={{ fontSize: '11px', opacity: 0.9 }}>💤</span>
+                    ) : (
+                      <span style={{ background: isActive ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '10px', fontSize: '11px' }}>
+                        {count}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            {/* Active Day Editor */}
+            {/* Active Day Card Editor */}
             {(() => {
               const currentDay = manualDays.find(d => d.dayIndex === manualActiveDayIdx) || manualDays[0];
               const dayIdx = manualDays.findIndex(d => d.dayIndex === manualActiveDayIdx);
@@ -2222,11 +2428,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               const addExercise = () => {
                 const updated = [...manualDays];
                 updated[dayIdx].exercises.push({
-                  name: lang === 'en' ? 'New Exercise' : 'تمرين جديد',
-                  targetMuscle: lang === 'en' ? 'Chest' : 'الصدر',
+                  name: '',
+                  targetMuscle: 'Chest',
                   sets: 3,
                   reps: '10-12',
-                  weight: 'Bodyweight',
+                  weight: 'Dumbbells',
                 });
                 setManualDays(updated);
               };
@@ -2235,6 +2441,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 const updated = [...manualDays];
                 updated[dayIdx].exercises.splice(exIdx, 1);
                 setManualDays(updated);
+                setManualRowSuggestions(null);
               };
 
               const updateExercise = (exIdx: number, field: string, val: any) => {
@@ -2246,161 +2453,453 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 setManualDays(updated);
               };
 
+              const handleRowNameSearch = (val: string, exIdx: number) => {
+                updateExercise(exIdx, 'name', val);
+                if (val.trim().length > 1) {
+                  const matches = libraryExercises.filter(ex => 
+                    (ex.name_ar && ex.name_ar.toLowerCase().includes(val.toLowerCase())) ||
+                    (ex.name_en && ex.name_en.toLowerCase().includes(val.toLowerCase())) ||
+                    (ex.muscle_ar && ex.muscle_ar.toLowerCase().includes(val.toLowerCase()))
+                  ).slice(0, 6);
+                  setManualRowSuggestions({ dayIdx, exIdx, list: matches });
+                } else {
+                  setManualRowSuggestions(null);
+                }
+              };
+
+              const selectRowSuggestion = (sug: any, exIdx: number) => {
+                const updated = [...manualDays];
+                const cleanName = lang === 'ar' ? (sug.name_ar || sug.name_en) : (sug.name_en || sug.name_ar);
+                const muscle = sug.muscle_en || sug.muscle_ar || 'Chest';
+                const equipment = sug.equipment_en || 'Dumbbells';
+
+                updated[dayIdx].exercises[exIdx] = {
+                  ...updated[dayIdx].exercises[exIdx],
+                  name: cleanName,
+                  targetMuscle: muscle,
+                  weight: equipment,
+                  sets: updated[dayIdx].exercises[exIdx].sets || 3,
+                  reps: updated[dayIdx].exercises[exIdx].reps || '10-12',
+                };
+                setManualDays(updated);
+                setManualRowSuggestions(null);
+              };
+
+              const clearDayExercises = () => {
+                if (confirm(lang === 'en' ? 'Clear all exercises for this day?' : 'هل تود مسح جميع تمارين هذا اليوم؟')) {
+                  const updated = [...manualDays];
+                  updated[dayIdx].exercises = [];
+                  setManualDays(updated);
+                }
+              };
+
+              const duplicateDayToNext = () => {
+                const nextIdx = (dayIdx + 1) % 7;
+                const updated = [...manualDays];
+                updated[nextIdx] = {
+                  ...updated[nextIdx],
+                  title: `${currentDay.title} (نسخة)`,
+                  focusArea: currentDay.focusArea,
+                  isRestDay: currentDay.isRestDay,
+                  exercises: JSON.parse(JSON.stringify(currentDay.exercises)),
+                };
+                setManualDays(updated);
+                setManualActiveDayIdx(updated[nextIdx].dayIndex);
+                alert(lang === 'en' ? `Copied to Day ${updated[nextIdx].dayIndex}` : `تم نسخ التمارين إلى اليوم ${updated[nextIdx].dayIndex}`);
+              };
+
               return (
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '18px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {/* Day Config Header */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr', gap: '10px', alignItems: 'center' }}>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  
+                  {/* Day Config & Focus Area */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1.5fr) minmax(200px, 1.5fr) auto', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     <div>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                        {lang === 'en' ? 'Day Title' : 'عنوان اليوم التدريبي:'}
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
+                        🏷️ {lang === 'en' ? 'Day Title:' : 'عنوان اليوم التدريبي:'}
                       </label>
                       <input
                         type="text"
                         value={currentDay.title}
                         onChange={(e) => updateCurrentDay('title', e.target.value)}
+                        placeholder="مثال: صدر وبايسبس..."
                         className="input-field"
-                        style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '13px' }}
+                        style={{ padding: '10px 12px', borderRadius: '10px', fontSize: '13px', width: '100%' }}
                       />
                     </div>
+
                     <div>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                        {lang === 'en' ? 'Focus Muscle Group' : 'التركيز العضلي:'}
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
+                        🎯 {lang === 'en' ? 'Target Muscle Focus:' : 'التركيز العضلي الأساسي:'}
                       </label>
                       <input
                         type="text"
                         value={currentDay.focusArea}
                         onChange={(e) => updateCurrentDay('focusArea', e.target.value)}
-                        placeholder="صدر وترايسبس..."
+                        placeholder="صدر، ترايسبس، أكتاف..."
                         className="input-field"
-                        style={{ padding: '8px 12px', borderRadius: '8px', fontSize: '13px' }}
+                        style={{ padding: '10px 12px', borderRadius: '10px', fontSize: '13px', width: '100%' }}
                       />
                     </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                        {lang === 'en' ? 'Rest Day?' : 'يوم راحة؟'}
+
+                    {/* Rest Day Switch */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                        {lang === 'en' ? 'Day Status:' : 'حالة اليوم:'}
                       </label>
                       <button
                         type="button"
                         onClick={() => updateCurrentDay('isRestDay', !currentDay.isRestDay)}
-                        className={currentDay.isRestDay ? 'primary-btn' : 'secondary-btn'}
-                        style={{ padding: '8px 14px', fontSize: '12px', borderRadius: '8px', width: '100%' }}
+                        className={currentDay.isRestDay ? 'secondary-btn' : 'glow-btn'}
+                        style={{
+                          padding: '10px 16px',
+                          fontSize: '13px',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: currentDay.isRestDay ? 'rgba(100, 116, 139, 0.2)' : undefined,
+                          color: currentDay.isRestDay ? '#94a3b8' : undefined,
+                          border: currentDay.isRestDay ? '1px solid #475569' : undefined,
+                        }}
                       >
-                        {currentDay.isRestDay ? (lang === 'en' ? '💤 Rest' : '💤 راحة') : (lang === 'en' ? '🏋️ Training' : '🏋️ تمرين')}
+                        <span>{currentDay.isRestDay ? '💤 يوم راحة واستشفاء' : '🏋️ يوم تمرين ونشاط'}</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Exercises List */}
+                  {/* Quick Focus Pills */}
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
+                      ⚡ {lang === 'en' ? 'Quick Focus Preset:' : 'تحديد سريع للتركيز:'}
+                    </span>
+                    {[
+                      { label: '🔥 صدر وترايسبس (Push)', title: 'دفع (صدر وترايسبس)', focus: 'صدر، ترايسبس' },
+                      { label: '⚡ ظهر وبايسبس (Pull)', title: 'سحب (ظهر وبايسبس)', focus: 'ظهر، بايسبس' },
+                      { label: '🦵 أرجل وبطن (Legs)', title: 'أرجل وبطن', focus: 'أرجل، بطن' },
+                      { label: '💪 أكتاف وذراعين', title: 'أكتاف وذراعين', focus: 'أكتاف، ذراعين' },
+                      { label: '🎯 كامل الجسم (Full Body)', title: 'كامل الجسم', focus: 'كامل الجسم' },
+                      { label: '💤 راحة واستشفاء', title: 'يوم راحة واستشفاء', focus: 'استشفاء', rest: true },
+                    ].map((pill, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          updateCurrentDay('title', pill.title);
+                          updateCurrentDay('focusArea', pill.focus);
+                          if (pill.rest) updateCurrentDay('isRestDay', true);
+                          else updateCurrentDay('isRestDay', false);
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          color: 'var(--text-primary)',
+                          padding: '4px 10px',
+                          borderRadius: '16px',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {pill.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Exercises Management Section */}
                   {!currentDay.isRestDay ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h4 style={{ fontSize: '14px', margin: 0, color: 'var(--primary)', fontWeight: 'bold' }}>
-                          🏋️ {lang === 'en' ? `Day Exercises (${currentDay.exercises.length})` : `تمارين اليوم (${currentDay.exercises.length})`}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <h4 style={{ fontSize: '14px', margin: 0, color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Dumbbell size={16} />
+                          <span>{lang === 'en' ? `Day Exercises (${currentDay.exercises.length})` : `تمارين اليوم التدريبي (${currentDay.exercises.length})`}</span>
                         </h4>
-                        <button
-                          type="button"
-                          onClick={addExercise}
-                          className="secondary-btn"
-                          style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <Plus size={14} />
-                          <span>{lang === 'en' ? 'Add Exercise' : 'إضافة تمرين +'}</span>
-                        </button>
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={duplicateDayToNext}
+                            className="secondary-btn"
+                            style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="نسخ تمارين هذا اليوم لليوم التالي"
+                          >
+                            <Copy size={13} />
+                            <span>{lang === 'en' ? 'Duplicate Day' : 'نسخ اليوم 📋'}</span>
+                          </button>
+
+                          {currentDay.exercises.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={clearDayExercises}
+                              className="secondary-btn"
+                              style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', color: '#ef4444' }}
+                            >
+                              <Trash2 size={13} />
+                              <span>{lang === 'en' ? 'Clear' : 'تفريغ 🧹'}</span>
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={addExercise}
+                            className="glow-btn"
+                            style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Plus size={14} />
+                            <span>{lang === 'en' ? 'Add Exercise +' : 'إضافة تمرين +'}</span>
+                          </button>
+                        </div>
                       </div>
 
                       {currentDay.exercises.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '13px', border: '1px dashed var(--border-color)', borderRadius: '10px' }}>
-                          {lang === 'en' ? 'No exercises added to this day yet. Click Add Exercise!' : 'لم تقم بإضافة تمارين لهذا اليوم بعد. اضغط على إضافة تمرين!'}
+                        <div style={{ textAlign: 'center', padding: '35px 20px', color: 'var(--text-muted)', fontSize: '13px', border: '1px dashed var(--border-color)', borderRadius: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0, 210, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                            <Plus size={20} />
+                          </div>
+                          <span>{lang === 'en' ? 'No exercises in this day yet. Click Add Exercise!' : 'لم تقم بإضافة أي تمارين لهذا اليوم بعد. اضغط على زر إضافة تمرين!'}</span>
+                          <button
+                            type="button"
+                            onClick={addExercise}
+                            className="glow-btn"
+                            style={{ padding: '8px 18px', fontSize: '12px' }}
+                          >
+                            {lang === 'en' ? 'Add First Exercise +' : 'إضافة أول تمرين +'}
+                          </button>
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {currentDay.exercises.map((ex, exIdx) => (
-                            <div
-                              key={exIdx}
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: '3fr 2fr 1fr 1fr 40px',
-                                gap: '8px',
-                                alignItems: 'center',
-                                padding: '10px 12px',
-                                background: 'rgba(255,255,255,0.03)',
-                                borderRadius: '10px',
-                                border: '1px solid var(--border-color)',
-                              }}
-                            >
-                              <div>
-                                <input
-                                  type="text"
-                                  placeholder={lang === 'en' ? 'Exercise name' : 'اسم التمرين'}
-                                  value={ex.name}
-                                  onChange={(e) => updateExercise(exIdx, 'name', e.target.value)}
-                                  className="input-field"
-                                  style={{ padding: '6px 10px', fontSize: '12px', width: '100%' }}
-                                />
-                              </div>
-                              <div>
-                                <input
-                                  type="text"
-                                  placeholder={lang === 'en' ? 'Target Muscle' : 'العضلة المستهدفة'}
-                                  value={ex.targetMuscle}
-                                  onChange={(e) => updateExercise(exIdx, 'targetMuscle', e.target.value)}
-                                  className="input-field"
-                                  style={{ padding: '6px 10px', fontSize: '12px', width: '100%' }}
-                                />
-                              </div>
-                              <div>
-                                <input
-                                  type="number"
-                                  placeholder="Sets"
-                                  value={ex.sets}
-                                  onChange={(e) => updateExercise(exIdx, 'sets', parseInt(e.target.value) || 3)}
-                                  className="input-field"
-                                  style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center' }}
-                                />
-                              </div>
-                              <div>
-                                <input
-                                  type="text"
-                                  placeholder="Reps"
-                                  value={ex.reps}
-                                  onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
-                                  className="input-field"
-                                  style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center' }}
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeExercise(exIdx)}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {/* Table Headers */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'minmax(220px, 3fr) minmax(130px, 1.5fr) 110px 100px minmax(120px, 1.5fr) 40px',
+                            gap: '10px',
+                            padding: '6px 12px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            color: 'var(--text-secondary)',
+                            textTransform: 'uppercase',
+                          }}>
+                            <div>{lang === 'en' ? 'Exercise Name (Auto Search 🔍)' : 'اسم التمرين (بحث ذكي 🔍)'}</div>
+                            <div>{lang === 'en' ? 'Target Muscle' : 'العضلة المستهدفة 🎯'}</div>
+                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Sets' : 'الجولات 🔢'}</div>
+                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Reps' : 'التكرارات 🔄'}</div>
+                            <div>{lang === 'en' ? 'Equipment / Weight' : 'الأداة / الوزن 🏋️'}</div>
+                            <div></div>
+                          </div>
+
+                          {/* Exercise Rows */}
+                          {currentDay.exercises.map((ex, exIdx) => {
+                            const isSugActive = manualRowSuggestions && manualRowSuggestions.dayIdx === dayIdx && manualRowSuggestions.exIdx === exIdx;
+                            return (
+                              <div
+                                key={exIdx}
                                 style={{
-                                  background: 'rgba(239, 68, 68, 0.1)',
-                                  border: 'none',
-                                  color: '#ef4444',
-                                  borderRadius: '6px',
-                                  height: '32px',
-                                  cursor: 'pointer',
-                                  display: 'flex',
+                                  position: 'relative',
+                                  display: 'grid',
+                                  gridTemplateColumns: 'minmax(220px, 3fr) minmax(130px, 1.5fr) 110px 100px minmax(120px, 1.5fr) 40px',
+                                  gap: '10px',
                                   alignItems: 'center',
-                                  justifyContent: 'center',
+                                  padding: '10px 12px',
+                                  background: 'rgba(255,255,255,0.03)',
+                                  borderRadius: '12px',
+                                  border: '1px solid var(--border-color)',
+                                  transition: 'border-color 0.2s',
                                 }}
                               >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          ))}
+                                {/* Exercise Name Input with Floating Suggestions */}
+                                <div style={{ position: 'relative' }}>
+                                  <input
+                                    type="text"
+                                    placeholder={lang === 'en' ? 'Search 4,200+ exercises...' : 'ابحث بين 4,207 تمرين (بنش، سكوات...)'}
+                                    value={ex.name}
+                                    onChange={(e) => handleRowNameSearch(e.target.value, exIdx)}
+                                    onFocus={() => {
+                                      if (ex.name.trim().length > 1) {
+                                        handleRowNameSearch(ex.name, exIdx);
+                                      }
+                                    }}
+                                    className="input-field"
+                                    style={{ padding: '8px 12px', fontSize: '13px', width: '100%', borderRadius: '8px' }}
+                                  />
+
+                                  {/* Floating Dropdown Autocomplete */}
+                                  {isSugActive && manualRowSuggestions.list.length > 0 && (
+                                    <div
+                                      style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        right: 0,
+                                        left: 0,
+                                        marginTop: '4px',
+                                        background: 'rgba(15, 23, 42, 0.98)',
+                                        backdropFilter: 'blur(16px)',
+                                        border: '1px solid var(--primary)',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 15px 35px rgba(0,0,0,0.8), 0 0 20px rgba(0, 210, 255, 0.2)',
+                                        zIndex: 1200,
+                                        overflow: 'hidden',
+                                        maxHeight: '260px',
+                                        overflowY: 'auto',
+                                      }}
+                                    >
+                                      {manualRowSuggestions.list.map((sug, sIdx) => (
+                                        <div
+                                          key={sIdx}
+                                          onClick={() => selectRowSuggestion(sug, exIdx)}
+                                          style={{
+                                            padding: '10px 12px',
+                                            cursor: 'pointer',
+                                            borderBottom: sIdx === manualRowSuggestions.list.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: '8px',
+                                            transition: 'background 0.15s',
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 210, 255, 0.12)'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                          <div>
+                                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
+                                              {lang === 'ar' ? (sug.name_ar || sug.name_en) : (sug.name_en || sug.name_ar)}
+                                            </div>
+                                            {sug.name_en && (
+                                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                                {sug.name_en}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div style={{ display: 'flex', gap: '4px' }}>
+                                            <span style={{ fontSize: '10px', background: 'rgba(0, 210, 255, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '6px' }}>
+                                              {sug.muscle_ar || sug.muscle_en || 'عضلات'}
+                                            </span>
+                                            {sug.equipment_en && (
+                                              <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-secondary)', padding: '2px 6px', borderRadius: '6px' }}>
+                                                {sug.equipment_en}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Target Muscle Select */}
+                                <div>
+                                  <select
+                                    value={ex.targetMuscle}
+                                    onChange={(e) => updateExercise(exIdx, 'targetMuscle', e.target.value)}
+                                    className="input-field"
+                                    style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
+                                  >
+                                    <option value="Chest" style={{ background: '#0f172a' }}>الصدر (Chest)</option>
+                                    <option value="Back" style={{ background: '#0f172a' }}>الظهر (Back / Lats)</option>
+                                    <option value="Shoulders" style={{ background: '#0f172a' }}>الأكتاف (Shoulders)</option>
+                                    <option value="Quadriceps" style={{ background: '#0f172a' }}>الأرجل الأمامية (Quads)</option>
+                                    <option value="Hamstrings" style={{ background: '#0f172a' }}>الأرجل الخلفية (Hamstrings)</option>
+                                    <option value="Biceps" style={{ background: '#0f172a' }}>البايسبس (Biceps)</option>
+                                    <option value="Triceps" style={{ background: '#0f172a' }}>الترايسبس (Triceps)</option>
+                                    <option value="Abs" style={{ background: '#0f172a' }}>عضلات البطن والكور (Abs)</option>
+                                    <option value="Calves" style={{ background: '#0f172a' }}>السمانة (Calves)</option>
+                                    <option value="Cardio" style={{ background: '#0f172a' }}>كارديو ولياقة (Cardio)</option>
+                                    <option value="Full Body" style={{ background: '#0f172a' }}>كامل الجسم (Full Body)</option>
+                                  </select>
+                                </div>
+
+                                {/* Sets Controls */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateExercise(exIdx, 'sets', Math.max(1, (parseInt(String(ex.sets)) || 3) - 1))}
+                                    style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  >
+                                    -
+                                  </button>
+                                  <input
+                                    type="number"
+                                    value={ex.sets}
+                                    onChange={(e) => updateExercise(exIdx, 'sets', parseInt(e.target.value) || 3)}
+                                    className="input-field"
+                                    style={{ padding: '6px 4px', fontSize: '12px', width: '38px', textAlign: 'center', borderRadius: '6px' }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => updateExercise(exIdx, 'sets', (parseInt(String(ex.sets)) || 3) + 1)}
+                                    style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  >
+                                    +
+                                  </button>
+                                </div>
+
+                                {/* Reps Presets */}
+                                <div>
+                                  <input
+                                    type="text"
+                                    placeholder="10-12"
+                                    value={ex.reps}
+                                    onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
+                                    className="input-field"
+                                    style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center', borderRadius: '8px' }}
+                                  />
+                                </div>
+
+                                {/* Equipment / Weight Selector */}
+                                <div>
+                                  <select
+                                    value={ex.weight || 'Dumbbells'}
+                                    onChange={(e) => updateExercise(exIdx, 'weight', e.target.value)}
+                                    className="input-field"
+                                    style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
+                                  >
+                                    <option value="Barbell" style={{ background: '#0f172a' }}>بار حديد (Barbell)</option>
+                                    <option value="Dumbbells" style={{ background: '#0f172a' }}>دمبلز (Dumbbells)</option>
+                                    <option value="Cable" style={{ background: '#0f172a' }}>كيبل (Cable)</option>
+                                    <option value="Machine" style={{ background: '#0f172a' }}>أجهزة (Machine)</option>
+                                    <option value="Bodyweight" style={{ background: '#0f172a' }}>وزن الجسم (Bodyweight)</option>
+                                  </select>
+                                </div>
+
+                                {/* Delete Exercise Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => removeExercise(exIdx)}
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.12)',
+                                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                                    color: '#ef4444',
+                                    borderRadius: '8px',
+                                    height: '34px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.15s',
+                                  }}
+                                  title="حذف هذا التمرين"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                      💤 {lang === 'en' ? 'This is marked as a full rest and recovery day.' : 'هذا اليوم مخصص للراحة واستشفاء الألياف العضلية وتجديد مخازن الجليكوجين.'}
+                    <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)', fontSize: '14px', background: 'rgba(255,255,255,0.01)', borderRadius: '14px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '32px' }}>💤</span>
+                      <strong style={{ color: '#fff' }}>{lang === 'en' ? 'Full Rest & Recovery Day' : 'يوم راحة واستشفاء عضلي كامل'}</strong>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '450px' }}>
+                        {lang === 'en' ? 'Muscles grow during rest! Ensure adequate sleep, hydration, and nutrition.' : 'تنمو العضلات أثناء فترات الاستشفاء. احرص على شرب 3-4 لتر ماء والنوم الكافي وتناول احتياج البروتين.'}
+                      </span>
                     </div>
                   )}
                 </div>
               );
             })()}
 
-            {/* Save Action Footer */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+            {/* Save & Cancel Footer */}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '6px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
               <button
                 type="button"
                 onClick={() => setShowManualBuilder(false)}
@@ -2413,7 +2912,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 type="button"
                 onClick={async () => {
                   if (!manualTitle.trim()) {
-                    alert(lang === 'en' ? 'Please provide a plan title' : 'يرجى كتابة اسم للجدول الرياضي');
+                    alert(lang === 'en' ? 'Please provide a plan title' : 'يرجى كتابة اسم للجدول التدريبي');
                     return;
                   }
                   setManualSaving(true);
@@ -2436,7 +2935,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 style={{ flex: 2, padding: '14px', borderRadius: '12px', fontSize: '15px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <Sparkles size={18} />
-                <span>{manualSaving ? (lang === 'en' ? 'Saving Plan...' : 'جاري الحفظ...') : (lang === 'en' ? 'Save & Activate Custom Plan ⚡' : 'حفظ وتفعيل الجدول اليدوي ⚡')}</span>
+                <span>{manualSaving ? (lang === 'en' ? 'Saving & Activating...' : 'جاري الحفظ والتفعيل...') : (lang === 'en' ? 'Save & Activate Custom Plan ⚡' : 'حفظ وتفعيل الجدول اليدوي ⚡')}</span>
               </button>
             </div>
           </div>
