@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dumbbell, Sparkles, Activity, ShieldCheck, Zap, ArrowRight, ChevronDown, ChevronUp, Globe, FileText, Lock, Info, Flame, TrendingUp } from 'lucide-react';
+import { Dumbbell, Activity, ShieldCheck, Zap, ArrowRight, ChevronDown, ChevronUp, Globe, FileText, Lock, Info, Crown, Layers, Timer } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 interface LandingPageProps {
@@ -22,79 +22,87 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   const faqs = isEn ? [
     {
-      q: 'How does BeastMode AI craft my personalized workout plan?',
-      a: 'Our dual-inference AI engine analyzes your exact body metrics, experience level, available home/gym equipment, schedule, and previous injuries. It mathematically distributes training volume with progressive overload algorithms to maximize hypertrophy and strength.'
+      q: 'Can I manage multiple workout routines at once (e.g. Gym split, Home routine, Travel plan)?',
+      a: 'Yes! Our Multi-Plan Management Hub lets you build and maintain multiple complete workout programs simultaneously. You can set one as your Primary Active Plan, rename them, duplicate routines, and switch between them instantly with 0ms delay.'
     },
     {
-      q: 'Can I train effectively at home with minimal or no equipment?',
-      a: 'Yes, absolutely. You can select "Bodyweight Only" or specific tools like Dumbbells and Bands. The AI automatically designs comprehensive calisthenics or home routines with muscle-specific activation.'
+      q: 'What are the Curated Pro & Legendary Workout Plans included in the library?',
+      a: 'BeastMode includes gold-standard routines designed by bodybuilding legends and sports scientists: Arnold Schwarzenegger Golden Blueprint, Jeff Nippard Science Hypertrophy PPL, Dorian Yates Blood & Guts HIT, Lyle McDonald Generic Bulking, muscle focus splits (Chest, V-Taper Back, Arms), and dedicated home dumbbell & calisthenics programs.'
     },
     {
-      q: 'What makes the 4,207+ Exercise Encyclopedia unique?',
-      a: 'Every single exercise features biomechanical form cues, primary and secondary muscle targeting, animated demonstrations, and our 3-tier fallback media architecture that guarantees visual guides are always accessible even offline.'
+      q: 'What if I train at home without a workout bench or only have a floor yoga mat?',
+      a: 'Our AI engine features intelligent equipment adaptation. If you do not have a workout bench, chest and triceps presses automatically convert to Floor Dumbbell Presses, Floor Flyes, and biomechanical push-up progressions. If you only have a mat or bodyweight, it optimizes for calisthenics, core stability, and functional mobility.'
     },
     {
-      q: 'How do the Dynamic Warmup & Cooldown protocols protect me?',
-      a: 'Before your main lifts, BeastMode generates joint mobility and muscle pre-activation movements specific to that session\'s muscle groups. After working out, it curates targeted static stretches to accelerate recovery and minimize soreness.'
+      q: 'How does the 4,207+ Exercise Anatomy Encyclopedia work?',
+      a: 'Every exercise is indexed with biomechanical form cues, primary/secondary muscle targeting, animated GIF demonstrations, YouTube video guides, and our 3-tier fallback media architecture that guarantees visual guides are always accessible instantly.'
     },
     {
-      q: 'Are my workout logs, weight progression, and data private?',
-      a: '100% private. We enforce an uncompromising Zero-Tracker policy. We never monetize or sell your data. Your records are encrypted in Supabase cloud, and you can export full JSON archives or permanently delete your account at any moment.'
+      q: 'Can I design my own custom workout routine from scratch?',
+      a: 'Absolutely. You can use our Interactive Manual Builder with real-time fuzzy search autocomplete, import raw workout text or documents via AI bulk parser, or apply pre-made day templates (Push/Pull/Legs, Upper/Lower) and customize sets and reps freely.'
+    },
+    {
+      q: 'Are my logs, progressive overload records, and personal metrics secure and private?',
+      a: '100% private. We enforce an uncompromising Zero-Tracker & OWASP-compliant security standard. Your data is encrypted in Supabase cloud, and you can export complete JSON archives or permanently delete your account anytime.'
     }
   ] : [
     {
-      q: 'كيف يصمم BeastMode AI خطة تدريبية مخصصة لجسمي بدقة رياضية؟',
-      a: 'يقوم محرك الذكاء الاصطناعي المزدوج بتحليل قياساتك البدنية، مستوى لياقتك، المعدات المتوفرة لديك (نادي أو منزل)، وأي إصابات سابقة. ثم يوزع الأحمال والمجموعات والتكرارات بأسلوب الزيادة التدريجية (Progressive Overload) لتحقيق أقصى بناء عضلي وقوة.'
+      q: 'هل يمكنني تصميم والاحتفاظ بأكثر من جدول تدريبي في نفس الوقت (نادي، منزل، سفر)؟',
+      a: 'نعم بالتأكيد! عبر "مركز إدارة الجداول المتعددة (Multi-Plan Hub)" يمكنك إنشاء والاحتفاظ بعدة برامج تدريبية كاملة، وتعيين جدول واحد كأساسي نشط، مع إمكانية التبديل، النسخ والمضاعفة، وإعادة التسمية بضغطة زر وبسرعة فائقة.'
     },
     {
-      q: 'هل يمكنني التدريب في المنزل بدون معدات وتحقيق نتائج حقيقية؟',
-      a: 'بالتأكيد! يمكنك اختيار "وزن الجسم فقط" أو أدوات بسيطة كالدمبلز وحبال المقاومة، وسيقوم النظام بتصميم جدول متكامل من تمارين الكاليستنكس والوزن الحر لاستهداف جميع الزوايا العضلية بدقة واحترافية.'
+      q: 'ما هي خطط الأساطير والبرامج المعتمدة عالمياً المتوفرة في المنصة؟',
+      a: 'تتضمن المنصة مناهج تدريبية عريقة مثل: جدول آرنولد شوارزنيجر الذهبي، نظام جيف نيبارد العلمي PPL، كثافة دوريان ييتس ومايك مينتزر HIT، جدول إريك هيلمز ولايل مكدونالد GBR، بالإضافة لجداول تضخيم الصدر، تعريض الظهر V-Taper، تفجير الذراعين، وخطط الدمبلز والكاليستنكس.'
     },
     {
-      q: 'ما الذي يميز موسوعة التمارين الرياضية (4,207 تمرين)؟',
-      a: 'كل تمرين موثق بالتشريح العضلي الدقيق، خطوات الأداء الصحيحة، شروحات الفيديو والرسوم المتحركة، مع تقنية عرض الصور ثلاثية الطبقات التي تضمن ظهور التمارين فورياً حتى مع بطء الاتصال.'
+      q: 'ماذا لو كنت أتدرب في المنزل بدون كرسي تدريب (بنش) أو امتلك سجادة يوجا فقط؟',
+      a: 'يتميز النظام بالتكييف الذكي للأدوات؛ فعند عدم توفر بنش، تتحول تمارين الصدر والترايسبس تلقائياً إلى تمارين الضغط الأرضي بالدمبلز (Floor Dumbbell Press)، التجميع الأرضي (Floor Flyes)، وتنويعات الضغط بوزن الجسم. وإذا كان لديك مات فقط، يتم التركيز على الكاليستنكس وعضلات الجذع والوسط.'
     },
     {
-      q: 'كيف تحميني بروتوكولات الإحماء والاستشفاء اليومية من الإصابات؟',
-      a: 'قبل بدء رفع الأوزان، يولد النظام تمارين إحماء حركي مخصصة فقط للعضلات والمفاصل المستهدفة في ذلك اليوم. وبعد انتهاء التمرين، يقترح إطالات استشفائية تخفف آلام العضلات وتسرع البناء العضلي.'
+      q: 'كيف تعمل موسوعة التمارين الرياضية (4,207 تمرين) وخريطة التشريح؟',
+      a: 'كل تمرين موثق بالتشريح العضلي الدقيق، خطوات الأداء الصحيحة، شروحات الفيديو والرسوم الحركية، مع إمكانية النقر على أي عضلة في خريطة الجسم التفاعلية لاكتشاف أفضل التمارين المستهدفة لها فورياً.'
     },
     {
-      q: 'هل بياناتي وسجلاتي الرياضية في أمان وخصوصية تامة؟',
-      a: 'نعم 100%. نلتزم بسياسة انعدام التتبع التجاري (Zero-Tracker). لا نبيع ولا نشارك بياناتك مع أي طرف خارجي، وبياناتك مشفرة بالكامل ويمكنك تصديرها بملف JSON أو مسح الحساب نهائياً بنقرة واحدة.'
+      q: 'هل يمكنني تصميم وتخصيص جدولي التدريبي يدوياً من الصفر؟',
+      a: 'بكل تأكيد! يوفر BeastMode مصمماً يدوياً تفاعلياً مع إكمال تلقائي ذكي للتمارين، أو استيراد الجداول من نصوص أو ملفات عبر الذكاء الاصطناعي، أو تطبيق قوالب يومية جاهزة (Push/Pull/Legs) والتعديل عليها بحرية تامة.'
+    },
+    {
+      q: 'هل بياناتي الرياضية وسجلاتي في أمان وخصوصية تامة؟',
+      a: 'نعم 100%. نلتزم بأعلى معايير الأمان (OWASP) وانعدام التتبع التجاري (Zero-Tracker). سجلاتك مشفرة بالكامل في سحابة Supabase، ويمكنك تصديرها بملف JSON أو مسح حسابك نهائياً بنقرة واحدة.'
     }
   ];
 
   const steps = isEn ? [
     {
       num: '01',
-      title: 'Analyze Metrics & Equipment',
-      desc: 'Define your fitness goal, schedule (2-6 days), available tools (Gym, Home, Dumbbells), and physical limitations.'
+      title: 'Analyze Metrics & Gear',
+      desc: 'Define your goal, schedule (2-6 days), available tools (Gym, Bench, Dumbbells, Mat), and physical constraints.'
     },
     {
       num: '02',
-      title: 'AI Synthesis & Customization',
-      desc: 'Our engine generates a periodized split with tailored warmups, exercise alternatives, and optimal rep/set schemes.'
+      title: 'AI Synthesis or Pro Legends',
+      desc: 'Generate a periodized routine via dual AI, choose a legendary blueprint (Arnold, Nippard), or design manually.'
     },
     {
       num: '03',
-      title: 'Log, Overload & Progress',
-      desc: 'Track weights seamlessly with 0ms instant loading, observe volume analytics, and smash your personal records.'
+      title: 'Execute, Overload & Dominate',
+      desc: 'Train with the interactive session player, log weights with 0ms speed, and track your true progressive overload.'
     }
   ] : [
     {
       num: '01',
       title: 'تحليل المعطيات والأدوات 🎯',
-      desc: 'حدد هدفك الرياضي، عدد أيام تمرينك (2-6 أيام)، أدواتك المتاحة (نادي، منزل، دمبلز)، وأي إصابات يجب مراعاتها.'
+      desc: 'حدد هدفك الرياضي، عدد أيام تمرينك (2-6 أيام)، أدواتك المتاحة (نادي، بنش، دمبلز، مات)، وأي إصابات لتفاديها.'
     },
     {
       num: '02',
-      title: 'صياغة الجدول بالذكاء الاصطناعي 🧠',
-      desc: 'يبني النظام جدولك المتوازن علمياً مع بروتوكولات الإحماء المخصصة، زوايا الاستهداف، وبدائل التمارين الذكية.'
+      title: 'توليد ذكي أو اختيار من الأساطير 👑',
+      desc: 'صِغ جدولك بالذكاء الاصطناعي المزدوج، أو اختر من مكتبة أساطير كمال الأجسام (آرنولد، PPL)، أو صمم جدولك يدوياً.'
     },
     {
       num: '03',
-      title: 'التتبع والتدرج المستمر 📈',
-      desc: 'سجل أوزانك وجولاتك بسرعة فائقة بدون انتظار، راقب منحنى تقدمك البياني، وشاهد نتائج تحولك البدني.'
+      title: 'التنفيذ والتدرج نحو القوة 📈',
+      desc: 'تدرّب عبر مشغل الحصة التفاعلي، سجّل أوزانك بسرعة فائقة بدون انتظار، وراقب منحنى تطورك البدني بدقة.'
     }
   ];
 
@@ -111,7 +119,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             BEASTMODE AI
           </span>
           <span style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            PRO v2.5
+            PRO v2.6
           </span>
         </div>
 
@@ -151,24 +159,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         
         {/* Elite Badge */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold', boxShadow: '0 0 20px rgba(16, 185, 129, 0.1)' }}>
-          <Sparkles size={15} />
-          <span>{isEn ? 'The Operating System for Elite Physique Transformation' : 'المنظومة الذكية الرائدة للياقة البدنية وكمال الأجسام'}</span>
+          <Crown size={16} color="#f59e0b" />
+          <span>{isEn ? 'Next-Gen Sports Science & Multi-Plan Periodization' : 'المنظومة الرياضية الشاملة للياقة البدنية، الجداول المتعددة، وعلوم التمرين'}</span>
         </div>
 
         {/* Hero Title */}
-        <h1 style={{ fontSize: 'clamp(34px, 5.5vw, 60px)', fontWeight: '900', lineHeight: 1.15, maxWidth: '960px', letterSpacing: '-0.5px' }}>
+        <h1 style={{ fontSize: 'clamp(34px, 5.5vw, 60px)', fontWeight: '900', lineHeight: 1.15, maxWidth: '980px', letterSpacing: '-0.5px' }}>
           {isEn ? (
-            <>Unleash Your <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Inner Beast</span> With Intelligent Sports Science</>
+            <>Sculpt Your Ultimate Physique With <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Legendary Science</span> & Precision AI</>
           ) : (
-            <>اصنع نسختك الأقوى.. بذكاء اصطناعي يحلل <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>كل زاوية عضلية</span> في جسمك</>
+            <>اصنع نسختك الأقوى.. ببرامج <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>أساطير كمال الأجسام</span> وذكاء اصطناعي يحلل كل عضلة</>
           )}
         </h1>
 
         {/* Hero Description */}
-        <p style={{ fontSize: 'clamp(15px, 2vw, 18.5px)', color: 'var(--text-secondary)', maxWidth: '780px', lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: 'clamp(15px, 2vw, 18.5px)', color: 'var(--text-secondary)', maxWidth: '820px', lineHeight: 1.7, margin: 0 }}>
           {isEn
-            ? 'Deterministic AI workout periodization, interactive 3D muscle anatomy with 4,207+ verified exercises, session-specific warmup & cooldown protocols, and 0ms instant cloud synchronization.'
-            : 'برامج تدريبية ذكية تُصاغ علمياً لمعداتك وأهدافك، خريطة تشريح تفاعلية لـ 16 عضلة، وموسوعة شاملة تضم أكثر من 4,207 تمرين مع بروتوكولات الإحماء والاستشفاء اليومية وسرعة فائقة بدون انتظار.'}
+            ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), manage multiple workout programs with one primary active plan, train with intelligent bench/floor adaptation, explore 4,207+ anatomical exercises, and track progress with zero latency.'
+            : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، صمم وأدر جداول متعددة مع تعيين جدول أساسي، تدرّب بذكاء مع تكييف تمارين البنش والأرضية، واستكشف 4,207 تمرين موثق مع سرعة استجابة فائقة.'}
         </p>
 
         {/* Hero Action Buttons */}
@@ -201,22 +209,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Quick Highlights / Proof Numbers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '18px', width: '100%', maxWidth: '900px', marginTop: '40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '18px', width: '100%', maxWidth: '950px', marginTop: '40px' }}>
           <div className="glass-panel" style={{ padding: '22px 16px', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
             <div style={{ fontSize: '30px', fontWeight: '900', color: 'var(--primary)' }}>4,207+</div>
             <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Verified Exercises' : 'تمرين رياضي موثق'}</div>
           </div>
-          <div className="glass-panel" style={{ padding: '22px 16px', textAlign: 'center', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-            <div style={{ fontSize: '30px', fontWeight: '900', color: 'var(--secondary)' }}>16</div>
-            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Interactive Muscle Zones' : 'منطقة عضلية تفاعلية'}</div>
-          </div>
           <div className="glass-panel" style={{ padding: '22px 16px', textAlign: 'center', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-            <div style={{ fontSize: '30px', fontWeight: '900', color: '#f59e0b' }}>0 ms</div>
-            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Instant SWR Load' : 'سرعة استجابة فائقة'}</div>
+            <div style={{ fontSize: '30px', fontWeight: '900', color: '#f59e0b' }}>👑 Pro</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Legendary Coach Splits' : 'خطط الأساطير والعلماء'}</div>
+          </div>
+          <div className="glass-panel" style={{ padding: '22px 16px', textAlign: 'center', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+            <div style={{ fontSize: '30px', fontWeight: '900', color: 'var(--secondary)' }}>📑 Multi</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Multi-Plan Management' : 'إدارة الجداول المتعددة'}</div>
           </div>
           <div className="glass-panel" style={{ padding: '22px 16px', textAlign: 'center', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
-            <div style={{ fontSize: '30px', fontWeight: '900', color: '#ec4899' }}>100%</div>
-            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Privacy & No Trackers' : 'خصوصية وبدون إعلانات'}</div>
+            <div style={{ fontSize: '30px', fontWeight: '900', color: '#ec4899' }}>0 ms</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Instant SWR Speed' : 'سرعة استجابة فائقة'}</div>
           </div>
         </div>
       </section>
@@ -260,72 +268,72 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
           
-          {/* Card 1 */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Zap size={24} />
+          {/* Card 1: Legendary Pro Plans */}
+          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Crown size={24} />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Dual AI Engine (Groq & Gemini)' : 'محرك الذكاء الاصطناعي المزدوج'}</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Curated Legendary & Pro Splits' : 'مكتبة خطط الأساطير والمدربين المعتمدين'}</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
               {isEn
-                ? 'Balances training volume, distributes optimal sets and rep cadences, and automatically adapts routines when your metrics change.'
-                : 'يوازن الأحمال التدريبية بدقة، يوزع المجموعات والتكرارات، ويعدل جدولك فورياً وتلقائياً عند تغير وزنك أو مكان تمرينك.'}
+                ? 'Directly apply certified workout routines: Arnold Schwarzenegger Golden Blueprint, Jeff Nippard Science PPL, Dorian Yates HIT, and muscle focus routines.'
+                : 'طبّق برامج أساطير كمال الأجسام بضغطة زر: جدول آرنولد شوارزنيجر الذهبي، نظام جيف نيبارد العلمي PPL، كثافة دوريان ييتس، وبرامج التركيز العضلي.'}
             </p>
           </div>
 
-          {/* Card 2 */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+          {/* Card 2: Multi-Plan Management Hub */}
+          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Activity size={24} />
+              <Layers size={24} />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Interactive 3D/2D Muscle Anatomy' : 'خريطة التشريح العضلي التفاعلية'}</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Multi-Plan Management Hub' : 'إدارة وتصميم الجداول المتعددة'}</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
               {isEn
-                ? 'Click on any muscle zone (Chest, Quads, Lats, Deltoids) to instantly discover targeted movements, biomechanical cues, and visual video guides.'
+                ? 'Create and keep multiple routines (Gym, Home, Travel) with 1 primary active routine. Duplicate, rename, edit, and switch active plans effortlessly.'
+                : 'احتفظ بعدة جداول في حسابك (جدول النادي، المنزل، السفر) مع تعيين جدول أساسي نشط. يمكنك نسخ الجداول وتعديلها والتبديل بينها فورياً.'}
+            </p>
+          </div>
+
+          {/* Card 3: Intelligent Equipment & Bench Adaptation */}
+          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Zap size={24} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Intelligent Equipment & Bench Adaptation' : 'التكييف الذكي للأدوات ومقعد التمرين'}</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {isEn
+                ? 'No workout bench? The AI automatically converts chest routines to Floor Dumbbell Press, Floor Flyes, and push-up progressions without requiring a bench.'
+                : 'لا تملك كرسي تدريب (بنش)؟ يقوم النظام تلقائياً بتكييف تمارين الصدر لتعتمد على الضغط الأرضي (Floor Press) والوزن الحر بأمان تام.'}
+            </p>
+          </div>
+
+          {/* Card 4: Interactive Muscle Anatomy & Encyclopedia */}
+          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Activity size={24} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? '4,207+ Exercises & 3D Muscle Anatomy' : 'موسوعة 4,207 تمرين وخريطة التشريح'}</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {isEn
+                ? 'Click any muscle zone to discover targeted exercises with biomechanical cues, common mistakes, and 3-tier reliable animated demonstrations.'
                 : 'انقر على أي عضلة في الجسم لتكتشف أفضل التمارين التي تستهدفها بدقة مع نصائح التكنيك الصحيح وشروحات الفيديو والرسوم الحركية.'}
             </p>
           </div>
 
-          {/* Card 3 */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Flame size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Dynamic Daily Warmup & Cooldown' : 'بروتوكولات الإحماء والاستشفاء اليومية'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Custom mobility routines and stretches generated per session to pre-activate stabilizers and accelerate post-workout recovery.'
-                : 'إحماء حركي مخصص لكل يوم تدريبي يجهز مفاصلك قبل رفع الأوزان، مع إطالات استشفائية تخفف آلام العضلات وتسرع البناء.'}
-            </p>
-          </div>
-
-          {/* Card 4 */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Dumbbell size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Smart Exercise Swaps' : 'استبدال التمارين الذكي'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Gym machine occupied or feeling shoulder soreness? Swap any exercise instantly for an anatomical alternative using your available equipment.'
-                : 'الجهاز مشغول بالنادي أو تشعر بألم في المفصل؟ استبدل التمرين فورياً ببديل يستهدف نفس العضلة بالمعدات المتوفرة لديك.'}
-            </p>
-          </div>
-
-          {/* Card 5 */}
+          {/* Card 5: Daily Dynamic Protocols & Active Player */}
           <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <TrendingUp size={24} />
+              <Timer size={24} />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Volume Analytics & Printable Sheets' : 'تحليلات الحجم وطباعة الجداول'}</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Session Player & Rest Timer' : 'مشغل الحصة التدريبية ومؤقت الراحة'}</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
               {isEn
-                ? 'Export data to CSV/JSON, track weight progression curves, or print a high-contrast gym workout sheet with checkbox sets.'
-                : 'قم بتصدير خطتك وسجلاتك، راقب منحنى تقدم الأوزان، أو اطبع جدول التدريب الورقي المنسق مع خانات التأشير لتسجيل أوزانك بالنادي.'}
+                ? 'Train step-by-step with the live workout player, auto-rest countdowns with sound beeps, session warmups, and cooldown stretches.'
+                : 'تدرّب خطوة بخطوة مع مشغل الحصة التفاعلي، مؤقت الراحة الذكي مع تنبيهات صوتية، وبروتوكولات الإحماء والاستشفاء اليومية.'}
             </p>
           </div>
 
-          {/* Card 6 */}
+          {/* Card 6: OWASP Security & Privacy */}
           <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ShieldCheck size={24} />
@@ -348,7 +356,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {isEn ? 'Frequently Asked Questions' : 'الأسئلة الشائعة وإجابات الخبراء'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '6px' }}>
-            {isEn ? 'Everything you need to know about BeastMode AI features and training.' : 'كل ما تود معرفته عن منصة BeastMode AI وكيفية استخدامها.'}
+            {isEn ? 'Everything you need to know about BeastMode AI features, multi-plans, and sports science.' : 'كل ما تود معرفته عن منصة BeastMode AI وإدارة الجداول والمزايا الذكية.'}
           </p>
         </div>
 
@@ -380,8 +388,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
             {isEn
-              ? 'Join BeastMode AI today and get your personalized periodized workout program in seconds.'
-              : 'انضم لـ BeastMode AI اليوم واحصل على خطتك التدريبية المخصصة في ثوانٍ معدودة وابدأ رحلتك الرياضية بثقة.'}
+              ? 'Join BeastMode AI today and get your personalized periodized workout program or legendary split in seconds.'
+              : 'انضم لـ BeastMode AI اليوم واحصل على خطتك التدريبية المخصصة أو اختر من خطط الأساطير وابدأ رحلتك الرياضية بثقة.'}
           </p>
           <button
             onClick={onGetStarted}
