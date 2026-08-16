@@ -29,3 +29,36 @@ export const escapeLikeQuery = (str: string): string => {
   if (!str) return '';
   return str.replace(/[%_\\]/g, '\\$&');
 };
+
+// Blacklist of known disposable / temporary / spam email domains
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  'tempmail.com',
+  '10minutemail.com',
+  'mailinator.com',
+  'guerrillamail.com',
+  'sharklasers.com',
+  'trashmail.com',
+  'yopmail.com',
+  'fakeinbox.com',
+  'getairmail.com',
+  'mohmal.com',
+  'dispostable.com',
+  'throwawaymail.com',
+  'crazymailing.com',
+  'maildrop.cc',
+  'tempr.email',
+  'burnermail.io',
+  'nada.ltd',
+  'inboxbear.com',
+  'mailnesia.com',
+]);
+
+/**
+ * Checks if an email uses a known disposable / temporary domain.
+ */
+export const isDisposableEmail = (email: string): boolean => {
+  if (!email || !email.includes('@')) return true;
+  const domain = email.split('@')[1]?.toLowerCase().trim();
+  if (!domain) return true;
+  return DISPOSABLE_EMAIL_DOMAINS.has(domain);
+};

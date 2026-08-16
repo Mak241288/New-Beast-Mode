@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
 import { getProfileAdviceAI } from '../services/aiService';
+import { isDisposableEmail } from '../utils/validation';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('[Auth] JWT_SECRET environment variable is not set!');
@@ -22,9 +23,15 @@ const isValidEmail = (email: string): boolean => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 export const register = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { name, email, password } = req.body;
+  const { name, email, password, botHoneypot } = req.body;
 
   try {
+    // 0. Anti-Bot Honeypot Trap (Silent rejection for automated spam bots)
+    if (botHoneypot) {
+      res.status(400).json({ error: 'تم اكتشاف نشاط آلي غير مصرح به.' });
+      return;
+    }
+
     // 1. Sanitization
     const cleanName = (name || '').trim();
     const cleanEmail = (email || '').trim().toLowerCase();
@@ -37,6 +44,11 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
 
     if (!isValidEmail(cleanEmail)) {
       res.status(400).json({ error: 'صيغة البريد الإلكتروني غير صحيحة' });
+      return;
+    }
+
+    if (isDisposableEmail(cleanEmail)) {
+      res.status(400).json({ error: 'غير مسموح بالتسجيل باستخدام إيميلات وهمية أو مؤقتة (Disposable Emails). يرجى استخدام بريد إلكتروني حقيقي وموثوق.' });
       return;
     }
 
@@ -649,6 +661,11 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
 
     if (!cleanEmail || !isValidEmail(cleanEmail)) {
       res.status(400).json({ error: 'البريد الإلكتروني لحساب Google غير صحيح' });
+      return;
+    }
+
+    if (isDisposableEmail(cleanEmail)) {
+      res.status(400).json({ error: 'غير مسموح بربط أو تسجيل حسابات باستخدام إيميلات وهمية أو مؤقتة (Disposable Emails).' });
       return;
     }
 
