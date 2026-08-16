@@ -59,6 +59,9 @@ export const api = {
   updateProfile: (profileData: any) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) }),
   updateAccountSecurity: (securityData: { currentPassword: string; newEmail?: string; newPassword?: string }) => 
     request('/auth/security', { method: 'PUT', body: JSON.stringify(securityData) }),
+  requestPasswordResetOtp: (email: string) => request('/auth/forgot-password-otp', { method: 'POST', body: JSON.stringify({ email }) }),
+  verifyOtpAndResetPassword: (data: { email: string; otp: string; newPassword: string }) => 
+    request('/auth/verify-otp-reset-password', { method: 'POST', body: JSON.stringify(data) }),
   exportUserData: () => request('/auth/export-data'),
   deleteAccount: () => request('/auth/account', { method: 'DELETE' }),
 

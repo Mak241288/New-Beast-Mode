@@ -31,6 +31,8 @@ model User {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   onboardingCompleted Boolean       @default(false)
+  resetOtp            String?
+  resetOtpExpiry      DateTime?
   workoutPlans        WorkoutPlan[]
   weightLogs          WeightLog[]
 }

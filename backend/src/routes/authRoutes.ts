@@ -5,6 +5,8 @@ import {
   getProfile, 
   updateProfile,
   updateAccountSecurity,
+  requestPasswordResetOtp,
+  verifyOtpAndResetPassword,
   exportUserData,
   deleteAccount
 } from '../controllers/authController';
@@ -15,6 +17,8 @@ const router = Router();
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/forgot-password-otp', requestPasswordResetOtp);
+router.post('/verify-otp-reset-password', verifyOtpAndResetPassword);
 
 // Protected routes (require JWT verification)
 router.get('/profile', protect as any, getProfile);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff, ArrowRight, KeyRound, CheckCircle2, RefreshCw } from 'lucide-react';
 
 interface LoginProps {
   onSuccess: (token: string) => void;
@@ -16,6 +16,19 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Forgot Password / OTP State
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpStep, setOtpStep] = useState<1 | 2>(1); // 1: Send OTP to Email, 2: Enter OTP & New Password
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpNewPassword, setOtpNewPassword] = useState('');
+  const [otpConfirmPassword, setOtpConfirmPassword] = useState('');
+  const [showOtpNewPassword, setShowOtpNewPassword] = useState(false);
+  const [showOtpConfirmPassword, setShowOtpConfirmPassword] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
 
   const validateInputs = (): boolean => {
     const cleanEmail = email.trim();
@@ -69,6 +82,81 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
       setError(err.message || 'حدث خطأ أثناء الاتصال بالسيرفر، يرجى المحاولة لاحقاً');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendOtp = async (targetEmail?: string) => {
+    const mailToSend = (targetEmail || otpEmail || email).trim().toLowerCase();
+    if (!mailToSend || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailToSend)) {
+      setOtpError('يرجى كتابة بريد إلكتروني صحيح لاستلام رمز OTP');
+      return;
+    }
+
+    setOtpError('');
+    setOtpSuccessMsg('');
+    setOtpLoading(true);
+
+    try {
+      const res = await api.requestPasswordResetOtp(mailToSend);
+      setOtpEmail(mailToSend);
+      setOtpStep(2);
+      setOtpSuccessMsg(res.message || 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح!');
+      if (res.debugOtp) {
+        setOtpCode(res.debugOtp);
+      }
+    } catch (err: any) {
+      setOtpError(err.message || 'فشل إرسال رمز التحقق، تأكد من صحة البريد الإلكتروني المسجل');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtpAndReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpError('');
+    setOtpSuccessMsg('');
+
+    if (!otpCode.trim() || otpCode.trim().length !== 6) {
+      setOtpError('يرجى إدخال رمز التحقق المكون من 6 أرقام');
+      return;
+    }
+
+    if (!otpNewPassword || otpNewPassword.length < 8) {
+      setOtpError('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل');
+      return;
+    }
+
+    if (otpNewPassword !== otpConfirmPassword) {
+      setOtpError('كلمتا المرور غير متطابقتين');
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const res = await api.verifyOtpAndResetPassword({
+        email: otpEmail.trim().toLowerCase(),
+        otp: otpCode.trim(),
+        newPassword: otpNewPassword.trim(),
+      });
+
+      setOtpSuccessMsg(res.message || 'تم تعيين كلمة المرور بنجاح!');
+      if (res.token) {
+        localStorage.setItem('token', res.token);
+      }
+
+      setTimeout(() => {
+        setShowOtpModal(false);
+        if (res.token) {
+          onSuccess(res.token);
+        } else {
+          setIsLogin(true);
+          setPassword(otpNewPassword);
+        }
+      }, 1200);
+    } catch (err: any) {
+      setOtpError(err.message || 'فشل تأكيد الرمز أو إعادة التعيين');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -137,7 +225,24 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>كلمة المرور</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>كلمة المرور</label>
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpEmail(email);
+                    setShowOtpModal(true);
+                    setOtpStep(1);
+                    setOtpError('');
+                    setOtpSuccessMsg('');
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                >
+                  نسيت كلمة المرور؟ 🔑
+                </button>
+              )}
+            </div>
             <div style={{ position: 'relative' }}>
               <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
@@ -152,7 +257,8 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 0 }}
+                title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور للتأكد'}
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: showPassword ? 'var(--primary)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', padding: 0 }}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -160,9 +266,31 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
           </div>
 
           {error && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-              <AlertCircle size={18} color="#ef4444" style={{ flexShrink: 0 }} />
-              <p style={{ fontSize: '13px', color: '#ef4444', fontWeight: '600' }}>{error}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={18} color="#ef4444" style={{ flexShrink: 0 }} />
+                <p style={{ fontSize: '13px', color: '#ef4444', fontWeight: '600', margin: 0 }}>{error}</p>
+              </div>
+              
+              {/* Duplicate Email Recovery Action */}
+              {(error.includes('مسجل بالفعل') || error.includes('already exists')) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpEmail(email);
+                    setShowOtpModal(true);
+                    setOtpStep(1);
+                    setOtpError('');
+                    setOtpSuccessMsg('');
+                    handleSendOtp(email);
+                  }}
+                  className="glow-btn"
+                  style={{ marginTop: '4px', padding: '8px 12px', fontSize: '12px', justifyContent: 'center', gap: '6px' }}
+                >
+                  <KeyRound size={14} />
+                  <span>استعادة كلمة المرور عبر رمز OTP للبريد الإلكتروني 📩</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -183,6 +311,183 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
           </button>
         </div>
       </div>
+
+      {/* OTP FORGOT PASSWORD & RECOVERY MODAL */}
+      {showOtpModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.95)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '460px', padding: '32px', border: '1px solid var(--primary)', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ background: 'var(--primary-glow)', color: 'var(--primary)', padding: '14px', borderRadius: '50%', width: '56px', height: '56px', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <KeyRound size={28} />
+            </div>
+
+            <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px' }}>
+              {otpStep === 1 ? 'استعادة كلمة المرور عبر رمز OTP 📩' : 'إدخال رمز التحقق وتعيين كلمة المرور 🔐'}
+            </h2>
+
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.5 }}>
+              {otpStep === 1 
+                ? 'أدخل بريدك الإلكتروني المسجل لنرسل لك رمز تحقق سري (OTP) مكوّن من 6 أرقام.'
+                : `تم إرسال رمز التحقق إلى (${otpEmail}). أدخل الرمز أدناه مع كلمة المرور الجديدة.`}
+            </p>
+
+            {otpError && (
+              <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginBottom: '16px', textAlign: 'right' }}>
+                ⚠️ {otpError}
+              </div>
+            )}
+
+            {otpSuccessMsg && (
+              <div style={{ padding: '10px 14px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '8px', color: '#10b981', fontSize: '12px', fontWeight: 'bold', marginBottom: '16px', textAlign: 'right', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={16} />
+                <span>{otpSuccessMsg}</span>
+              </div>
+            )}
+
+            {otpStep === 1 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'right' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                    📧 البريد الإلكتروني للحساب:
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={otpEmail}
+                    onChange={(e) => setOtpEmail(e.target.value)}
+                    className="input-field"
+                    style={{ textAlign: 'left', direction: 'ltr' }}
+                    required
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    disabled={otpLoading}
+                    onClick={() => handleSendOtp()}
+                    className="glow-btn"
+                    style={{ flex: 1, justifyContent: 'center', padding: '12px' }}
+                  >
+                    {otpLoading ? 'جاري إرسال الرمز...' : 'إرسال رمز OTP 📩'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={otpLoading}
+                    onClick={() => setShowOtpModal(false)}
+                    className="secondary-btn"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleVerifyOtpAndReset} style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'right' }}>
+                
+                {/* OTP Code Input */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '12.5px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                      🔢 رمز التحقق (OTP) المكوّن من 6 أرقام:
+                    </label>
+                    <button
+                      type="button"
+                      disabled={otpLoading}
+                      onClick={() => handleSendOtp(otpEmail)}
+                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <RefreshCw size={11} />
+                      <span>إعادة إرسال الرمز</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    className="input-field"
+                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '20px', fontWeight: '800', borderColor: 'var(--primary)' }}
+                    required
+                  />
+                </div>
+
+                {/* New Password */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                    🔑 كلمة المرور الجديدة (8 خانات على الأقل):
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showOtpNewPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={otpNewPassword}
+                      onChange={(e) => setOtpNewPassword(e.target.value)}
+                      className="input-field"
+                      style={{ paddingLeft: '45px', textAlign: 'left', direction: 'ltr' }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOtpNewPassword(!showOtpNewPassword)}
+                      title={showOtpNewPassword ? 'إخفاء' : 'إظهار كلمة المرور'}
+                      style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: showOtpNewPassword ? 'var(--primary)' : 'var(--text-muted)' }}
+                    >
+                      {showOtpNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                    🔑 تأكيد كلمة المرور الجديدة:
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showOtpConfirmPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={otpConfirmPassword}
+                      onChange={(e) => setOtpConfirmPassword(e.target.value)}
+                      className="input-field"
+                      style={{ paddingLeft: '45px', textAlign: 'left', direction: 'ltr' }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOtpConfirmPassword(!showOtpConfirmPassword)}
+                      title={showOtpConfirmPassword ? 'إخفاء' : 'إظهار كلمة المرور'}
+                      style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: showOtpConfirmPassword ? 'var(--primary)' : 'var(--text-muted)' }}
+                    >
+                      {showOtpConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="glow-btn"
+                    style={{ flex: 1, justifyContent: 'center', padding: '12px' }}
+                  >
+                    {otpLoading ? 'جاري التحقق...' : 'تأكيد وتغيير كلمة المرور 🔐'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={otpLoading}
+                    onClick={() => setShowOtpModal(false)}
+                    className="secondary-btn"
+                    style={{ flex: 1, justifyContent: 'center' }}
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
