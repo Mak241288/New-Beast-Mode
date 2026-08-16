@@ -18,7 +18,8 @@ import {
   deletePlan,
   getLibraryTree,
   getAlternatives,
-  swapExerciseAI
+  swapExerciseAI,
+  analyzePhysiquePhoto
 } from '../controllers/workoutController';
 import { protect } from '../middleware/auth';
 
@@ -26,6 +27,8 @@ const router = Router();
 
 // Apply protection to all workout routes
 router.use(protect as any);
+
+router.post('/analyze-physique', analyzePhysiquePhoto);
 
 router.post('/generate', generatePlan);
 router.post('/manual', createManualPlan);

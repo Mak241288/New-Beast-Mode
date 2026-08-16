@@ -5,7 +5,8 @@ import {
   upgradeWorkoutPlanAI, 
   translateExerciseInstructionsBatch, 
   parseBulkWorkoutText, 
-  suggestSwapAI 
+  suggestSwapAI,
+  analyzePhysiquePhotoAI
 } from '../services/aiService';
 import { validateNumericId, sanitizeString, sanitizeInt, escapeLikeQuery } from '../utils/validation';
 
@@ -1694,6 +1695,30 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
   } catch (err: any) {
     console.error('[workoutController] AI Swap Error:', err);
     res.status(500).json({ error: err.message || 'فشل استبدال التمرين بالذكاء الاصطناعي.' });
+  }
+};
+
+// @desc    Analyze Physique & Transformation Photo using AI
+// @route   POST /api/workout/analyze-physique
+export const analyzePhysiquePhoto = async (req: AuthRequest, res: Response): Promise<void> => {
+  const { weightKg, angle, userNotes, hasBeforeAfter, lang } = req.body;
+
+  try {
+    const analysis = await analyzePhysiquePhotoAI({
+      weightKg: weightKg ? parseFloat(String(weightKg)) : undefined,
+      angle: angle || 'FRONT',
+      userNotes: userNotes || '',
+      hasBeforeAfter: Boolean(hasBeforeAfter),
+      lang: lang || 'ar',
+    });
+
+    res.json({
+      success: true,
+      analysis,
+    });
+  } catch (err: any) {
+    console.error('[workoutController] Analyze Physique Error:', err);
+    res.status(500).json({ error: err.message || 'فشل تحليل صور التحول البدني بالذكاء الاصطناعي.' });
   }
 };
 

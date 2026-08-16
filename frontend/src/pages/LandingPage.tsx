@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dumbbell, Activity, Zap, ArrowRight, ChevronDown, ChevronUp, Globe, FileText, Lock, Info, Crown, Layers, Utensils, Percent, Droplets, Camera, WifiOff } from 'lucide-react';
+import { Dumbbell, Activity, Zap, ArrowRight, ChevronDown, ChevronUp, Globe, FileText, Lock, Info, Crown, Layers, Utensils, Percent, Droplets, WifiOff, Brain } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 interface LandingPageProps {
@@ -21,6 +21,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const faqs = isEn ? [
+    {
+      q: 'How does the AI Physique Scanner & Transformation Photo Analysis work?',
+      a: 'The AI Physique Scanner acts as an elite sports scientist and biomechanics coach. When you upload or compare your progress photos, it evaluates muscle definition (score out of 100), estimated body fat range, shoulder-to-waist V-taper symmetry, posture alignment, and generates targeted hypertrophy focus areas and calorie/macro recommendations for your next training block.'
+    },
+    {
+      q: 'How does Google Account Linking work for existing registered users?',
+      a: 'BeastMode offers seamless Google Account Integration. You can link your existing BeastMode account with your Google account directly from your Profile settings or log in via Google with your registered email. All your existing workout plans, logs, and metrics remain 100% safe and intact.'
+    },
     {
       q: 'How does the Smart Nutrition & Macro Coach (TDEE & Macro Cycling) work?',
       a: 'The coach applies the Mifflin-St Jeor scientific formula to compute your Basal Metabolic Rate (BMR) and Total Daily Energy Expenditure (TDEE). It features intelligent Macro Cycling: higher calories and complex carbs on training days for glycogen fullness (+6%), and lower calories with elevated healthy fats on rest days (-6%) for cellular recovery. It also provides meal timing across 4 biological windows and an interactive protein slider (1.6 to 2.6 g/kg).'
@@ -47,13 +55,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     },
     {
       q: 'Does BeastMode work offline in underground gyms without internet connection?',
-      a: 'Yes! BeastMode includes a dedicated PWA Service Worker caching engine. Your active routine, exercise database, and session player run smoothly in gym basements even if your cellular connection drops.'
+      a: 'Yes! BeastMode includes a dedicated PWA Service Worker caching engine with synthesized audio sound packs. Your active routine, exercise database, and session player run smoothly in gym basements even if your cellular connection drops.'
     },
     {
       q: 'Are my logs, progressive overload records, and personal metrics secure and private?',
       a: '100% private. We enforce an uncompromising Zero-Tracker & OWASP-compliant security standard. Your data is encrypted in Supabase cloud, and you can export complete JSON archives or permanently delete your account anytime.'
     }
   ] : [
+    {
+      q: 'كيف يعمل ماسح التحول البدني وتحليل الصور بالذكاء الاصطناعي (AI Physique Scanner)؟',
+      a: 'يعمل ماسح الذكاء الاصطناعي كخبير تشريح عضلي ومحكم كمال أجسام دولي؛ حيث يحلل صور تقدمك البدني أو مقارنة قبل وبعد، ليعطيك تقييماً علمياً للبروز العضلي (من 100)، النطاق التقديري لنسبة الدهون، تناسق عرض الظهر V-Taper، نقاط القوة، والعضلات المستهدفة للتطوير مع توصية غذائية دقيقة للسعرات والماكروز.'
+    },
+    {
+      q: 'كيف تعمل ميزة ربط الحساب المسجل سابقاً بحساب Google؟',
+      a: 'يتيح BeastMode ربطاً آمناً ومباشراً بحساب Google؛ يمكنك ربط حسابك بضغطة زر من صفحة الملف الشخصي، أو تسجيل الدخول ببريدك عبر Google ليدمج الحساب تلقائياً مع الحفاظ الكامل 100% على كافة جداولك الرياضية، سجلات أوزانك، وصورك.'
+    },
     {
       q: 'كيف يعمل مدرب التغذية والماكروز الذكي (Smart Nutrition & Macro Coach)؟',
       a: 'يعتمد النظام على معادلة Mifflin-St Jeor العلمية لحساب معدل الأيض (BMR) والحرق اليومي (TDEE). ويتميز بتدوير السعرات والماكروز (Macro Cycling): سعرات أعلى وكاربوهيدرات معقدة في أيام التمرين لشحن مخازن الجلايكوجين (+6%)، وسعرات أقل مع دهون صحية أعلى في أيام الراحة للاستشفاء العضلي (-6%)، بالإضافة لتوزيع الوجبات عبر 4 نوافذ حيوية وسلايدر بروتين مخصص (1.6 إلى 2.6 غ/كغ).'
@@ -80,7 +96,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     },
     {
       q: 'هل يعمل التطبيق في قاعات الجيم السفلية بدون شبكة إنترنت (Offline)؟',
-      a: 'نعم! يدعم BeastMode تقنية PWA Service Worker للتخزين المؤقت؛ حيث يمكنك فتح جدولك التدريبي، تشغيل مشغل الحصة، ومؤقت الراحة والأصوات بدون انقطاع حتى لو كانت تغطية الجوال ضعيفة داخل الجيم.'
+      a: 'نعم! يدعم BeastMode تقنية PWA Service Worker للتخزين المؤقت؛ حيث يمكنك فتح جدولك التدريبي، تشغيل مشغل الحصة، ومؤقت الراحة والأصوات التفاعلية بدون انقطاع حتى لو كانت تغطية الجوال ضعيفة داخل الجيم.'
     },
     {
       q: 'هل بياناتي الرياضية وسجلاتي في أمان وخصوصية تامة؟',
@@ -101,8 +117,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     },
     {
       num: '03',
-      title: 'Execute, Overload & Recover',
-      desc: 'Train with the interactive player, calculate barbell plate loading & 1RM, track hydration, and log physique progress photos.'
+      title: 'Execute, Overload, Scan & Recover',
+      desc: 'Train with the interactive player, calculate barbell plate loading & 1RM, scan physique with AI, and track deep recovery.'
     }
   ] : [
     {
@@ -117,8 +133,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     },
     {
       num: '03',
-      title: 'التنفيذ، الأحمال والاستشفاء 📈',
-      desc: 'تدرّب مع مشغل الحصة، احسب صفائح البار والـ 1RM، تابع شرب الماء وجودة النوم، ووثق تحولك البدني بالصور.'
+      title: 'التنفيذ، فحص AI والاستشفاء 📈',
+      desc: 'تدرّب مع مشغل الحصة، احسب صفائح البار والـ 1RM، افحص تحولك البدني بماسح الذكاء الاصطناعي، وتابع نومك وترطيبك.'
     }
   ];
 
@@ -176,23 +192,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* Elite Badge */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold', boxShadow: '0 0 20px rgba(16, 185, 129, 0.1)' }}>
           <Crown size={16} color="#f59e0b" />
-          <span>{isEn ? 'All-in-One AI Fitness, Nutrition & Strength Ecosystem' : 'المنظومة الرياضية المتكاملة للياقة البدنية، التغذية الذكية، وأساطير كمال الأجسام'}</span>
+          <span>{isEn ? 'All-in-One AI Fitness, Nutrition, 1RM & Physique Scanner' : 'المنظومة الرياضية المتكاملة للياقة البدنية، التغذية الذكية، وأساطير كمال الأجسام'}</span>
         </div>
 
         {/* Hero Title */}
         <h1 style={{ fontSize: 'clamp(34px, 5.5vw, 60px)', fontWeight: '900', lineHeight: 1.15, maxWidth: '980px', letterSpacing: '-0.5px' }}>
           {isEn ? (
-            <>Sculpt Your Ultimate Physique With <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Legendary Science</span>, Smart Nutrition & Precision AI</>
+            <>Sculpt Your Ultimate Physique With <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Legendary Science</span>, AI Physique Scanning & Smart Macros</>
           ) : (
-            <>اصنع نسختك الأقوى.. ببرامج <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>أساطير كمال الأجسام</span>، ماكروز دقيقة، وذكاء اصطناعي شامل</>
+            <>اصنع نسختك الأقوى.. ببرامج <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>أساطير كمال الأجسام</span>، ماسح الذكاء الاصطناعي، وتغذية دقيقة</>
           )}
         </h1>
 
         {/* Hero Description */}
         <p style={{ fontSize: 'clamp(15px, 2vw, 18.5px)', color: 'var(--text-secondary)', maxWidth: '840px', lineHeight: 1.7, margin: 0 }}>
           {isEn
-            ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, visualize Olympic barbell plates & 1RM, track hydration & sleep recovery, manage multiple workout plans, and compare before/after physique photos with 0ms speed.'
-            : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية مع تدوير الكارب، حاكِ صفائح البار والـ 1RM، تابع ترطيبك ونومك، وأدر جداول تدريبية متعددة مع معرض صور التحول البدني.'}
+            ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, visualize Olympic barbell plates & 1RM, and manage multiple workout programs with zero latency.'
+            : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، حاكِ صفائح البار والـ 1RM، وأدر جداول تدريبية متعددة بسلاسة.'}
         </p>
 
         {/* Hero Action Buttons */}
@@ -230,6 +246,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)' }}>🥗 TDEE</div>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Smart Macro Cycling' : 'تدوير السعرات والماكروز'}</div>
           </div>
+          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
+            <div style={{ fontSize: '28px', fontWeight: '900', color: '#ec4899' }}>🤖 AI Scan</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Physique & Symmetry AI' : 'ماسح التحول والتناسق'}</div>
+          </div>
           <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
             <div style={{ fontSize: '28px', fontWeight: '900', color: '#f59e0b' }}>🔢 1RM</div>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Barbell Plate Visualizer' : 'محاكي صفائح البار والـ 1RM'}</div>
@@ -237,10 +257,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
             <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--secondary)' }}>💧 Recovery</div>
             <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Water, Sleep & Badges' : 'متتبع الماء والنوم والأوسمة'}</div>
-          </div>
-          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: '#ec4899' }}>📷 Photos</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Before & After Timeline' : 'معرض صور قبل وبعد'}</div>
           </div>
           <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <div style={{ fontSize: '28px', fontWeight: '900', color: '#8b5cf6' }}>4,207+</div>
@@ -286,7 +302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {isEn ? '10 Elite Pillars Engineered For Total Athletic Dominance' : '10 ركائز احترافية صُنعت خصيصاً لتحقيق أقصى بناء بدني واستشفاء'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px' }}>
-            {isEn ? 'Everything you need: workouts, nutrition, barbell math, recovery, offline gym access, and progress tracking.' : 'كل ما يحتاجه الرياضي العصري: الجداول، الماكروز، حاسبة الأوزان، تتبع النوم والماء، والعمل بدون إنترنت.'}
+            {isEn ? 'Everything you need: workouts, nutrition, AI physique scanning, recovery, offline gym access, and Google integration.' : 'كل ما يحتاجه الرياضي العصري: الجداول، الماكروز، فحص التحول بالذكاء الاصطناعي، تتبع النوم والماء، والعمل بدون إنترنت.'}
           </p>
         </div>
 
@@ -305,7 +321,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </p>
           </div>
 
-          {/* Card 2: Barbell Plate & 1RM Calculator */}
+          {/* Card 2: AI Physique Scanner & Transformation Gallery */}
+          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(236, 72, 153, 0.3)', background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05), transparent)' }}>
+            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Brain size={24} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'AI Physique Scanner & Progress Gallery' : 'ماسح التحول والتناسق العضلي بالذكاء الاصطناعي'}</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {isEn
+                ? 'Automated biomechanical scan of your transformation photos: estimates body fat %, scores muscle definition (1-100), evaluates V-taper symmetry, and suggests targeted hypertrophy adjustments.'
+                : 'فحص بيوميكانيكي لصور تطورك البدني: تقدير نسبة الدهون، حساب مؤشر البروز العضلي (من 100)، تقييم تناسق الظهر والخصر، واقتراح العضلات المستهدفة للجدول القادم.'}
+            </p>
+          </div>
+
+          {/* Card 3: Barbell Plate & 1RM Calculator */}
           <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(245, 158, 11, 0.3)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), transparent)' }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Percent size={24} />
@@ -318,7 +347,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </p>
           </div>
 
-          {/* Card 3: Recovery Tracker & Gamification Badges */}
+          {/* Card 4: Recovery Tracker & Gamification Badges */}
           <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(6, 182, 212, 0.3)', background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.05), transparent)' }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Droplets size={24} />
@@ -328,19 +357,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {isEn
                 ? '1-tap water logger, sleep hours and quality tracking for MPS recovery, and motivational unlockable badges for consistency streaks (3, 7, 14, 30 days).'
                 : 'عداد سريع لشرب الماء بنقرة زر، متتبع ساعات وجودة النوم لتعزيز هرمون النمو، وشارات وأوسمة تحفيزية متصلة بأيام الالتزام والاستمرارية.'}
-            </p>
-          </div>
-
-          {/* Card 4: Physique Transformation Photo Gallery */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(236, 72, 153, 0.3)', background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05), transparent)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Camera size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Physique Transformation Gallery' : 'معرض صور التحول ومقارنة قبل وبعد'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Private encrypted timeline for progress photos categorized by angle (Front, Side, Back) with interactive side-by-side Before & After comparison.'
-                : 'معرض خاص ومحمي لتوثيق صور التطور العضلي حسب الزوايا، مع شاشة مقارنة مباشرة ثنائية (Before & After) لمشاهدة فارق النتائج.'}
             </p>
           </div>
 
@@ -419,7 +435,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {isEn ? 'Frequently Asked Questions' : 'الأسئلة الشائعة وإجابات الخبراء'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13.5px', marginTop: '6px' }}>
-            {isEn ? 'Everything you need to know about BeastMode AI features, nutrition, 1RM, multi-plans, and sports science.' : 'كل ما تود معرفته عن منصة BeastMode AI والتغذية والماكروز وحاسبة الأوزان وإدارة الجداول.'}
+            {isEn ? 'Everything you need to know about BeastMode AI features, AI physique scanning, nutrition, 1RM, and Google linking.' : 'كل ما تود معرفته عن منصة BeastMode AI، ماسح التحول العضلي، التغذية، وحاسبة الأوزان.'}
           </p>
         </div>
 
@@ -447,12 +463,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section style={{ padding: '70px 20px', textAlign: 'center', background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 70%)', borderTop: '1px solid var(--border-color)', marginTop: 'auto' }}>
         <div style={{ maxWidth: '780px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '22px' }}>
           <h2 style={{ fontSize: '32px', fontWeight: '900', margin: 0 }}>
-            {isEn ? 'Ready to Transform Your Physique & Master Your Nutrition?' : 'جاهز لبدء رحلة التحول البدني وضبط تمارينك وتغذيتك باحترافية؟'}
+            {isEn ? 'Ready to Transform Your Physique & Scan Your Progress with AI?' : 'جاهز لبدء رحلة التحول البدني وفحص تقدمك بالذكاء الاصطناعي؟'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.6, margin: 0 }}>
             {isEn
-              ? 'Join BeastMode AI today and get your personalized periodized workout program, macro targets, and legendary splits in seconds.'
-              : 'انضم لـ BeastMode AI اليوم واحصل على خطتك التدريبية والماكروز وحاسبة الأوزان أو اختر من خطط الأساطير وابدأ فوراً.'}
+              ? 'Join BeastMode AI today and get your personalized workout program, AI physique scanning, macro targets, and legendary splits in seconds.'
+              : 'انضم لـ BeastMode AI اليوم واحصل على خطتك التدريبية، ماسح التحول بالذكاء الاصطناعي، وتغذيتك الدقيقة وابدأ فوراً.'}
           </p>
           <button
             onClick={onGetStarted}

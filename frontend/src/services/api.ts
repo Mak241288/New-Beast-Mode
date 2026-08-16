@@ -91,6 +91,7 @@ export const api = {
   duplicatePlan: (id: number) => request(`/workout/plan/${id}/duplicate`, { method: 'POST' }),
   deletePlan: (id: number) => request(`/workout/plan/${id}`, { method: 'DELETE' }),
   getLibraryTree: () => request('/workout/library-tree', { method: 'GET' }),
+  analyzePhysique: (data: any) => request('/workout/analyze-physique', { method: 'POST', body: JSON.stringify(data) }),
 
 
   // Stats API
