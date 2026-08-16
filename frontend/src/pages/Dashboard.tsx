@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
+import { SmartNutritionModal } from '../components/SmartNutritionModal';
+import { calculateNutrition } from '../utils/nutritionCalculator';
 import { cacheStore } from '../utils/cacheStore';
 
 interface DashboardProps {
@@ -22,6 +24,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [profileError, setProfileError] = useState('');
   const [wikiExercise, setWikiExercise] = useState<any | null>(null);
+  const [showNutritionModal, setShowNutritionModal] = useState(false);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -308,6 +311,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       setIsExerciseTimerActive(false);
     }
   };
+
+  const quickNutrition = useMemo(() => {
+    if (!profile) return null;
+    return calculateNutrition({
+      weightKg: Number(profile.currentWeight) || 75,
+      heightCm: Number(profile.height) || 175,
+      age: Number(profile.age) || 26,
+      gender: profile.gender === 'female' ? 'female' : 'male',
+      fitnessGoal: profile.fitnessGoal || 'HYPERTROPHY',
+      daysPerWeek: Number(profile.daysPerWeek) || 4,
+    });
+  }, [profile]);
 
   const getSelectedDay = () => {
     if (!activePlan) return null;
@@ -692,6 +707,78 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
               </div>
             </div>
           </div>
+
+          {/* Smart Nutrition & Macro Coach Card */}
+          {quickNutrition && (
+            <div
+              className="glass-panel animated-fade"
+              style={{
+                padding: '20px 24px',
+                borderRadius: '16px',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(6, 182, 212, 0.05))',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '16px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
+                <div
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '14px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: 'var(--primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Utensils size={24} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0 }}>
+                      {lang === 'en' ? 'Smart Nutrition & Macro Coach 🥗' : 'خطة التغذية والماكروز اليومية 🥗'}
+                    </h3>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        padding: '2px 7px',
+                        borderRadius: '10px',
+                        background: 'rgba(245, 158, 11, 0.15)',
+                        color: '#f59e0b',
+                        fontWeight: '700',
+                      }}
+                    >
+                      AI TDEE
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginTop: '6px', fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                    <span>🔥 <strong style={{ color: 'var(--primary)' }}>{quickNutrition.workoutDay.calories}</strong> kcal</span>
+                    <span>🥩 {lang === 'en' ? 'Protein:' : 'البروتين:'} <strong style={{ color: '#ef4444' }}>{quickNutrition.workoutDay.proteinGrams}g</strong></span>
+                    <span>🌾 {lang === 'en' ? 'Carbs:' : 'الكارب:'} <strong style={{ color: '#f59e0b' }}>{quickNutrition.workoutDay.carbsGrams}g</strong></span>
+                    <span>🥑 {lang === 'en' ? 'Fats:' : 'الدهون:'} <strong style={{ color: 'var(--primary)' }}>{quickNutrition.workoutDay.fatsGrams}g</strong></span>
+                    <span>💧 {lang === 'en' ? 'Water:' : 'الماء:'} <strong style={{ color: 'var(--secondary)' }}>{quickNutrition.waterIntakeLiters}L</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowNutritionModal(true)}
+                className="glow-btn"
+                style={{ padding: '9px 18px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <span>{lang === 'en' ? 'Open Macro Coach 🥗' : 'تفاصيل الماكروز والوجبات 🥗'}</span>
+                <ChevronRight size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+              </button>
+            </div>
+          )}
 
           {/* Today's Workout Routine Card */}
           {todayWorkout && (
@@ -1108,6 +1195,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
           onClose={() => setWikiExercise(null)}
         />
       )}
+
+      {/* Smart Nutrition & Macro Coach Modal */}
+      <SmartNutritionModal
+        isOpen={showNutritionModal}
+        lang={lang}
+        userProfile={profile}
+        onClose={() => setShowNutritionModal(false)}
+      />
     </div>
   );
 };

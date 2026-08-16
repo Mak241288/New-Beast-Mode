@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText } from 'lucide-react';
 import { PasswordRequirements } from '../components/PasswordRequirements';
+import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { translations } from '../utils/translations';
 import { triggerTestNotification } from '../utils/notifications';
 import { exportFullDataJSON } from '../utils/exportUtils';
@@ -16,6 +17,7 @@ interface ProfileProps {
 export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavigate }) => {
   const t = translations[lang] || translations.ar;
   const cachedProfile = cacheStore.get<any>('user_profile');
+  const [showNutritionModal, setShowNutritionModal] = useState(false);
   const [profile, setProfile] = useState<any>(() => {
     if (cachedProfile) {
       return {
@@ -530,6 +532,24 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                 />
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>kg</span>
               </div>
+            </div>
+
+            {/* Smart Nutrition Coach Shortcut */}
+            <div className="glass-panel" style={{ padding: '16px', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(16, 185, 129, 0.04)' }}>
+              <span style={{ fontSize: '11px', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
+                🥗 {lang === 'en' ? 'Nutrition & Macros' : 'التغذية والماكروز'}
+              </span>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                {lang === 'en' ? 'Calculates daily BMR, TDEE, and protein split.' : 'حساب السعرات ومعدل الأيض والماكروز اليومية.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowNutritionModal(true)}
+                className="glow-btn"
+                style={{ padding: '8px 12px', fontSize: '12px', justifyContent: 'center' }}
+              >
+                {lang === 'en' ? 'Open Macro Coach 🥗' : 'حاسبة الماكروز والتغذية 🥗'}
+              </button>
             </div>
 
             {/* Quick Reset Questionnaire Button */}
@@ -1362,6 +1382,14 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
           </div>
         </div>
       )}
+
+      {/* Smart Nutrition & Macro Coach Modal */}
+      <SmartNutritionModal
+        isOpen={showNutritionModal}
+        lang={lang}
+        userProfile={profile}
+        onClose={() => setShowNutritionModal(false)}
+      />
     </div>
   );
 };
