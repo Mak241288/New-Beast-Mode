@@ -241,30 +241,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Quick Highlights / Proof Numbers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', width: '100%', maxWidth: '1020px', marginTop: '40px' }}>
-          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)' }}>🥗 TDEE</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Smart Macro Cycling' : 'تدوير السعرات والماكروز'}</div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'stretch',
+            gap: '14px',
+            width: '100%',
+            maxWidth: '1080px',
+            marginTop: '36px',
+            marginInline: 'auto',
+          }}
+        >
+          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.06), rgba(255,255,255,0.02))' }}>
+            <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)' }}>🥗 TDEE</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Smart Macro Cycling' : 'تدوير السعرات والماكروز'}</div>
           </div>
-          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(236, 72, 153, 0.2)' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: '#ec4899' }}>🤖 AI Scan</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Physique & Symmetry AI' : 'ماسح التحول والتناسق'}</div>
+          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(236, 72, 153, 0.25)', background: 'linear-gradient(180deg, rgba(236, 72, 153, 0.06), rgba(255,255,255,0.02))' }}>
+            <div style={{ fontSize: '24px', fontWeight: '900', color: '#ec4899' }}>🤖 AI Scan</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Physique & Symmetry AI' : 'ماسح التحول والتناسق'}</div>
           </div>
-          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: '#f59e0b' }}>🔢 1RM</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Barbell Plate Visualizer' : 'محاكي صفائح البار والـ 1RM'}</div>
+          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.06), rgba(255,255,255,0.02))' }}>
+            <div style={{ fontSize: '24px', fontWeight: '900', color: '#f59e0b' }}>🔢 1RM</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Barbell Plate Visualizer' : 'محاكي صفائح البار والـ 1RM'}</div>
           </div>
-          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--secondary)' }}>💧 Recovery</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Water, Sleep & Badges' : 'متتبع الماء والنوم والأوسمة'}</div>
+          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(6, 182, 212, 0.25)', background: 'linear-gradient(180deg, rgba(6, 182, 212, 0.06), rgba(255,255,255,0.02))' }}>
+            <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--secondary)' }}>💧 Recovery</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Water, Sleep & Badges' : 'متتبع الماء والنوم والأوسمة'}</div>
           </div>
-          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: '#8b5cf6' }}>4,207+</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Enriched Exercises' : 'تمرين رياضي موثق'}</div>
+          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(139, 92, 246, 0.25)', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.06), rgba(255,255,255,0.02))' }}>
+            <div style={{ fontSize: '24px', fontWeight: '900', color: '#8b5cf6' }}>+4,207</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Enriched Exercises' : 'تمرين رياضي موثق'}</div>
           </div>
-          <div className="glass-panel" style={{ padding: '20px 14px', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)' }}>📶 PWA</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '600' }}>{isEn ? 'Offline Gym Mode' : 'وضع الجيم بدون نت'}</div>
+          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.06), rgba(255,255,255,0.02))' }}>
+            <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)' }}>📶 PWA</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Offline Gym Mode' : 'وضع الجيم بدون نت'}</div>
           </div>
         </div>
       </section>
