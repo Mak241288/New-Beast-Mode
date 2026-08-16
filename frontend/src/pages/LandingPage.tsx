@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dumbbell, Sparkles, Activity, ShieldCheck, Zap, ArrowRight, ChevronDown, ChevronUp, Globe, FileText, Lock } from 'lucide-react';
+import { Dumbbell, Sparkles, Activity, ShieldCheck, Zap, ArrowRight, ChevronDown, ChevronUp, Globe, FileText, Lock, Info } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 interface LandingPageProps {
@@ -7,7 +7,7 @@ interface LandingPageProps {
   onGetStarted: () => void;
   onLogin: () => void;
   onLanguageChange: (lang: 'ar' | 'en') => void;
-  onNavigateToLegal: (page: 'privacy' | 'terms') => void;
+  onNavigateToLegal: (page: 'privacy' | 'terms' | 'about') => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -280,7 +280,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div>
           © {new Date().getFullYear()} BeastMode AI Fitness. {isEn ? 'All rights reserved.' : 'جميع الحقوق محفوظة.'}
         </div>
-        <div style={{ display: 'flex', gap: '20px' }}>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <button onClick={() => onNavigateToLegal('about')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Info size={12} />
+            <span>{isEn ? 'About BeastMode' : 'من نحن (About Us)'}</span>
+          </button>
           <button onClick={() => onNavigateToLegal('privacy')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Lock size={12} />
             <span>{isEn ? 'Privacy Policy' : 'سياسة الخصوصية'}</span>

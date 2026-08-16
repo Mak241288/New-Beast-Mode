@@ -4,6 +4,7 @@ import { Login } from './pages/Login';
 import { LandingPage } from './pages/LandingPage';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsOfService } from './pages/TermsOfService';
+import { AboutUs } from './pages/AboutUs';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { MyPlan } from './pages/MyPlan';
@@ -21,7 +22,7 @@ function App() {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.replace('#', '');
-    if (['privacy', 'terms', 'login', 'dashboard', 'myplan', 'library', 'stats', 'profile'].includes(hash)) {
+    if (['privacy', 'terms', 'about', 'login', 'dashboard', 'myplan', 'library', 'stats', 'profile'].includes(hash)) {
       return hash;
     }
     return token ? 'dashboard' : 'landing';
@@ -89,7 +90,7 @@ function App() {
       if (!isCompleted) {
         setCurrentView('onboarding');
       } else {
-        const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms'];
+        const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about'];
         if (!validViews.includes(currentView)) {
           setCurrentView('dashboard');
         }
@@ -170,8 +171,11 @@ function App() {
     );
   }
 
-  // Unauthenticated Views (Landing, Login, Privacy, Terms)
+  // Unauthenticated Views (Landing, Login, Privacy, Terms, About)
   if (!token) {
+    if (currentView === 'about') {
+      return <AboutUs lang={lang} onBack={() => navigateTo('landing')} onNavigateToWorkout={() => navigateTo('login')} />;
+    }
     if (currentView === 'privacy') {
       return <PrivacyPolicy lang={lang} onBack={() => navigateTo('landing')} />;
     }
@@ -179,7 +183,7 @@ function App() {
       return <TermsOfService lang={lang} onBack={() => navigateTo('landing')} />;
     }
     if (currentView === 'login') {
-      return <Login onSuccess={handleLoginSuccess} onBack={() => navigateTo('landing')} />;
+      return <Login onSuccess={handleLoginSuccess} onBack={() => navigateTo('landing')} onNavigateToLegal={(page) => navigateTo(page)} />;
     }
     return (
       <LandingPage
@@ -197,7 +201,10 @@ function App() {
     return <Onboarding lang={lang} onComplete={handleOnboardingComplete} />;
   }
 
-  // Authenticated Legal Views
+  // Authenticated Legal & About Views
+  if (currentView === 'about') {
+    return <AboutUs lang={lang} onBack={() => navigateTo('profile')} onNavigateToWorkout={() => navigateTo('myplan')} />;
+  }
   if (currentView === 'privacy') {
     return <PrivacyPolicy lang={lang} onBack={() => navigateTo('profile')} />;
   }

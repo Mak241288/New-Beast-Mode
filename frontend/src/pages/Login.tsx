@@ -1,25 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff, ArrowRight, KeyRound, CheckCircle2, RefreshCw } from 'lucide-react';
+import { PasswordRequirements } from '../components/PasswordRequirements';
+import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff, ArrowRight, KeyRound, CheckCircle2, RefreshCw, FileText, Info } from 'lucide-react';
 
 interface LoginProps {
   onSuccess: (token: string) => void;
   onBack?: () => void;
+  onNavigateToLegal?: (page: string) => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
+export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLegal }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('bm_remember_email') || '');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('bm_remember_me') === 'true');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Forgot Password / OTP State
   const [showOtpModal, setShowOtpModal] = useState(false);
-  const [otpStep, setOtpStep] = useState<1 | 2>(1); // 1: Send OTP to Email, 2: Enter OTP & New Password
+  const [otpStep, setOtpStep] = useState<1 | 2>(1);
   const [otpEmail, setOtpEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpNewPassword, setOtpNewPassword] = useState('');
@@ -29,6 +32,16 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (rememberMe && email.trim()) {
+      localStorage.setItem('bm_remember_email', email.trim());
+      localStorage.setItem('bm_remember_me', 'true');
+    } else if (!rememberMe) {
+      localStorage.removeItem('bm_remember_email');
+      localStorage.removeItem('bm_remember_me');
+    }
+  }, [rememberMe, email]);
 
   const validateInputs = (): boolean => {
     const cleanEmail = email.trim();
@@ -70,11 +83,19 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
         if (data.token) {
           localStorage.setItem('token', data.token);
         }
+        if (rememberMe) {
+          localStorage.setItem('bm_remember_email', cleanEmail);
+          localStorage.setItem('bm_remember_me', 'true');
+        }
         onSuccess(data.token);
       } else {
         const data = await api.register({ name: name.trim(), email: cleanEmail, password: cleanPassword });
         if (data.token) {
           localStorage.setItem('token', data.token);
+        }
+        if (rememberMe) {
+          localStorage.setItem('bm_remember_email', cleanEmail);
+          localStorage.setItem('bm_remember_me', 'true');
         }
         onSuccess(data.token);
       }
@@ -161,7 +182,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
   };
 
   return (
-    <div className="flex-center" style={{ minHeight: '100vh', padding: '20px', background: 'radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 40%)' }}>
+    <div className="flex-center" style={{ minHeight: '100vh', padding: '20px', background: 'radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 40%)', flexDirection: 'column' }}>
       <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <ThemeToggle />
         {onBack && (
@@ -176,8 +197,8 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
         )}
       </div>
 
-      <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '420px', padding: '40px 30px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-        <div className="flex-center" style={{ flexDirection: 'column', marginBottom: '30px' }}>
+      <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '420px', padding: '40px 30px', border: '1px solid rgba(255, 255, 255, 0.08)', margin: 'auto' }}>
+        <div className="flex-center" style={{ flexDirection: 'column', marginBottom: '24px' }}>
           <div style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', padding: '16px', borderRadius: '50%', marginBottom: '16px', boxShadow: '0 8px 24px var(--primary-glow)' }}>
             <Dumbbell size={36} color="#ffffff" />
           </div>
@@ -189,10 +210,10 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           {!isLogin && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>الاسم الكامل</label>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>الاسم الكامل</label>
               <div style={{ position: 'relative' }}>
                 <User size={18} color="var(--text-muted)" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
@@ -209,7 +230,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>البريد الإلكتروني</label>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>البريد الإلكتروني</label>
             <div style={{ position: 'relative' }}>
               <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
@@ -226,7 +247,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>كلمة المرور</label>
+              <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>كلمة المرور</label>
               {isLogin && (
                 <button
                   type="button"
@@ -263,6 +284,24 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+
+            {/* Password Criteria for Registration */}
+            {!isLogin && (
+              <PasswordRequirements password={password} lang="ar" />
+            )}
+          </div>
+
+          {/* Remember Me Option */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                style={{ cursor: 'pointer', accentColor: 'var(--primary)', width: '16px', height: '16px' }}
+              />
+              <span>تذكرني على هذا الجهاز (Remember Me)</span>
+            </label>
           </div>
 
           {error && (
@@ -299,7 +338,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '24px' }}>
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
           <button
             onClick={() => {
               setIsLogin(!isLogin);
@@ -311,6 +350,26 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
           </button>
         </div>
       </div>
+
+      {/* FOOTER LINKS */}
+      {onNavigateToLegal && (
+        <div style={{ display: 'flex', gap: '16px', marginTop: '24px', fontSize: '12px', color: 'var(--text-secondary)', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button onClick={() => onNavigateToLegal('about')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Info size={13} />
+            <span>من نحن (About Us)</span>
+          </button>
+          <span>•</span>
+          <button onClick={() => onNavigateToLegal('privacy')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <Lock size={13} />
+            <span>سياسة الخصوصية</span>
+          </button>
+          <span>•</span>
+          <button onClick={() => onNavigateToLegal('terms')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <FileText size={13} />
+            <span>شروط الاستخدام</span>
+          </button>
+        </div>
+      )}
 
       {/* OTP FORGOT PASSWORD & RECOVERY MODAL */}
       {showOtpModal && (
@@ -436,6 +495,8 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack }) => {
                       {showOtpNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+
+                  <PasswordRequirements password={otpNewPassword} lang="ar" />
                 </div>
 
                 {/* Confirm New Password */}

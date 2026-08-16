@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2 } from 'lucide-react';
+import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText } from 'lucide-react';
+import { PasswordRequirements } from '../components/PasswordRequirements';
 import { translations } from '../utils/translations';
 import { triggerTestNotification } from '../utils/notifications';
 import { exportFullDataJSON } from '../utils/exportUtils';
@@ -834,6 +835,36 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                   <span>{lang === 'en' ? 'Delete Account Permanently' : 'حذف الحساب نهائياً ⚠️'}</span>
                 </button>
               </div>
+
+              {/* Legal & About Us Links */}
+              <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('about')}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                >
+                  <Info size={13} />
+                  <span>{lang === 'en' ? 'About BeastMode AI' : 'من نحن (عن المنصة) ℹ️'}</span>
+                </button>
+                <span style={{ color: 'var(--text-muted)' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('privacy')}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                >
+                  <Lock size={13} />
+                  <span>{lang === 'en' ? 'Privacy Policy' : 'سياسة الخصوصية والأمان'}</span>
+                </button>
+                <span style={{ color: 'var(--text-muted)' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('terms')}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                >
+                  <FileText size={13} />
+                  <span>{lang === 'en' ? 'Terms of Service' : 'شروط الاستخدام والإخلاء'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1150,6 +1181,9 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                       {showSecNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  {securityNewPassword && (
+                    <PasswordRequirements password={securityNewPassword} lang={lang} />
+                  )}
                 </div>
 
                 {/* Confirm New Password */}
@@ -1264,6 +1298,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                       {showSecNewPass ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  <PasswordRequirements password={securityNewPassword} lang={lang} />
                 </div>
 
                 {/* Confirm New Password */}
