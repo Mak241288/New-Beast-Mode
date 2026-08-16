@@ -338,6 +338,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   useEffect(() => {
     fetchActivePlan();
+    if (localStorage.getItem('open_manual_builder') === 'true') {
+      localStorage.removeItem('open_manual_builder');
+      setShowManualBuilder(true);
+    }
   }, []);
 
   const handleNameChange = (val: string, type: 'custom' | 'edit' | 'preview', dayIdx?: number, exIdx?: number) => {

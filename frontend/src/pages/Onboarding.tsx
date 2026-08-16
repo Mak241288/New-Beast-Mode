@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { ChevronLeft, ChevronRight, Activity, Calendar, Compass, ShieldAlert, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Activity, Calendar, Compass, ShieldAlert, Check, Sparkles, PenTool } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { translations } from '../utils/translations';
 
@@ -38,6 +38,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   // Step 4: Plan duration & Start Date
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [creationMethod, setCreationMethod] = useState<'AI' | 'MANUAL'>('AI');
 
   const equipmentList = [
     { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز' },
@@ -103,7 +104,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
     setError('');
 
     try {
-      // 1. Save Profile info (excluding deleted nutrition fields)
+      // 1. Save Profile info
       await api.updateProfile({
         gender,
         birthDate: birthDate ? new Date(birthDate) : undefined,
@@ -119,24 +120,33 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         onboardingCompleted: true,
       });
 
-      // 2. Generate workout plan via Python Engine
-      await api.generatePlan({
-        durationWeeks,
-        startDate: new Date(startDate),
-        workoutLocation,
-        equipment,
-        level,
-        targetMuscles,
-        goal: workoutGoal,
-        restDays,
-        exercisesPerDay,
-        daysPerWeek: 7 - restDays.length,
-        lang,
-      });
+      // 2. Either Generate AI plan or Create Manual Plan
+      if (creationMethod === 'AI') {
+        await api.generatePlan({
+          durationWeeks,
+          startDate: new Date(startDate),
+          workoutLocation,
+          equipment,
+          level,
+          targetMuscles,
+          goal: workoutGoal,
+          restDays,
+          exercisesPerDay,
+          daysPerWeek: 7 - restDays.length,
+          lang,
+        });
+      } else {
+        await api.createManualPlan({
+          durationWeeks,
+          startDate: new Date(startDate),
+          title: lang === 'en' ? 'My Custom Workout Routine' : 'جدولي التدريبي اليدوي',
+        });
+        localStorage.setItem('open_manual_builder', 'true');
+      }
 
       onComplete();
     } catch (err: any) {
-      setError(err.message || (lang === 'en' ? 'Failed to generate plan. Please check inputs.' : 'فشل توليد الجدول بالذكاء الاصطناعي، يرجى التحقق من المدخلات.'));
+      setError(err.message || (lang === 'en' ? 'Failed to create plan. Please check inputs.' : 'فشل إنشاء الجدول، يرجى التحقق من المدخلات.'));
     } finally {
       setLoading(false);
     }
@@ -467,12 +477,70 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
           </div>
         )}
 
-        {/* STEP 5: Plan Length & Start Date */}
+        {/* STEP 5: Plan Length & Start Date & Creation Method */}
         {step === 5 && (
           <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
               <Calendar size={24} color="var(--primary)" />
-              <h3 style={{ fontSize: '20px', fontWeight: '800' }}>{lang === 'en' ? 'Program Duration & Start Date' : 'مدة البرنامج الرياضي وبدايته'}</h3>
+              <h3 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>{lang === 'en' ? 'Program Duration & Design Mode' : 'مدة البرنامج وطريقة التصميم'}</h3>
+            </div>
+
+            {/* Creation Method Selector */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '13px', fontWeight: '700' }}>
+                {lang === 'en' ? 'How would you like to build your plan?' : 'كيف تفضل بناء وتصميم جدولك الرياضي؟'}
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setCreationMethod('AI')}
+                  className={creationMethod === 'AI' ? 'glow-btn' : 'secondary-btn'}
+                  style={{
+                    padding: '16px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    borderRadius: '14px',
+                    border: creationMethod === 'AI' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                    textAlign: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Sparkles size={26} color={creationMethod === 'AI' ? '#ffffff' : 'var(--primary)'} />
+                  <span style={{ fontSize: '14px', fontWeight: '800' }}>
+                    {lang === 'en' ? 'AI Generator' : 'توليد بالذكاء الاصطناعي ⚡'}
+                  </span>
+                  <span style={{ fontSize: '11px', opacity: 0.85, lineHeight: 1.4 }}>
+                    {lang === 'en' ? 'Calculated automatically for your metrics' : 'صياغة جدول متكامل ومدروس تلقائياً'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCreationMethod('MANUAL')}
+                  className={creationMethod === 'MANUAL' ? 'glow-btn' : 'secondary-btn'}
+                  style={{
+                    padding: '16px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    borderRadius: '14px',
+                    border: creationMethod === 'MANUAL' ? '2px solid var(--secondary)' : '1px solid var(--border-color)',
+                    textAlign: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <PenTool size={26} color={creationMethod === 'MANUAL' ? '#ffffff' : 'var(--secondary)'} />
+                  <span style={{ fontSize: '14px', fontWeight: '800' }}>
+                    {lang === 'en' ? 'Manual Builder' : 'تصميم وتخصيص يدوي ✏️'}
+                  </span>
+                  <span style={{ fontSize: '11px', opacity: 0.85, lineHeight: 1.4 }}>
+                    {lang === 'en' ? 'Pick exercises yourself or use templates' : 'اختيار التمارين بنفسك أو استخدام قوالب'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -503,17 +571,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
               />
             </div>
 
-            <div style={{ background: 'var(--primary-glow)', padding: '16px', borderRadius: '12px', marginTop: '10px', display: 'flex', gap: '12px', border: '1px solid var(--primary)' }}>
-              <Check size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
-              <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>
-                {lang === 'en' ? 'The AI engine will now draft a fully customized weekly workout program specifically tailored to your physical metrics, fitness goals, and available equipment.' : 'سيقوم الذكاء الاصطناعي الآن بصياغة جدول تمارين متناسق ومخصص 100% لك بناءً على هذه الإجابات. يستغرق التحليل بضع ثوانٍ.'}
-              </p>
-            </div>
+            {creationMethod === 'AI' ? (
+              <div style={{ background: 'var(--primary-glow)', padding: '16px', borderRadius: '12px', display: 'flex', gap: '12px', border: '1px solid var(--primary)' }}>
+                <Check size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
+                <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600', margin: 0, lineHeight: 1.5 }}>
+                  {lang === 'en' ? 'The AI engine will now draft a fully customized weekly workout program specifically tailored to your physical metrics, fitness goals, and available equipment.' : 'سيقوم الذكاء الاصطناعي الآن بصياغة جدول تمارين متناسق ومخصص 100% لك بناءً على هذه الإجابات. يستغرق التحليل بضع ثوانٍ.'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ background: 'rgba(6, 182, 212, 0.1)', padding: '16px', borderRadius: '12px', display: 'flex', gap: '12px', border: '1px solid var(--secondary)' }}>
+                <PenTool size={20} color="var(--secondary)" style={{ flexShrink: 0 }} />
+                <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600', margin: 0, lineHeight: 1.5 }}>
+                  {lang === 'en' ? 'You will be redirected directly to the interactive manual plan builder to select exercises, customize sets/reps, or apply pre-made templates (Push/Pull/Legs, Upper/Lower, etc).' : 'ستنتقل مباشرة إلى مصمم الجداول التفاعلي لاختيار التمارين، تحديد الجولات والتكرارات بنفسك، أو تطبيق قوالب تدريبية جاهزة (Push/Pull/Legs وغيرها).'}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Navigation Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '35px', gap: '16px' }}>
           {step > 1 ? (
             <button onClick={handlePrev} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>
               {lang === 'en' ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
@@ -529,9 +606,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
               {lang === 'en' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
           ) : (
-            <button onClick={handleFinish} disabled={loading} className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>
-              {loading ? (lang === 'en' ? 'Drafting your Plan...' : 'جاري بناء خطتك الذكية...') : t.generateBtn}
-              <Check size={18} />
+            <button onClick={handleFinish} disabled={loading} className="glow-btn" style={{ flex: 1.2, justifyContent: 'center' }}>
+              {loading ? (
+                lang === 'en' ? 'Setting up your Plan...' : 'جاري إعداد خطتك...'
+              ) : creationMethod === 'AI' ? (
+                <>
+                  <span>{lang === 'en' ? 'Generate AI Plan ⚡' : 'توليد برنامج التمارين بالذكاء الاصطناعي ⚡'}</span>
+                  <Check size={18} />
+                </>
+              ) : (
+                <>
+                  <span>{lang === 'en' ? 'Start Manual Builder ✏️' : 'بدء التصميم اليدوي للجدول ✏️'}</span>
+                  <Check size={18} />
+                </>
+              )}
             </button>
           )}
         </div>
