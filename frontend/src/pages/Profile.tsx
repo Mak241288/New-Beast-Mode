@@ -20,6 +20,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const cachedProfile = cacheStore.get<any>('user_profile');
   const [showNutritionModal, setShowNutritionModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [profile, setProfile] = useState<any>(() => {
     if (cachedProfile) {
       return {
@@ -427,35 +428,134 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         )}
 
         {/* Artistic Header Section */}
-        <div className="glass-panel animated-fade" style={{ padding: '24px', display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{
-            width: '70px',
-            height: '70px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, var(--primary), var(--primary-glow))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '24px',
-            fontWeight: '900',
-            color: '#fff',
-            border: '2px solid #fff',
-            boxShadow: '0 0 15px var(--primary-glow)',
-          }}>
-            {getInitials(profile.name)}
+        <div className="glass-panel animated-fade" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Interactive Avatar Container */}
+            <div
+              onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+              style={{
+                width: '70px',
+                height: '70px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary), var(--primary-glow))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: profile.avatar?.startsWith('data:') ? '0' : '26px',
+                fontWeight: '900',
+                color: '#fff',
+                border: '2px solid #fff',
+                boxShadow: '0 0 15px var(--primary-glow)',
+                cursor: 'pointer',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+              title={lang === 'en' ? 'Click to change avatar' : 'انقر لتغيير الصورة الرمزية'}
+            >
+              {profile.avatar?.startsWith('data:') ? (
+                <img src={profile.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : profile.avatar ? (
+                profile.avatar
+              ) : (
+                getInitials(profile.name)
+              )}
+            </div>
+
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>{profile.name || (isRtl ? 'بطل بيست مود' : 'BeastMode Athlete')}</h1>
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker(!showAvatarPicker)}
+                  className="secondary-btn"
+                  style={{ padding: '3px 8px', fontSize: '11px' }}
+                >
+                  🖼️ {lang === 'en' ? 'Edit Avatar' : 'تغيير الصورة'}
+                </button>
+              </div>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                ⚡ {lang === 'en' ? 'Active Member Since 2026' : 'عضو نشط منذ 2026'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="submit" disabled={saving} className="glow-btn" style={{ padding: '10px 20px' }}>
+                <Save size={16} />
+                {saving ? (lang === 'en' ? 'Saving...' : 'جاري الحفظ...') : (lang === 'en' ? 'Save Changes' : 'حفظ التعديلات')}
+              </button>
+            </div>
           </div>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0 }}>{profile.name || (isRtl ? 'بطل بيست مود' : 'BeastMode Athlete')}</h1>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              ⚡ {lang === 'en' ? 'Active Member Since 2026' : 'عضو نشط منذ 2026'}
-            </span>
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="submit" disabled={saving} className="glow-btn" style={{ padding: '10px 20px' }}>
-              <Save size={16} />
-              {saving ? (lang === 'en' ? 'Saving...' : 'جاري الحفظ...') : (lang === 'en' ? 'Save Changes' : 'حفظ التعديلات')}
-            </button>
-          </div>
+
+          {/* AVATAR PICKER DRAWER */}
+          {showAvatarPicker && (
+            <div
+              className="glass-panel animated-fade"
+              style={{
+                padding: '16px',
+                borderRadius: '14px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(0,0,0,0.25)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12.5px', fontWeight: '800' }}>
+                  {lang === 'en' ? 'Choose Workout Avatar or Upload Photo:' : 'اختر أيقونة رياضية أو ارفع صورة شخصية:'}
+                </span>
+                <label
+                  className="secondary-btn"
+                  style={{ padding: '4px 10px', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <span>📷 {lang === 'en' ? 'Upload Custom Photo' : 'رفع صورة من جهازك'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        const b64 = ev.target?.result as string;
+                        setProfile((prev: any) => ({ ...prev, avatar: b64 }));
+                        setShowAvatarPicker(false);
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {['🦁', '🦍', '⚡', '👑', '🦾', '🥋', '🐺', '🦅'].map((av) => (
+                  <button
+                    key={av}
+                    type="button"
+                    onClick={() => {
+                      setProfile((prev: any) => ({ ...prev, avatar: av }));
+                      setShowAvatarPicker(false);
+                    }}
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      fontSize: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      border: profile.avatar === av ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
+                      background: profile.avatar === av ? 'rgba(0, 210, 255, 0.2)' : 'rgba(255,255,255,0.03)',
+                    }}
+                  >
+                    {av}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Two Column Layout: Left Column (Quick Stats Cards), Right Column (Details) */}
