@@ -46,11 +46,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   const [showPresetModal, setShowPresetModal] = useState(false);
 
   const equipmentList = [
-    { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز' },
-    { id: 'barbell', label: lang === 'en' ? 'Barbell' : 'بار وأوزان' },
-    { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة' },
-    { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية' },
-    { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات' },
+    { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز (Dumbbells)' },
+    { id: 'barbell', label: lang === 'en' ? 'Barbell & Weights' : 'بار وأوزان (Barbell)' },
+    { id: 'bench', label: lang === 'en' ? 'Workout Bench (Flat/Incline)' : 'كرسي تدريب / بنش (Workout Bench)' },
+    { id: 'mat', label: lang === 'en' ? 'Yoga / Floor Mat' : 'سجادة يوجا / مات أرضية (Yoga Mat)' },
+    { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة (Resistance Bands)' },
+    { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية (Pull-up Bar)' },
+    { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات (Cable Machine)' },
   ];
 
   const muscleGroups = [
@@ -327,6 +329,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                     {item.label}
                   </label>
                 ))}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', lineHeight: 1.5, marginTop: '4px' }}>
+                💡 {lang === 'en'
+                  ? 'Smart Adaptation: If you do not have a "Workout Bench", the system automatically adapts chest & triceps exercises to Floor Press (ضغط الدمبلز على الأرض) and bodyweight variations.'
+                  : 'تنويه ذكي: إذا لم تحدد "كرسي تدريب / بنش"، سيقوم النظام تلقائياً بتكييف تمارين الصدر والترايسبس لتعتمد على الضغط الأرضي (Floor Press) وتمارين وزن الجسم دون الحاجة لبنش.'}
               </div>
             </div>
 

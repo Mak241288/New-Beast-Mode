@@ -66,17 +66,36 @@ def fetch_exercises_for_muscle(muscle, location, equipment_list, level):
     params = [muscle.lower()]
     
     # Equipment Filter: If HOME, filter by available equipment
+    has_bench = any("bench" in eq.lower() for eq in equipment_list) if equipment_list else False
     if location.upper() == "HOME":
         if equipment_list:
             # We construct a list of matched equipment strings
-            # Always allow Bodyweight / Body only
-            allowed_equip = ["body only", "bodyweight", "none"] + [eq.lower() for eq in equipment_list]
+            allowed_equip = ["body only", "bodyweight", "none", "mat", "exercise mat"]
+            for eq in equipment_list:
+                eq_l = eq.lower()
+                if "dumbbell" in eq_l:
+                    allowed_equip.extend(["dumbbell", "dumbbells"])
+                elif "barbell" in eq_l:
+                    allowed_equip.extend(["barbell", "barbells", "e-z curl bar"])
+                elif "band" in eq_l:
+                    allowed_equip.extend(["bands", "resistance band", "band"])
+                elif "cable" in eq_l:
+                    allowed_equip.extend(["cable", "machine"])
+                elif "pullup" in eq_l or "pull-up" in eq_l:
+                    allowed_equip.extend(["pull-up bar", "body only"])
+                elif "bench" in eq_l:
+                    allowed_equip.extend(["bench", "workout bench", "flat bench", "incline bench"])
+                elif "mat" in eq_l:
+                    allowed_equip.extend(["mat", "yoga mat", "exercise mat", "body only"])
+                else:
+                    allowed_equip.append(eq_l)
+            allowed_equip = list(set(allowed_equip))
             placeholders = ",".join(["?"] * len(allowed_equip))
             sql += f" AND LOWER(equipment_en) IN ({placeholders})"
             params.extend(allowed_equip)
         else:
             # Default to bodyweight only if no equipment provided
-            sql += " AND LOWER(equipment_en) IN ('body only', 'bodyweight', 'none')"
+            sql += " AND LOWER(equipment_en) IN ('body only', 'bodyweight', 'none', 'mat')"
             
     # Level filter: Beginner/Intermediate/Advanced
     # If advanced, we can select any level. If beginner, we prioritize beginner/intermediate.
@@ -94,11 +113,17 @@ def fetch_exercises_for_muscle(muscle, location, equipment_list, level):
         
         # Strict HOME filter: Exclude heavy gym equipment dependent exercises
         if location.upper() == "HOME":
-            gym_terms = ["bench press", "leg press", "lat pulldown", "smith machine", "rack", "cable", "machine", "hack squat"]
+            gym_terms = ["leg press", "lat pulldown", "smith machine", "power rack", "hack squat"]
             if any(term in name_en_lower for term in gym_terms):
                 continue
-            if any(term in equip_en_lower for term in ["machine", "cable", "lat pull", "bench press"]):
+            if any(term in equip_en_lower for term in ["machine", "lat pull"]):
                 continue
+
+            # If user has NO bench at home, exclude bench-reliant exercises in favor of floor & pushups
+            if not has_bench:
+                bench_terms = ["incline bench", "decline bench", "bench press", "preacher bench"]
+                if any(term in name_en_lower for term in bench_terms):
+                    continue
 
         exercises.append({
             "id": r[0],

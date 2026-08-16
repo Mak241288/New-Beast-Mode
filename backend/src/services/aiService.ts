@@ -495,6 +495,24 @@ export const generateWorkoutPlanAI = async (userId: number, options: WorkoutPlan
   const lang = (user as any).preferredLanguage === 'en' ? 'en' : 'ar';
   const isEn = lang === 'en';
 
+  const hasBench = Array.isArray(options.equipment) && options.equipment.some((e: string) => e.toLowerCase().includes('bench'));
+  const hasMat = Array.isArray(options.equipment) && options.equipment.some((e: string) => e.toLowerCase().includes('mat'));
+  const isHome = options.workoutLocation === 'HOME';
+
+  let equipmentGuidanceEn = '';
+  let equipmentGuidanceAr = '';
+
+  if (isHome) {
+    if (!hasBench) {
+      equipmentGuidanceEn += `\n* CRITICAL: Client DOES NOT have a workout bench. DO NOT prescribe bench press on a bench. Use Floor Dumbbell Press, Floor Flyes, Push-up variations, or standing exercises.`;
+      equipmentGuidanceAr += `\n* تنبيه صارم: المتدرب لا يملك كرسي تدريب (بنش). لا تقم أبداً بوضع تمارين بنش برس على كرسي. استخدم تمارين الضغط الأرضي بالدمبلز (Floor Dumbbell Press)، تجميع أرضي (Floor Flyes)، وتنويعات الضغط بوزن الجسم.`;
+    }
+    if (hasMat || !options.equipment || options.equipment.length === 0) {
+      equipmentGuidanceEn += `\n* Client uses Floor/Yoga Mat or Bodyweight: Prioritize floor core exercises, mobility, squats, lunges, and bodyweight progressions.`;
+      equipmentGuidanceAr += `\n* المتدرب يستخدم سجادة يوجا/مات أرضية أو وزن الجسم: ركز على تمارين البطن والوسط الأرضية، التوازن، السكوات والطعنات بوزن الجسم، والتمارين الوظيفية على الأرض.`;
+    }
+  }
+
   const userContextPrompt = isEn ? `
 Generate a ${options.durationWeeks}-week structured workout plan for:
 - Client: ${user.name} (${user.gender || 'Not specified'})
@@ -504,6 +522,7 @@ Generate a ${options.durationWeeks}-week structured workout plan for:
 - Fitness Level: ${options.level}
 - Medical / Injuries: ${user.medicalConditions || 'None'}
 - Start Date: ${options.startDate.toDateString()}
+${equipmentGuidanceEn}
 
 Ensure balanced volume, optimal split, and injury-safe exercise selection.
 ` : `
@@ -515,8 +534,9 @@ Ensure balanced volume, optimal split, and injury-safe exercise selection.
 - المستوى البدني: ${options.level}
 - الحالة الصحية والإصابات: ${user.medicalConditions || 'سليم ولا يعاني من إصابات'}
 - تاريخ البداية: ${options.startDate.toDateString()}
+${equipmentGuidanceAr}
 
-راعِ موازنة الأحمال التدريبية وتوزيع المجموعات وترتيب التمارين المركبة قبل العزل.
+راعِ موازنة الأحمال التدريبية وتوزيع المجموعات وترتيب التمارين المركبة قبل العزل مع الالتزام الصارم بالأدوات المتاحة.
 `;
 
   try {

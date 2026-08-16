@@ -52,11 +52,13 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   });
 
   const equipmentList = [
-    { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز' },
-    { id: 'barbell', label: lang === 'en' ? 'Barbell' : 'بار وأوزان' },
-    { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة' },
-    { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية' },
-    { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات' },
+    { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز (Dumbbells)' },
+    { id: 'barbell', label: lang === 'en' ? 'Barbell & Weights' : 'بار وأوزان (Barbell)' },
+    { id: 'bench', label: lang === 'en' ? 'Workout Bench (Flat/Incline)' : 'كرسي تدريب / بنش (Workout Bench)' },
+    { id: 'mat', label: lang === 'en' ? 'Yoga / Floor Mat' : 'سجادة يوجا / مات أرضية (Yoga Mat)' },
+    { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة (Resistance Bands)' },
+    { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية (Pull-up Bar)' },
+    { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات (Cable Machine)' },
   ];
 
   const [loading, setLoading] = useState(() => !cachedProfile);
@@ -703,6 +705,11 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                     </button>
                   );
                 })}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', background: 'rgba(255, 255, 255, 0.03)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', lineHeight: 1.5, marginTop: '5px' }}>
+                💡 {lang === 'en'
+                  ? 'Smart Equipment Adaptation: If "Workout Bench" is not selected, chest/tricep exercises automatically shift to Floor Press & bodyweight variations without requiring a bench.'
+                  : 'تنويه ذكي: عند عدم تفعيل "كرسي تدريب / بنش"، يقوم النظام تلقائياً بجدولة تمارين الصدر والترايسبس بأسلوب الضغط الأرضي (Floor Press) والأوزان الحرة أو وزن الجسم دون الحاجة لبنش.'}
               </div>
             </div>
 
