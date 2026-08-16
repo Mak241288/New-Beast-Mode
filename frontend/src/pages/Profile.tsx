@@ -85,6 +85,16 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [testingNotification, setTestingNotification] = useState(false);
 
+  // Security (Email & Password change with Authentication)
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [securityCurrentPassword, setSecurityCurrentPassword] = useState('');
+  const [securityNewEmail, setSecurityNewEmail] = useState('');
+  const [securityNewPassword, setSecurityNewPassword] = useState('');
+  const [securityConfirmPassword, setSecurityConfirmPassword] = useState('');
+  const [securitySaving, setSecuritySaving] = useState(false);
+  const [securityError, setSecurityError] = useState('');
+  const [securitySuccess, setSecuritySuccess] = useState('');
+
   const fetchProfile = async () => {
     if (!cacheStore.get('user_profile')) {
       setLoading(true);
@@ -252,6 +262,61 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     }
   };
 
+  const handleUpdateSecuritySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecurityError('');
+    setSecuritySuccess('');
+
+    if (!securityCurrentPassword) {
+      setSecurityError(lang === 'en' ? 'Please enter your current password for verification.' : 'يرجى إدخال كلمة المرور الحالية لتوثيق الهوية.');
+      return;
+    }
+
+    if (!securityNewEmail && !securityNewPassword) {
+      setSecurityError(lang === 'en' ? 'Please provide a new email or new password.' : 'يرجى إدخال بريد إلكتروني جديد أو كلمة مرور جديدة.');
+      return;
+    }
+
+    if (securityNewPassword) {
+      if (securityNewPassword.length < 8) {
+        setSecurityError(lang === 'en' ? 'New password must be at least 8 characters.' : 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
+        return;
+      }
+      if (securityNewPassword !== securityConfirmPassword) {
+        setSecurityError(lang === 'en' ? 'New passwords do not match.' : 'كلمتا المرور الجديدتان غير متطابقتين.');
+        return;
+      }
+    }
+
+    setSecuritySaving(true);
+    try {
+      const res = await api.updateAccountSecurity({
+        currentPassword: securityCurrentPassword,
+        newEmail: securityNewEmail.trim() || undefined,
+        newPassword: securityNewPassword.trim() || undefined,
+      });
+
+      if (res.token) {
+        localStorage.setItem('token', res.token);
+      }
+
+      setSecuritySuccess(lang === 'en' ? 'Security settings updated successfully!' : 'تم تحديث وتوثيق بيانات الأمان بنجاح!');
+      setTimeout(() => {
+        setShowSecurityModal(false);
+        setSecurityCurrentPassword('');
+        setSecurityNewEmail('');
+        setSecurityNewPassword('');
+        setSecurityConfirmPassword('');
+        setSecuritySuccess('');
+        fetchProfile();
+      }, 1500);
+    } catch (err: any) {
+      setSecurityError(err.message || (lang === 'en' ? 'Failed to update security credentials.' : 'فشل تحديث بيانات الأمان.'));
+    } finally {
+      setSecuritySaving(false);
+    }
+  };
+
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>{lang === 'en' ? 'Loading Profile...' : 'جاري تحميل الملف الشخصي...'}</div>;
   }
@@ -414,6 +479,46 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                   {lang === 'en' ? 'Full Name' : 'الاسم بالكامل'}
                 </label>
                 <input type="text" name="name" value={profile.name} onChange={handleInputChange} className="input-field" required />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                    {lang === 'en' ? 'Account Email' : 'البريد الإلكتروني للحساب'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSecurityNewEmail(profile.email || '');
+                      setShowSecurityModal(true);
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                  >
+                    <Lock size={12} />
+                    <span>{lang === 'en' ? 'Change Email / Password' : 'تعديل الإيميل / كلمة المرور 🔑'}</span>
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="email"
+                    value={profile.email || ''}
+                    disabled
+                    className="input-field"
+                    style={{ opacity: 0.8, background: 'rgba(255,255,255,0.03)', cursor: 'not-allowed', flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSecurityNewEmail(profile.email || '');
+                      setShowSecurityModal(true);
+                    }}
+                    className="secondary-btn"
+                    style={{ padding: '0 12px', fontSize: '12px' }}
+                    title={lang === 'en' ? 'Edit credentials' : 'تعديل بيانات الحساب والأمان'}
+                  >
+                    ✏️
+                  </button>
+                </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -849,6 +954,131 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                 {lang === 'en' ? 'Cancel' : 'إلغاء'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECURITY CREDENTIALS & AUTHENTICATION MODAL */}
+      {showSecurityModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(9, 10, 15, 0.95)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '480px', padding: '30px', border: '1px solid var(--primary)', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ background: 'var(--primary-glow)', color: 'var(--primary)', padding: '15px', borderRadius: '50%', width: '60px', height: '60px', margin: '0 auto 15px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Lock size={30} />
+            </div>
+
+            <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '8px' }}>
+              {lang === 'en' ? 'Account Security & Credentials' : 'أمان الحساب وتعديل بيانات الدخول'}
+            </h2>
+
+            <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: 1.5 }}>
+              {lang === 'en'
+                ? 'To update your email address or password, please confirm your current password for security verification.'
+                : 'لتعديل بريدك الإلكتروني أو كلمة المرور، يرجى إدخال كلمة المرور الحالية لتوثيق ملكية الحساب.'}
+            </p>
+
+            {securityError && (
+              <div style={{ padding: '10px 14px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginBottom: '15px', textAlign: 'right' }}>
+                ⚠️ {securityError}
+              </div>
+            )}
+
+            {securitySuccess && (
+              <div style={{ padding: '10px 14px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '8px', color: '#10b981', fontSize: '12px', fontWeight: 'bold', marginBottom: '15px', textAlign: 'right' }}>
+                ✅ {securitySuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateSecuritySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: lang === 'en' ? 'left' : 'right' }}>
+              
+              {/* Current Password (Verification) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                  🔒 {lang === 'en' ? 'Current Password (Required for Verification):' : 'كلمة المرور الحالية (مطلوبة للتوثيق والتحقق):'}
+                </label>
+                <input
+                  type="password"
+                  value={securityCurrentPassword}
+                  onChange={(e) => setSecurityCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-field"
+                  style={{ borderColor: 'var(--primary)' }}
+                  required
+                />
+              </div>
+
+              {/* New Email */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                  📧 {lang === 'en' ? 'New Email (Optional):' : 'البريد الإلكتروني الجديد (اختياري):'}
+                </label>
+                <input
+                  type="email"
+                  value={securityNewEmail}
+                  onChange={(e) => setSecurityNewEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="input-field"
+                />
+              </div>
+
+              {/* New Password */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                  🔑 {lang === 'en' ? 'New Password (Optional, min 8 chars):' : 'كلمة المرور الجديدة (اختياري، 8 خانات كحد أدنى):'}
+                </label>
+                <input
+                  type="password"
+                  value={securityNewPassword}
+                  onChange={(e) => setSecurityNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-field"
+                />
+              </div>
+
+              {/* Confirm New Password */}
+              {securityNewPassword && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                    🔑 {lang === 'en' ? 'Confirm New Password:' : 'تأكيد كلمة المرور الجديدة:'}
+                  </label>
+                  <input
+                    type="password"
+                    value={securityConfirmPassword}
+                    onChange={(e) => setSecurityConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="input-field"
+                    required
+                  />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <button
+                  type="submit"
+                  disabled={securitySaving}
+                  className="glow-btn"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  {securitySaving ? (lang === 'en' ? 'Verifying & Saving...' : 'جاري التحقق والحفظ...') : (lang === 'en' ? 'Save Credentials' : 'توثيق وحفظ التعديلات 🔐')}
+                </button>
+                <button
+                  type="button"
+                  disabled={securitySaving}
+                  onClick={() => {
+                    setShowSecurityModal(false);
+                    setSecurityCurrentPassword('');
+                    setSecurityNewEmail('');
+                    setSecurityNewPassword('');
+                    setSecurityConfirmPassword('');
+                    setSecurityError('');
+                    setSecuritySuccess('');
+                  }}
+                  className="secondary-btn"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  {lang === 'en' ? 'Cancel' : 'إلغاء'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

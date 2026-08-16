@@ -4,6 +4,7 @@ import {
   login, 
   getProfile, 
   updateProfile,
+  updateAccountSecurity,
   exportUserData,
   deleteAccount
 } from '../controllers/authController';
@@ -18,6 +19,7 @@ router.post('/login', login);
 // Protected routes (require JWT verification)
 router.get('/profile', protect as any, getProfile);
 router.put('/profile', protect as any, updateProfile);
+router.put('/security', protect as any, updateAccountSecurity);
 router.get('/export-data', protect as any, exportUserData);
 router.delete('/account', protect as any, deleteAccount);
 

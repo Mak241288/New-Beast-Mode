@@ -57,6 +57,8 @@ export const api = {
   login: (credentials: any) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   getProfile: () => request('/auth/profile'),
   updateProfile: (profileData: any) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) }),
+  updateAccountSecurity: (securityData: { currentPassword: string; newEmail?: string; newPassword?: string }) => 
+    request('/auth/security', { method: 'PUT', body: JSON.stringify(securityData) }),
   exportUserData: () => request('/auth/export-data'),
   deleteAccount: () => request('/auth/account', { method: 'DELETE' }),
 

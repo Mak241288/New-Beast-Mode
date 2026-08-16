@@ -182,6 +182,103 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
+// @desc    Update user email & password with authentication verification
+// @route   PUT /api/auth/security
+export const updateAccountSecurity = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  const { currentPassword, newEmail, newPassword } = req.body;
+
+  if (!userId) {
+    res.status(401).json({ error: 'غير مصرح بالدخول' });
+    return;
+  }
+
+  if (!currentPassword) {
+    res.status(400).json({ error: 'الرجاء إدخال كلمة المرور الحالية لتأكيد الهوية والتوثيق' });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      res.status(400).json({ error: 'كلمة المرور الحالية غير صحيحة' });
+      return;
+    }
+
+    const updateData: { email?: string; password?: string } = {};
+
+    // Validate and update email if provided
+    if (newEmail && newEmail.trim().toLowerCase() !== user.email) {
+      const cleanEmail = newEmail.trim().toLowerCase();
+      if (!isValidEmail(cleanEmail)) {
+        res.status(400).json({ error: 'صيغة البريد الإلكتروني الجديد غير صحيحة' });
+        return;
+      }
+
+      const emailExists = await prisma.user.findUnique({ where: { email: cleanEmail } });
+      if (emailExists && emailExists.id !== userId) {
+        res.status(400).json({ error: 'البريد الإلكتروني الجديد مسجل بالفعل لحساب آخر' });
+        return;
+      }
+
+      updateData.email = cleanEmail;
+    }
+
+    // Validate and update password if provided
+    if (newPassword && newPassword.trim()) {
+      const cleanPassword = newPassword.trim();
+      if (cleanPassword.length < 8) {
+        res.status(400).json({ error: 'كلمة المرور الجديدة يجب أن تتكون من 8 أحرف على الأقل' });
+        return;
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(cleanPassword, salt);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({ error: 'لم يتم إدخال بريد إلكتروني جديد أو كلمة مرور جديدة لتعديلها' });
+      return;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      }
+    });
+
+    // Generate fresh JWT token with updated email
+    const newToken = generateToken(updated.id, updated.email);
+
+    res.cookie('token', newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      message: 'تم تحديث بيانات الأمان والحساب بنجاح وتم توثيق الهوية!',
+      user: updated,
+      token: newToken,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'حدث خطأ أثناء تحديث بيانات الأمان' });
+  }
+};
+
+
 // @desc    Update user profile & check for plan adjustments
 // @route   PUT /api/auth/profile
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
