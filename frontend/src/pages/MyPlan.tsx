@@ -113,6 +113,177 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [regeneratingPlan, setRegeneratingPlan] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 1: true });
 
+  // Smart Warmup & Cooldown Routines mapped to Focus Area
+  const getSmartWarmupRoutine = (focus: string = '', title: string = '') => {
+    const text = `${focus} ${title}`.toLowerCase();
+    const isLower = text.includes('leg') || text.includes('أرجل') || text.includes('قرفصاء') || text.includes('فخذ') || text.includes('squat');
+    const isCore = text.includes('ab') || text.includes('بطن') || text.includes('core') || text.includes('كور');
+
+    if (isLower) {
+      return [
+        {
+          name: lang === 'en' ? 'Standing Hip Circles (Warmup)' : 'دوائر الورك لليونة الحوض (إحماء)',
+          targetMuscle: 'Glutes',
+          category: 'WARMUP',
+          sets: 1,
+          reps: '45s',
+          weight: 'Bodyweight',
+          exerciseTips: lang === 'en' ? 'Rotate hips in slow wide circles to lubricate joints.' : 'تدوير الحوض في دوائر واسعة وبطيئة لتليين المفاصل وتفادي الإصابات.',
+          imageUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Ankle_Circles/0.jpg',
+          videoUrl: 'https://www.youtube.com/results?search_query=Hip+circles+mobility+warmup'
+        },
+        {
+          name: lang === 'en' ? 'Bodyweight Air Squats (Warmup)' : 'سكوات بوزن الجسم لتنشيط الأرجل (إحماء)',
+          targetMuscle: 'Quadriceps',
+          category: 'WARMUP',
+          sets: 1,
+          reps: '15',
+          weight: 'Bodyweight',
+          exerciseTips: lang === 'en' ? 'Perform smooth squats to prime quads and knees.' : 'أداء نزول وصعود انسيابي لضخ الدم في عضلات الفخذ والمفاصل.',
+          imageUrl: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=500',
+          videoUrl: 'https://www.youtube.com/results?search_query=bodyweight+air+squat+warmup'
+        }
+      ];
+    }
+
+    if (isCore) {
+      return [
+        {
+          name: lang === 'en' ? 'Cat-Cow Mobility Stretch (Warmup)' : 'إطالة القطة والبقرة لمرونة الظهر (إحماء)',
+          targetMuscle: 'Back',
+          category: 'WARMUP',
+          sets: 1,
+          reps: '60s',
+          weight: 'Bodyweight',
+          exerciseTips: lang === 'en' ? 'Alternate arching and rounding your spine.' : 'تقويس وتمديد فقرات الظهر بالتناوب لزيادة المرونة وتنشيط الكور.',
+          imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=500',
+          videoUrl: 'https://www.youtube.com/results?search_query=cat+cow+stretch+warmup'
+        },
+        {
+          name: lang === 'en' ? 'Jumping Jacks (Cardio Activation)' : 'القفز وفتح الرجلين لرفع النبض (إحماء)',
+          targetMuscle: 'Full Body',
+          category: 'WARMUP',
+          sets: 1,
+          reps: '60s',
+          weight: 'Bodyweight',
+          exerciseTips: lang === 'en' ? 'Elevate heart rate and body temperature.' : 'رفع نبضات القلب وتهيئة كامل عضلات الجسم للحرق.',
+          imageUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Jumping_Jacks/0.jpg',
+          videoUrl: 'https://www.youtube.com/results?search_query=jumping+jacks+warmup'
+        }
+      ];
+    }
+
+    // Default: Upper Body / Push / Pull
+    return [
+      {
+        name: lang === 'en' ? 'Arm Circles & Rotator Cuff (Warmup)' : 'دوائر الذراعين وتنشيط الكتف (إحماء)',
+        targetMuscle: 'Shoulders',
+        category: 'WARMUP',
+        sets: 1,
+        reps: '45s',
+        weight: 'Bodyweight',
+        exerciseTips: lang === 'en' ? 'Make small then large circles to warm up shoulder capsules.' : 'عمل دوائر للأمام والخلف لتسخين مفصل الكتف والأوتار الحساسة.',
+        imageUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Arm_Circles/0.jpg',
+        videoUrl: 'https://www.youtube.com/results?search_query=Arm+circles+rotator+cuff+warmup'
+      },
+      {
+        name: lang === 'en' ? 'Jumping Jacks (Full Body Activation)' : 'القفز وفتح الرجلين (إحماء عام لرفع الحرارة)',
+        targetMuscle: 'Full Body',
+        category: 'WARMUP',
+        sets: 1,
+        reps: '60s',
+        weight: 'Bodyweight',
+        exerciseTips: lang === 'en' ? 'Raise heart rate and prepare nervous system.' : 'تنشيط الدورة الدموية والجهاز العصبي قبل بدء الأوزان.',
+        imageUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Jumping_Jacks/0.jpg',
+        videoUrl: 'https://www.youtube.com/results?search_query=Jumping+Jacks+warmup'
+      }
+    ];
+  };
+
+  const getSmartCooldownRoutine = (focus: string = '', title: string = '') => {
+    const text = `${focus} ${title}`.toLowerCase();
+    const isLower = text.includes('leg') || text.includes('أرجل') || text.includes('قرفصاء') || text.includes('فخذ') || text.includes('squat');
+
+    if (isLower) {
+      return [
+        {
+          name: lang === 'en' ? 'Lying Glute & Hamstring Stretch' : 'إطالة الأرداف والفخذ الخلفي مستلقياً (استشفاء)',
+          targetMuscle: 'Glutes',
+          category: 'COOLDOWN',
+          sets: 1,
+          reps: '45s/leg',
+          weight: 'Bodyweight',
+          exerciseTips: lang === 'en' ? 'Relieve tension in glutes and sciatic nerve.' : 'تفكيك الشد في عضلات المؤخرة والعصب الوركي بعد مجهود الأرجل.',
+          imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500',
+          videoUrl: 'https://www.youtube.com/results?search_query=lying+glute+stretch+recovery'
+        },
+        {
+          name: lang === 'en' ? 'Wall Calf Stretch & Ankle Relief' : 'إطالة السمانة على الحائط (استشفاء)',
+          targetMuscle: 'Calves',
+          category: 'COOLDOWN',
+          sets: 1,
+          reps: '40s/leg',
+          weight: 'Bodyweight',
+          exerciseTips: lang === 'en' ? 'Static stretch for gastrocnemius & Achilles tendon.' : 'استطالة ثابتة لعضلة السمانة وأوتار القدم لتهدئة الشد العضلي.',
+          imageUrl: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=500',
+          videoUrl: 'https://www.youtube.com/results?search_query=wall+calf+stretch'
+        }
+      ];
+    }
+
+    // Default: Upper Body / Back / Chest
+    return [
+      {
+        name: lang === 'en' ? 'Behind Head Chest & Shoulder Stretch' : 'إطالة الصدر والكتف خلف الرأس (استشفاء)',
+        targetMuscle: 'Chest',
+        category: 'COOLDOWN',
+        sets: 1,
+        reps: '45s',
+        weight: 'Bodyweight',
+        exerciseTips: lang === 'en' ? 'Clasp hands behind head and gently open chest.' : 'شبك اليدين خلف الرأس وفتح الصدر بلطف للاسترخاء.',
+        imageUrl: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Chest_Stretch/0.jpg',
+        videoUrl: 'https://www.youtube.com/results?search_query=behind+head+chest+stretch'
+      },
+      {
+        name: lang === 'en' ? 'Seated Overhead Lat & Spine Stretch' : 'الإطالة العلوية للظهر والعمود الفقري (استشفاء)',
+        targetMuscle: 'Back',
+        category: 'COOLDOWN',
+        sets: 1,
+        reps: '45s',
+        weight: 'Bodyweight',
+        exerciseTips: lang === 'en' ? 'Lengthen spine and decompress upper back.' : 'تمديد فقرات الظهر وتفكيك الضغط بعد أوزان السحب والدفع.',
+        imageUrl: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500',
+        videoUrl: 'https://www.youtube.com/results?search_query=seated+lat+stretch+recovery'
+      }
+    ];
+  };
+
+  const handleAddWarmupToDay = async (dw: any) => {
+    const routine = getSmartWarmupRoutine(dw.focusArea, dw.title);
+    try {
+      for (const ex of routine) {
+        await api.addCustomExercise(dw.id, ex);
+      }
+      alert(lang === 'en' ? `🔥 Added warm-up routine to Day ${dw.dayIndex}!` : `🔥 تمت إضافة تمارين الإحماء لليوم ${dw.dayIndex} بنجاح!`);
+      fetchActivePlan();
+    } catch (err: any) {
+      alert(lang === 'en' ? 'Failed to add warmup routine.' : 'فشل إضافة تمارين الإحماء.');
+    }
+  };
+
+  const handleAddCooldownToDay = async (dw: any) => {
+    const routine = getSmartCooldownRoutine(dw.focusArea, dw.title);
+    try {
+      for (const ex of routine) {
+        await api.addCustomExercise(dw.id, ex);
+      }
+      alert(lang === 'en' ? `🧊 Added recovery / cooldown routine to Day ${dw.dayIndex}!` : `🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم ${dw.dayIndex} بنجاح!`);
+      fetchActivePlan();
+    } catch (err: any) {
+      alert(lang === 'en' ? 'Failed to add cooldown routine.' : 'فشل إضافة تمارين الاستشفاء.');
+    }
+  };
+
   const [customExForm, setCustomExForm] = useState({
     name: '',
     targetMuscle: '',
@@ -1053,6 +1224,32 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          {/* Day Quick Routine Protocol Toolbar */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                              <span>⚡</span>
+                              <span style={{ fontWeight: 'bold' }}>{lang === 'en' ? 'Day Protocols:' : 'بروتوكولات اليوم المخصصة:'}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              <button
+                                onClick={() => handleAddWarmupToDay(dw)}
+                                className="secondary-btn"
+                                style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
+                                title={lang === 'en' ? 'Add 2 smart warm-up exercises for this day' : 'إضافة تمرينين إحماء مخصصين لليوم'}
+                              >
+                                <span>🔥 + {lang === 'en' ? 'Add Warm-up' : 'إضافة إحماء لليوم'}</span>
+                              </button>
+                              <button
+                                onClick={() => handleAddCooldownToDay(dw)}
+                                className="secondary-btn"
+                                style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(6, 182, 212, 0.4)', color: '#22d3ee' }}
+                                title={lang === 'en' ? 'Add 2 recovery/stretching exercises for this day' : 'إضافة تمرينين استشفاء وإطالة لليوم'}
+                              >
+                                <span>🧊 + {lang === 'en' ? 'Add Recovery' : 'إضافة استشفاء لليوم'}</span>
+                              </button>
+                            </div>
+                          </div>
+
                           {dw.exercises.map((ex: any) => (
                             <div
                               key={ex.id}
@@ -1077,7 +1274,19 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                   />
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <h4 style={{ fontSize: '14px', fontWeight: '800', margin: 0, color: '#fff' }}>{ex.name}</h4>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <h4 style={{ fontSize: '14px', fontWeight: '800', margin: 0, color: '#fff' }}>{ex.name}</h4>
+                                    {((ex.category || '').toUpperCase() === 'WARMUP' || ex.name.includes('إحماء') || ex.name.includes('Warmup')) && (
+                                      <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '6px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
+                                        🔥 {lang === 'en' ? 'Warm-up' : 'إحماء'}
+                                      </span>
+                                    )}
+                                    {((ex.category || '').toUpperCase() === 'COOLDOWN' || ex.name.includes('استشفاء') || ex.name.includes('إطالة') || ex.name.includes('Stretch')) && (
+                                      <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '6px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
+                                        🧊 {lang === 'en' ? 'Recovery' : 'استشفاء'}
+                                      </span>
+                                    )}
+                                  </div>
                                   {ex.exerciseTips && (
                                     <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px', marginBottom: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                       💡 {ex.exerciseTips}
@@ -2508,6 +2717,38 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 alert(lang === 'en' ? `Copied to Day ${updated[nextIdx].dayIndex}` : `تم نسخ التمارين إلى اليوم ${updated[nextIdx].dayIndex}`);
               };
 
+              const injectWarmup = () => {
+                const routine = getSmartWarmupRoutine(currentDay.focusArea, currentDay.title);
+                const formatted = routine.map(r => ({
+                  name: r.name,
+                  targetMuscle: r.targetMuscle,
+                  sets: r.sets,
+                  reps: r.reps,
+                  weight: r.weight,
+                  category: 'WARMUP',
+                }));
+                const updated = [...manualDays];
+                updated[dayIdx].exercises = [...formatted, ...updated[dayIdx].exercises];
+                setManualDays(updated);
+                alert(lang === 'en' ? '🔥 Added warm-up routine to day!' : '🔥 تمت إضافة تمارين الإحماء لليوم بنجاح!');
+              };
+
+              const injectCooldown = () => {
+                const routine = getSmartCooldownRoutine(currentDay.focusArea, currentDay.title);
+                const formatted = routine.map(r => ({
+                  name: r.name,
+                  targetMuscle: r.targetMuscle,
+                  sets: r.sets,
+                  reps: r.reps,
+                  weight: r.weight,
+                  category: 'COOLDOWN',
+                }));
+                const updated = [...manualDays];
+                updated[dayIdx].exercises = [...updated[dayIdx].exercises, ...formatted];
+                setManualDays(updated);
+                alert(lang === 'en' ? '🧊 Added recovery & stretching routine to day!' : '🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم بنجاح!');
+              };
+
               return (
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   
@@ -2614,7 +2855,27 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           <span>{lang === 'en' ? `Day Exercises (${currentDay.exercises.length})` : `تمارين اليوم التدريبي (${currentDay.exercises.length})`}</span>
                         </h4>
 
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={injectWarmup}
+                            className="secondary-btn"
+                            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
+                            title="إضافة تمارين إحماء مخصصة لهذا اليوم"
+                          >
+                            <span>🔥 + {lang === 'en' ? 'Warmup' : 'إحماء'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={injectCooldown}
+                            className="secondary-btn"
+                            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(6, 182, 212, 0.4)', color: '#22d3ee' }}
+                            title="إضافة تمارين استشفاء وإطالة لهذا اليوم"
+                          >
+                            <span>🧊 + {lang === 'en' ? 'Recovery' : 'استشفاء'}</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={duplicateDayToNext}
