@@ -1,6 +1,7 @@
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -8,30 +9,30 @@ generator client {
 }
 
 model User {
-  id                Int             @id @default(autoincrement())
-  email             String          @unique
-  password          String
-  name              String
-  gender            String?
-  birthDate         DateTime?
-  height            Float?          // in cm
-  currentWeight     Float?          // in kg
-  targetWeight      Float?          // in kg
-  medicalConditions String?         // text detailing injuries/ailments
-  labResults        String?         // blood tests/health metrics
-  workoutLocation   String?         // "HOME" or "GYM"
-  equipment         String?         // comma-separated list of available equipment
-  fitnessGoal       String?         // e.g. "HYPERTROPHY", "LOSE_WEIGHT"
-  fitnessLevel      String?         // e.g. "beginner", "intermediate", "advanced"
-  age               Int?            // user's age
-  daysPerWeek       Int?            // days per week of workout
-  workoutReminder   Boolean         @default(false)
-  reminderTime      String?         // e.g. "08:00"
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                  Int           @id @default(autoincrement())
+  email               String        @unique
+  password            String
+  name                String
+  gender              String?
+  birthDate           DateTime?
+  height              Float?        // in cm
+  currentWeight       Float?        // in kg
+  targetWeight        Float?        // in kg
+  medicalConditions   String?       // text detailing injuries/ailments
+  labResults          String?       // blood tests/health metrics
+  workoutLocation     String?       // "HOME" or "GYM"
+  equipment           String?       // comma-separated list of available equipment
+  fitnessGoal         String?       // e.g. "HYPERTROPHY", "LOSE_WEIGHT"
+  fitnessLevel        String?       // e.g. "beginner", "intermediate", "advanced"
+  age                 Int?          // user's age
+  daysPerWeek         Int?          // days per week of workout
+  workoutReminder     Boolean       @default(false)
+  reminderTime        String?       // e.g. "08:00"
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
   onboardingCompleted Boolean       @default(false)
-  workoutPlans      WorkoutPlan[]
-  weightLogs        WeightLog[]
+  workoutPlans        WorkoutPlan[]
+  weightLogs          WeightLog[]
 }
 
 model WeightLog {
@@ -71,31 +72,90 @@ model DayWorkout {
 }
 
 model Exercise {
-  id            Int           @id @default(autoincrement())
-  dayWorkoutId  Int
-  dayWorkout    DayWorkout    @relation(fields: [dayWorkoutId], references: [id], onDelete: Cascade)
-  name          String
-  targetMuscle  String?       // e.g. "Chest", "Quads"
-  category      String?       // "IRON", "YOGA", "PILATES", "HIIT", "CARDIO", "CALISTHENICS"
-  sets          Int           @default(3)
-  reps          String        @default("10-12") // Can be "10-12", "Max", "30s", etc.
-  weight        String?       // e.g. "15kg", "Bodyweight"
-  exerciseTips  String?       // Form advice
-  imageUrl      String?       // Illustration image URL
-  videoUrl      String?       // YouTube Shorts search link
-  order         Int           @default(0)
-  progressLogs  ProgressLog[]
+  id                    Int           @id @default(autoincrement())
+  dayWorkoutId          Int?
+  dayWorkout            DayWorkout?   @relation(fields: [dayWorkoutId], references: [id], onDelete: Cascade)
+  name                  String
+  name_en               String?
+  name_ar               String?
+  description_en        String?
+  description_ar        String?
+  instructions_en       String?
+  instructions_ar       String?
+  muscle_en             String?
+  muscle_ar             String?
+  targetMuscle          String?       // e.g. "Chest", "Quads"
+  equipment_en          String?
+  equipment_ar          String?
+  level                 String?
+  category              String?       // "IRON", "YOGA", "PILATES", "HIIT", "CARDIO", "CALISTHENICS"
+  rating                Float?        @default(0.0)
+  source                String?
+  sanskrit_name         String?
+  imageUrl              String?
+  image_url             String?
+  secondary_muscles_en  String?
+  secondary_muscles_ar  String?
+  common_mistakes_en    String?
+  common_mistakes_ar    String?
+  gif_url               String?
+  youtube_url           String?
+  videoUrl              String?
+  anatomy_image_url     String?
+  sets                  Int?          @default(3)
+  reps                  String?       @default("10-12") // Can be "10-12", "Max", "30s", etc.
+  weight                String?       // e.g. "15kg", "Bodyweight"
+  exerciseTips          String?       // Form advice
+  order                 Int           @default(0)
+  progressLogs          ProgressLog[]
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([muscle_en])
+  @@index([muscle_ar])
+  @@index([category])
+  @@index([name_en])
+  @@index([name_ar])
+  @@index([dayWorkoutId])
 }
 
 model ExerciseLibrary {
-  id            Int      @id @default(autoincrement())
-  name          String   @unique
-  targetMuscle  String   // e.g. "Chest", "Quads", "Full Body"
-  category      String   // "IRON", "YOGA", "PILATES", "HIIT", "CARDIO", "CALISTHENICS"
-  description   String?  // details of how to do the exercise
-  imageUrl      String?
-  videoUrl      String?
-  createdAt     DateTime @default(now())
+  id                    Int      @id @default(autoincrement())
+  name                  String?
+  name_en               String
+  name_ar               String?
+  description_en        String?
+  description_ar        String?
+  instructions_en       String?
+  instructions_ar       String?
+  muscle_en             String?
+  muscle_ar             String?
+  targetMuscle          String?
+  equipment_en          String?
+  equipment_ar          String?
+  level                 String?
+  category              String?
+  rating                Float?   @default(0.0)
+  source                String?
+  sanskrit_name         String?
+  imageUrl              String?
+  image_url             String?
+  secondary_muscles_en  String?
+  secondary_muscles_ar  String?
+  common_mistakes_en    String?
+  common_mistakes_ar    String?
+  gif_url               String?
+  youtube_url           String?
+  videoUrl              String?
+  anatomy_image_url     String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([muscle_en])
+  @@index([muscle_ar])
+  @@index([category])
+  @@index([name_en])
+  @@index([name_ar])
 }
 
 model ProgressLog {
@@ -119,4 +179,3 @@ model CheckIn {
   aiRecommendation  String?
   applied           Boolean  @default(false)
 }
-
