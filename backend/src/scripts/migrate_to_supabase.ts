@@ -121,7 +121,7 @@ async function migrateToSupabase() {
 
   // Final verification query: Retrieve sample records
   console.log('\n🔍 [Verification] Querying first 5 exercises directly from Supabase PostgreSQL...');
-  const sample = await prisma.exercise.findMany({
+  const sample = await (prisma.exercise as any).findMany({
     take: 5,
     orderBy: { id: 'asc' },
     select: {
