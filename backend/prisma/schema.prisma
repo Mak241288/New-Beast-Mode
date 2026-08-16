@@ -121,9 +121,10 @@ model Exercise {
 
 model ExerciseLibrary {
   id                    Int      @id @default(autoincrement())
-  name                  String?
-  name_en               String
+  name                  String?  @unique
+  name_en               String?
   name_ar               String?
+  description           String?
   description_en        String?
   description_ar        String?
   instructions_en       String?

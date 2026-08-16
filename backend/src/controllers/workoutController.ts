@@ -370,7 +370,7 @@ export const updateExercise = async (req: AuthRequest, res: Response): Promise<v
       include: { dayWorkout: { include: { plan: true } } }
     });
 
-    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+    if (!exercise || !exercise.dayWorkout || exercise.dayWorkout.plan.userId !== userId) {
       res.status(403).json({ error: 'غير مصرح لك بتعديل هذا التمرين' });
       return;
     }
@@ -412,7 +412,7 @@ export const deleteExercise = async (req: AuthRequest, res: Response): Promise<v
       include: { dayWorkout: { include: { plan: true } } }
     });
 
-    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+    if (!exercise || !exercise.dayWorkout || exercise.dayWorkout.plan.userId !== userId) {
       res.status(403).json({ error: 'غير مصرح لك بحذف هذا التمرين' });
       return;
     }
@@ -498,7 +498,7 @@ export const logProgress = async (req: AuthRequest, res: Response): Promise<void
       include: { dayWorkout: { include: { plan: true } } }
     });
 
-    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+    if (!exercise || !exercise.dayWorkout || exercise.dayWorkout.plan.userId !== userId) {
       res.status(403).json({ error: 'غير مصرح لك بتسجيل تقدم هذا التمرين' });
       return;
     }
@@ -1398,7 +1398,7 @@ export const getAlternatives = async (req: AuthRequest, res: Response): Promise<
       include: { dayWorkout: { include: { plan: true } } }
     });
 
-    if (!targetExercise || targetExercise.dayWorkout.plan.userId !== userId) {
+    if (!targetExercise || !targetExercise.dayWorkout || targetExercise.dayWorkout.plan.userId !== userId) {
       res.status(403).json({ error: 'غير مصرح لك بمشاهدة بدائل هذا التمرين' });
       return;
     }
@@ -1478,7 +1478,7 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
       }
     });
 
-    if (!exercise || exercise.dayWorkout.plan.userId !== userId) {
+    if (!exercise || !exercise.dayWorkout || exercise.dayWorkout.plan.userId !== userId) {
       res.status(403).json({ error: 'التمرين غير موجود أو غير مصرح لك بتعديله' });
       return;
     }

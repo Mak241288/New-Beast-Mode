@@ -55,8 +55,8 @@ async function migrateToSupabase() {
   // Clean existing library data before re-populating to prevent duplicates
   console.log('🧹 [Migration] Cleaning up existing records in Exercise & ExerciseLibrary tables in Supabase...');
   try {
-    await prisma.exercise.deleteMany({ where: { dayWorkoutId: null } });
-    await prisma.exerciseLibrary.deleteMany({});
+    await (prisma.exercise as any).deleteMany({ where: { dayWorkoutId: null } });
+    await (prisma.exerciseLibrary as any).deleteMany({});
   } catch (err: any) {
     console.warn('⚠️ [Migration] Clean warning (table might be fresh):', err.message);
   }
@@ -101,14 +101,14 @@ async function migrateToSupabase() {
     }));
 
     // Insert into Exercise table
-    await prisma.exercise.createMany({
-      data: formattedExercises as any,
+    await (prisma.exercise as any).createMany({
+      data: formattedExercises,
       skipDuplicates: true,
     });
 
     // Also populate ExerciseLibrary for fast direct lookups
-    await prisma.exerciseLibrary.createMany({
-      data: formattedExercises as any,
+    await (prisma.exerciseLibrary as any).createMany({
+      data: formattedExercises,
       skipDuplicates: true,
     });
 
@@ -127,12 +127,8 @@ async function migrateToSupabase() {
     select: {
       id: true,
       name: true,
-      name_en: true,
-      name_ar: true,
-      muscle_en: true,
-      muscle_ar: true,
+      targetMuscle: true,
       category: true,
-      equipment_en: true,
       rating: true,
     },
   });
