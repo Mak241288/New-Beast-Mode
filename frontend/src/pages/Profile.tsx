@@ -142,8 +142,9 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         age: data.age || '',
         workoutReminder: data.workoutReminder || false,
         reminderTime: data.reminderTime || '08:00',
-        isGoogleLinked: data.isGoogleLinked || false,
+        isGoogleLinked: Boolean(data.isGoogleLinked),
         googleEmail: data.googleEmail || '',
+        googleId: data.googleId || '',
       };
       setProfile(updated);
       cacheStore.set('user_profile', updated);
@@ -460,12 +461,15 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
       const now = new Date().toLocaleString(lang === 'en' ? 'en-US' : 'ar-EG');
       setGoogleSecurityTimestamp(now);
 
-      setProfile((prev: any) => ({
-        ...prev,
+      const updatedProf = {
+        ...profile,
         isGoogleLinked: true,
         googleEmail: mailToLink,
         googleId: gId,
-      }));
+      };
+
+      setProfile(updatedProf);
+      cacheStore.set('user_profile', updatedProf);
 
       setGoogleStep('SUCCESS');
       setGoogleModalSuccess(res.message || (lang === 'en' ? 'Account successfully verified & linked to Google!' : 'تم التحقق وتوثيق ربط الحساب بـ Google بنجاح!'));

@@ -180,6 +180,9 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
         reminderTime: true,
         createdAt: true,
         onboardingCompleted: true,
+        isGoogleLinked: true,
+        googleEmail: true,
+        googleId: true,
       },
     });
 
@@ -526,6 +529,9 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
         equipment: updatedUser.equipment,
         age: updatedUser.age,
         daysPerWeek: updatedUser.daysPerWeek,
+        isGoogleLinked: updatedUser.isGoogleLinked,
+        googleEmail: updatedUser.googleEmail,
+        googleId: updatedUser.googleId,
       },
       needsPlanAdjustment,
       adjustmentSuggestion,
@@ -678,7 +684,7 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
       // SECURITY SAFEGUARD:
       // If user is ALREADY linked to this specific googleId OR provided verified OAuth token -> login directly.
       // If NOT yet linked to this Google ID and account has password -> require password or email OTP verification to prevent hijacking!
-      const isAlreadyLinked = user.isGoogleLinked && user.googleId === cleanGoogleId;
+      const isAlreadyLinked = Boolean(user.isGoogleLinked && (user.googleId === cleanGoogleId || (user.googleEmail && user.googleEmail.toLowerCase() === cleanEmail)));
 
       if (!isAlreadyLinked && !idToken) {
         if (password) {
