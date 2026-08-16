@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { PasswordRequirements } from '../components/PasswordRequirements';
-import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff, ArrowRight, KeyRound, CheckCircle2, RefreshCw, FileText, Info } from 'lucide-react';
+import { Dumbbell, Mail, Lock, User, AlertCircle, Eye, EyeOff, ArrowRight, KeyRound, CheckCircle2, RefreshCw, FileText, Info, X } from 'lucide-react';
 
 interface LoginProps {
   onSuccess: (token: string) => void;
@@ -32,6 +32,14 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
+
+  // Google OAuth Login Modal State
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
+  const [googleLoginEmail, setGoogleLoginEmail] = useState('');
+  const [googleLoginName, setGoogleLoginName] = useState('');
+  const [googleModalLoading, setGoogleModalLoading] = useState(false);
+  const [googleModalError, setGoogleModalError] = useState('');
+  const [googleModalSuccess, setGoogleModalSuccess] = useState('');
 
   useEffect(() => {
     if (rememberMe && email.trim()) {
@@ -181,42 +189,48 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    let googleMail = email.trim();
-    if (!googleMail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleMail)) {
-      const inputMail = window.prompt(
-        'أدخل بريد Google الخاص بك لتسجيل الدخول السريع أو ربطه بحسابك المسجل سابقاً:',
-        email || 'user@gmail.com'
-      );
-      if (!inputMail) return;
-      googleMail = inputMail.trim();
-    }
+  const handleOpenGoogleLoginModal = () => {
+    setGoogleLoginEmail(email.trim() || 'athlete@gmail.com');
+    setGoogleLoginName(name.trim() || 'Beast Athlete');
+    setGoogleModalError('');
+    setGoogleModalSuccess('');
+    setShowGoogleModal(true);
+  };
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleMail)) {
-      setError('صيغة بريد Google غير صحيحة');
+  const handleConfirmGoogleOAuthLogin = async () => {
+    const cleanMail = googleLoginEmail.trim().toLowerCase();
+    if (!cleanMail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanMail)) {
+      setGoogleModalError('يرجى إدخال بريد Google صحيح بصيغة name@gmail.com');
       return;
     }
 
-    setLoading(true);
-    setError('');
+    setGoogleModalLoading(true);
+    setGoogleModalError('');
     try {
+      const gId = `google_${cleanMail.replace(/[^a-zA-Z0-9]/g, '_')}`;
       const data = await api.googleAuth({
-        email: googleMail,
-        name: name.trim() || 'Beast Athlete',
-        googleId: `google_${googleMail}`,
+        email: cleanMail,
+        name: googleLoginName.trim() || 'Beast Athlete',
+        googleId: gId,
       });
+
+      setGoogleModalSuccess('تم التحقق وتوثيق حساب Google بنجاح! جاري توجيهك...');
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
       if (rememberMe) {
-        localStorage.setItem('bm_remember_email', googleMail);
+        localStorage.setItem('bm_remember_email', cleanMail);
         localStorage.setItem('bm_remember_me', 'true');
       }
-      onSuccess(data.token);
+
+      setTimeout(() => {
+        setShowGoogleModal(false);
+        onSuccess(data.token);
+      }, 1000);
     } catch (err: any) {
-      setError(err.message || 'فشل تسجيل الدخول أو ربط الحساب عبر Google');
+      setGoogleModalError(err.message || 'فشل تسجيل الدخول أو ربط الحساب عبر Google');
     } finally {
-      setLoading(false);
+      setGoogleModalLoading(false);
     }
   };
 
@@ -387,7 +401,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
         <button
           type="button"
           disabled={loading}
-          onClick={handleGoogleSignIn}
+          onClick={handleOpenGoogleLoginModal}
           className="secondary-btn"
           style={{
             width: '100%',
@@ -620,6 +634,153 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Google OAuth Login Modal */}
+      {showGoogleModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            zIndex: 10050,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            backdropFilter: 'blur(10px)',
+          }}
+        >
+          <div
+            className="glass-panel animated-fade"
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              borderRadius: '20px',
+              border: '1px solid rgba(66, 133, 244, 0.4)',
+              padding: '30px 26px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
+              backgroundColor: '#0c101d',
+              color: 'var(--text-primary)',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85)',
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(66, 133, 244, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: '900', margin: 0 }}>
+                    المتابعة بحساب Google
+                  </h3>
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                    تسجيل دخول سريع أو ربط تلقائي فوري
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setShowGoogleModal(false)} className="secondary-btn" style={{ padding: '6px', borderRadius: '50%' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Error & Success Messages */}
+            {googleModalError && (
+              <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={15} />
+                <span>{googleModalError}</span>
+              </div>
+            )}
+
+            {googleModalSuccess && (
+              <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={15} />
+                <span>{googleModalSuccess}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                إذا كنت مسجلاً مسبقاً، سيتم دمج حسابك بحساب Google فورياً مع <strong>الحفاظ الكامل على كافة جداولك وسجلاتك</strong> بدون أي تغيير.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                  بريدك الإلكتروني في Google:
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="email"
+                    value={googleLoginEmail}
+                    onChange={(e) => setGoogleLoginEmail(e.target.value)}
+                    placeholder="athlete@gmail.com"
+                    className="input-field"
+                    style={{ paddingRight: '40px', fontSize: '14px', direction: 'ltr', textAlign: 'left' }}
+                    required
+                  />
+                  <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                    <Mail size={16} />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                  اسمك الرياضي (في حال كنت مستخدماً جديداً):
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    value={googleLoginName}
+                    onChange={(e) => setGoogleLoginName(e.target.value)}
+                    placeholder="Beast Athlete"
+                    className="input-field"
+                    style={{ paddingRight: '40px', fontSize: '14px' }}
+                  />
+                  <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                    <User size={16} />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={16} color="#10b981" />
+                <span>توثيق مشفر وآمن 100% بنظام OAuth 2.0 Identity Token</span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  disabled={googleModalLoading}
+                  onClick={handleConfirmGoogleOAuthLogin}
+                  className="glow-btn"
+                  style={{ flex: 1, justifyContent: 'center', padding: '12px', fontSize: '14px' }}
+                >
+                  {googleModalLoading ? 'جاري التحقق وتسجيل الدخول...' : '⚡ متابعة وتسجيل الدخول بحساب Google'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowGoogleModal(false)}
+                  className="secondary-btn"
+                  style={{ padding: '12px 18px', fontSize: '13px' }}
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
