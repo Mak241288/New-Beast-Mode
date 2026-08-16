@@ -40,6 +40,10 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
   const [googleModalLoading, setGoogleModalLoading] = useState(false);
   const [googleModalError, setGoogleModalError] = useState('');
   const [googleModalSuccess, setGoogleModalSuccess] = useState('');
+  const [googleRequiresVerification, setGoogleRequiresVerification] = useState(false);
+  const [googleVerificationPassword, setGoogleVerificationPassword] = useState('');
+  const [googleVerificationOtp, setGoogleVerificationOtp] = useState('');
+  const [googleOtpSent, setGoogleOtpSent] = useState(false);
 
   useEffect(() => {
     if (rememberMe && email.trim()) {
@@ -194,7 +198,34 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
     setGoogleLoginName(name.trim() || 'Beast Athlete');
     setGoogleModalError('');
     setGoogleModalSuccess('');
+    setGoogleRequiresVerification(false);
+    setGoogleVerificationPassword('');
+    setGoogleVerificationOtp('');
+    setGoogleOtpSent(false);
     setShowGoogleModal(true);
+  };
+
+  const handleSendVerificationOtpForGoogle = async () => {
+    const cleanMail = googleLoginEmail.trim().toLowerCase();
+    if (!cleanMail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanMail)) {
+      setGoogleModalError('يرجى إدخال بريد Google صحيح');
+      return;
+    }
+
+    setGoogleModalLoading(true);
+    setGoogleModalError('');
+    try {
+      const res = await api.requestPasswordResetOtp(cleanMail);
+      setGoogleOtpSent(true);
+      setGoogleModalSuccess(res.message || 'تم إرسال رمز التحقق (OTP) إلى بريدك بنجاح!');
+      if (res.debugOtp) {
+        setGoogleVerificationOtp(res.debugOtp);
+      }
+    } catch (err: any) {
+      setGoogleModalError(err.message || 'فشل إرسال رمز التحقق');
+    } finally {
+      setGoogleModalLoading(false);
+    }
   };
 
   const handleConfirmGoogleOAuthLogin = async () => {
@@ -208,13 +239,22 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
     setGoogleModalError('');
     try {
       const gId = `google_${cleanMail.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      const data = await api.googleAuth({
+      const payload: any = {
         email: cleanMail,
         name: googleLoginName.trim() || 'Beast Athlete',
         googleId: gId,
-      });
+      };
 
-      setGoogleModalSuccess('تم التحقق وتوثيق حساب Google بنجاح! جاري توجيهك...');
+      if (googleVerificationPassword.trim()) {
+        payload.password = googleVerificationPassword.trim();
+      }
+      if (googleVerificationOtp.trim()) {
+        payload.otp = googleVerificationOtp.trim();
+      }
+
+      const data = await api.googleAuth(payload);
+
+      setGoogleModalSuccess('تم التحقق من الهوية وتوثيق حساب Google بنجاح! جاري توجيهك...');
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
@@ -228,7 +268,13 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
         onSuccess(data.token);
       }, 1000);
     } catch (err: any) {
-      setGoogleModalError(err.message || 'فشل تسجيل الدخول أو ربط الحساب عبر Google');
+      // If backend requires verification for existing account
+      if (err.requiresSecurityVerification || (err.message && err.message.includes('محمي مسبقاً'))) {
+        setGoogleRequiresVerification(true);
+        setGoogleModalError(err.message || 'هذا الحساب مسجل ومحمي مسبقاً. لتأكيد ملكيتك له، أدخل كلمة المرور أو اطلب رمز OTP.');
+      } else {
+        setGoogleModalError(err.message || 'فشل تسجيل الدخول أو ربط الحساب عبر Google');
+      }
     } finally {
       setGoogleModalLoading(false);
     }
@@ -722,11 +768,12 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
                 <div style={{ position: 'relative' }}>
                   <input
                     type="email"
+                    disabled={googleRequiresVerification}
                     value={googleLoginEmail}
                     onChange={(e) => setGoogleLoginEmail(e.target.value)}
                     placeholder="athlete@gmail.com"
                     className="input-field"
-                    style={{ paddingRight: '40px', fontSize: '14px', direction: 'ltr', textAlign: 'left' }}
+                    style={{ paddingRight: '40px', fontSize: '14px', direction: 'ltr', textAlign: 'left', opacity: googleRequiresVerification ? 0.7 : 1 }}
                     required
                   />
                   <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
@@ -735,24 +782,74 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
-                  اسمك الرياضي (في حال كنت مستخدماً جديداً):
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    value={googleLoginName}
-                    onChange={(e) => setGoogleLoginName(e.target.value)}
-                    placeholder="Beast Athlete"
-                    className="input-field"
-                    style={{ paddingRight: '40px', fontSize: '14px' }}
-                  />
-                  <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
-                    <User size={16} />
+              {!googleRequiresVerification ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                    اسمك الرياضي (في حال كنت مستخدماً جديداً):
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      value={googleLoginName}
+                      onChange={(e) => setGoogleLoginName(e.target.value)}
+                      placeholder="Beast Athlete"
+                      className="input-field"
+                      style={{ paddingRight: '40px', fontSize: '14px' }}
+                    />
+                    <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+                      <User size={16} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* SECURITY VERIFICATION STEP FOR EXISTING ACCOUNTS */
+                <div className="glass-panel" style={{ padding: '16px', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.05)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#f59e0b', fontWeight: 'bold', fontSize: '13px' }}>
+                    <Lock size={15} />
+                    <span>تأكيد ملكية الحساب المسجل (حماية الأمان)</span>
+                  </div>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    لحماية بياناتك، يرجى إدخال كلمة مرور الحساب الحالية أو طلب رمز التحقق (OTP) المرسل إلى بريدك:
+                  </span>
+
+                  {/* Password Input */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>كلمة مرور الحساب الحالية:</label>
+                    <input
+                      type="password"
+                      value={googleVerificationPassword}
+                      onChange={(e) => setGoogleVerificationPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="input-field"
+                      style={{ fontSize: '13px', direction: 'ltr', textAlign: 'left' }}
+                    />
+                  </div>
+
+                  <div style={{ textAlign: 'center', fontSize: '11.5px', color: 'var(--text-secondary)' }}>— أو —</div>
+
+                  {/* OTP option */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={googleVerificationOtp}
+                      onChange={(e) => setGoogleVerificationOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="رمز OTP (6 أرقام)"
+                      className="input-field"
+                      style={{ flex: 1, fontSize: '13px', textAlign: 'center', letterSpacing: '2px' }}
+                    />
+                    <button
+                      type="button"
+                      disabled={googleModalLoading}
+                      onClick={handleSendVerificationOtpForGoogle}
+                      className="secondary-btn"
+                      style={{ padding: '8px 12px', fontSize: '11.5px', whiteSpace: 'nowrap' }}
+                    >
+                      {googleOtpSent ? 'إعادة الإرسال 📩' : 'طلب رمز OTP 📩'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle2 size={16} color="#10b981" />
@@ -767,7 +864,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
                   className="glow-btn"
                   style={{ flex: 1, justifyContent: 'center', padding: '12px', fontSize: '14px' }}
                 >
-                  {googleModalLoading ? 'جاري التحقق وتسجيل الدخول...' : '⚡ متابعة وتسجيل الدخول بحساب Google'}
+                  {googleModalLoading ? 'جاري التحقق وتسجيل الدخول...' : googleRequiresVerification ? 'تأكيد الهوية والمتابعة ⚡' : '⚡ متابعة وتسجيل الدخول بحساب Google'}
                 </button>
 
                 <button

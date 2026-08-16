@@ -637,17 +637,18 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
 };
 
 // @desc    Google Sign-In / Sign-Up / Seamless Account Linking
+// @desc    Authenticate or Link Google Account
 // @route   POST /api/auth/google
 export const googleAuth = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, name, googleId } = req.body;
+  const { email, name, googleId, password, otp, idToken } = req.body;
 
   try {
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanName = (name || 'Beast Athlete').trim();
     const cleanGoogleId = (googleId || cleanEmail).trim();
 
-    if (!cleanEmail) {
-      res.status(400).json({ error: 'البريد الإلكتروني لحساب Google مطلوب' });
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      res.status(400).json({ error: 'البريد الإلكتروني لحساب Google غير صحيح' });
       return;
     }
 
@@ -657,17 +658,47 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
     });
 
     if (user) {
-      // User exists -> Seamlessly link Google account if not linked already
+      // SECURITY SAFEGUARD:
+      // If user is ALREADY linked to this specific googleId OR provided verified OAuth token -> login directly.
+      // If NOT yet linked to this Google ID and account has password -> require password or email OTP verification to prevent hijacking!
+      const isAlreadyLinked = user.isGoogleLinked && user.googleId === cleanGoogleId;
+
+      if (!isAlreadyLinked && !idToken) {
+        if (password) {
+          const isMatch = await bcrypt.compare(password, user.password);
+          if (!isMatch) {
+            res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة لتأكيد ربط هذا الحساب بـ Google' });
+            return;
+          }
+        } else if (otp) {
+          if (!user.resetOtp || user.resetOtp !== otp.trim() || !user.resetOtpExpiry || new Date() > user.resetOtpExpiry) {
+            res.status(400).json({ error: 'رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية' });
+            return;
+          }
+        } else {
+          // Account is protected -> Request password or OTP confirmation
+          res.status(403).json({
+            requiresSecurityVerification: true,
+            email: cleanEmail,
+            message: 'هذا الحساب مسجل ومحمي مسبقاً. لحماية بياناتك ومنع انتحال الحساب، يرجى إدخال كلمة المرور أو طلب رمز التحقق (OTP) لإتمام الربط.',
+          });
+          return;
+        }
+      }
+
+      // Authorized -> Update Google linking metadata
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
           googleId: cleanGoogleId,
           isGoogleLinked: true,
           googleEmail: cleanEmail,
+          resetOtp: null,
+          resetOtpExpiry: null,
         },
       });
     } else {
-      // Create new user with secure random password hash
+      // Brand new user -> Create new account with Google credentials
       const randomPassword = await bcrypt.hash(`GoogleAuth_${cleanGoogleId}_${Date.now()}`, 10);
       user = await prisma.user.create({
         data: {
@@ -701,9 +732,10 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
       email: user.email,
       isGoogleLinked: user.isGoogleLinked,
       googleEmail: user.googleEmail,
+      googleId: user.googleId,
       onboardingCompleted: user.onboardingCompleted,
       token,
-      message: 'تم تسجيل الدخول وربط الحساب عبر Google بنجاح ⚡',
+      message: 'تم التحقق من الهوية وتسجيل الدخول عبر Google بنجاح ⚡',
     });
   } catch (error: any) {
     console.error('[googleAuth] Error:', error);
@@ -715,7 +747,7 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
 // @route   POST /api/auth/link-google
 export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
-  const { googleEmail, googleId } = req.body;
+  const { googleEmail, googleId, currentPassword } = req.body;
 
   if (!userId) {
     res.status(401).json({ error: 'غير مصرح' });
@@ -726,9 +758,23 @@ export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promis
     const cleanEmail = (googleEmail || '').trim().toLowerCase();
     const cleanId = (googleId || cleanEmail).trim();
 
-    if (!cleanEmail) {
-      res.status(400).json({ error: 'البريد الإلكتروني لحساب Google مطلوب' });
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
+      res.status(400).json({ error: 'البريد الإلكتروني لحساب Google غير صحيح' });
       return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ error: 'المستخدم غير موجود' });
+      return;
+    }
+
+    if (currentPassword) {
+      const match = await bcrypt.compare(currentPassword, user.password);
+      if (!match) {
+        res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة لتأكيد ربط الحساب' });
+        return;
+      }
     }
 
     const updatedUser = await prisma.user.update({
@@ -744,7 +790,8 @@ export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promis
       success: true,
       isGoogleLinked: true,
       googleEmail: updatedUser.googleEmail,
-      message: 'تم ربط حسابك بنجاح بحساب Google! يمكنك الآن تسجيل الدخول السريع بنقرة واحدة.',
+      googleId: updatedUser.googleId,
+      message: 'تم التحقق من الهوية وربط حسابك بنجاح بحساب Google!',
     });
   } catch (error: any) {
     console.error('[linkGoogleAccount] Error:', error);
