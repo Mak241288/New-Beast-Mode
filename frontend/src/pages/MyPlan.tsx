@@ -1123,6 +1123,86 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     }
   };
 
+  // Cortisol & CNS Neurological Stress Engine
+  const getCortisolAndCnsMetrics = (dw: any) => {
+    if (dw.isRestDay) {
+      return {
+        score: 18,
+        level: 'LOW',
+        badgeText: lang === 'en' ? 'Cortisol: 18% (Anabolic Recovery 🟢)' : 'الكورتيزول: 18% (استشفاء بنائي 🟢)',
+        shortLabel: lang === 'en' ? 'Cortisol: 18% 🟢' : 'الكورتيزول: 18% 🟢',
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.12)',
+        border: 'rgba(16, 185, 129, 0.35)',
+        title: lang === 'en' ? 'Rest & Hormonal Rebound' : 'يوم راحة واستشفاء هرموني كامل',
+        cnsLoad: lang === 'en' ? 'Low CNS Load (10%)' : 'إجهاد عصبي منخفض (10%)',
+        recoveryTime: lang === 'en' ? 'Active Rebound' : 'استشفاء فوري',
+        recommendation: lang === 'en'
+          ? 'Deep sleep (8h), hydration, and balanced whole foods to suppress stress hormones and maximize growth hormone secretion.'
+          : 'نوم عميق (8 ساعات)، ترطيب مستمر، وأغذية متوازنة لخفض هرمونات التوتر وتعزيز إفراز هرمون النمو البنائي.',
+        supplements: lang === 'en' ? 'Magnesium Glycinate + Deep Hydration' : 'مغنيسيوم جلايسينات + ترطيب عميق',
+      };
+    }
+
+    const focus = (dw.focusArea || dw.title || '').toLowerCase();
+    const exNames = (dw.exercises || []).map((e: any) => (e.name || '').toLowerCase()).join(' ');
+    const isHeavyLegsOrDeadlift = focus.includes('leg') || focus.includes('أرجل') || focus.includes('قرفصاء') || focus.includes('squat') || focus.includes('deadlift') || exNames.includes('squat') || exNames.includes('deadlift') || exNames.includes('leg press');
+    const isHeavyUpper = focus.includes('chest') || focus.includes('صدر') || focus.includes('back') || focus.includes('ظهر') || focus.includes('push') || focus.includes('pull') || focus.includes('سحب') || focus.includes('دفع');
+
+    if (isHeavyLegsOrDeadlift) {
+      return {
+        score: 88,
+        level: 'HIGH',
+        badgeText: lang === 'en' ? 'Cortisol: 88% (High CNS Tax 🔴)' : 'الكورتيزول: 88% (إجهاد عصبي مرتفع 🔴)',
+        shortLabel: lang === 'en' ? 'Cortisol: 88% 🔴' : 'الكورتيزول: 88% 🔴',
+        color: '#ef4444',
+        bg: 'rgba(239, 68, 68, 0.12)',
+        border: 'rgba(239, 68, 68, 0.35)',
+        title: lang === 'en' ? 'Heavy Compound / High CNS Stress' : 'تمرين مركب شاق وإجهاد عصبي مرتفع',
+        cnsLoad: lang === 'en' ? 'High CNS Stress (88%)' : 'إجهاد عصبي وجهازي عالي (88%)',
+        recoveryTime: lang === 'en' ? '48 - 72 Hours' : '48 - 72 ساعة استشفاء',
+        recommendation: lang === 'en'
+          ? 'Heavy spinal loading triggers high systemic cortisol. Drink intra-workout fast carbs (30-40g) to blunt cortisol spikes and take Magnesium before bed.'
+          : 'الأوزان المركبة ترفع الكورتيزول والإجهاد العصبي. اشرب كارب سريع (30-40 جم Intra-workout) لكبح الكورتيزول فورياً، وتناول المغنيسيوم ليلاً.',
+        supplements: lang === 'en' ? 'Intra-workout Carbs + Ashwagandha + Magnesium' : 'كارب سريع أثناء التمرين + أشواغاندا + مغنيسيوم',
+      };
+    } else if (isHeavyUpper) {
+      return {
+        score: 64,
+        level: 'MODERATE',
+        badgeText: lang === 'en' ? 'Cortisol: 64% (Optimal Hypertrophy 🟡)' : 'الكورتيزول: 64% (تضخيم متوازن 🟡)',
+        shortLabel: lang === 'en' ? 'Cortisol: 64% 🟡' : 'الكورتيزول: 64% 🟡',
+        color: '#f59e0b',
+        bg: 'rgba(245, 158, 11, 0.12)',
+        border: 'rgba(245, 158, 11, 0.35)',
+        title: lang === 'en' ? 'Optimal Hypertrophy Load' : 'تحفيز تضخيم عضلي متوازن',
+        cnsLoad: lang === 'en' ? 'Moderate CNS Stress (64%)' : 'إجهاد عصبي معتدل (64%)',
+        recoveryTime: lang === 'en' ? '36 - 48 Hours' : '36 - 48 ساعة استشفاء',
+        recommendation: lang === 'en'
+          ? 'Stimulates muscle protein synthesis with controlled hormonal stress. Consume protein + complex carbs within 60 mins post-workout.'
+          : 'تحفيز بنائي مثالي مع تحكم هرموني مستقر. تناول وجبة بروتين وكارب معقد خلال 60 دقيقة بعد التمرين لدعم التخليق العضلي.',
+        supplements: lang === 'en' ? 'Whey Protein + Creatine + Vitamin C' : 'بروتين مصل اللبن + كرياتين + فيتامين C',
+      };
+    } else {
+      return {
+        score: 38,
+        level: 'LOW',
+        badgeText: lang === 'en' ? 'Cortisol: 38% (Low CNS Stress 🟢)' : 'الكورتيزول: 38% (إجهاد عصبي خفيف 🟢)',
+        shortLabel: lang === 'en' ? 'Cortisol: 38% 🟢' : 'الكورتيزول: 38% 🟢',
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.12)',
+        border: 'rgba(16, 185, 129, 0.35)',
+        title: lang === 'en' ? 'Isolation / Active Hypertrophy' : 'تمارين عزل واستشفاء سريع',
+        cnsLoad: lang === 'en' ? 'Low CNS Stress (38%)' : 'إجهاد عصبي خفيف (38%)',
+        recoveryTime: lang === 'en' ? '24 Hours' : '24 ساعة استشفاء',
+        recommendation: lang === 'en'
+          ? 'Minimal central fatigue with localized muscle pump. Rapid recovery window.'
+          : 'إجهاد جهازي طفيف مع ضخ دم موضعي ممتاز. الاستشفاء العصبي سريع وسهل.',
+        supplements: lang === 'en' ? 'Hydration + Electrolytes + EAAs' : 'ترطيب + أملاح إلكترولايت + أحماض أمينية',
+      };
+    }
+  };
+
   return (
     <div style={{ padding: '20px 0' }}>
       {regeneratingPlan && (
@@ -1282,6 +1362,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               const isExpanded = expandedDays[dw.dayIndex] ?? false;
               const dayLabel = `${getDayName(dw.dayIndex)} – ${dw.title.split(' - ')[1] || dw.title.split(': ')[1] || dw.title}`;
               const duration = getEstimatedDuration(dw);
+              const cort = getCortisolAndCnsMetrics(dw);
 
               return (
                 <div key={dw.id} className="glass-panel" style={{ padding: '0', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
@@ -1304,9 +1385,27 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         <span>🗓️</span>
                         <span>{dayLabel}</span>
                       </h3>
-                      <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px', margin: 0 }}>
-                        🎯 {dw.focusArea} | ⏱️ {duration}
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                          🎯 {dw.focusArea} | ⏱️ {duration}
+                        </span>
+                        <span
+                          style={{
+                            background: cort.bg,
+                            color: cort.color,
+                            border: `1px solid ${cort.border}`,
+                            borderRadius: '6px',
+                            padding: '2px 8px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          🩸 {cort.shortLabel}
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -1355,6 +1454,77 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   {/* Accordion Content */}
                   {isExpanded && (
                     <div style={{ padding: '24px' }}>
+                      {/* Cortisol & CNS Stress Panel */}
+                      <div
+                        className="glass-panel"
+                        style={{
+                          padding: '14px 18px',
+                          borderRadius: '14px',
+                          border: `1px solid ${cort.border}`,
+                          background: `linear-gradient(135deg, ${cort.bg}, rgba(255,255,255,0.01))`,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          marginBottom: '16px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '18px' }}>🩸</span>
+                            <div>
+                              <h4 style={{ fontSize: '13.5px', fontWeight: '800', margin: 0, color: cort.color }}>
+                                {lang === 'en' ? 'Cortisol & CNS Stress Forecast' : 'مؤشر الكورتيزول والإجهاد العصبي المتوقع'}
+                              </h4>
+                              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{cort.title}</span>
+                            </div>
+                          </div>
+                          <span style={{ background: cort.bg, color: cort.color, border: `1px solid ${cort.border}`, borderRadius: '8px', padding: '3px 10px', fontSize: '12px', fontWeight: '900' }}>
+                            {cort.score}% {cort.level === 'HIGH' ? '🔴 High Tax' : cort.level === 'MODERATE' ? '🟡 Balanced' : '🟢 Low Tax'}
+                          </span>
+                        </div>
+
+                        {/* Progress / Gauge Bar */}
+                        <div style={{ width: '100%', height: '7px', background: 'rgba(255,255,255,0.08)', borderRadius: '10px', overflow: 'hidden', position: 'relative' }}>
+                          <div
+                            style={{
+                              width: `${cort.score}%`,
+                              height: '100%',
+                              borderRadius: '10px',
+                              background: cort.level === 'HIGH'
+                                ? 'linear-gradient(90deg, #f59e0b, #ef4444)'
+                                : cort.level === 'MODERATE'
+                                ? 'linear-gradient(90deg, #10b981, #f59e0b)'
+                                : '#10b981',
+                              transition: 'width 0.4s ease',
+                            }}
+                          />
+                        </div>
+
+                        {/* 3 Scientific Badges */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', fontSize: '11.5px' }}>
+                          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🧠</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'CNS Load:' : 'إجهاد الجهاز العصبي:'}</span>
+                            <strong style={{ color: cort.color }}>{cort.cnsLoad}</strong>
+                          </div>
+                          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>⏳</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Recovery Time:' : 'وقت الاستشفاء:'}</span>
+                            <strong style={{ color: '#fff' }}>{cort.recoveryTime}</strong>
+                          </div>
+                          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>💊</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Anti-Catabolic:' : 'مكملات الكبح:'}</span>
+                            <strong style={{ color: '#22d3ee' }}>{cort.supplements}</strong>
+                          </div>
+                        </div>
+
+                        {/* Recommendation Note */}
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '8px', borderLeft: `3px solid ${cort.color}`, lineHeight: 1.5 }}>
+                          💡 <strong>{lang === 'en' ? 'BeastMode Hormonal Protocol:' : 'بروتوكول التحكم الهرموني:'}</strong> {cort.recommendation}
+                        </div>
+                      </div>
+
                       {dw.isRestDay ? (
                         <div style={{ textAlign: 'center', padding: '20px 10px', maxWidth: '500px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                           <span style={{ fontSize: '36px' }}>🧘‍♂️</span>
