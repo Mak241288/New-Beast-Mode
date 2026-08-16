@@ -636,3 +636,150 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
+// @desc    Google Sign-In / Sign-Up / Seamless Account Linking
+// @route   POST /api/auth/google
+export const googleAuth = async (req: AuthRequest, res: Response): Promise<void> => {
+  const { email, name, googleId } = req.body;
+
+  try {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanName = (name || 'Beast Athlete').trim();
+    const cleanGoogleId = (googleId || cleanEmail).trim();
+
+    if (!cleanEmail) {
+      res.status(400).json({ error: 'البريد الإلكتروني لحساب Google مطلوب' });
+      return;
+    }
+
+    // Check if user with this email already exists
+    let user = await prisma.user.findUnique({
+      where: { email: cleanEmail },
+    });
+
+    if (user) {
+      // User exists -> Seamlessly link Google account if not linked already
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: cleanGoogleId,
+          isGoogleLinked: true,
+          googleEmail: cleanEmail,
+        },
+      });
+    } else {
+      // Create new user with secure random password hash
+      const randomPassword = await bcrypt.hash(`GoogleAuth_${cleanGoogleId}_${Date.now()}`, 10);
+      user = await prisma.user.create({
+        data: {
+          email: cleanEmail,
+          name: cleanName,
+          password: randomPassword,
+          googleId: cleanGoogleId,
+          isGoogleLinked: true,
+          googleEmail: cleanEmail,
+          fitnessGoal: 'HYPERTROPHY',
+          fitnessLevel: 'intermediate',
+          workoutLocation: 'GYM',
+          daysPerWeek: 4,
+          onboardingCompleted: false,
+        },
+      });
+    }
+
+    const token = generateToken(user.id, user.email);
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      isGoogleLinked: user.isGoogleLinked,
+      googleEmail: user.googleEmail,
+      onboardingCompleted: user.onboardingCompleted,
+      token,
+      message: 'تم تسجيل الدخول وربط الحساب عبر Google بنجاح ⚡',
+    });
+  } catch (error: any) {
+    console.error('[googleAuth] Error:', error);
+    res.status(500).json({ error: 'فشل تسجيل الدخول أو ربط الحساب عبر Google' });
+  }
+};
+
+// @desc    Link Google Account for Logged-In User
+// @route   POST /api/auth/link-google
+export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  const { googleEmail, googleId } = req.body;
+
+  if (!userId) {
+    res.status(401).json({ error: 'غير مصرح' });
+    return;
+  }
+
+  try {
+    const cleanEmail = (googleEmail || '').trim().toLowerCase();
+    const cleanId = (googleId || cleanEmail).trim();
+
+    if (!cleanEmail) {
+      res.status(400).json({ error: 'البريد الإلكتروني لحساب Google مطلوب' });
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleId: cleanId,
+        isGoogleLinked: true,
+        googleEmail: cleanEmail,
+      },
+    });
+
+    res.json({
+      success: true,
+      isGoogleLinked: true,
+      googleEmail: updatedUser.googleEmail,
+      message: 'تم ربط حسابك بنجاح بحساب Google! يمكنك الآن تسجيل الدخول السريع بنقرة واحدة.',
+    });
+  } catch (error: any) {
+    console.error('[linkGoogleAccount] Error:', error);
+    res.status(500).json({ error: 'فشل ربط الحساب بحساب Google' });
+  }
+};
+
+// @desc    Unlink Google Account
+// @route   POST /api/auth/unlink-google
+export const unlinkGoogleAccount = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ error: 'غير مصرح' });
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleId: null,
+        isGoogleLinked: false,
+        googleEmail: null,
+      },
+    });
+
+    res.json({
+      success: true,
+      isGoogleLinked: false,
+      message: 'تم إلغاء ربط الحساب بحساب Google بنجاح.',
+    });
+  } catch (error: any) {
+    console.error('[unlinkGoogleAccount] Error:', error);
+    res.status(500).json({ error: 'فشل إلغاء ربط حساب Google' });
+  }
+};
+

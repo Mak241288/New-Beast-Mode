@@ -2,6 +2,9 @@ import { Router } from 'express';
 import { 
   register, 
   login, 
+  googleAuth,
+  linkGoogleAccount,
+  unlinkGoogleAccount,
   getProfile, 
   updateProfile,
   updateAccountSecurity,
@@ -17,6 +20,7 @@ const router = Router();
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/google', googleAuth);
 router.post('/forgot-password-otp', requestPasswordResetOtp);
 router.post('/verify-otp-reset-password', verifyOtpAndResetPassword);
 
@@ -24,6 +28,8 @@ router.post('/verify-otp-reset-password', verifyOtpAndResetPassword);
 router.get('/profile', protect as any, getProfile);
 router.put('/profile', protect as any, updateProfile);
 router.put('/security', protect as any, updateAccountSecurity);
+router.post('/link-google', protect as any, linkGoogleAccount);
+router.post('/unlink-google', protect as any, unlinkGoogleAccount);
 router.get('/export-data', protect as any, exportUserData);
 router.delete('/account', protect as any, deleteAccount);
 

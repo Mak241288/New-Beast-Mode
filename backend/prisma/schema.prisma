@@ -33,6 +33,9 @@ model User {
   onboardingCompleted Boolean       @default(false)
   resetOtp            String?
   resetOtpExpiry      DateTime?
+  googleId            String?
+  isGoogleLinked      Boolean       @default(false)
+  googleEmail         String?
   workoutPlans        WorkoutPlan[]
   weightLogs          WeightLog[]
 }
@@ -127,7 +130,7 @@ model Exercise {
 
 model ExerciseLibrary {
   id                    Int      @id @default(autoincrement())
-  name                  String?  @unique
+  name                  String?
   name_en               String?
   name_ar               String?
   description           String?

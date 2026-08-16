@@ -39,28 +39,23 @@ export const syncService = {
                 ? item.instructions.join('\n')
                 : item.description || '';
 
-              await db.exerciseLibrary.upsert({
-                where: { name },
-                update: {
-                  targetMuscle: `${item.target} (Bodypart: ${item.bodyPart})`,
-                  category,
-                  description: instructions,
-                  imageUrl: item.gifUrl || null,
-                  videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.name)}+shorts`,
-                },
-                create: {
-                  name,
-                  targetMuscle: `${item.target} (Bodypart: ${item.bodyPart})`,
-                  category,
-                  description: instructions,
-                  imageUrl: item.gifUrl || null,
-                  videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.name)}+shorts`,
-                },
-              });
+              const payload = {
+                targetMuscle: `${item.target} (Bodypart: ${item.bodyPart})`,
+                category,
+                description: instructions,
+                imageUrl: item.gifUrl || null,
+                videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.name)}+shorts`,
+              };
+
+              const existing = await db.exerciseLibrary.findFirst({ where: { name } });
+              if (existing) {
+                await db.exerciseLibrary.update({ where: { id: existing.id }, data: payload });
+              } else {
+                await db.exerciseLibrary.create({ data: { name, ...payload } });
+              }
               totalSynced++;
             } catch (err: any) {
-              // Ignore single item error, log it
-              console.warn(`[SyncService] Item sync error: ${item.name}`, err.message);
+              console.warn(`[SyncService] ExerciseDB Item sync error: ${item.name}`, err.message);
             }
           }
         }
@@ -74,8 +69,8 @@ export const syncService = {
 
     // --- 2. Wger Workout Manager API Sync ---
     try {
-      console.log('[SyncService] Fetching from Wger API...');
-      const response = await fetch('https://wger.de/api/v2/exercise/?language=2&limit=500');
+      console.log('[SyncService] Fetching from Wger Workout API...');
+      const response = await fetch('https://wger.de/api/v2/exercise/?language=2&limit=40');
       if (response.ok) {
         const data: any = await response.json();
         if (data && Array.isArray(data.results)) {
@@ -87,24 +82,20 @@ export const syncService = {
                 ? item.description.replace(/<[^>]*>/g, '').trim()
                 : 'No description provided.';
 
-              await db.exerciseLibrary.upsert({
-                where: { name },
-                update: {
-                  targetMuscle: 'General Strength',
-                  category: 'IRON',
-                  description: descClean,
-                  imageUrl: null,
-                  videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.name)}+shorts`,
-                },
-                create: {
-                  name,
-                  targetMuscle: 'General Strength',
-                  category: 'IRON',
-                  description: descClean,
-                  imageUrl: null,
-                  videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.name)}+shorts`,
-                },
-              });
+              const payload = {
+                targetMuscle: 'General Strength',
+                category: 'IRON',
+                description: descClean,
+                imageUrl: null,
+                videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(item.name)}+shorts`,
+              };
+
+              const existing = await db.exerciseLibrary.findFirst({ where: { name } });
+              if (existing) {
+                await db.exerciseLibrary.update({ where: { id: existing.id }, data: payload });
+              } else {
+                await db.exerciseLibrary.create({ data: { name, ...payload } });
+              }
               totalSynced++;
             } catch (err: any) {
               console.warn(`[SyncService] Wger Item sync error: ${item.name}`, err.message);
@@ -134,24 +125,20 @@ export const syncService = {
           for (const pose of data) {
             try {
               const name = `${pose.english_name} - ${pose.sanskrit_name} (Yoga)`;
-              await db.exerciseLibrary.upsert({
-                where: { name },
-                update: {
-                  targetMuscle: 'Flexibility & Core',
-                  category: 'YOGA',
-                  description: pose.pose_description || pose.pose_benefits || 'Yoga pose for flexibility.',
-                  imageUrl: pose.url_png || pose.url_svg || null,
-                  videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(pose.english_name)}+yoga+shorts`,
-                },
-                create: {
-                  name,
-                  targetMuscle: 'Flexibility & Core',
-                  category: 'YOGA',
-                  description: pose.pose_description || pose.pose_benefits || 'Yoga pose for flexibility.',
-                  imageUrl: pose.url_png || pose.url_svg || null,
-                  videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(pose.english_name)}+yoga+shorts`,
-                },
-              });
+              const payload = {
+                targetMuscle: 'Flexibility & Core',
+                category: 'YOGA',
+                description: pose.pose_description || pose.pose_benefits || 'Yoga pose for flexibility.',
+                imageUrl: pose.url_png || pose.url_svg || null,
+                videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(pose.english_name)}+yoga+shorts`,
+              };
+
+              const existing = await db.exerciseLibrary.findFirst({ where: { name } });
+              if (existing) {
+                await db.exerciseLibrary.update({ where: { id: existing.id }, data: payload });
+              } else {
+                await db.exerciseLibrary.create({ data: { name, ...payload } });
+              }
               totalSynced++;
             } catch (err: any) {
               console.warn(`[SyncService] Yoga Pose sync error: ${pose.english_name}`, err.message);
@@ -182,36 +169,33 @@ export const syncService = {
             for (const pose of data) {
               try {
                 const name = `${pose.name} (Yoga)`;
-                await db.exerciseLibrary.upsert({
-                  where: { name },
-                  update: {
-                    targetMuscle: 'Flexibility & Core',
-                    category: 'YOGA',
-                    description: pose.description || 'Yoga pose for stability and breathing.',
-                    imageUrl: pose.image_url || null,
-                    videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(pose.name)}+yoga+shorts`,
-                  },
-                  create: {
-                    name,
-                    targetMuscle: 'Flexibility & Core',
-                    category: 'YOGA',
-                    description: pose.description || 'Yoga pose for stability and breathing.',
-                    imageUrl: pose.image_url || null,
-                    videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(pose.name)}+yoga+shorts`,
-                  },
-                });
+                const payload = {
+                  targetMuscle: 'Flexibility & Core',
+                  category: 'YOGA',
+                  description: pose.description || 'Yoga pose for stability and breathing.',
+                  imageUrl: pose.image_url || null,
+                  videoUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(pose.name)}+yoga+shorts`,
+                };
+
+                const existing = await db.exerciseLibrary.findFirst({ where: { name } });
+                if (existing) {
+                  await db.exerciseLibrary.update({ where: { id: existing.id }, data: payload });
+                } else {
+                  await db.exerciseLibrary.create({ data: { name, ...payload } });
+                }
                 totalSynced++;
               } catch (err: any) {
                 console.warn(`[SyncService] RapidAPI Yoga Pose sync error: ${pose.name}`, err.message);
               }
             }
+            yogaFetched = true;
           }
         } else {
           throw new Error(`RapidAPI Yoga API responded with HTTP ${response.status}`);
         }
       } catch (err: any) {
-        errors.push(`Yoga API Sync Error: ${err.message}`);
-        console.error('[SyncService] Yoga API Sync Error:', err);
+        errors.push(`RapidAPI Yoga Sync Error: ${err.message}`);
+        console.error('[SyncService] RapidAPI Yoga Sync Error:', err);
       }
     }
 

@@ -107,6 +107,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [securitySaving, setSecuritySaving] = useState(false);
   const [securityError, setSecurityError] = useState('');
   const [securitySuccess, setSecuritySuccess] = useState('');
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
 
   const fetchProfile = async () => {
     if (!cacheStore.get('user_profile')) {
@@ -130,6 +131,8 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         age: data.age || '',
         workoutReminder: data.workoutReminder || false,
         reminderTime: data.reminderTime || '08:00',
+        isGoogleLinked: data.isGoogleLinked || false,
+        googleEmail: data.googleEmail || '',
       };
       setProfile(updated);
       cacheStore.set('user_profile', updated);
@@ -400,6 +403,56 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
       setSecurityError(err.message || (lang === 'en' ? 'Failed to verify OTP.' : 'فشل تأكيد الرمز أو إعادة التعيين.'));
     } finally {
       setSecuritySaving(false);
+    }
+  };
+
+  const handleLinkGoogle = async () => {
+    const googleMail = window.prompt(
+      lang === 'en'
+        ? 'Enter the Google Account Email you wish to link with this BeastMode profile:'
+        : 'أدخل البريد الإلكتروني لحساب Google الذي ترغب بربطه بهذا الحساب:',
+      profile.email || 'user@gmail.com'
+    );
+    if (!googleMail) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleMail.trim())) {
+      alert(lang === 'en' ? 'Invalid Google email format.' : 'صيغة البريد الإلكتروني غير صحيحة.');
+      return;
+    }
+
+    setLinkingGoogle(true);
+    try {
+      const res = await api.linkGoogleAccount({
+        googleEmail: googleMail.trim().toLowerCase(),
+        googleId: `google_${googleMail.trim().toLowerCase()}`,
+      });
+      setProfile((prev: any) => ({
+        ...prev,
+        isGoogleLinked: true,
+        googleEmail: googleMail.trim().toLowerCase(),
+      }));
+      alert(res.message || (lang === 'en' ? 'Google Account linked successfully!' : 'تم ربط حساب Google بنجاح!'));
+    } catch (err: any) {
+      alert(err.message || (lang === 'en' ? 'Failed to link Google account.' : 'فشل ربط حساب Google.'));
+    } finally {
+      setLinkingGoogle(false);
+    }
+  };
+
+  const handleUnlinkGoogle = async () => {
+    if (!window.confirm(lang === 'en' ? 'Are you sure you want to unlink your Google account?' : 'هل أنت متأكد من إلغاء ربط حساب Google؟')) return;
+    setLinkingGoogle(true);
+    try {
+      const res = await api.unlinkGoogleAccount();
+      setProfile((prev: any) => ({
+        ...prev,
+        isGoogleLinked: false,
+        googleEmail: null,
+      }));
+      alert(res.message || (lang === 'en' ? 'Google Account unlinked successfully.' : 'تم إلغاء ربط حساب Google بنجاح.'));
+    } catch (err: any) {
+      alert(err.message || (lang === 'en' ? 'Failed to unlink Google account.' : 'فشل إلغاء ربط حساب Google.'));
+    } finally {
+      setLinkingGoogle(false);
     }
   };
 
@@ -943,6 +996,68 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                       <span>{testingNotification ? (lang === 'en' ? 'Testing...' : 'جاري الاختبار...') : (lang === 'en' ? 'Test Notification' : 'اختبار التنبيه 🔔')}</span>
                     </button>
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Google Account Integration Card */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                  </svg>
+                  <h3 style={{ fontSize: '14px', fontWeight: '700', margin: 0 }}>
+                    {lang === 'en' ? 'Google Account Integration' : 'ربط الحساب بحساب Google'}
+                  </h3>
+                </div>
+
+                {profile.isGoogleLinked ? (
+                  <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle2 size={12} />
+                    <span>{lang === 'en' ? 'Linked & Active' : 'الحساب مرتبط ومفعل'}</span>
+                  </span>
+                ) : (
+                  <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11px' }}>
+                    {lang === 'en' ? 'Not Linked' : 'غير مرتبط'}
+                  </span>
+                )}
+              </div>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                {profile.isGoogleLinked
+                  ? (lang === 'en'
+                      ? `Your account is linked to Google (${profile.googleEmail || profile.email}). You can sign in using 1-click Google authentication anytime without typing your password.`
+                      : `حسابك مرتبط بنجاح بحساب Google (${profile.googleEmail || profile.email}). يمكنك تسجيل الدخول السريع بنقرة واحدة بدون الحاجة لكتابة كلمة المرور.`)
+                  : (lang === 'en'
+                      ? 'Link your existing BeastMode account with your Google account to enable 1-click fast sign-in while keeping all your workout routines and metrics intact.'
+                      : 'اربط حسابك الحالي بـ Google لتسجيل الدخول بنقرة واحدة مستقبلاً مع الحفاظ الكامل على كافة جداولك الرياضية وسجلاتك.')}
+              </p>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {profile.isGoogleLinked ? (
+                  <button
+                    type="button"
+                    disabled={linkingGoogle}
+                    onClick={handleUnlinkGoogle}
+                    className="secondary-btn"
+                    style={{ padding: '6px 14px', fontSize: '12px', borderColor: 'rgba(239, 68, 68, 0.3)', color: 'var(--danger)' }}
+                  >
+                    {linkingGoogle ? (lang === 'en' ? 'Unlinking...' : 'جاري إلغاء الربط...') : (lang === 'en' ? 'Unlink Google Account' : 'إلغاء ربط حساب Google')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={linkingGoogle}
+                    onClick={handleLinkGoogle}
+                    className="glow-btn"
+                    style={{ padding: '7px 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <span>⚡ {linkingGoogle ? (lang === 'en' ? 'Linking...' : 'جاري الربط...') : (lang === 'en' ? 'Link with Google Account' : 'ربط الحساب بحساب Google الآن')}</span>
+                  </button>
                 )}
               </div>
             </div>

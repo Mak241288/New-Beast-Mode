@@ -55,6 +55,11 @@ export const api = {
   // Auth API
   register: (userData: any) => request('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
   login: (credentials: any) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+  googleAuth: (googleData: { email: string; name?: string; googleId?: string }) => 
+    request('/auth/google', { method: 'POST', body: JSON.stringify(googleData) }),
+  linkGoogleAccount: (data: { googleEmail: string; googleId?: string }) => 
+    request('/auth/link-google', { method: 'POST', body: JSON.stringify(data) }),
+  unlinkGoogleAccount: () => request('/auth/unlink-google', { method: 'POST' }),
   getProfile: () => request('/auth/profile'),
   updateProfile: (profileData: any) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) }),
   updateAccountSecurity: (securityData: { currentPassword: string; newEmail?: string; newPassword?: string }) => 

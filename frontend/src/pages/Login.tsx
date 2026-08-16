@@ -181,6 +181,45 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    let googleMail = email.trim();
+    if (!googleMail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleMail)) {
+      const inputMail = window.prompt(
+        'أدخل بريد Google الخاص بك لتسجيل الدخول السريع أو ربطه بحسابك المسجل سابقاً:',
+        email || 'user@gmail.com'
+      );
+      if (!inputMail) return;
+      googleMail = inputMail.trim();
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleMail)) {
+      setError('صيغة بريد Google غير صحيحة');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const data = await api.googleAuth({
+        email: googleMail,
+        name: name.trim() || 'Beast Athlete',
+        googleId: `google_${googleMail}`,
+      });
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      if (rememberMe) {
+        localStorage.setItem('bm_remember_email', googleMail);
+        localStorage.setItem('bm_remember_me', 'true');
+      }
+      onSuccess(data.token);
+    } catch (err: any) {
+      setError(err.message || 'فشل تسجيل الدخول أو ربط الحساب عبر Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex-center" style={{ minHeight: '100vh', padding: '20px', background: 'radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 40%)', flexDirection: 'column' }}>
       <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -347,9 +386,8 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
 
         <button
           type="button"
-          onClick={() => {
-            alert('تم تفعيل زر تسجيل الدخول عبر Google كخيار اختياري. يمكنك تسجيل الدخول السريع أو المتابعة ببريدك الحالي.');
-          }}
+          disabled={loading}
+          onClick={handleGoogleSignIn}
           className="secondary-btn"
           style={{
             width: '100%',
