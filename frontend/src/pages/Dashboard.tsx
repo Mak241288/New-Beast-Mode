@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Percent } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
+import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
 import { calculateNutrition } from '../utils/nutritionCalculator';
 import { cacheStore } from '../utils/cacheStore';
 
@@ -25,6 +26,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [profileError, setProfileError] = useState('');
   const [wikiExercise, setWikiExercise] = useState<any | null>(null);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -947,9 +949,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(5, 7, 16, 0.98)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '500px', padding: '24px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '800' }}>
-                {lang === 'en' ? 'Interactive Workout Player 🏋️‍♂️' : 'مشغل التمرين التفاعلي 🏋️‍♂️'}
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0 }}>
+                  {lang === 'en' ? 'Interactive Player 🏋️‍♂️' : 'مشغل التمرين التفاعلي 🏋️‍♂️'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowStrengthCalcModal(true)}
+                  className="secondary-btn"
+                  style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: '#f59e0b', color: '#f59e0b' }}
+                  title={lang === 'en' ? 'Plate & 1RM Calculator' : 'حاسبة أوزان البار والـ 1RM'}
+                >
+                  <Percent size={12} />
+                  <span>{lang === 'en' ? 'Plates' : 'حاسبة البار'}</span>
+                </button>
+              </div>
               <button onClick={() => setShowPlayer(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>✕</button>
             </div>
 
@@ -1202,6 +1216,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         lang={lang}
         userProfile={profile}
         onClose={() => setShowNutritionModal(false)}
+      />
+
+      {/* Barbell Plate & 1RM Calculator Modal */}
+      <BarbellPlate1RMModal
+        isOpen={showStrengthCalcModal}
+        lang={lang}
+        onClose={() => setShowStrengthCalcModal(false)}
       />
     </div>
   );

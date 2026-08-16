@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
 import { PresetPlansModal } from '../components/PresetPlansModal';
 import { MultiPlanManagerModal } from '../components/MultiPlanManagerModal';
+import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
 import type { PresetPlan } from '../utils/presetWorkoutPlans';
 import { cacheStore } from '../utils/cacheStore';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
@@ -30,6 +31,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [showManualBuilder, setShowManualBuilder] = useState(false);
   const [showPresetPlansModal, setShowPresetPlansModal] = useState(false);
   const [showMultiPlanModal, setShowMultiPlanModal] = useState(false);
+  const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
   const [manualTitle, setManualTitle] = useState(lang === 'en' ? 'Custom Gym Routine' : 'جدولي التدريبي اليدوي');
   const [manualActiveDayIdx, setManualActiveDayIdx] = useState(1);
   const [manualSaving, setManualSaving] = useState(false);
@@ -1183,6 +1185,23 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           >
             <Crown size={16} />
             <span>{lang === 'en' ? 'Curated Pro Plans 👑' : 'الخطط الجاهزة والأساطير 👑'}</span>
+          </button>
+          <button 
+            onClick={() => setShowStrengthCalcModal(true)} 
+            className="secondary-btn" 
+            style={{ 
+              padding: '8px 14px', 
+              fontSize: '13px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              borderColor: '#f59e0b',
+              color: '#f59e0b',
+              background: 'rgba(245, 158, 11, 0.08)',
+            }}
+          >
+            <Percent size={15} />
+            <span>{lang === 'en' ? 'Plate & 1RM Calculator 🔢' : 'حاسبة أوزان البار والـ 1RM 🔢'}</span>
           </button>
           <button onClick={() => setShowManualBuilder(true)} className="glow-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Plus size={16} />
@@ -3478,6 +3497,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           fetchHistory();
           fetchActivePlan();
         }}
+      />
+
+      {/* Barbell Plate & 1RM Calculator Modal */}
+      <BarbellPlate1RMModal
+        isOpen={showStrengthCalcModal}
+        lang={lang}
+        onClose={() => setShowStrengthCalcModal(false)}
       />
     </div>
   );
