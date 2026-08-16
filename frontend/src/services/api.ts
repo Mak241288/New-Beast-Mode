@@ -82,6 +82,9 @@ export const api = {
   saveStructuredPlan: (structuredPlan: any, lang?: string) => request('/workout/import-bulk', { method: 'POST', body: JSON.stringify({ structuredPlan, lang }) }),
   getPlanHistory: () => request('/workout/history', { method: 'GET' }),
   activateHistoricalPlan: (id: number) => request(`/workout/${id}/activate`, { method: 'POST' }),
+  renamePlan: (id: number, title: string) => request(`/workout/plan/${id}/rename`, { method: 'PUT', body: JSON.stringify({ title }) }),
+  duplicatePlan: (id: number) => request(`/workout/plan/${id}/duplicate`, { method: 'POST' }),
+  deletePlan: (id: number) => request(`/workout/plan/${id}`, { method: 'DELETE' }),
   getLibraryTree: () => request('/workout/library-tree', { method: 'GET' }),
 
 

@@ -1221,6 +1221,169 @@ export const activateHistoricalPlan = async (req: AuthRequest, res: Response): P
   }
 };
 
+// @desc    Rename a Workout Plan
+// @route   PUT /api/workout/plan/:id/rename
+export const renamePlan = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  const planId = validateNumericId(req.params.id);
+  const { title } = req.body;
+
+  if (!planId || !title?.trim()) {
+    res.status(400).json({ error: 'يرجى تقديم اسم صالح للجدول' });
+    return;
+  }
+
+  try {
+    const plan = await prisma.workoutPlan.findFirst({
+      where: { id: planId, userId },
+    });
+    if (!plan) {
+      res.status(404).json({ error: 'الجدول غير موجود' });
+      return;
+    }
+
+    const updated = await prisma.workoutPlan.update({
+      where: { id: planId },
+      data: { title: title.trim() },
+    });
+    res.status(200).json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'فشل تعديل اسم الجدول' });
+  }
+};
+
+// @desc    Duplicate an existing Workout Plan
+// @route   POST /api/workout/plan/:id/duplicate
+export const duplicatePlan = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  const planId = validateNumericId(req.params.id);
+
+  if (!planId) {
+    res.status(400).json({ error: 'معرّف الجدول غير صالح' });
+    return;
+  }
+
+  try {
+    const original = await prisma.workoutPlan.findFirst({
+      where: { id: planId, userId },
+      include: {
+        dayWorkouts: {
+          include: {
+            exercises: true,
+          },
+        },
+      },
+    });
+
+    if (!original) {
+      res.status(404).json({ error: 'الجدول الأصلي غير موجود' });
+      return;
+    }
+
+    const duplicated = await prisma.workoutPlan.create({
+      data: {
+        userId: userId!,
+        title: `${original.title} (نسخة)`,
+        durationWeeks: original.durationWeeks,
+        startDate: new Date(),
+        active: false, // created as secondary routine
+        weeklyTips: original.weeklyTips,
+        isManual: original.isManual,
+        dayWorkouts: {
+          create: original.dayWorkouts.map((day) => ({
+            dayIndex: day.dayIndex,
+            title: day.title,
+            focusArea: day.focusArea,
+            dayTips: day.dayTips,
+            isRestDay: day.isRestDay,
+            exercises: {
+              create: day.exercises.map((ex, idx) => ({
+                name: ex.name,
+                targetMuscle: ex.targetMuscle,
+                category: ex.category,
+                sets: ex.sets,
+                reps: ex.reps,
+                weight: ex.weight,
+                exerciseTips: ex.exerciseTips,
+                order: idx,
+                imageUrl: ex.imageUrl,
+                videoUrl: ex.videoUrl,
+              })),
+            },
+          })),
+        },
+      },
+      include: {
+        dayWorkouts: {
+          include: {
+            exercises: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json(duplicated);
+  } catch (error) {
+    res.status(500).json({ error: 'فشل نسخ ومضاعفة الجدول' });
+  }
+};
+
+// @desc    Delete a Workout Plan (with safe active check)
+// @route   DELETE /api/workout/plan/:id
+export const deletePlan = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = req.user?.id;
+  const planId = validateNumericId(req.params.id);
+
+  if (!planId) {
+    res.status(400).json({ error: 'معرّف الجدول غير صالح' });
+    return;
+  }
+
+  try {
+    const plan = await prisma.workoutPlan.findFirst({
+      where: { id: planId, userId },
+    });
+
+    if (!plan) {
+      res.status(404).json({ error: 'الجدول غير موجود' });
+      return;
+    }
+
+    const totalPlans = await prisma.workoutPlan.count({
+      where: { userId },
+    });
+
+    if (totalPlans <= 1) {
+      res.status(400).json({ error: 'لا يمكن حذف الجدول الوحيد لديك. يجب أن يبقى جدول تدريبي واحد على الأقل.' });
+      return;
+    }
+
+    const wasActive = plan.active;
+
+    await prisma.workoutPlan.delete({
+      where: { id: planId },
+    });
+
+    // If the deleted plan was active, automatically promote the newest remaining plan to active
+    if (wasActive) {
+      const remainingPlan = await prisma.workoutPlan.findFirst({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+      });
+      if (remainingPlan) {
+        await prisma.workoutPlan.update({
+          where: { id: remainingPlan.id },
+          data: { active: true },
+        });
+      }
+    }
+
+    res.status(200).json({ success: true, message: 'تم حذف الجدول بنجاح' });
+  } catch (error) {
+    res.status(500).json({ error: 'فشل حذف الجدول' });
+  }
+};
+
 let cachedLibraryTreeData: any = null;
 
 // @desc    Get Exercises Library in Tree Hierarchy (Shajara)

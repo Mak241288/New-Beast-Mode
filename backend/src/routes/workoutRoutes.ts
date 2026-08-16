@@ -13,6 +13,9 @@ import {
   importFilePlan,
   getPlanHistory,
   activateHistoricalPlan,
+  renamePlan,
+  duplicatePlan,
+  deletePlan,
   getLibraryTree,
   getAlternatives,
   swapExerciseAI
@@ -30,6 +33,9 @@ router.post('/import-bulk', importBulkPlan);
 router.post('/import-file', importFilePlan);
 router.get('/history', getPlanHistory);
 router.post('/:id/activate', activateHistoricalPlan);
+router.put('/plan/:id/rename', renamePlan);
+router.post('/plan/:id/duplicate', duplicatePlan);
+router.delete('/plan/:id', deletePlan);
 router.get('/library-tree', getLibraryTree);
 router.get('/active', getActivePlan);
 router.post('/upgrade', upgradePlan);

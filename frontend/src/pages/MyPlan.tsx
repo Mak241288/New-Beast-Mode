@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
 import { PresetPlansModal } from '../components/PresetPlansModal';
+import { MultiPlanManagerModal } from '../components/MultiPlanManagerModal';
 import type { PresetPlan } from '../utils/presetWorkoutPlans';
 import { cacheStore } from '../utils/cacheStore';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
@@ -28,6 +29,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [showHistory, setShowHistory] = useState(false);
   const [showManualBuilder, setShowManualBuilder] = useState(false);
   const [showPresetPlansModal, setShowPresetPlansModal] = useState(false);
+  const [showMultiPlanModal, setShowMultiPlanModal] = useState(false);
   const [manualTitle, setManualTitle] = useState(lang === 'en' ? 'Custom Gym Routine' : 'جدولي التدريبي اليدوي');
   const [manualActiveDayIdx, setManualActiveDayIdx] = useState(1);
   const [manualSaving, setManualSaving] = useState(false);
@@ -341,6 +343,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   useEffect(() => {
     fetchActivePlan();
+    fetchHistory();
     if (localStorage.getItem('open_manual_builder') === 'true') {
       localStorage.removeItem('open_manual_builder');
       setShowManualBuilder(true);
@@ -1145,6 +1148,25 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
         {/* Quick Tools */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => {
+              fetchHistory();
+              setShowMultiPlanModal(true);
+            }} 
+            className="secondary-btn" 
+            style={{ 
+              padding: '8px 15px', 
+              fontSize: '13px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              borderColor: 'rgba(6, 182, 212, 0.4)',
+              background: 'rgba(6, 182, 212, 0.08)'
+            }}
+          >
+            <Layers size={16} color="var(--secondary)" />
+            <span>{lang === 'en' ? `Multi-Plan Hub (${historyList.length || 1}) 📑` : `إدارة جداولي المتعددة (${historyList.length || 1}) 📑`}</span>
+          </button>
           <button 
             onClick={() => setShowPresetPlansModal(true)} 
             className="glow-btn" 
@@ -3402,6 +3424,60 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         lang={lang}
         onClose={() => setShowPresetPlansModal(false)}
         onSelectPlan={handleSelectPresetPlan}
+      />
+
+      {/* Multi-Plan Manager Hub Modal */}
+      <MultiPlanManagerModal
+        isOpen={showMultiPlanModal}
+        lang={lang}
+        plans={historyList.length > 0 ? historyList : (activePlan ? [activePlan] : [])}
+        activePlanId={activePlan?.id || null}
+        onClose={() => setShowMultiPlanModal(false)}
+        onPlanActivated={(plan) => {
+          setActivePlan(plan);
+          cacheStore.set('active_plan', plan);
+          setSelectedDayIndex(1);
+          fetchHistory();
+        }}
+        onOpenManualBuilderForNew={() => {
+          setManualTitle(lang === 'en' ? 'New Custom Workout Routine' : 'جدولي التدريبي الجديد');
+          setManualDays([
+            { dayIndex: 1, title: lang === 'en' ? 'Push (Chest & Triceps)' : 'دفع (صدر وترايسبس وأكتاف)', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [] },
+            { dayIndex: 2, title: lang === 'en' ? 'Pull (Back & Biceps)' : 'سحب (ظهر وبايسبس)', focusArea: lang === 'en' ? 'Back, Biceps' : 'ظهر، بايسبس', isRestDay: false, exercises: [] },
+            { dayIndex: 3, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
+            { dayIndex: 4, title: lang === 'en' ? 'Legs & Core' : 'أرجل وبطن', focusArea: lang === 'en' ? 'Legs, Abs' : 'أرجل، بطن', isRestDay: false, exercises: [] },
+            { dayIndex: 5, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
+            { dayIndex: 6, title: lang === 'en' ? 'Full Body Blast' : 'تمرين شامل لكامل الجسم', focusArea: lang === 'en' ? 'Full Body' : 'كامل الجسم', isRestDay: false, exercises: [] },
+            { dayIndex: 7, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
+          ]);
+          setShowManualBuilder(true);
+        }}
+        onOpenManualBuilderForEdit={(plan) => {
+          setManualTitle(plan.title);
+          if (plan.dayWorkouts && plan.dayWorkouts.length > 0) {
+            setManualDays(plan.dayWorkouts.map((d: any) => ({
+              dayIndex: d.dayIndex,
+              title: d.title,
+              focusArea: d.focusArea || '',
+              isRestDay: d.isRestDay || false,
+              exercises: (d.exercises || []).map((ex: any) => ({
+                name: ex.name,
+                targetMuscle: ex.targetMuscle || 'Chest',
+                sets: ex.sets || 3,
+                reps: ex.reps || '10-12',
+                weight: ex.weight || 'Bodyweight',
+              }))
+            })));
+          }
+          setShowManualBuilder(true);
+        }}
+        onOpenPresetsModal={() => {
+          setShowPresetPlansModal(true);
+        }}
+        onRefreshPlans={() => {
+          fetchHistory();
+          fetchActivePlan();
+        }}
       />
     </div>
   );
