@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Percent, Droplets, Camera } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Percent, Droplets, Camera, Volume2 } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
@@ -9,6 +9,7 @@ import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
 import { RecoveryTrackerModal } from '../components/RecoveryTrackerModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
 import { calculateNutrition } from '../utils/nutritionCalculator';
+import { playTimerSound, type SoundPack } from '../utils/audioSynthesizer';
 import { cacheStore } from '../utils/cacheStore';
 
 interface DashboardProps {
@@ -31,6 +32,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [timerSoundPack, setTimerSoundPack] = useState<SoundPack>(() => (localStorage.getItem('bm_timer_sound_pack') as SoundPack) || 'BOXING_BELL');
+  const [timerVolume, setTimerVolume] = useState<number>(() => parseInt(localStorage.getItem('bm_timer_volume') || '80', 10));
+  const [showSoundSettings, setShowSoundSettings] = useState(false);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -279,20 +283,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   };
 
   const playBeep = () => {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } catch (e) {
-      console.warn('AudioContext beep failed:', e);
-    }
+    playTimerSound(timerSoundPack, timerVolume);
   };
 
   const parseRepsToSeconds = (repsText: string): number | null => {
@@ -991,7 +982,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(5, 7, 16, 0.98)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '500px', padding: '24px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0 }}>
                   {lang === 'en' ? 'Interactive Player 🏋️‍♂️' : 'مشغل التمرين التفاعلي 🏋️‍♂️'}
                 </h3>
@@ -999,15 +990,106 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                   type="button"
                   onClick={() => setShowStrengthCalcModal(true)}
                   className="secondary-btn"
-                  style={{ padding: '4px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: '#f59e0b', color: '#f59e0b' }}
+                  style={{ padding: '4px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: '#f59e0b', color: '#f59e0b' }}
                   title={lang === 'en' ? 'Plate & 1RM Calculator' : 'حاسبة أوزان البار والـ 1RM'}
                 >
                   <Percent size={12} />
-                  <span>{lang === 'en' ? 'Plates' : 'حاسبة البار'}</span>
+                  <span>{lang === 'en' ? 'Plates' : 'البار'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSoundSettings(!showSoundSettings)}
+                  className="secondary-btn"
+                  style={{ padding: '4px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                  title={lang === 'en' ? 'Timer Audio Settings' : 'إعدادات صوت المؤقت'}
+                >
+                  <Volume2 size={12} />
+                  <span>{lang === 'en' ? 'Sound' : 'الصوت'}</span>
                 </button>
               </div>
               <button onClick={() => setShowPlayer(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>✕</button>
             </div>
+
+            {/* SOUND SETTINGS DRAWER */}
+            {showSoundSettings && (
+              <div
+                className="glass-panel animated-fade"
+                style={{
+                  padding: '14px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color)',
+                  background: 'rgba(0,0,0,0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '800' }}>
+                    {lang === 'en' ? 'Rest Timer Sound Effect:' : 'نغمة انتهاء وقت الراحة:'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => playTimerSound(timerSoundPack, timerVolume)}
+                    className="glow-btn"
+                    style={{ padding: '3px 8px', fontSize: '11px' }}
+                  >
+                    🔊 {lang === 'en' ? 'Test Sound' : 'تجربة النغمة'}
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  {[
+                    { id: 'BOXING_BELL', name_en: '🥊 Boxing Bell', name_ar: '🥊 جرس ملاكمة' },
+                    { id: 'CYBER_BEEP', name_en: '🤖 Cyber Beep', name_ar: '🤖 صافرة رقمية' },
+                    { id: 'ZEN_CHIME', name_en: '🔔 Zen Chime', name_ar: '🔔 جرس هادئ' },
+                    { id: 'WHISTLE', name_en: '🎺 Coach Whistle', name_ar: '🎺 صافرة مدرب' },
+                  ].map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        setTimerSoundPack(s.id as any);
+                        localStorage.setItem('bm_timer_sound_pack', s.id);
+                        playTimerSound(s.id as any, timerVolume);
+                      }}
+                      style={{
+                        padding: '6px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        border: timerSoundPack === s.id ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
+                        background: timerSoundPack === s.id ? 'rgba(0, 210, 255, 0.15)' : 'transparent',
+                        color: timerSoundPack === s.id ? 'var(--primary)' : 'var(--text-secondary)',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {lang === 'en' ? s.name_en : s.name_ar}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Volume Slider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    🔊 {lang === 'en' ? 'Volume:' : 'مستوى الصوت:'} {timerVolume}%
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={timerVolume}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      setTimerVolume(v);
+                      localStorage.setItem('bm_timer_volume', String(v));
+                    }}
+                    style={{ flex: 1, accentColor: 'var(--primary)' }}
+                  />
+                </div>
+              </div>
+            )}
 
             {(() => {
               const exercises = getSelectedDay()?.exercises || [];
