@@ -4,6 +4,7 @@ import { Info, HelpCircle, LayoutGrid, MapPin } from 'lucide-react';
 import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseSearchAutocomplete } from '../components/ExerciseSearchAutocomplete';
+import { ExerciseImage } from '../components/ExerciseImage';
 
 interface ExerciseLibraryProps {
   lang: 'ar' | 'en';
@@ -318,10 +319,10 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
             >
               {/* Exercise Image */}
               <div style={{ height: '180px', position: 'relative', background: '#0e111a', overflow: 'hidden' }}>
-                <img
-                  src={ex.image_url || 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500'}
+                <ExerciseImage
+                  src={ex.image_url}
                   alt={ex.name_en}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  muscle={ex.muscle_en || ex.muscle_ar}
                 />
                 <div
                   style={{

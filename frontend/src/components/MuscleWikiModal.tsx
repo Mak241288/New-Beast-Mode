@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import { X, Play, CheckCircle2, Dumbbell, ShieldAlert, Youtube, Activity } from 'lucide-react';
+import { ExerciseImage } from './ExerciseImage';
 
 export interface ExerciseItem {
   id?: string | number;
@@ -264,7 +265,6 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
   onClose,
   onAddToPlan,
 }) => {
-  const [imgFailed, setImgFailed] = useState(false);
   const [showVideoEmbed, setShowVideoEmbed] = useState(false);
 
   // Keyboard Accessibility: Escape key listener & Body Scroll Lock
@@ -538,13 +538,13 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
                 allowFullScreen
                 referrerPolicy="strict-origin-when-cross-origin"
               />
-            ) : mediaSource && !imgFailed ? (
+            ) : mediaSource ? (
               <>
-                <img
+                <ExerciseImage
                   src={mediaSource}
                   alt={name}
+                  muscle={exercise.muscle_en || exercise.muscle_ar || exercise.targetMuscle}
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                  onError={() => setImgFailed(true)}
                 />
                 <button
                   onClick={() => videoEmbedUrl ? setShowVideoEmbed(true) : handleOpenVideo()}

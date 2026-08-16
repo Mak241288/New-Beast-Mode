@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Fuse from 'fuse.js';
 import { Search, Dumbbell, Sparkles, ChevronRight, X } from 'lucide-react';
 import { normalizeSearchText, getExerciseAliases } from '../utils/searchNormalizer';
+import { ExerciseImage } from './ExerciseImage';
 
 export interface ExerciseItem {
   id: number | string;
@@ -260,18 +261,13 @@ export const ExerciseSearchAutocomplete: React.FC<ExerciseSearchAutocompleteProp
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {(item.image_url || item.gif_url) ? (
-                        <img
+                      <div style={{ width: '36px', height: '36px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(255, 255, 255, 0.05)', flexShrink: 0 }}>
+                        <ExerciseImage
                           src={item.gif_url || item.image_url}
                           alt={item.name_en}
-                          style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', background: 'rgba(255, 255, 255, 0.05)' }}
-                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          muscle={item.muscle_en || item.muscle_ar}
                         />
-                      ) : (
-                        <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: 'rgba(255, 255, 255, 0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Dumbbell size={18} color="var(--text-muted)" />
-                        </div>
-                      )}
+                      </div>
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>
                           {isRtl ? item.name_ar || item.name_en : item.name_en}

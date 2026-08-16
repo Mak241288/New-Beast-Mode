@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
+import { ExerciseImage } from '../components/ExerciseImage';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
 
 interface MyPlanProps {
@@ -1267,10 +1268,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                               {/* Line 1: Full Width Name & Tip */}
                               <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', width: '100%' }}>
                                 <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: '#0e111a', flexShrink: 0 }}>
-                                  <img
-                                    src={ex.imageUrl || 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=100'}
+                                  <ExerciseImage
+                                    src={ex.imageUrl}
                                     alt={ex.name}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    muscle={ex.targetMuscle}
                                   />
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1553,7 +1554,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-color)')}
                         >
                           <div style={{ width: '45px', height: '45px', borderRadius: '6px', overflow: 'hidden', background: '#0e111a', flexShrink: 0 }}>
-                            <img src={alt.image_url || 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=100'} alt={alt.name_en} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <ExerciseImage src={alt.image_url} alt={alt.name_en} muscle={alt.muscle_en || alt.muscle_ar} />
                           </div>
                           <div>
                             <h4 style={{ fontSize: '13px', fontWeight: '700', margin: 0 }}>{lang === 'en' ? alt.name_en : alt.name_ar}</h4>
@@ -2072,10 +2073,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 {/* Exercise Info Box */}
                 <div className="glass-panel" style={{ padding: '16px', display: 'flex', gap: '15px', alignItems: 'center', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
                   <div style={{ width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', background: '#0e111a', flexShrink: 0 }}>
-                    <img
-                      src={currentEx.imageUrl || 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=100'}
+                    <ExerciseImage
+                      src={currentEx.imageUrl}
                       alt={currentEx.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      muscle={currentEx.targetMuscle}
                     />
                   </div>
                   <div>

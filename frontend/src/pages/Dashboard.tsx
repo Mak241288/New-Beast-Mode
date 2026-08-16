@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
+import { ExerciseImage } from '../components/ExerciseImage';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -880,13 +881,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                     {ex.imageUrl && (
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
                         <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Movement' : 'طريقة الحركة'}</span>
-                        <img src={ex.imageUrl} alt={ex.name} style={{ width: '100%', height: '110px', borderRadius: '8px', objectFit: 'contain', background: '#0e111a', border: '1px solid var(--border-color)' }} />
+                        <div style={{ width: '100%', height: '110px', borderRadius: '8px', overflow: 'hidden', background: '#0e111a', border: '1px solid var(--border-color)' }}>
+                          <ExerciseImage src={ex.imageUrl} alt={ex.name} muscle={ex.targetMuscle} />
+                        </div>
                       </div>
                     )}
                     {ex.anatomyImageUrl && (
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
                         <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Anatomy Map' : 'العضلات المستهدفة'}</span>
-                        <img src={ex.anatomyImageUrl} alt="Target Muscle Anatomy" style={{ width: '100%', height: '110px', borderRadius: '8px', objectFit: 'contain', background: '#0e111a', border: '1px solid var(--border-color)' }} />
+                        <div style={{ width: '100%', height: '110px', borderRadius: '8px', overflow: 'hidden', background: '#0e111a', border: '1px solid var(--border-color)' }}>
+                          <ExerciseImage src={ex.anatomyImageUrl} alt="Target Muscle Anatomy" muscle={ex.targetMuscle} />
+                        </div>
                       </div>
                     )}
                   </div>
