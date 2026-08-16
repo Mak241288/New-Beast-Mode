@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
+import { PresetPlansModal } from '../components/PresetPlansModal';
+import type { PresetPlan } from '../utils/presetWorkoutPlans';
 import { cacheStore } from '../utils/cacheStore';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
 
@@ -25,6 +27,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [showImport, setShowImport] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showManualBuilder, setShowManualBuilder] = useState(false);
+  const [showPresetPlansModal, setShowPresetPlansModal] = useState(false);
   const [manualTitle, setManualTitle] = useState(lang === 'en' ? 'Custom Gym Routine' : 'جدولي التدريبي اليدوي');
   const [manualActiveDayIdx, setManualActiveDayIdx] = useState(1);
   const [manualSaving, setManualSaving] = useState(false);
@@ -1030,6 +1033,67 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     }
   };
 
+  const handleSelectPresetPlan = async (plan: PresetPlan, openManualBuilder?: boolean) => {
+    const structuredPlan = {
+      title: lang === 'en' ? plan.title_en : plan.title_ar,
+      days: plan.days.map((d) => ({
+        dayIndex: d.dayIndex,
+        title: d.title,
+        focusArea: d.focusArea,
+        isRestDay: d.isRestDay,
+        exercises: d.exercises.map((ex) => ({
+          name: ex.name,
+          targetMuscle: ex.targetMuscle,
+          category: ex.category || 'IRON',
+          sets: ex.sets || 3,
+          reps: ex.reps || '10-12',
+          weight: ex.weight || 'Bodyweight',
+          exerciseTips: ex.exerciseTips || '',
+          imageUrl: ex.imageUrl || null,
+          videoUrl: ex.videoUrl || null,
+        })),
+      })),
+    };
+
+    if (openManualBuilder) {
+      setManualTitle(structuredPlan.title);
+      setManualDays(plan.days.map((d) => ({
+        dayIndex: d.dayIndex,
+        title: d.title,
+        focusArea: d.focusArea,
+        isRestDay: d.isRestDay,
+        exercises: d.exercises.map((ex) => ({
+          name: ex.name,
+          targetMuscle: ex.targetMuscle,
+          sets: ex.sets || 3,
+          reps: ex.reps || '10-12',
+          weight: ex.weight || 'Bodyweight',
+        })),
+      })));
+      setShowPresetPlansModal(false);
+      setShowManualBuilder(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const saved = await api.saveStructuredPlan(structuredPlan, lang);
+      setActivePlan(saved);
+      cacheStore.set('active_plan', saved);
+      setShowPresetPlansModal(false);
+      setSelectedDayIndex(1);
+      alert(
+        lang === 'en'
+          ? `🎉 Successfully activated: "${plan.title_en}"!`
+          : `🎉 تم تفعيل جدول: "${plan.title_ar}" بنجاح كخطتك الحالية!`
+      );
+    } catch (err: any) {
+      alert(err.message || (lang === 'en' ? 'Failed to apply preset plan.' : 'فشل تفعيل الخطة الجاهزة.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpgradePlan = async () => {
     const isEn = lang === 'en';
     const confirmMsg = isEn
@@ -1053,8 +1117,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       setLoading(false);
     }
   };
-
-
 
   return (
     <div style={{ padding: '20px 0' }}>
@@ -1083,6 +1145,23 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
         {/* Quick Tools */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => setShowPresetPlansModal(true)} 
+            className="glow-btn" 
+            style={{ 
+              padding: '8px 16px', 
+              fontSize: '13px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              background: 'linear-gradient(135deg, #f59e0b, #ec4899)',
+              border: 'none',
+              boxShadow: '0 0 16px rgba(245, 158, 11, 0.35)'
+            }}
+          >
+            <Crown size={16} />
+            <span>{lang === 'en' ? 'Curated Pro Plans 👑' : 'الخطط الجاهزة والأساطير 👑'}</span>
+          </button>
           <button onClick={() => setShowManualBuilder(true)} className="glow-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Plus size={16} />
             <span>{lang === 'en' ? 'Create Custom Plan ✍️' : 'تصميم جدول يدوي ✍️'}</span>
@@ -3316,6 +3395,14 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           onClose={() => setViewingExercise(null)}
         />
       )}
+
+      {/* Preset & Legendary Plans Modal */}
+      <PresetPlansModal
+        isOpen={showPresetPlansModal}
+        lang={lang}
+        onClose={() => setShowPresetPlansModal(false)}
+        onSelectPlan={handleSelectPresetPlan}
+      />
     </div>
   );
 };

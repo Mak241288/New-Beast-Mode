@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { ChevronLeft, ChevronRight, Activity, Calendar, Compass, ShieldAlert, Check, Sparkles, PenTool } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Activity, Calendar, Compass, ShieldAlert, Check, Sparkles, PenTool, Crown } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { translations } from '../utils/translations';
+import { PresetPlansModal } from '../components/PresetPlansModal';
+import { PRESET_WORKOUT_PLANS } from '../utils/presetWorkoutPlans';
+import type { PresetPlan } from '../utils/presetWorkoutPlans';
 
 interface OnboardingProps {
   lang: 'ar' | 'en';
@@ -38,7 +41,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   // Step 4: Plan duration & Start Date
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [creationMethod, setCreationMethod] = useState<'AI' | 'MANUAL'>('AI');
+  const [creationMethod, setCreationMethod] = useState<'AI' | 'PRESET' | 'MANUAL'>('AI');
+  const [selectedPresetPlan, setSelectedPresetPlan] = useState<PresetPlan | null>(() => PRESET_WORKOUT_PLANS[0]);
+  const [showPresetModal, setShowPresetModal] = useState(false);
 
   const equipmentList = [
     { id: 'dumbbells', label: lang === 'en' ? 'Dumbbells' : 'دمبلز' },
@@ -120,7 +125,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
         onboardingCompleted: true,
       });
 
-      // 2. Either Generate AI plan or Create Manual Plan
+      // 2. Either Generate AI plan, Save Preset plan, or Create Manual Plan
       if (creationMethod === 'AI') {
         await api.generatePlan({
           durationWeeks,
@@ -135,6 +140,30 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
           daysPerWeek: 7 - restDays.length,
           lang,
         });
+      } else if (creationMethod === 'PRESET' && selectedPresetPlan) {
+        const structuredPlan = {
+          title: lang === 'en' ? selectedPresetPlan.title_en : selectedPresetPlan.title_ar,
+          durationWeeks,
+          startDate,
+          days: selectedPresetPlan.days.map((d) => ({
+            dayIndex: d.dayIndex,
+            title: d.title,
+            focusArea: d.focusArea,
+            isRestDay: d.isRestDay,
+            exercises: d.exercises.map((ex) => ({
+              name: ex.name,
+              targetMuscle: ex.targetMuscle,
+              category: ex.category || 'IRON',
+              sets: ex.sets || 3,
+              reps: ex.reps || '10-12',
+              weight: ex.weight || 'Bodyweight',
+              exerciseTips: ex.exerciseTips || '',
+              imageUrl: ex.imageUrl || null,
+              videoUrl: ex.videoUrl || null,
+            })),
+          })),
+        };
+        await api.saveStructuredPlan(structuredPlan, lang);
       } else {
         await api.createManualPlan({
           durationWeeks,
@@ -490,29 +519,58 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
               <label style={{ fontSize: '13px', fontWeight: '700' }}>
                 {lang === 'en' ? 'How would you like to build your plan?' : 'كيف تفضل بناء وتصميم جدولك الرياضي؟'}
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                 <button
                   type="button"
                   onClick={() => setCreationMethod('AI')}
                   className={creationMethod === 'AI' ? 'glow-btn' : 'secondary-btn'}
                   style={{
-                    padding: '16px 12px',
+                    padding: '14px 10px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px',
-                    borderRadius: '14px',
+                    gap: '6px',
+                    borderRadius: '12px',
                     border: creationMethod === 'AI' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
                     textAlign: 'center',
                     cursor: 'pointer'
                   }}
                 >
-                  <Sparkles size={26} color={creationMethod === 'AI' ? '#ffffff' : 'var(--primary)'} />
-                  <span style={{ fontSize: '14px', fontWeight: '800' }}>
+                  <Sparkles size={22} color={creationMethod === 'AI' ? '#ffffff' : 'var(--primary)'} />
+                  <span style={{ fontSize: '13px', fontWeight: '800' }}>
                     {lang === 'en' ? 'AI Generator' : 'توليد بالذكاء الاصطناعي ⚡'}
                   </span>
-                  <span style={{ fontSize: '11px', opacity: 0.85, lineHeight: 1.4 }}>
-                    {lang === 'en' ? 'Calculated automatically for your metrics' : 'صياغة جدول متكامل ومدروس تلقائياً'}
+                  <span style={{ fontSize: '10.5px', opacity: 0.8, lineHeight: 1.3 }}>
+                    {lang === 'en' ? 'Smart algorithm synthesis' : 'صياغة ذكية مخصصة لمعطياتك'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreationMethod('PRESET');
+                    setShowPresetModal(true);
+                  }}
+                  className={creationMethod === 'PRESET' ? 'glow-btn' : 'secondary-btn'}
+                  style={{
+                    padding: '14px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderRadius: '12px',
+                    border: creationMethod === 'PRESET' ? '2px solid #f59e0b' : '1px solid var(--border-color)',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: creationMethod === 'PRESET' ? 'linear-gradient(135deg, #f59e0b, #ec4899)' : undefined
+                  }}
+                >
+                  <Crown size={22} color={creationMethod === 'PRESET' ? '#ffffff' : '#f59e0b'} />
+                  <span style={{ fontSize: '13px', fontWeight: '800' }}>
+                    {lang === 'en' ? 'Curated Pro Plans' : 'الخطط الجاهزة والأساطير 👑'}
+                  </span>
+                  <span style={{ fontSize: '10.5px', opacity: 0.8, lineHeight: 1.3 }}>
+                    {lang === 'en' ? 'Arnold, PPL, Science Splits' : 'آرنولد، PPL، جداول مركزة'}
                   </span>
                 </button>
 
@@ -521,23 +579,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                   onClick={() => setCreationMethod('MANUAL')}
                   className={creationMethod === 'MANUAL' ? 'glow-btn' : 'secondary-btn'}
                   style={{
-                    padding: '16px 12px',
+                    padding: '14px 10px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px',
-                    borderRadius: '14px',
+                    gap: '6px',
+                    borderRadius: '12px',
                     border: creationMethod === 'MANUAL' ? '2px solid var(--secondary)' : '1px solid var(--border-color)',
                     textAlign: 'center',
                     cursor: 'pointer'
                   }}
                 >
-                  <PenTool size={26} color={creationMethod === 'MANUAL' ? '#ffffff' : 'var(--secondary)'} />
-                  <span style={{ fontSize: '14px', fontWeight: '800' }}>
-                    {lang === 'en' ? 'Manual Builder' : 'تصميم وتخصيص يدوي ✏️'}
+                  <PenTool size={22} color={creationMethod === 'MANUAL' ? '#ffffff' : 'var(--secondary)'} />
+                  <span style={{ fontSize: '13px', fontWeight: '800' }}>
+                    {lang === 'en' ? 'Manual Builder' : 'تصميم يدوي ✏️'}
                   </span>
-                  <span style={{ fontSize: '11px', opacity: 0.85, lineHeight: 1.4 }}>
-                    {lang === 'en' ? 'Pick exercises yourself or use templates' : 'اختيار التمارين بنفسك أو استخدام قوالب'}
+                  <span style={{ fontSize: '10.5px', opacity: 0.8, lineHeight: 1.3 }}>
+                    {lang === 'en' ? 'Build from scratch' : 'بناء جدولك من الصفر'}
                   </span>
                 </button>
               </div>
@@ -571,18 +629,44 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
               />
             </div>
 
-            {creationMethod === 'AI' ? (
+            {creationMethod === 'AI' && (
               <div style={{ background: 'var(--primary-glow)', padding: '16px', borderRadius: '12px', display: 'flex', gap: '12px', border: '1px solid var(--primary)' }}>
                 <Check size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
                 <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600', margin: 0, lineHeight: 1.5 }}>
                   {lang === 'en' ? 'The AI engine will now draft a fully customized weekly workout program specifically tailored to your physical metrics, fitness goals, and available equipment.' : 'سيقوم الذكاء الاصطناعي الآن بصياغة جدول تمارين متناسق ومخصص 100% لك بناءً على هذه الإجابات. يستغرق التحليل بضع ثوانٍ.'}
                 </p>
               </div>
-            ) : (
+            )}
+
+            {creationMethod === 'PRESET' && selectedPresetPlan && (
+              <div style={{ background: 'rgba(245, 158, 11, 0.08)', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '10px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Crown size={20} color="#f59e0b" />
+                    <span style={{ fontWeight: '800', fontSize: '14px' }}>
+                      {lang === 'en' ? selectedPresetPlan.title_en : selectedPresetPlan.title_ar}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPresetModal(true)}
+                    className="secondary-btn"
+                    style={{ padding: '4px 12px', fontSize: '12px' }}
+                  >
+                    {lang === 'en' ? 'Change Plan 🔄' : 'تغيير الخطة 🔄'}
+                  </button>
+                </div>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                  👤 {selectedPresetPlan.coach_or_source} • {selectedPresetPlan.daysPerWeek} {lang === 'en' ? 'Days/Week' : 'أيام / أسبوع'} • {lang === 'en' ? selectedPresetPlan.description_en : selectedPresetPlan.description_ar}
+                </p>
+              </div>
+            )}
+
+            {creationMethod === 'MANUAL' && (
               <div style={{ background: 'rgba(6, 182, 212, 0.1)', padding: '16px', borderRadius: '12px', display: 'flex', gap: '12px', border: '1px solid var(--secondary)' }}>
                 <PenTool size={20} color="var(--secondary)" style={{ flexShrink: 0 }} />
                 <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600', margin: 0, lineHeight: 1.5 }}>
-                  {lang === 'en' ? 'You will be redirected directly to the interactive manual plan builder to select exercises, customize sets/reps, or apply pre-made templates (Push/Pull/Legs, Upper/Lower, etc).' : 'ستنتقل مباشرة إلى مصمم الجداول التفاعلي لاختيار التمارين، تحديد الجولات والتكرارات بنفسك، أو تطبيق قوالب تدريبية جاهزة (Push/Pull/Legs وغيرها).'}
+                  {lang === 'en' ? 'You will be redirected directly to the interactive manual plan builder to select exercises, customize sets/reps, or apply pre-made templates.' : 'ستنتقل مباشرة إلى مصمم الجداول التفاعلي لاختيار التمارين، وتحديد الجولات والتكرارات بنفسك.'}
                 </p>
               </div>
             )}
@@ -614,6 +698,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
                   <span>{lang === 'en' ? 'Generate AI Plan ⚡' : 'توليد برنامج التمارين بالذكاء الاصطناعي ⚡'}</span>
                   <Check size={18} />
                 </>
+              ) : creationMethod === 'PRESET' ? (
+                <>
+                  <span>{lang === 'en' ? `Activate Selected Plan 👑` : `تفعيل الخطة المختارة 👑`}</span>
+                  <Check size={18} />
+                </>
               ) : (
                 <>
                   <span>{lang === 'en' ? 'Start Manual Builder ✏️' : 'بدء التصميم اليدوي للجدول ✏️'}</span>
@@ -624,6 +713,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
           )}
         </div>
       </div>
+
+      {/* Preset Plans Selector Modal */}
+      <PresetPlansModal
+        isOpen={showPresetModal}
+        lang={lang}
+        onClose={() => setShowPresetModal(false)}
+        onSelectPlan={(plan) => {
+          setSelectedPresetPlan(plan);
+          setShowPresetModal(false);
+        }}
+      />
     </div>
   );
 };
