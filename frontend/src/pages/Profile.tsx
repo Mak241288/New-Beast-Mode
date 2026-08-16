@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText } from 'lucide-react';
 import { PasswordRequirements } from '../components/PasswordRequirements';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
+import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
 import { translations } from '../utils/translations';
 import { triggerTestNotification } from '../utils/notifications';
 import { exportFullDataJSON } from '../utils/exportUtils';
@@ -18,6 +19,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const t = translations[lang] || translations.ar;
   const cachedProfile = cacheStore.get<any>('user_profile');
   const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [profile, setProfile] = useState<any>(() => {
     if (cachedProfile) {
       return {
@@ -549,6 +551,24 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                 style={{ padding: '8px 12px', fontSize: '12px', justifyContent: 'center' }}
               >
                 {lang === 'en' ? 'Open Macro Coach 🥗' : 'حاسبة الماكروز والتغذية 🥗'}
+              </button>
+            </div>
+
+            {/* Physique Progress Photos Shortcut */}
+            <div className="glass-panel" style={{ padding: '16px', border: '1px solid rgba(236, 72, 153, 0.3)', display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(236, 72, 153, 0.04)' }}>
+              <span style={{ fontSize: '11px', color: '#ec4899', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
+                📷 {lang === 'en' ? 'Transformation Gallery' : 'معرض صور التحول'}
+              </span>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                {lang === 'en' ? 'Compare before & after progress photos.' : 'توثيق ومقارنة صور التطور البدني قبل وبعد.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowGalleryModal(true)}
+                className="glow-btn"
+                style={{ padding: '8px 12px', fontSize: '12px', justifyContent: 'center', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', border: 'none' }}
+              >
+                {lang === 'en' ? 'Open Photo Gallery 📷' : 'فتح معرض الصور 📷'}
               </button>
             </div>
 
@@ -1389,6 +1409,14 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         lang={lang}
         userProfile={profile}
         onClose={() => setShowNutritionModal(false)}
+      />
+
+      {/* Transformation Photo Gallery Modal */}
+      <TransformationGalleryModal
+        isOpen={showGalleryModal}
+        lang={lang}
+        currentWeight={profile?.currentWeight ? parseFloat(profile.currentWeight) : 75}
+        onClose={() => setShowGalleryModal(false)}
       />
     </div>
   );

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Percent } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Percent, Droplets, Camera } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
+import { RecoveryTrackerModal } from '../components/RecoveryTrackerModal';
+import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
 import { calculateNutrition } from '../utils/nutritionCalculator';
 import { cacheStore } from '../utils/cacheStore';
 
@@ -27,6 +29,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [wikiExercise, setWikiExercise] = useState<any | null>(null);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
   const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -658,12 +662,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
           {/* Top Widgets Row: Streak, Workouts, Minutes, Exercises */}
           <div className="grid-responsive-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '20px' }}>
             {/* Streak Counter */}
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div
+              onClick={() => setShowRecoveryModal(true)}
+              className="glass-panel"
+              style={{
+                padding: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px',
+                cursor: 'pointer',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                transition: 'all 0.2s ease',
+              }}
+              title={lang === 'en' ? 'Click to view Recovery & Streak Badges' : 'انقر لعرض الاستشفاء وشارات الالتزام'}
+            >
               <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '12px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Flame size={28} />
               </div>
               <div>
-                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Workout Streak' : 'أيام الالتزام'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Workout Streak' : 'أيام الالتزام'}</span>
+                  <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 'bold' }}>🏅</span>
+                </div>
                 <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ef4444', marginTop: '2px', whiteSpace: 'nowrap' }}>
                   {stats?.workoutStats?.globalStreak || 0} {lang === 'en' ? 'Days' : 'يوم'}
                 </h2>
@@ -770,15 +790,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowNutritionModal(true)}
-                className="glow-btn"
-                style={{ padding: '9px 18px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <span>{lang === 'en' ? 'Open Macro Coach 🥗' : 'تفاصيل الماكروز والوجبات 🥗'}</span>
-                <ChevronRight size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowRecoveryModal(true)}
+                  className="secondary-btn"
+                  style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'var(--secondary)', color: 'var(--secondary)' }}
+                >
+                  <Droplets size={14} />
+                  <span>{lang === 'en' ? 'Hydration & Badges' : 'الماء والشارات 💧'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowGalleryModal(true)}
+                  className="secondary-btn"
+                  style={{ padding: '8px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ec4899', color: '#ec4899' }}
+                >
+                  <Camera size={14} />
+                  <span>{lang === 'en' ? 'Transformation Photos' : 'معرض الصور 📷'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowNutritionModal(true)}
+                  className="glow-btn"
+                  style={{ padding: '8px 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <span>{lang === 'en' ? 'Macro Coach 🥗' : 'خطة الماكروز 🥗'}</span>
+                  <ChevronRight size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -1223,6 +1265,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         isOpen={showStrengthCalcModal}
         lang={lang}
         onClose={() => setShowStrengthCalcModal(false)}
+      />
+
+      {/* Recovery & Gamification Badges Hub Modal */}
+      <RecoveryTrackerModal
+        isOpen={showRecoveryModal}
+        lang={lang}
+        globalStreak={stats?.workoutStats?.globalStreak || 0}
+        totalWorkouts={stats?.workoutStats?.globalWorkouts || 0}
+        defaultWaterTargetLiters={quickNutrition?.waterIntakeLiters || 3.0}
+        onClose={() => setShowRecoveryModal(false)}
+      />
+
+      {/* Transformation Photo Gallery Modal */}
+      <TransformationGalleryModal
+        isOpen={showGalleryModal}
+        lang={lang}
+        currentWeight={profile?.currentWeight ? parseFloat(profile.currentWeight) : 75}
+        onClose={() => setShowGalleryModal(false)}
       />
     </div>
   );
