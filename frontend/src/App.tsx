@@ -13,6 +13,7 @@ import { Profile } from './pages/Profile';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe } from 'lucide-react';
 import { initWorkoutReminderScheduler } from './utils/notifications';
+import { cacheStore } from './utils/cacheStore';
 
 import './App.css';
 
@@ -117,6 +118,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    cacheStore.clearAll();
     setToken(null);
     setCurrentView('landing');
   };

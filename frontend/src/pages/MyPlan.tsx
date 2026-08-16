@@ -4,6 +4,7 @@ import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCi
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
+import { cacheStore } from '../utils/cacheStore';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
 
 interface MyPlanProps {
@@ -14,9 +15,9 @@ interface MyPlanProps {
 
 export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingCompleted: _onboardingCompleted }) => {
   const t = translations[lang] || translations.ar;
-  const [activePlan, setActivePlan] = useState<any>(null);
+  const [activePlan, setActivePlan] = useState<any>(() => cacheStore.get('active_plan'));
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cacheStore.get('active_plan'));
 
   // Modals / Views state
   const [editingExercise, setEditingExercise] = useState<any | null>(null);
@@ -298,10 +299,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   });
 
   const fetchActivePlan = async () => {
-    setLoading(true);
+    if (!cacheStore.get('active_plan')) {
+      setLoading(true);
+    }
     try {
       const plan = await api.getActivePlan();
       setActivePlan(plan);
+      cacheStore.set('active_plan', plan);
     } catch (err: any) {
       console.error('Failed to load active plan:', err);
     } finally {
@@ -311,6 +315,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   const fetchLibraryOnce = async () => {
     try {
+      const cached = cacheStore.get<any[]>('library_tree_flat');
+      if (cached && cached.length > 0) {
+        setLibraryExercises(cached);
+        return;
+      }
       const tree = await api.getLibraryTree();
       const list: any[] = [];
       tree.forEach((division: any) => {
@@ -321,10 +330,15 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         });
       });
       setLibraryExercises(list);
+      cacheStore.set('library_tree_flat', list);
     } catch (err) {
       console.error('Failed to load library for smart fill:', err);
     }
   };
+
+  useEffect(() => {
+    fetchActivePlan();
+  }, []);
 
   const handleNameChange = (val: string, type: 'custom' | 'edit' | 'preview', dayIdx?: number, exIdx?: number) => {
     if (type === 'custom') {

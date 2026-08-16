@@ -4,6 +4,7 @@ import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, In
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
+import { cacheStore } from '../utils/cacheStore';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -12,11 +13,11 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const t = translations[lang] || translations.ar;
-  const [activePlan, setActivePlan] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [stats, setStats] = useState<any>(null);
+  const [activePlan, setActivePlan] = useState<any>(() => cacheStore.get('active_plan'));
+  const [profile, setProfile] = useState<any>(() => cacheStore.get('user_profile'));
+  const [stats, setStats] = useState<any>(() => cacheStore.get('user_stats'));
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cacheStore.get('user_profile') && !cacheStore.get('active_plan'));
   const [regenerating, setRegenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [profileError, setProfileError] = useState('');
@@ -78,7 +79,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   };
 
   const fetchDashboardData = async () => {
-    setLoading(true);
+    // Only show full loading spinner if no cached data exists at all
+    if (!cacheStore.get('active_plan') && !cacheStore.get('user_profile')) {
+      setLoading(true);
+    }
     try {
       // Fetch plan, profile, stats, and check-in status in parallel (Fast Concurrent Load)
       const [planRes, profRes, statsRes, checkInRes] = await Promise.allSettled([
@@ -92,6 +96,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       if (planRes.status === 'fulfilled' && planRes.value) {
         const plan = planRes.value;
         setActivePlan(plan);
+        cacheStore.set('active_plan', plan);
         if (plan.dayWorkouts && plan.dayWorkouts.length > 0) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
@@ -107,11 +112,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       // 2. Process Profile
       if (profRes.status === 'fulfilled' && profRes.value) {
         setProfile(profRes.value);
+        cacheStore.set('user_profile', profRes.value);
       }
 
       // 3. Process Stats
       if (statsRes.status === 'fulfilled' && statsRes.value) {
         setStats(statsRes.value);
+        cacheStore.set('user_stats', statsRes.value);
       }
 
       // 4. Process Check-in Status

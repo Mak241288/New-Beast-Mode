@@ -57,6 +57,8 @@ model WorkoutPlan {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   dayWorkouts   DayWorkout[]
+
+  @@index([userId, active])
 }
 
 model DayWorkout {
@@ -69,6 +71,8 @@ model DayWorkout {
   dayTips    String?     // dynamic tips for warm-up, stretching
   isRestDay  Boolean     @default(false)
   exercises  Exercise[]
+
+  @@index([planId, dayIndex])
 }
 
 model Exercise {

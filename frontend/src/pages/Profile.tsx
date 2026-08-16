@@ -4,6 +4,7 @@ import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp
 import { translations } from '../utils/translations';
 import { triggerTestNotification } from '../utils/notifications';
 import { exportFullDataJSON } from '../utils/exportUtils';
+import { cacheStore } from '../utils/cacheStore';
 
 interface ProfileProps {
   lang: 'ar' | 'en';
@@ -13,22 +14,40 @@ interface ProfileProps {
 
 export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavigate }) => {
   const t = translations[lang] || translations.ar;
-  const [profile, setProfile] = useState<any>({
-    name: '',
-    gender: 'MALE',
-    birthDate: '',
-    height: '',
-    currentWeight: '',
-    targetWeight: '',
-    medicalConditions: '',
-    workoutLocation: 'GYM',
-    fitnessGoal: 'HYPERTROPHY',
-    fitnessLevel: 'intermediate',
-    daysPerWeek: '4',
-    equipment: '',
-    age: '',
-    workoutReminder: false,
-    reminderTime: '08:00',
+  const cachedProfile = cacheStore.get<any>('user_profile');
+  const [profile, setProfile] = useState<any>(() => {
+    if (cachedProfile) {
+      return {
+        ...cachedProfile,
+        height: cachedProfile.height || '',
+        currentWeight: cachedProfile.currentWeight || '',
+        targetWeight: cachedProfile.targetWeight || '',
+        fitnessGoal: cachedProfile.fitnessGoal || 'HYPERTROPHY',
+        fitnessLevel: cachedProfile.fitnessLevel || 'intermediate',
+        daysPerWeek: cachedProfile.daysPerWeek || '4',
+        equipment: cachedProfile.equipment || '',
+        age: cachedProfile.age || '',
+        workoutReminder: cachedProfile.workoutReminder || false,
+        reminderTime: cachedProfile.reminderTime || '08:00',
+      };
+    }
+    return {
+      name: '',
+      gender: 'MALE',
+      birthDate: '',
+      height: '',
+      currentWeight: '',
+      targetWeight: '',
+      medicalConditions: '',
+      workoutLocation: 'GYM',
+      fitnessGoal: 'HYPERTROPHY',
+      fitnessLevel: 'intermediate',
+      daysPerWeek: '4',
+      equipment: '',
+      age: '',
+      workoutReminder: false,
+      reminderTime: '08:00',
+    };
   });
 
   const equipmentList = [
@@ -39,7 +58,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات' },
   ];
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedProfile);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -67,13 +86,15 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [testingNotification, setTestingNotification] = useState(false);
 
   const fetchProfile = async () => {
-    setLoading(true);
+    if (!cacheStore.get('user_profile')) {
+      setLoading(true);
+    }
     try {
       const data = await api.getProfile();
       if (data.birthDate) {
         data.birthDate = new Date(data.birthDate).toISOString().split('T')[0];
       }
-      setProfile({
+      const updated = {
         ...profile,
         ...data,
         height: data.height || '',
@@ -86,7 +107,9 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         age: data.age || '',
         workoutReminder: data.workoutReminder || false,
         reminderTime: data.reminderTime || '08:00',
-      });
+      };
+      setProfile(updated);
+      cacheStore.set('user_profile', updated);
     } catch (err) {
       console.error('Failed to load profile:', err);
     } finally {

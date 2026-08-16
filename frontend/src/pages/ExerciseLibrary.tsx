@@ -5,14 +5,15 @@ import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseSearchAutocomplete } from '../components/ExerciseSearchAutocomplete';
 import { ExerciseImage } from '../components/ExerciseImage';
+import { cacheStore } from '../utils/cacheStore';
 
 interface ExerciseLibraryProps {
   lang: 'ar' | 'en';
 }
 
 export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
-  const [exercises, setExercises] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [exercises, setExercises] = useState<any[]>(() => cacheStore.get('library_tree_flat') || []);
+  const [loading, setLoading] = useState(() => !(cacheStore.get('library_tree_flat') && (cacheStore.get('library_tree_flat') as any[]).length > 0));
   const [searchQuery] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState<string>('ALL');
   const [selectedEquipment, setSelectedEquipment] = useState<string>('ALL');
@@ -84,7 +85,10 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
   };
 
   const fetchExercises = async () => {
-    setLoading(true);
+    const cached = cacheStore.get<any[]>('library_tree_flat');
+    if (!cached || cached.length === 0) {
+      setLoading(true);
+    }
     try {
       const tree = await api.getLibraryTree();
       // Flatten the tree structure to get all exercises
@@ -101,6 +105,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
         });
       });
       setExercises(list);
+      cacheStore.set('library_tree_flat', list);
     } catch (err) {
       console.error('Failed to load exercises:', err);
     } finally {

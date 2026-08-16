@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Download, FileText, TrendingUp, Award, Flame, Dumbbell, Timer, Plus, Scale, Zap, PieChart, CheckCircle2 } from 'lucide-react';
 import { exportWeightLogsToCSV } from '../utils/exportUtils';
+import { cacheStore } from '../utils/cacheStore';
 
 interface StatsProps {
   lang: 'ar' | 'en';
 }
 
 export const Stats: React.FC<StatsProps> = ({ lang }) => {
-  const [stats, setStats] = useState<any>(null);
-  const [activePlan, setActivePlan] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(() => cacheStore.get('user_stats'));
+  const [activePlan, setActivePlan] = useState<any>(() => cacheStore.get('active_plan'));
+  const [userProfile, setUserProfile] = useState<any>(() => cacheStore.get('user_profile'));
+  const [loading, setLoading] = useState(() => !cacheStore.get('user_stats'));
 
   // Quick Weight Logger Modal state
   const [showWeightModal, setShowWeightModal] = useState(false);
@@ -20,7 +21,9 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
   const [submittingWeight, setSubmittingWeight] = useState(false);
 
   const fetchStats = async () => {
-    setLoading(true);
+    if (!cacheStore.get('user_stats')) {
+      setLoading(true);
+    }
     try {
       const [statsData, planData, profileData] = await Promise.allSettled([
         api.getStats(),
@@ -28,9 +31,18 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
         api.getProfile(),
       ]);
 
-      if (statsData.status === 'fulfilled') setStats(statsData.value);
-      if (planData.status === 'fulfilled') setActivePlan(planData.value);
-      if (profileData.status === 'fulfilled') setUserProfile(profileData.value);
+      if (statsData.status === 'fulfilled') {
+        setStats(statsData.value);
+        cacheStore.set('user_stats', statsData.value);
+      }
+      if (planData.status === 'fulfilled') {
+        setActivePlan(planData.value);
+        cacheStore.set('active_plan', planData.value);
+      }
+      if (profileData.status === 'fulfilled') {
+        setUserProfile(profileData.value);
+        cacheStore.set('user_profile', profileData.value);
+      }
     } catch (err: any) {
       console.error(err.message || 'Failed to fetch stats.');
     } finally {
