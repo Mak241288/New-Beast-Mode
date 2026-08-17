@@ -783,65 +783,218 @@ export const api = {
       dayWorkouts,
       days: dayWorkouts,
       active: true,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     cacheStore.set('active_plan', plan);
+
+    // Save/update in plan_history
+    const history: any[] = cacheStore.get('plan_history') || [];
+    const updatedHistory = [plan, ...history.filter((p: any) => p.id !== plan.id && p.title !== plan.title).map((p: any) => ({ ...p, active: false }))];
+    cacheStore.set('plan_history', updatedHistory);
+
+    const user = await getCurrentUser();
+    if (user?.email) {
+      try {
+        await supabase.from('WorkoutPlan').update({ active: false }).neq('id', -1);
+        await supabase.from('WorkoutPlan').insert({
+          title: plan.title,
+          active: true,
+          durationWeeks: plan.durationWeeks || 4,
+          startDate: plan.startDate || new Date().toISOString(),
+          weeklyTips: plan.weeklyTips || '',
+        });
+      } catch (err) {
+        console.warn('[Supabase saveStructuredPlan Exception]:', err);
+      }
+    }
+
     return plan;
   },
 
   getPlanHistory: async (): Promise<any[]> => {
+    let history: any[] = cacheStore.get('plan_history') || [];
     const active: any = cacheStore.get('active_plan');
-    const presets = PRESET_WORKOUT_PLANS.slice(0, 3).map((p: any, idx: number) => ({
-      id: 1000 + idx,
-      title: p.title_ar || p.title_en,
-      active: active?.title === (p.title_ar || p.title_en),
-      createdAt: new Date(Date.now() - idx * 86400000 * 7).toISOString(),
-      dayWorkouts: p.days,
-      days: p.days,
-    }));
 
     if (active) {
-      return [active, ...presets.filter((p: any) => p.title !== active.title)];
+      const idx = history.findIndex((p: any) => p.id === active.id || p.title === active.title);
+      if (idx >= 0) {
+        history[idx] = { ...history[idx], ...active, active: true };
+      } else {
+        history = [{ ...active, active: true }, ...history.map((p: any) => ({ ...p, active: false }))];
+      }
     }
 
-    return presets;
+    const user = await getCurrentUser();
+    if (user?.email) {
+      try {
+        const { data: dbPlans } = await supabase
+          .from('WorkoutPlan')
+          .select('*, dayWorkouts:DayWorkout(*, exercises:Exercise(*))')
+          .order('updatedAt', { ascending: false });
+
+        if (dbPlans && dbPlans.length > 0) {
+          const merged = [...dbPlans];
+          history.forEach((localPlan) => {
+            if (!merged.some((dbP) => dbP.id === localPlan.id || dbP.title === localPlan.title)) {
+              merged.push(localPlan);
+            }
+          });
+          history = merged;
+        }
+      } catch (err) {
+        console.warn('[Supabase getPlanHistory Exception]:', err);
+      }
+    }
+
+    if (history.length === 0) {
+      const presets = PRESET_WORKOUT_PLANS.slice(0, 3).map((p: any, idx: number) => ({
+        id: 1000 + idx,
+        title: p.title_ar || p.title_en,
+        active: idx === 0,
+        createdAt: new Date(Date.now() - idx * 86400000 * 7).toISOString(),
+        dayWorkouts: p.days,
+        days: p.days,
+      }));
+      history = presets;
+      if (!active && history[0]) {
+        cacheStore.set('active_plan', history[0]);
+      }
+    }
+
+    cacheStore.set('plan_history', history);
+    return history;
   },
 
-  activateHistoricalPlan: async (id: number) => {
-    const history = await api.getPlanHistory();
-    const target = history.find((p: any) => p.id === id);
+  activateHistoricalPlan: async (id: number | string) => {
+    const history: any[] = (await api.getPlanHistory()) || [];
+    const target = history.find((p: any) => String(p.id) === String(id) || p.id === id);
     if (target) {
-      const activated = { ...target, active: true };
+      const activated = { ...target, active: true, updatedAt: new Date().toISOString() };
       cacheStore.set('active_plan', activated);
+
+      const updatedHistory = history.map((p: any) => ({
+        ...p,
+        active: String(p.id) === String(id) || p.id === id,
+      }));
+      cacheStore.set('plan_history', updatedHistory);
+
+      const user = await getCurrentUser();
+      if (user?.email) {
+        try {
+          await supabase.from('WorkoutPlan').update({ active: false }).neq('id', -1);
+          await supabase.from('WorkoutPlan').update({ active: true }).eq('id', id);
+        } catch {
+          // non-fatal
+        }
+      }
+
       return activated;
     }
     return { success: true };
   },
 
-  renamePlan: async (id: number, title: string) => {
+  renamePlan: async (id: number | string, title: string) => {
+    const history: any[] = (await api.getPlanHistory()) || [];
+    const updatedHistory = history.map((p: any) => {
+      if (String(p.id) === String(id) || p.id === id) {
+        return { ...p, title, updatedAt: new Date().toISOString() };
+      }
+      return p;
+    });
+    cacheStore.set('plan_history', updatedHistory);
+
     const plan: any = cacheStore.get('active_plan');
-    if (plan && (plan.id === id || !id)) {
+    if (plan && (String(plan.id) === String(id) || plan.id === id || !id)) {
       plan.title = title;
       cacheStore.set('active_plan', plan);
     }
+
+    const user = await getCurrentUser();
+    if (user?.email) {
+      try {
+        await supabase.from('WorkoutPlan').update({ title }).eq('id', id);
+      } catch {
+        // non-fatal
+      }
+    }
+
     return { success: true, id, title };
   },
 
-  duplicatePlan: async (id: number) => {
-    const plan: any = cacheStore.get('active_plan');
-    if (plan) {
+  duplicatePlan: async (id: number | string) => {
+    const history: any[] = (await api.getPlanHistory()) || [];
+    const target = history.find((p: any) => String(p.id) === String(id) || p.id === id) || cacheStore.get('active_plan');
+
+    if (target) {
       const duplicated = {
-        ...plan,
+        ...JSON.parse(JSON.stringify(target)),
         id: generateId(),
-        title: `${plan.title} (نسخة مكررة)`,
+        title: `${target.title} (نسخة مكررة)`,
         active: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
+
+      const updatedHistory = [duplicated, ...history];
+      cacheStore.set('plan_history', updatedHistory);
+
+      const user = await getCurrentUser();
+      if (user?.email) {
+        try {
+          await supabase.from('WorkoutPlan').insert({
+            title: duplicated.title,
+            active: false,
+            durationWeeks: duplicated.durationWeeks || 4,
+            startDate: new Date().toISOString(),
+            weeklyTips: duplicated.weeklyTips || '',
+          });
+        } catch {
+          // non-fatal
+        }
+      }
+
       return duplicated;
     }
     return { success: true, id };
   },
 
-  deletePlan: async (id: number) => {
+  deletePlan: async (id: number | string) => {
+    const history: any[] = (await api.getPlanHistory()) || [];
+    
+    if (history.length <= 1) {
+      throw new Error('لا يمكن حذف الجدول التدريبي الوحيد. يجب الاحتفاظ بجدول واحد على الأقل.');
+    }
+
+    const targetPlan = history.find((p: any) => String(p.id) === String(id) || p.id === id);
+    const updatedHistory = history.filter((p: any) => String(p.id) !== String(id) && p.id !== id);
+    cacheStore.set('plan_history', updatedHistory);
+
+    const activePlan: any = cacheStore.get('active_plan');
+    if (activePlan && (String(activePlan.id) === String(id) || activePlan.id === id || (targetPlan && activePlan.title === targetPlan.title))) {
+      // Promote the first remaining plan to active
+      if (updatedHistory.length > 0) {
+        const newActive = { ...updatedHistory[0], active: true };
+        updatedHistory[0] = newActive;
+        cacheStore.set('plan_history', updatedHistory);
+        cacheStore.set('active_plan', newActive);
+      } else {
+        cacheStore.remove('active_plan');
+      }
+    }
+
+    const user = await getCurrentUser();
+    if (user?.email) {
+      try {
+        await supabase.from('WorkoutPlan').delete().eq('id', id);
+        if (targetPlan?.title) {
+          await supabase.from('WorkoutPlan').delete().eq('title', targetPlan.title);
+        }
+      } catch (err) {
+        console.warn('[Supabase deletePlan Exception]:', err);
+      }
+    }
+
     return { success: true, id, message: 'تم حذف الجدول بنجاح' };
   },
 
