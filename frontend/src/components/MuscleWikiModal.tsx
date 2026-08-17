@@ -397,7 +397,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
 
     const embedUrl = directId
       ? `https://www.youtube-nocookie.com/embed/${directId}?autoplay=1&rel=0`
-      : null;
+      : `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent((exercise.name_en || name || 'exercise') + ' tutorial proper form')}&autoplay=1`;
 
     return { youtubeUrl: ytUrl, videoEmbedUrl: embedUrl };
   }, [exercise, name]);
@@ -536,15 +536,40 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
           {/* Motion Video / GIF / Interactive Media Player */}
           <div style={{ position: 'relative', height: '220px', background: 'rgba(0,0,0,0.5)', borderRadius: '18px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
             {showVideoEmbed && videoEmbedUrl ? (
-              <iframe
-                src={videoEmbedUrl}
-                title={name}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
-            ) : mediaSource ? (
+              <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                <iframe
+                  src={videoEmbedUrl}
+                  title={name}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+                <button
+                  onClick={() => setShowVideoEmbed(false)}
+                  style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: isAr ? 'auto' : '8px',
+                    left: isAr ? '8px' : 'auto',
+                    background: 'rgba(0,0,0,0.85)',
+                    color: '#fff',
+                    border: '1px solid rgba(0, 210, 255, 0.4)',
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    zIndex: 10,
+                  }}
+                >
+                  <span>🔄 {isAr ? 'عرض الصورة المتحركة (GIF)' : 'Switch to GIF'}</span>
+                </button>
+              </div>
+            ) : (
               <>
                 <ExerciseImage
                   src={mediaSource}
@@ -552,49 +577,53 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
                   muscle={exercise.muscle_en || exercise.muscle_ar || exercise.targetMuscle}
                   style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                 />
-                <button
-                  onClick={() => videoEmbedUrl ? setShowVideoEmbed(true) : handleOpenVideo()}
+                <div
                   style={{
                     position: 'absolute',
                     bottom: '8px',
                     right: isAr ? 'auto' : '8px',
                     left: isAr ? '8px' : 'auto',
-                    background: 'rgba(0,0,0,0.8)',
-                    color: '#fff',
-                    border: '1px solid rgba(239, 68, 68, 0.5)',
-                    padding: '6px 10px',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                    cursor: 'pointer',
                     display: 'flex',
-                    alignItems: 'center',
                     gap: '6px',
                   }}
                 >
-                  <Youtube size={14} color="#ef4444" />
-                  <span>{isAr ? 'فيديو YouTube 🎥' : 'Play YouTube'}</span>
-                </button>
+                  <button
+                    onClick={() => setShowVideoEmbed(true)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.9)',
+                      color: '#fff',
+                      border: '1px solid rgba(239, 68, 68, 0.8)',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                    }}
+                  >
+                    <Play size={13} fill="#fff" />
+                    <span>{isAr ? 'تشغيل الفيديو هنا 🎬' : 'Play In-App Video 🎬'}</span>
+                  </button>
+                  <button
+                    onClick={handleOpenVideo}
+                    style={{
+                      background: 'rgba(0,0,0,0.8)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      padding: '6px 8px',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                    }}
+                    title={isAr ? 'فتح في YouTube' : 'Open in YouTube'}
+                  >
+                    ↗️
+                  </button>
+                </div>
               </>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
-                  <Youtube size={26} />
-                </div>
-                <div>
-                  <h5 style={{ margin: 0, fontSize: '14px', color: 'var(--text-primary)', fontWeight: 'bold' }}>{name}</h5>
-                  <p style={{ margin: '3px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    {isAr ? 'فيديو توضيحي تفاعلي للأداء الصحيح' : 'Interactive Technique & Form Video'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => videoEmbedUrl ? setShowVideoEmbed(true) : handleOpenVideo()}
-                  className="glow-btn"
-                  style={{ padding: '8px 18px', fontSize: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none' }}
-                >
-                  <Play size={13} fill="#fff" />
-                  <span>{isAr ? 'مشاهدة الفيديو على YouTube 🔴' : 'Watch on YouTube 🔴'}</span>
-                </button>
-              </div>
             )}
           </div>
 
