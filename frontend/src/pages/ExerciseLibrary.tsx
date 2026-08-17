@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Info, HelpCircle, LayoutGrid, MapPin } from 'lucide-react';
+import { supabase } from '../services/supabase';
+import { Info, HelpCircle, LayoutGrid, MapPin, Database, RefreshCw } from 'lucide-react';
 import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseSearchAutocomplete } from '../components/ExerciseSearchAutocomplete';
@@ -20,6 +21,8 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
   const [selectedExercise, setSelectedExercise] = useState<any | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('map');
+  const [isDbEmpty, setIsDbEmpty] = useState<boolean>(false);
+  const [syncing, setSyncing] = useState<boolean>(false);
 
   // Add to Plan States
   const [activePlan, setActivePlan] = useState<any>(null);
@@ -90,26 +93,58 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
       setLoading(true);
     }
     try {
-      const tree = await api.getLibraryTree();
-      // Flatten the tree structure to get all exercises
-      const list: any[] = [];
-      tree.forEach((division: any) => {
-        division.children.forEach((muscleGroup: any) => {
-          muscleGroup.exercises.forEach((ex: any) => {
-            list.push({
-              ...ex,
-              division: division.key,
-              muscleGroupKey: muscleGroup.key,
-            });
-          });
-        });
-      });
+      // 1. Direct Supabase Query from 'exercises' table
+      const { data, error } = await supabase.from('exercises').select('*').limit(500);
+      if (error) {
+        console.error('[ExerciseLibrary Supabase Error]:', error);
+      }
+      
+      let list: any[] = [];
+      if (data && data.length > 0) {
+        list = data.map((item: any) => ({
+          id: item.id || item._id,
+          name_en: item.name_en || item.name || 'Exercise',
+          name_ar: item.name_ar || item.name_en || item.name || 'تمرين',
+          muscle_en: item.muscle_en || item.targetMuscle || item.muscle || 'General',
+          muscle_ar: item.muscle_ar || item.muscle_en || 'عام',
+          equipment_en: item.equipment_en || item.equipment || 'Bodyweight',
+          equipment_ar: item.equipment_ar || item.equipment || 'وزن الجسم',
+          category: item.category || 'IRON',
+          level: item.level || 'intermediate',
+          image_url: item.image_url || item.imageUrl || null,
+          video_url: item.video_url || item.videoUrl || null,
+          instructions_en: item.instructions_en || item.tips_en || '',
+          instructions_ar: item.instructions_ar || item.tips_ar || '',
+        }));
+        setIsDbEmpty(false);
+      } else {
+        setIsDbEmpty(true);
+        // Fallback to local rich dataset
+        list = await api.getLibraryTree();
+      }
+
       setExercises(list);
       cacheStore.set('library_tree_flat', list);
     } catch (err) {
-      console.error('Failed to load exercises:', err);
+      console.error('[ExerciseLibrary] Failed to load exercises from Supabase:', err);
+      const fallback = await api.getLibraryTree();
+      setExercises(fallback);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSyncSupabaseExercises = async () => {
+    setSyncing(true);
+    try {
+      await api.syncExercises();
+      alert(lang === 'en' ? 'Exercises synced to Supabase successfully!' : 'تم مزامنة وتغذية قاعدة بيانات Supabase بالتمارين بنجاح!');
+      await fetchExercises();
+    } catch (err: any) {
+      console.error('[Sync Error]:', err);
+      alert(lang === 'en' ? 'Failed to sync exercises.' : 'فشل مزامنة التمارين مع Supabase.');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -217,6 +252,45 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
               <span>{lang === 'en' ? 'Grid View 📋' : 'عرض القائمة 📋'}</span>
             </button>
           </div>
+        </div>
+
+        {/* Supabase Live DB Status & Sync Banner */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          padding: '12px 16px',
+          background: isDbEmpty ? 'rgba(245, 158, 11, 0.08)' : 'rgba(0, 210, 255, 0.05)',
+          border: isDbEmpty ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(0, 210, 255, 0.2)',
+          borderRadius: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Database size={18} color={isDbEmpty ? '#f59e0b' : 'var(--primary)'} />
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+              {lang === 'en' ? 'Supabase Live Database:' : 'اتصال قاعدة بيانات Supabase:'}
+            </span>
+            <span className="badge" style={{
+              background: isDbEmpty ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+              color: isDbEmpty ? '#f59e0b' : '#10b981',
+              border: isDbEmpty ? '1px solid #f59e0b' : '1px solid #10b981',
+              fontSize: '11px',
+              padding: '2px 8px'
+            }}>
+              {isDbEmpty ? (lang === 'en' ? 'Table Empty / Waiting for Seed' : 'جدول التمارين فارغ / في انتظار المزامنة') : (lang === 'en' ? `${exercises.length} Exercises Live` : `تم تحميل ${exercises.length} تمرين مباشرة`)}
+            </span>
+          </div>
+
+          <button
+            onClick={handleSyncSupabaseExercises}
+            disabled={syncing}
+            className="secondary-btn"
+            style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+          >
+            <RefreshCw size={14} className={syncing ? 'spin-anim' : ''} />
+            <span>{syncing ? (lang === 'en' ? 'Syncing...' : 'جاري المزامنة...') : (lang === 'en' ? '⚡ Seed / Sync Supabase Exercises' : '⚡ مزامنة وتغذية قاعدة بيانات Supabase')}</span>
+          </button>
         </div>
 
         {/* Interactive Body Map Render */}
