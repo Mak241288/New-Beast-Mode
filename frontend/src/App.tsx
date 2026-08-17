@@ -64,7 +64,7 @@ function App() {
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
-      authListener?.subscription.unsubscribe();
+      authListener?.subscription?.unsubscribe?.();
     };
   }, [token]);
 
