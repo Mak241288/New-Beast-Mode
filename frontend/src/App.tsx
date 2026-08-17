@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from './services/api';
+import { supabase } from './services/supabase';
 import { Login } from './pages/Login';
 import { LandingPage } from './pages/LandingPage';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
@@ -43,6 +44,14 @@ function App() {
   };
 
   useEffect(() => {
+    // Listen to Supabase auth state changes (OAuth redirects, tokens, signins)
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.access_token) {
+        setToken(session.access_token);
+        localStorage.setItem('token', session.access_token);
+      }
+    });
+
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.view) {
         setCurrentView(event.state.view);
@@ -53,7 +62,10 @@ function App() {
 
     window.history.replaceState({ view: currentView }, '', `#${currentView}`);
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      authListener?.subscription.unsubscribe();
+    };
   }, [token]);
 
   useEffect(() => {
@@ -73,13 +85,13 @@ function App() {
     setInitError(null);
 
     try {
-      // Fast single-pass profile verification
+      // Fast single-pass profile verification with Supabase
       const profile = await api.getProfile();
-      const isCompleted = !!profile.onboardingCompleted;
+      const isCompleted = profile ? !!profile.onboardingCompleted : true;
       setOnboardingCompleted(isCompleted);
 
       // Initialize background reminder scheduler
-      if (profile.workoutReminder && profile.reminderTime) {
+      if (profile?.workoutReminder && profile?.reminderTime) {
         initWorkoutReminderScheduler({
           enabled: profile.workoutReminder,
           time: profile.reminderTime,
@@ -100,8 +112,7 @@ function App() {
       if (err.status === 401) {
         handleLogout();
       } else {
-        // If server connection error or timeout, set init error message
-        setInitError(err.message || (lang === 'en' ? 'Unable to reach backend server.' : 'تعذر الاتصال بالخادم المحلي.'));
+        setInitError(err.message || (lang === 'en' ? 'Unable to load workspace profile.' : 'تعذر تحميل بيانات المستخدم.'));
       }
     } finally {
       setLoading(false);
@@ -117,7 +128,12 @@ function App() {
     setCurrentView('dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Ignore
+    }
     localStorage.removeItem('token');
     cacheStore.clearAll();
     setToken(null);

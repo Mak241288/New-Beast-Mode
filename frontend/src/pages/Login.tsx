@@ -265,7 +265,7 @@ export const Login: React.FC<LoginProps> = ({ onSuccess, onBack, onNavigateToLeg
 
       setTimeout(() => {
         setShowGoogleModal(false);
-        onSuccess(data.token);
+        onSuccess(data.token || 'bm_session_active');
       }, 1000);
     } catch (err: any) {
       // If backend requires verification for existing account
