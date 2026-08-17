@@ -229,8 +229,10 @@ export const api = {
 
   getProfile: async () => {
     const user = await getCurrentUser();
-    const email = user?.email || (cacheStore.get('user_profile') as any)?.email;
+    const cached: any = cacheStore.get('user_profile') || {};
+    const email = user?.email || cached.email;
 
+    let cloudProfile: any = null;
     if (email) {
       try {
         const { data: profileRow } = await supabase
@@ -240,39 +242,57 @@ export const api = {
           .maybeSingle();
 
         if (profileRow) {
-          cacheStore.set('user_profile', profileRow);
-          return profileRow;
+          cloudProfile = profileRow;
         }
       } catch {
         // Fallback
       }
     }
 
-    const cached = cacheStore.get('user_profile');
-    if (cached) return cached;
-
-    // Default fallback profile
-    const fallbackProfile = {
+    // Merge strategy: Preserve all valid attributes, prefer defined values over empty/null
+    const mergedProfile: any = {
       email: email || 'athlete@beastmode.ai',
       name: user?.user_metadata?.name || 'Beast Athlete',
       onboardingCompleted: true,
       workoutReminder: false,
       isGoogleLinked: false,
+      ...cached,
+      ...(cloudProfile || {}),
     };
-    cacheStore.set('user_profile', fallbackProfile);
-    return fallbackProfile;
+
+    // Make sure fields from cached are not erased if cloudProfile had null/empty
+    const fieldsToPreserve = [
+      'name', 'height', 'currentWeight', 'targetWeight', 'fitnessGoal',
+      'fitnessLevel', 'daysPerWeek', 'equipment', 'age', 'gender',
+      'birthDate', 'medicalConditions', 'workoutLocation', 'avatar',
+      'workoutReminder', 'reminderTime', 'isGoogleLinked', 'googleEmail'
+    ];
+
+    fieldsToPreserve.forEach((f) => {
+      if (cached[f] !== undefined && cached[f] !== null && cached[f] !== '') {
+        if (!cloudProfile || cloudProfile[f] === undefined || cloudProfile[f] === null || cloudProfile[f] === '') {
+          mergedProfile[f] = cached[f];
+        }
+      }
+    });
+
+    cacheStore.set('user_profile', mergedProfile);
+    return mergedProfile;
   },
 
   updateProfile: async (profileData: any) => {
     const user = await getCurrentUser();
-    const email = user?.email || profileData.email || (cacheStore.get('user_profile') as any)?.email;
+    const cached: any = cacheStore.get('user_profile') || {};
+    const email = user?.email || profileData.email || cached.email;
 
     const merged = {
-      ...(cacheStore.get('user_profile') || {}),
+      ...cached,
       ...profileData,
       email: email || 'athlete@beastmode.ai',
       updatedAt: new Date().toISOString(),
     };
+
+    cacheStore.set('user_profile', merged);
 
     try {
       if (email) {
@@ -290,7 +310,6 @@ export const api = {
       }
     }
 
-    cacheStore.set('user_profile', merged);
     return merged;
   },
 
@@ -386,6 +405,29 @@ export const api = {
     const cached: any = cacheStore.get('active_plan');
     const user = await getCurrentUser();
 
+    // If we have a cached plan with dayWorkouts, it is our active source of truth
+    if (cached && cached.dayWorkouts && cached.dayWorkouts.length > 0) {
+      if (user?.email) {
+        try {
+          const { data: planRow } = await supabase
+            .from('WorkoutPlan')
+            .select('*, dayWorkouts:DayWorkout(*, exercises:Exercise(*))')
+            .eq('active', true)
+            .order('updatedAt', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (planRow && planRow.dayWorkouts && planRow.dayWorkouts.length > 0 && planRow.updatedAt && cached.updatedAt && new Date(planRow.updatedAt) > new Date(cached.updatedAt)) {
+            cacheStore.set('active_plan', planRow);
+            return planRow;
+          }
+        } catch {
+          // Non-fatal
+        }
+      }
+      return cached;
+    }
+
     if (user?.email) {
       try {
         const { data: planRow } = await supabase
@@ -404,8 +446,6 @@ export const api = {
         // Non-fatal, proceed with cached
       }
     }
-
-    if (cached) return cached;
 
     // Default split from curated presets
     const defaultSplit = PRESET_WORKOUT_PLANS[0];
@@ -434,6 +474,7 @@ export const api = {
             exerciseTips: ex.exerciseTips || '',
           })),
         })),
+        updatedAt: new Date().toISOString(),
       };
       cacheStore.set('active_plan', plan);
       return plan;

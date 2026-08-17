@@ -539,4 +539,108 @@ body[dir='rtl'] .routine-exercise-card:hover {
   border-color: var(--primary) !important;
 }
 
+/* ========================================================= */
+/* --- ADVANCED RESPONSIVE GRID & DEVICE ALIGNMENT UTILS --- */
+/* ========================================================= */
+
+.grid-profile-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 2.2fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.grid-profile-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.grid-responsive-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.grid-responsive-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.grid-responsive-4col {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.responsive-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+/* Mobile & Tablet Media Queries */
+@media (max-width: 900px) {
+  .grid-profile-layout {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-profile-metrics {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .grid-responsive-3col {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .grid-responsive-4col {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .grid-profile-metrics {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .grid-responsive-2col {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .grid-responsive-3col {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .grid-responsive-4col {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .responsive-toolbar {
+    gap: 6px !important;
+  }
+
+  .responsive-toolbar button {
+    font-size: 11.5px !important;
+    padding: 6px 10px !important;
+  }
+}
+
+
 

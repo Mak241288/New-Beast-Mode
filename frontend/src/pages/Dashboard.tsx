@@ -83,7 +83,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         daysPerWeek: parseInt(profile.daysPerWeek) || 4,
         lang,
       });
-      onNavigate('my-plan');
+      onNavigate('myplan');
     } catch (err: any) {
       alert(err.message || (lang === 'en' ? 'Failed to generate plan.' : 'فشل توليد الخطة الرياضية.'));
     } finally {
@@ -651,7 +651,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
           })()}
 
           {/* Top Widgets Row: Streak, Workouts, Minutes, Exercises */}
-          <div className="grid-responsive-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '20px' }}>
+          <div className="grid-responsive-4col">
             {/* Streak Counter */}
             <div
               onClick={() => setShowRecoveryModal(true)}

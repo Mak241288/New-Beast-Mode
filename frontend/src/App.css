@@ -189,7 +189,9 @@ html[dir="ltr"] .main-content {
   }
 
   .main-content {
-    padding: 80px 20px 90px 20px;
+    padding: 75px 16px 85px 16px;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .mobile-header {
@@ -198,6 +200,17 @@ html[dir="ltr"] .main-content {
 
   .mobile-nav {
     display: flex;
+  }
+}
+
+@media (max-width: 576px) {
+  .main-content {
+    padding: 70px 10px 80px 10px;
+  }
+
+  .grid-responsive-stats {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
   }
 }
 
@@ -234,9 +247,3 @@ html[dir="ltr"] .main-content {
   }
 }
 
-@media (max-width: 576px) {
-  .grid-responsive-stats {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px !important;
-  }
-}

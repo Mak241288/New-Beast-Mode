@@ -1229,7 +1229,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         </div>
 
         {/* Quick Tools */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div className="responsive-toolbar">
           <button 
             onClick={() => {
               fetchHistory();
@@ -2111,83 +2111,87 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                            {lang === 'en' ? 'Exercises' : 'التمارين'}
-                          </label>
-                          {(day.exercises || []).map((ex: any, exIdx: number) => (
-                            <div key={exIdx} style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1.2fr 1.5fr auto auto', gap: '8px', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
-                              <div style={{ position: 'relative' }}>
+                          <div className="table-scroll-container">
+                          <div style={{ minWidth: '560px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                              {lang === 'en' ? 'Exercises' : 'التمارين'}
+                            </label>
+                            {(day.exercises || []).map((ex: any, exIdx: number) => (
+                              <div key={exIdx} style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1.2fr 1.5fr auto auto', gap: '8px', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+                                <div style={{ position: 'relative' }}>
+                                  <input
+                                    type="text"
+                                    value={ex.name}
+                                    onChange={(e) => handleNameChange(e.target.value, 'preview', dayIdx, exIdx)}
+                                    onBlur={() => setTimeout(() => setPreviewSuggestions(null), 200)}
+                                    placeholder={lang === 'en' ? 'Exercise Name' : 'اسم التمرين'}
+                                    className="input-field"
+                                    style={{ fontSize: '12px', padding: '6px', width: '100%' }}
+                                  />
+                                  {previewSuggestions && previewSuggestions.dayIdx === dayIdx && previewSuggestions.exIdx === exIdx && previewSuggestions.list.length > 0 && (
+                                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#0e111a', border: '1px solid var(--border-color)', borderRadius: '8px', zIndex: 1200, maxHeight: '150px', overflowY: 'auto', marginTop: '4px' }}>
+                                      {previewSuggestions.list.map((item) => (
+                                        <div
+                                          key={item.id}
+                                          onClick={() => handleSelectSuggestion(item, 'preview', dayIdx, exIdx)}
+                                          style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'var(--text-primary)' }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                          {lang === 'en' ? (item.name_en || item.name_ar) : (item.name_ar || item.name_en)}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <input
+                                  type="number"
+                                  value={ex.sets}
+                                  onChange={(e) => handleUpdatePreviewEx(dayIdx, exIdx, 'sets', parseInt(e.target.value) || 3)}
+                                  placeholder="Sets"
+                                  className="input-field"
+                                  style={{ fontSize: '12px', padding: '6px', textAlign: 'center' }}
+                                />
                                 <input
                                   type="text"
-                                  value={ex.name}
-                                  onChange={(e) => handleNameChange(e.target.value, 'preview', dayIdx, exIdx)}
-                                  onBlur={() => setTimeout(() => setPreviewSuggestions(null), 200)}
-                                  placeholder={lang === 'en' ? 'Exercise Name' : 'اسم التمرين'}
+                                  value={ex.reps}
+                                  onChange={(e) => handleUpdatePreviewEx(dayIdx, exIdx, 'reps', e.target.value)}
+                                  placeholder="Reps"
                                   className="input-field"
-                                  style={{ fontSize: '12px', padding: '6px', width: '100%' }}
+                                  style={{ fontSize: '12px', padding: '6px' }}
                                 />
-                                {previewSuggestions && previewSuggestions.dayIdx === dayIdx && previewSuggestions.exIdx === exIdx && previewSuggestions.list.length > 0 && (
-                                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#0e111a', border: '1px solid var(--border-color)', borderRadius: '8px', zIndex: 1200, maxHeight: '150px', overflowY: 'auto', marginTop: '4px' }}>
-                                    {previewSuggestions.list.map((item) => (
-                                      <div
-                                        key={item.id}
-                                        onClick={() => handleSelectSuggestion(item, 'preview', dayIdx, exIdx)}
-                                        style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '11px', color: 'var(--text-primary)' }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                      >
-                                        {lang === 'en' ? (item.name_en || item.name_ar) : (item.name_ar || item.name_en)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
+                                <input
+                                  type="text"
+                                  value={ex.targetMuscle}
+                                  onChange={(e) => handleUpdatePreviewEx(dayIdx, exIdx, 'targetMuscle', e.target.value)}
+                                  placeholder="Muscle"
+                                  className="input-field"
+                                  style={{ fontSize: '12px', padding: '6px' }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleSmartFillPreviewEx(dayIdx, exIdx)}
+                                  className="secondary-btn"
+                                  title={lang === 'en' ? 'Smart Match' : 'مطابقة ذكية'}
+                                  style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                  <Sparkles size={12} color="var(--primary)" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updatedDays = [...importPreview.days];
+                                    updatedDays[dayIdx].exercises.splice(exIdx, 1);
+                                    setImportPreview({ ...importPreview, days: updatedDays });
+                                  }}
+                                  style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
                               </div>
-                              <input
-                                type="number"
-                                value={ex.sets}
-                                onChange={(e) => handleUpdatePreviewEx(dayIdx, exIdx, 'sets', parseInt(e.target.value) || 3)}
-                                placeholder="Sets"
-                                className="input-field"
-                                style={{ fontSize: '12px', padding: '6px', textAlign: 'center' }}
-                              />
-                              <input
-                                type="text"
-                                value={ex.reps}
-                                onChange={(e) => handleUpdatePreviewEx(dayIdx, exIdx, 'reps', e.target.value)}
-                                placeholder="Reps"
-                                className="input-field"
-                                style={{ fontSize: '12px', padding: '6px' }}
-                              />
-                              <input
-                                type="text"
-                                value={ex.targetMuscle}
-                                onChange={(e) => handleUpdatePreviewEx(dayIdx, exIdx, 'targetMuscle', e.target.value)}
-                                placeholder="Muscle"
-                                className="input-field"
-                                style={{ fontSize: '12px', padding: '6px' }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleSmartFillPreviewEx(dayIdx, exIdx)}
-                                className="secondary-btn"
-                                title={lang === 'en' ? 'Smart Match' : 'مطابقة ذكية'}
-                                style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                              >
-                                <Sparkles size={12} color="var(--primary)" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updatedDays = [...importPreview.days];
-                                  updatedDays[dayIdx].exercises.splice(exIdx, 1);
-                                  setImportPreview({ ...importPreview, days: updatedDays });
-                                }}
-                                style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
+                        </div>
                           
                           <button
                             type="button"
@@ -3236,18 +3240,19 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           </button>
                         </div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          {/* Table Headers */}
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 38px',
-                            gap: '8px',
-                            padding: '6px 12px',
-                            fontSize: '11px',
-                            fontWeight: 'bold',
-                            color: 'var(--text-secondary)',
-                            textTransform: 'uppercase',
-                          }}>
+                        <div className="table-scroll-container">
+                          <div style={{ minWidth: '780px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {/* Table Headers */}
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 38px',
+                              gap: '8px',
+                              padding: '6px 12px',
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              color: 'var(--text-secondary)',
+                              textTransform: 'uppercase',
+                            }}>
                             <div>{lang === 'en' ? 'Exercise (Search 🔍)' : 'اسم التمرين (بحث ذكي 🔍)'}</div>
                             <div>{lang === 'en' ? 'Muscle' : 'العضلة 🎯'}</div>
                             <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Mode' : 'النوع ⏱️/🔢'}</div>
@@ -3531,6 +3536,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                               </div>
                             );
                           })}
+                          </div>
                         </div>
                       )}
                     </div>

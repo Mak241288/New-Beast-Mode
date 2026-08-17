@@ -129,25 +129,28 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
       if (data.birthDate) {
         data.birthDate = new Date(data.birthDate).toISOString().split('T')[0];
       }
-      const updated = {
-        ...profile,
-        ...data,
-        height: data.height || '',
-        currentWeight: data.currentWeight || '',
-        targetWeight: data.targetWeight || '',
-        fitnessGoal: data.fitnessGoal || 'HYPERTROPHY',
-        fitnessLevel: data.fitnessLevel || 'intermediate',
-        daysPerWeek: data.daysPerWeek || '4',
-        equipment: data.equipment || '',
-        age: data.age || '',
-        workoutReminder: data.workoutReminder || false,
-        reminderTime: data.reminderTime || '08:00',
-        isGoogleLinked: Boolean(data.isGoogleLinked),
-        googleEmail: data.googleEmail || '',
-        googleId: data.googleId || '',
-      };
-      setProfile(updated);
-      cacheStore.set('user_profile', updated);
+      setProfile((prev: any) => {
+        const updated = {
+          ...prev,
+          ...data,
+          height: data.height || prev.height || '',
+          currentWeight: data.currentWeight || prev.currentWeight || '',
+          targetWeight: data.targetWeight || prev.targetWeight || '',
+          fitnessGoal: data.fitnessGoal || prev.fitnessGoal || 'HYPERTROPHY',
+          fitnessLevel: data.fitnessLevel || prev.fitnessLevel || 'intermediate',
+          daysPerWeek: data.daysPerWeek || prev.daysPerWeek || '4',
+          equipment: data.equipment !== undefined ? data.equipment : prev.equipment || '',
+          age: data.age || prev.age || '',
+          avatar: data.avatar || prev.avatar || '',
+          workoutReminder: data.workoutReminder ?? prev.workoutReminder ?? false,
+          reminderTime: data.reminderTime || prev.reminderTime || '08:00',
+          isGoogleLinked: Boolean(data.isGoogleLinked ?? prev.isGoogleLinked),
+          googleEmail: data.googleEmail || prev.googleEmail || '',
+          googleId: data.googleId || prev.googleId || '',
+        };
+        cacheStore.set('user_profile', updated);
+        return updated;
+      });
     } catch (err) {
       console.error('Failed to load profile:', err);
     } finally {
@@ -677,80 +680,83 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         </div>
 
         {/* Two Column Layout: Left Column (Quick Stats Cards), Right Column (Details) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 1fr) 2fr', gap: '20px', alignItems: 'start' }}>
+        <div className="grid-profile-layout">
           
           {/* LEFT COLUMN: Physical metrics visual cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             
-            {/* Height Card */}
-            <div className="glass-panel" style={{ padding: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                📏 {lang === 'en' ? 'Height' : 'الطول'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                <input
-                  type="number"
-                  name="height"
-                  value={profile.height}
-                  onChange={handleInputChange}
-                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '24px', fontWeight: '800', width: '90px', padding: 0 }}
-                  placeholder="--"
-                />
-                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>cm</span>
+            {/* 4 Physical Metrics as 2x2 on Mobile / 1-column on Desktop */}
+            <div className="grid-profile-metrics">
+              {/* Height Card */}
+              <div className="glass-panel" style={{ padding: '14px 16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  📏 {lang === 'en' ? 'Height' : 'الطول'}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                  <input
+                    type="number"
+                    name="height"
+                    value={profile.height}
+                    onChange={handleInputChange}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    placeholder="--"
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>cm</span>
+                </div>
               </div>
-            </div>
 
-            {/* Age Card */}
-            <div className="glass-panel" style={{ padding: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                🎂 {lang === 'en' ? 'Age' : 'العمر'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                <input
-                  type="number"
-                  name="age"
-                  value={profile.age}
-                  onChange={handleInputChange}
-                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '24px', fontWeight: '800', width: '90px', padding: 0 }}
-                  placeholder="--"
-                />
-                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'years' : 'سنة'}</span>
+              {/* Age Card */}
+              <div className="glass-panel" style={{ padding: '14px 16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  🎂 {lang === 'en' ? 'Age' : 'العمر'}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                  <input
+                    type="number"
+                    name="age"
+                    value={profile.age}
+                    onChange={handleInputChange}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    placeholder="--"
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'years' : 'سنة'}</span>
+                </div>
               </div>
-            </div>
 
-            {/* Current Weight Card */}
-            <div className="glass-panel" style={{ padding: '16px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: '0 0 10px rgba(0, 210, 255, 0.05)' }}>
-              <span style={{ fontSize: '11px', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
-                ⚖️ {lang === 'en' ? 'Current Weight' : 'الوزن الحالي'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                <input
-                  type="number"
-                  name="currentWeight"
-                  value={profile.currentWeight}
-                  onChange={handleInputChange}
-                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '24px', fontWeight: '800', width: '90px', padding: 0 }}
-                  placeholder="--"
-                />
-                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>kg</span>
+              {/* Current Weight Card */}
+              <div className="glass-panel" style={{ padding: '14px 16px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '6px', boxShadow: '0 0 10px rgba(0, 210, 255, 0.05)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
+                  ⚖️ {lang === 'en' ? 'Current Weight' : 'الوزن الحالي'}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                  <input
+                    type="number"
+                    name="currentWeight"
+                    value={profile.currentWeight}
+                    onChange={handleInputChange}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    placeholder="--"
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>kg</span>
+                </div>
               </div>
-            </div>
 
-            {/* Target Weight Card */}
-            <div className="glass-panel" style={{ padding: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                🎯 {lang === 'en' ? 'Target Weight' : 'الوزن المستهدف'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                <input
-                  type="number"
-                  name="targetWeight"
-                  value={profile.targetWeight}
-                  onChange={handleInputChange}
-                  style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '24px', fontWeight: '800', width: '90px', padding: 0 }}
-                  placeholder="--"
-                />
-                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>kg</span>
+              {/* Target Weight Card */}
+              <div className="glass-panel" style={{ padding: '14px 16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  🎯 {lang === 'en' ? 'Target Weight' : 'الوزن المستهدف'}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                  <input
+                    type="number"
+                    name="targetWeight"
+                    value={profile.targetWeight}
+                    onChange={handleInputChange}
+                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    placeholder="--"
+                  />
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>kg</span>
+                </div>
               </div>
             </div>
 
@@ -811,7 +817,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               {lang === 'en' ? 'Personal Preferences & Bio' : 'التفضيلات الشخصية والبيانات العامة'}
             </h3>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div className="grid-responsive-2col">
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)' }}>
@@ -902,7 +908,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                 🏋️‍♂️ {lang === 'en' ? 'Workout Plan Settings' : 'إعدادات البرنامج والجدول الرياضي'}
               </h3>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+              <div className="grid-responsive-3col">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)' }}>
                     {lang === 'en' ? 'Fitness Goal' : 'الهدف الرياضي'}
