@@ -322,24 +322,12 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   const fetchLibraryOnce = async () => {
     try {
-      const cached = cacheStore.get<any[]>('library_tree_flat');
-      if (cached && cached.length > 0) {
-        setLibraryExercises(cached);
-        return;
+      const list = await api.getLibraryTree();
+      if (list && list.length > 0) {
+        setLibraryExercises(list);
       }
-      const tree = await api.getLibraryTree();
-      const list: any[] = [];
-      tree.forEach((division: any) => {
-        division.children.forEach((muscleGroup: any) => {
-          muscleGroup.exercises.forEach((ex: any) => {
-            list.push(ex);
-          });
-        });
-      });
-      setLibraryExercises(list);
-      cacheStore.set('library_tree_flat', list);
     } catch (err) {
-      console.error('Failed to load library for smart fill:', err);
+      console.error('Failed to load library:', err);
     }
   };
 
@@ -710,33 +698,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       return;
     }
 
-    let list = libraryExercises;
-    if (list.length === 0) {
-      try {
-        const tree = await api.getLibraryTree();
-        const flattened: any[] = [];
-        tree.forEach((division: any) => {
-          division.children.forEach((muscleGroup: any) => {
-            muscleGroup.exercises.forEach((ex: any) => {
-              flattened.push(ex);
-            });
-          });
-        });
-        list = flattened;
-        setLibraryExercises(flattened);
-      } catch (err) {
-        alert(lang === 'en' ? 'Failed to access exercise database.' : 'فشل الاتصال بقاعدة بيانات التمارين.');
-        return;
-      }
-    }
-
-    const searchTerm = exName.trim().toLowerCase();
-    const match = list.find((ex: any) => 
-      (ex.name_ar && ex.name_ar.toLowerCase() === searchTerm) ||
-      (ex.name_en && ex.name_en.toLowerCase() === searchTerm) ||
-      (ex.name_ar && ex.name_ar.toLowerCase().includes(searchTerm)) ||
-      (ex.name_en && ex.name_en.toLowerCase().includes(searchTerm))
-    );
+    const match = await api.matchExerciseDatabase(exName);
 
     if (match) {
       const matchedName = lang === 'en' ? (match.name_en || match.name_ar) : (match.name_ar || match.name_en);
@@ -749,7 +711,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         name: matchedName,
         targetMuscle: matchedMuscle,
         exerciseTips: matchedTips,
-        imageUrl: match.image_url || '',
+        imageUrl: match.image_url || match.gif_url || '',
         videoUrl: match.video_url || '',
       };
       setImportPreview({ ...importPreview, days: updatedDays });
@@ -761,33 +723,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   };
 
   const handleSmartFillActiveEx = async (ex: any) => {
-    let list = libraryExercises;
-    if (list.length === 0) {
-      try {
-        const tree = await api.getLibraryTree();
-        const flattened: any[] = [];
-        tree.forEach((division: any) => {
-          division.children.forEach((muscleGroup: any) => {
-            muscleGroup.exercises.forEach((item: any) => {
-              flattened.push(item);
-            });
-          });
-        });
-        list = flattened;
-        setLibraryExercises(flattened);
-      } catch (err) {
-        alert(lang === 'en' ? 'Failed to access exercise database.' : 'فشل الاتصال بقاعدة بيانات التمارين.');
-        return;
-      }
-    }
-
-    const searchTerm = ex.name.trim().toLowerCase();
-    const match = list.find((item: any) => 
-      (item.name_ar && item.name_ar.toLowerCase() === searchTerm) ||
-      (item.name_en && item.name_en.toLowerCase() === searchTerm) ||
-      (item.name_ar && item.name_ar.toLowerCase().includes(searchTerm)) ||
-      (item.name_en && item.name_en.toLowerCase().includes(searchTerm))
-    );
+    const match = await api.matchExerciseDatabase(ex.name);
 
     if (match) {
       const matchedName = lang === 'en' ? (match.name_en || match.name_ar) : (match.name_ar || match.name_en);
@@ -800,7 +736,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           name: matchedName,
           targetMuscle: matchedMuscle,
           exerciseTips: matchedTips,
-          imageUrl: match.image_url || null,
+          imageUrl: match.image_url || match.gif_url || null,
           videoUrl: match.video_url || null
         });
         alert(lang === 'en' 
@@ -2975,14 +2911,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 setManualDays(updated);
               };
 
-              const handleRowNameSearch = (val: string, exIdx: number) => {
+              const handleRowNameSearch = async (val: string, exIdx: number) => {
                 updateExercise(exIdx, 'name', val);
-                if (val.trim().length > 1) {
-                  const matches = libraryExercises.filter(ex => 
-                    (ex.name_ar && ex.name_ar.toLowerCase().includes(val.toLowerCase())) ||
-                    (ex.name_en && ex.name_en.toLowerCase().includes(val.toLowerCase())) ||
-                    (ex.muscle_ar && ex.muscle_ar.toLowerCase().includes(val.toLowerCase()))
-                  ).slice(0, 6);
+                if (val.trim().length >= 1) {
+                  const matches = await api.searchExercises(val.trim(), 8);
                   setManualRowSuggestions({ dayIdx, exIdx, list: matches });
                 } else {
                   setManualRowSuggestions(null);
@@ -2992,17 +2924,21 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               const selectRowSuggestion = (sug: any, exIdx: number) => {
                 const updated = [...manualDays];
                 const cleanName = lang === 'ar' ? (sug.name_ar || sug.name_en) : (sug.name_en || sug.name_ar);
-                const muscle = sug.muscle_en || sug.muscle_ar || 'Chest';
-                const equipment = sug.equipment_en || 'Dumbbells';
+                const muscle = sug.muscle_ar || sug.muscle_en || 'الصدر';
+                const equipment = sug.equipment_ar || sug.equipment_en || 'دمبلز';
+                const tips = sug.instructions_ar || sug.instructions_en || '';
+                const img = sug.image_url || sug.gif_url || '';
 
                 updated[dayIdx].exercises[exIdx] = {
                   ...updated[dayIdx].exercises[exIdx],
                   name: cleanName,
                   targetMuscle: muscle,
                   weight: equipment,
+                  exerciseTips: tips,
+                  imageUrl: img,
                   sets: updated[dayIdx].exercises[exIdx].sets || 3,
                   reps: updated[dayIdx].exercises[exIdx].reps || '10-12',
-                };
+                } as any;
                 setManualDays(updated);
                 setManualRowSuggestions(null);
               };

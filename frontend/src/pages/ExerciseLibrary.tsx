@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { supabase } from '../services/supabase';
 import { Info, HelpCircle, LayoutGrid, MapPin, Database, RefreshCw } from 'lucide-react';
 import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
@@ -93,42 +92,11 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
       setLoading(true);
     }
     try {
-      // 1. Direct Supabase Query from 'exercises' table
-      const { data, error } = await supabase.from('exercises').select('*').limit(500);
-      if (error) {
-        console.error('[ExerciseLibrary Supabase Error]:', error);
-      }
-      
-      let list: any[] = [];
-      if (data && data.length > 0) {
-        list = data.map((item: any) => ({
-          id: item.id || item._id,
-          name_en: item.name_en || item.name || 'Exercise',
-          name_ar: item.name_ar || item.name_en || item.name || 'تمرين',
-          muscle_en: item.muscle_en || item.targetMuscle || item.muscle || 'General',
-          muscle_ar: item.muscle_ar || item.muscle_en || 'عام',
-          equipment_en: item.equipment_en || item.equipment || 'Bodyweight',
-          equipment_ar: item.equipment_ar || item.equipment || 'وزن الجسم',
-          category: item.category || 'IRON',
-          level: item.level || 'intermediate',
-          image_url: item.image_url || item.imageUrl || null,
-          video_url: item.video_url || item.videoUrl || null,
-          instructions_en: item.instructions_en || item.tips_en || '',
-          instructions_ar: item.instructions_ar || item.tips_ar || '',
-        }));
-        setIsDbEmpty(false);
-      } else {
-        setIsDbEmpty(true);
-        // Fallback to local rich dataset
-        list = await api.getLibraryTree();
-      }
-
+      const list = await api.getLibraryTree();
       setExercises(list);
-      cacheStore.set('library_tree_flat', list);
+      setIsDbEmpty(list.length === 0);
     } catch (err) {
-      console.error('[ExerciseLibrary] Failed to load exercises from Supabase:', err);
-      const fallback = await api.getLibraryTree();
-      setExercises(fallback);
+      console.error('[ExerciseLibrary] Failed to load exercises:', err);
     } finally {
       setLoading(false);
     }

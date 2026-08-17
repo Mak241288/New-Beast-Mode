@@ -29,6 +29,23 @@ try {
   });
 } catch (err) {
   console.warn('[Supabase] Init warning, creating safe fallback client:', err);
+  
+  const createChainableMock = (): any => {
+    const fn: any = () => createChainableMock();
+    return new Proxy(fn, {
+      get: (_target, prop) => {
+        if (prop === 'then') {
+          return (resolve: any) => resolve({ data: null, error: null });
+        }
+        if (prop === 'single' || prop === 'maybeSingle') {
+          return async () => ({ data: null, error: null });
+        }
+        return createChainableMock();
+      },
+      apply: () => createChainableMock(),
+    });
+  };
+
   clientInstance = {
     auth: {
       getUser: async () => ({ data: { user: null }, error: null }),
@@ -42,20 +59,7 @@ try {
       updateUser: async () => ({ data: { user: null }, error: null }),
       verifyOtp: async () => ({ data: { user: null, session: null }, error: null }),
     },
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: null, error: null }),
-          maybeSingle: async () => ({ data: null, error: null }),
-          order: () => ({ limit: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
-        }),
-        order: () => ({ limit: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
-      }),
-      insert: async () => ({ data: null, error: null }),
-      upsert: async () => ({ data: null, error: null }),
-      update: () => ({ eq: async () => ({ data: null, error: null }) }),
-      delete: () => ({ eq: async () => ({ data: null, error: null }) }),
-    }),
+    from: () => createChainableMock(),
   };
 }
 

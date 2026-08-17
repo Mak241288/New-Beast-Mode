@@ -999,13 +999,32 @@ export const api = {
   },
 
   getLibraryTree: async (): Promise<any[]> => {
+    // 1. Check local cache first for 0ms response
+    const cached = cacheStore.get<any[]>('library_tree_flat');
+    if (cached && cached.length > 50) {
+      return cached;
+    }
+
+    let allExercises: any[] = [];
+
+    // 2. Load from full bundled catalog (4,207 enriched exercises)
     try {
-      const { data, error } = await supabase.from('exercises').select('*').limit(500);
-      if (error) {
-        console.error('[Supabase Exercises Query Error]:', error);
+      const res = await fetch('/exercises_catalog.json');
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json) && json.length > 0) {
+          allExercises = json;
+        }
       }
-      if (data && data.length > 0) {
-        return data.map((item: any) => ({
+    } catch (err) {
+      console.warn('[ExercisesCatalog fetch warn]:', err);
+    }
+
+    // 3. If Supabase has additional or customized exercises, merge them
+    try {
+      const { data: sbData, error: sbErr } = await supabase.from('exercises').select('*').limit(1000);
+      if (!sbErr && sbData && sbData.length > 0) {
+        const sbFormatted = sbData.map((item: any) => ({
           id: item.id || item._id,
           name_en: item.name_en || item.name || 'Exercise',
           name_ar: item.name_ar || item.name_en || item.name || 'تمرين',
@@ -1016,33 +1035,116 @@ export const api = {
           category: item.category || 'IRON',
           level: item.level || 'intermediate',
           image_url: item.image_url || item.imageUrl || null,
-          video_url: item.video_url || item.videoUrl || null,
+          gif_url: item.gif_url || item.videoUrl || null,
           instructions_en: item.instructions_en || item.tips_en || '',
           instructions_ar: item.instructions_ar || item.tips_ar || '',
+          secondary_muscles_en: item.secondary_muscles_en || '',
+          secondary_muscles_ar: item.secondary_muscles_ar || '',
         }));
+
+        if (allExercises.length === 0) {
+          allExercises = sbFormatted;
+        } else {
+          // Merge unique items from Supabase
+          const existingIds = new Set(allExercises.map((e: any) => String(e.id)));
+          sbFormatted.forEach((sbEx: any) => {
+            if (!existingIds.has(String(sbEx.id))) {
+              allExercises.unshift(sbEx);
+            }
+          });
+        }
       }
     } catch (err) {
-      console.error('[Supabase Exercises Fetch Exception]:', err);
+      console.warn('[Supabase Exercises Fetch Exception]:', err);
     }
-    
+
+    if (allExercises.length > 0) {
+      cacheStore.set('library_tree_flat', allExercises);
+      return allExercises;
+    }
+
     // Curated rich exercise library fallback
-    return [
-      { id: 101, name_en: 'Barbell Bench Press', name_ar: 'بنش برس بالبار مستوي', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON' },
-      { id: 102, name_en: 'Incline Dumbbell Press', name_ar: 'بنش مائل دمبلز', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Dumbbells', equipment_ar: 'دمبلز', level: 'intermediate', category: 'IRON' },
-      { id: 103, name_en: 'Cable Chest Flyes', name_ar: 'تجميع الصدر بالكيبل', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON' },
-      { id: 201, name_en: 'Barbell Deadlift', name_ar: 'ديدليفت بالبار', muscle_en: 'Back', muscle_ar: 'الظهر', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'advanced', category: 'IRON' },
-      { id: 202, name_en: 'Lat Pulldown', name_ar: 'سحب ظهر عريض بالكيبل', muscle_en: 'Back', muscle_ar: 'الظهر', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON' },
-      { id: 203, name_en: 'Bent-Over Barbell Row', name_ar: 'تجديف بالبار منحني', muscle_en: 'Back', muscle_ar: 'الظهر', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON' },
-      { id: 301, name_en: 'Barbell Back Squat', name_ar: 'سكوات خلفي بالبار', muscle_en: 'Legs', muscle_ar: 'الأرجل', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON' },
-      { id: 302, name_en: 'Romanian Deadlift', name_ar: 'ديدليفت روماني للهامسترينغ', muscle_en: 'Legs', muscle_ar: 'الأرجل', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON' },
-      { id: 303, name_en: 'Standing Calf Raise', name_ar: 'رفع السمانة واقفاً', muscle_en: 'Legs', muscle_ar: 'الأرجل', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'beginner', category: 'IRON' },
-      { id: 401, name_en: 'Overhead Shoulder Press', name_ar: 'ضغط كتف بالدمبلز جالساً', muscle_en: 'Shoulders', muscle_ar: 'الأكتاف', equipment_en: 'Dumbbells', equipment_ar: 'دمبلز', level: 'intermediate', category: 'IRON' },
-      { id: 402, name_en: 'Dumbbell Lateral Raise', name_ar: 'رفرفة كتف جانبي بالدمبلز', muscle_en: 'Shoulders', muscle_ar: 'الأكتاف', equipment_en: 'Dumbbells', equipment_ar: 'دمبلز', level: 'beginner', category: 'IRON' },
-      { id: 501, name_en: 'Barbell Bicep Curl', name_ar: 'بايسبس كيرل بالبار', muscle_en: 'Arms', muscle_ar: 'الذراعين', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'beginner', category: 'IRON' },
-      { id: 502, name_en: 'Tricep Rope Pushdown', name_ar: 'ترايسبس حبل بالكيبل', muscle_en: 'Arms', muscle_ar: 'الذراعين', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON' },
-      { id: 601, name_en: 'Hanging Leg Raise', name_ar: 'رفع الأرجل على العقلة للبطن', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'intermediate', category: 'IRON' },
-      { id: 602, name_en: 'Plank', name_ar: 'بلانك ثبات', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'beginner', category: 'IRON' },
+    const fallbackList = [
+      { id: 101, name_en: 'Barbell Bench Press', name_ar: 'بنش برس بالبار مستوي', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg' },
+      { id: 102, name_en: 'Incline Dumbbell Press', name_ar: 'بنش مائل دمبلز', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Dumbbells', equipment_ar: 'دمبلز', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Incline_Dumbbell_Press/0.jpg' },
+      { id: 103, name_en: 'Cable Chest Flyes', name_ar: 'تجميع الصدر بالكيبل', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Cable_Crossover/0.jpg' },
+      { id: 201, name_en: 'Barbell Deadlift', name_ar: 'ديدليفت بالبار', muscle_en: 'Back', muscle_ar: 'الظهر', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'advanced', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Barbell_Deadlift/0.jpg' },
+      { id: 202, name_en: 'Lat Pulldown', name_ar: 'سحب ظهر عريض بالكيبل', muscle_en: 'Back', muscle_ar: 'الظهر', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Wide-Grip_Lat_Pulldown/0.jpg' },
+      { id: 203, name_en: 'Bent-Over Barbell Row', name_ar: 'تجديف بالبار منحني', muscle_en: 'Back', muscle_ar: 'الظهر', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Bent_Over_Barbell_Row/0.jpg' },
+      { id: 301, name_en: 'Barbell Back Squat', name_ar: 'سكوات خلفي بالبار', muscle_en: 'Legs', muscle_ar: 'الأرجل', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Barbell_Full_Squat/0.jpg' },
+      { id: 302, name_en: 'Romanian Deadlift', name_ar: 'ديدليفت روماني للهامسترينغ', muscle_en: 'Legs', muscle_ar: 'الأرجل', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Romanian_Deadlift/0.jpg' },
+      { id: 303, name_en: 'Standing Calf Raise', name_ar: 'رفع السمانة واقفاً', muscle_en: 'Legs', muscle_ar: 'الأرجل', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Standing_Calf_Raises/0.jpg' },
+      { id: 401, name_en: 'Overhead Shoulder Press', name_ar: 'ضغط كتف بالدمبلز جالساً', muscle_en: 'Shoulders', muscle_ar: 'الأكتاف', equipment_en: 'Dumbbells', equipment_ar: 'دمبلز', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Seated_Dumbbell_Press/0.jpg' },
+      { id: 402, name_en: 'Dumbbell Lateral Raise', name_ar: 'رفرفة كتف جانبي بالدمبلز', muscle_en: 'Shoulders', muscle_ar: 'الأكتاف', equipment_en: 'Dumbbells', equipment_ar: 'دمبلز', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Side_Lateral_Raise/0.jpg' },
+      { id: 501, name_en: 'Barbell Bicep Curl', name_ar: 'بايسبس كيرل بالبار', muscle_en: 'Arms', muscle_ar: 'الذراعين', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Barbell_Curl/0.jpg' },
+      { id: 502, name_en: 'Tricep Rope Pushdown', name_ar: 'ترايسبس حبل بالكيبل', muscle_en: 'Arms', muscle_ar: 'الذراعين', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg' },
+      { id: 601, name_en: 'Hanging Leg Raise', name_ar: 'رفع الأرجل على العقلة للبطن', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Hanging_Leg_Raise/0.jpg' },
+      { id: 602, name_en: 'Plank', name_ar: 'بلانك ثبات', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Plank/0.jpg' },
     ];
+    cacheStore.set('library_tree_flat', fallbackList);
+    return fallbackList;
+  },
+
+  searchExercises: async (query: string, limit: number = 20): Promise<any[]> => {
+    if (!query || query.trim().length === 0) return [];
+    const trimmed = query.trim().toLowerCase();
+    
+    // Normalize Arabic & English search terms
+    const cleanTerm = trimmed
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u0652]/g, '');
+
+    const catalog = await api.getLibraryTree();
+    
+    const results = catalog.filter((ex: any) => {
+      const nameAr = (ex.name_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const nameEn = (ex.name_en || '').toLowerCase();
+      const muscleAr = (ex.muscle_ar || '').toLowerCase();
+      const muscleEn = (ex.muscle_en || '').toLowerCase();
+      const equipAr = (ex.equipment_ar || '').toLowerCase();
+      const equipEn = (ex.equipment_en || '').toLowerCase();
+
+      return (
+        nameAr.includes(cleanTerm) ||
+        nameEn.includes(trimmed) ||
+        muscleAr.includes(cleanTerm) ||
+        muscleEn.includes(trimmed) ||
+        equipAr.includes(cleanTerm) ||
+        equipEn.includes(trimmed)
+      );
+    });
+
+    return results.slice(0, limit);
+  },
+
+  matchExerciseDatabase: async (name: string): Promise<any | null> => {
+    if (!name || name.trim().length === 0) return null;
+    const clean = name.trim().toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u0652]/g, '');
+
+    const catalog = await api.getLibraryTree();
+    
+    // 1. Exact match
+    const exact = catalog.find((item: any) => {
+      const itemAr = (item.name_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const itemEn = (item.name_en || '').toLowerCase();
+      return itemAr === clean || itemEn === name.trim().toLowerCase();
+    });
+    if (exact) return exact;
+
+    // 2. Substring match
+    const partial = catalog.find((item: any) => {
+      const itemAr = (item.name_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const itemEn = (item.name_en || '').toLowerCase();
+      return itemAr.includes(clean) || clean.includes(itemAr) || itemEn.includes(name.trim().toLowerCase()) || name.trim().toLowerCase().includes(itemEn);
+    });
+
+    return partial || null;
   },
 
   analyzePhysique: async (data: any) => {
