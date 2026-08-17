@@ -367,7 +367,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
               {/* Exercise Image */}
               <div style={{ height: '180px', position: 'relative', background: '#0e111a', overflow: 'hidden' }}>
                 <ExerciseImage
-                  src={ex.image_url}
+                  src={ex.gif_url || ex.image_url}
                   alt={ex.name_en}
                   muscle={ex.muscle_en || ex.muscle_ar}
                 />

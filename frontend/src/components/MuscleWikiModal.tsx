@@ -267,6 +267,11 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
 }) => {
   const [showVideoEmbed, setShowVideoEmbed] = useState(false);
 
+  // Always reset to GIF / image priority when exercise changes
+  useEffect(() => {
+    setShowVideoEmbed(false);
+  }, [exercise?.id, exercise?.name_en]);
+
   // Keyboard Accessibility: Escape key listener & Body Scroll Lock
   useEffect(() => {
     if (!exercise) return;
@@ -590,30 +595,33 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
                   <button
                     onClick={() => setShowVideoEmbed(true)}
                     style={{
-                      background: 'rgba(239, 68, 68, 0.9)',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      backdropFilter: 'blur(8px)',
                       color: '#fff',
-                      border: '1px solid rgba(239, 68, 68, 0.8)',
-                      padding: '6px 12px',
+                      border: '1px solid rgba(239, 68, 68, 0.6)',
+                      padding: '5px 10px',
                       borderRadius: '8px',
                       fontSize: '11px',
-                      fontWeight: 'bold',
+                      fontWeight: '600',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '5px',
-                      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                      transition: 'all 0.2s',
                     }}
                   >
-                    <Play size={13} fill="#fff" />
-                    <span>{isAr ? 'تشغيل الفيديو هنا 🎬' : 'Play In-App Video 🎬'}</span>
+                    <Play size={12} fill="#ef4444" color="#ef4444" />
+                    <span>{isAr ? 'مشاهدة كفيديو 🎬' : 'Watch Video 🎬'}</span>
                   </button>
                   <button
                     onClick={handleOpenVideo}
                     style={{
-                      background: 'rgba(0,0,0,0.8)',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      backdropFilter: 'blur(8px)',
                       color: 'var(--text-secondary)',
                       border: '1px solid rgba(255,255,255,0.15)',
-                      padding: '6px 8px',
+                      padding: '5px 8px',
                       borderRadius: '8px',
                       fontSize: '11px',
                       cursor: 'pointer',
