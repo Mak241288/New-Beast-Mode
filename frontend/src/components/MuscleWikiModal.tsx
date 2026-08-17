@@ -502,9 +502,15 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
             </button>
           </div>
 
-          <h2 id="modal-exercise-title" style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 10px 0', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+          <h2 id="modal-exercise-title" style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 4px 0', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
             {name}
           </h2>
+
+          {isAr && exercise.name_en && (
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px', fontWeight: '600' }}>
+              {exercise.name_en}
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {equipment && (

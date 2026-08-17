@@ -402,6 +402,11 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                   <h4 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
                     {lang === 'en' ? ex.name_en : (ex.name_ar || ex.name_en)}
                   </h4>
+                  {lang === 'ar' && ex.name_en && (
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '500' }}>
+                      {ex.name_en}
+                    </div>
+                  )}
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                     🏋️‍♂️ {lang === 'en' ? ex.equipment_en : (ex.equipment_ar || ex.equipment_en)}
                   </p>
