@@ -19,36 +19,70 @@ import { cacheStore } from './utils/cacheStore';
 
 import './App.css';
 
+const getInitialToken = () => {
+  try {
+    const t = localStorage.getItem('token');
+    if (!t || t === 'null' || t === 'undefined' || t.trim() === '') return null;
+    return t;
+  } catch {
+    return null;
+  }
+};
+
 function App() {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const initialToken = getInitialToken();
+  const [token, setToken] = useState<string | null>(initialToken);
   const [currentView, setCurrentView] = useState<string>(() => {
-    const hash = window.location.hash.replace('#', '');
-    if (['privacy', 'terms', 'about', 'login', 'dashboard', 'myplan', 'library', 'stats', 'profile'].includes(hash)) {
-      return hash;
+    try {
+      const hash = (window.location.hash || '').replace('#', '');
+      const validViews = ['privacy', 'terms', 'about', 'login', 'dashboard', 'myplan', 'library', 'stats', 'profile', 'onboarding'];
+      if (validViews.includes(hash)) {
+        return hash;
+      }
+    } catch {
+      // fallback
     }
-    return token ? 'dashboard' : 'landing';
+    return initialToken ? 'dashboard' : 'landing';
   });
-  const [loading, setLoading] = useState(true);
-  const [lang, setLang] = useState<'ar' | 'en'>(localStorage.getItem('lang') === 'en' ? 'en' : 'ar');
+  const [loading, setLoading] = useState<boolean>(() => !!initialToken);
+  const [lang, setLang] = useState<'ar' | 'en'>(() => {
+    try {
+      return localStorage.getItem('lang') === 'en' ? 'en' : 'ar';
+    } catch {
+      return 'ar';
+    }
+  });
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
 
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
-    localStorage.setItem('lang', newLang);
+    try {
+      localStorage.setItem('lang', newLang);
+    } catch {
+      // Ignore
+    }
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
   const navigateTo = (view: string) => {
     setCurrentView(view);
-    window.history.pushState({ view }, '', `#${view}`);
+    try {
+      window.history.pushState({ view }, '', `#${view}`);
+    } catch {
+      // Ignore
+    }
   };
 
   useEffect(() => {
     // Listen to Supabase auth state changes (OAuth redirects, tokens, signins)
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session?.access_token) {
         setToken(session.access_token);
-        localStorage.setItem('token', session.access_token);
+        try {
+          localStorage.setItem('token', session.access_token);
+        } catch {
+          // Ignore
+        }
       }
     });
 
@@ -60,7 +94,11 @@ function App() {
       }
     };
 
-    window.history.replaceState({ view: currentView }, '', `#${currentView}`);
+    try {
+      window.history.replaceState({ view: currentView }, '', `#${currentView}`);
+    } catch {
+      // Ignore
+    }
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
@@ -108,11 +146,15 @@ function App() {
         }
       }
     } catch (err: any) {
-      console.error('[App] checkStatus error:', err);
+      console.warn('[App] checkStatus warning:', err);
       if (err.status === 401) {
         handleLogout();
       } else {
-        setInitError(err.message || (lang === 'en' ? 'Unable to load workspace profile.' : 'تعذر تحميل بيانات المستخدم.'));
+        // Fallback gracefully without blocking the user
+        const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about'];
+        if (!validViews.includes(currentView)) {
+          setCurrentView('dashboard');
+        }
       }
     } finally {
       setLoading(false);
