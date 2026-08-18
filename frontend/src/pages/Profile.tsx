@@ -64,6 +64,11 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة (Resistance Bands)' },
     { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية (Pull-up Bar)' },
     { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات (Cable Machine)' },
+    { id: 'kettlebells', label: lang === 'en' ? 'Kettlebells' : 'كتلبل (Kettlebells)' },
+    { id: 'trx', label: lang === 'en' ? 'Suspension / TRX Straps' : 'أحزمة تعليق TRX' },
+    { id: 'swiss_ball', label: lang === 'en' ? 'Exercise / Swiss Ball' : 'كرة التوازن السويسرية' },
+    { id: 'medicine_ball', label: lang === 'en' ? 'Medicine Ball' : 'الكرة الطبية (Medicine Ball)' },
+    { id: 'foam_roller', label: lang === 'en' ? 'Foam Roller & Recovery' : 'فوم رولر واستشفاء' },
   ];
 
   const [loading, setLoading] = useState(() => !cachedProfile);

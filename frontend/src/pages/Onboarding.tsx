@@ -53,15 +53,24 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
     { id: 'bands', label: lang === 'en' ? 'Resistance Bands' : 'حبال مقاومة (Resistance Bands)' },
     { id: 'pullup', label: lang === 'en' ? 'Pull-up Bar' : 'عقلة منزلية (Pull-up Bar)' },
     { id: 'cables', label: lang === 'en' ? 'Cable Machine' : 'جهاز كيبل/بكرات (Cable Machine)' },
+    { id: 'kettlebells', label: lang === 'en' ? 'Kettlebells' : 'كتلبل (Kettlebells)' },
+    { id: 'trx', label: lang === 'en' ? 'Suspension / TRX Straps' : 'أحزمة تعليق TRX' },
+    { id: 'swiss_ball', label: lang === 'en' ? 'Exercise / Swiss Ball' : 'كرة التوازن السويسرية' },
+    { id: 'medicine_ball', label: lang === 'en' ? 'Medicine Ball' : 'الكرة الطبية (Medicine Ball)' },
+    { id: 'foam_roller', label: lang === 'en' ? 'Foam Roller & Recovery' : 'فوم رولر واستشفاء' },
   ];
 
   const muscleGroups = [
     { id: 'chest', label: lang === 'en' ? 'Chest' : 'الصدر' },
-    { id: 'back', label: lang === 'en' ? 'Back' : 'الظهر' },
+    { id: 'back', label: lang === 'en' ? 'Back & Lats' : 'الظهر واللاتس' },
     { id: 'shoulders', label: lang === 'en' ? 'Shoulders' : 'الأكتاف' },
-    { id: 'legs', label: lang === 'en' ? 'Legs' : 'الأرجل' },
-    { id: 'arms', label: lang === 'en' ? 'Arms' : 'الذراعين' },
-    { id: 'abs', label: lang === 'en' ? 'Abs/Core' : 'البطن والوسط' },
+    { id: 'traps', label: lang === 'en' ? 'Traps & Neck' : 'الترابيس والرقبة' },
+    { id: 'arms', label: lang === 'en' ? 'Arms (Biceps/Triceps)' : 'الذراعين (باي وتراي)' },
+    { id: 'forearms', label: lang === 'en' ? 'Forearms & Grip' : 'السواعد والقبضة' },
+    { id: 'abs', label: lang === 'en' ? 'Abs & Core' : 'البطن والجذع' },
+    { id: 'legs', label: lang === 'en' ? 'Legs (Quads/Hamstrings)' : 'الأرجل (أفخاذ)' },
+    { id: 'glutes', label: lang === 'en' ? 'Glutes & Hips' : 'الأرداف والمؤخرة' },
+    { id: 'calves', label: lang === 'en' ? 'Calves' : 'السمانة والبطات' },
   ];
 
   const handleMuscleChange = (id: string) => {
