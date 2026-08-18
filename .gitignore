@@ -10,6 +10,7 @@ out/
 # Database files & Backups (SQLite)
 backend/prisma/*.db
 backend/prisma/*.db-journal
+backend/src/staging/*.db
 backend/backups/
 *.db.bak
 

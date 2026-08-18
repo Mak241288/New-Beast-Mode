@@ -40,11 +40,14 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
 
   const equipments = [
     { id: 'ALL', label: lang === 'en' ? 'All Equipment' : 'كل الأدوات' },
-    { id: 'dumbbell', label: lang === 'en' ? 'Dumbbells' : 'دمبلز' },
-    { id: 'barbell', label: lang === 'en' ? 'Barbell' : 'بار' },
-    { id: 'bodyweight', label: lang === 'en' ? 'Bodyweight' : 'وزن الجسم' },
-    { id: 'cable', label: lang === 'en' ? 'Cables' : 'جهاز كيبل' },
-    { id: 'band', label: lang === 'en' ? 'Bands' : 'حبال مقاومة' },
+    { id: 'home', label: lang === 'en' ? '🏠 Home Friendly' : '🏠 تمارين منزلية' },
+    { id: 'bodyweight', label: lang === 'en' ? '🤸 Bodyweight' : '🤸 وزن الجسم' },
+    { id: 'dumbbell', label: lang === 'en' ? '🏋️ Dumbbells' : '🏋️ دمبلز' },
+    { id: 'band', label: lang === 'en' ? '🎗️ Bands' : '🎗️ حبال مقاومة' },
+    { id: 'kettlebell', label: lang === 'en' ? '🔔 Kettlebell' : '🔔 كتلبل' },
+    { id: 'barbell', label: lang === 'en' ? '⚡ Barbell' : '⚡ بار' },
+    { id: 'cable', label: lang === 'en' ? '🔌 Cables' : '🔌 كيبل' },
+    { id: 'machine', label: lang === 'en' ? '🏢 Machines' : '🏢 أجهزة الجيم' },
   ];
 
   const difficulties = [
@@ -176,6 +179,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     const equipAr = (ex.equipment_ar || '').toLowerCase();
     const matchesEquipment =
       selectedEquipment === 'ALL' ||
+      (selectedEquipment === 'home' && (ex.isHomeFriendly || ['bodyweight', 'dumbbell', 'band', 'kettlebell', 'mat'].some(k => equipEn.includes(k)))) ||
       equipEn.includes(selectedEquipment) ||
       equipAr.includes(selectedEquipment) ||
       (selectedEquipment === 'bodyweight' && (equipEn.includes('body only') || equipEn.includes('none')));
@@ -193,11 +197,16 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
       <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', margin: 0 }}>
-              {lang === 'en' ? 'Exercise Library 📚' : 'مكتبة التمارين الرياضية 📚'}
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ fontSize: '22px', fontWeight: '800', margin: 0 }}>
+                {lang === 'en' ? 'Exercise Library 📚' : 'مكتبة التمارين الرياضية 📚'}
+              </h1>
+              <span className="badge" style={{ background: 'rgba(0, 210, 255, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', color: 'var(--primary)', fontSize: '11px', padding: '2px 8px', fontWeight: 'bold' }}>
+                {lang === 'en' ? `${filteredExercises.length} Exercises` : `${filteredExercises.length} تمرين متاح`}
+              </span>
+            </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
-              {lang === 'en' ? 'Browse exercises via interactive body map or grid view' : 'تصفح التمارين بواسطة خريطة تشريح العضلات التفاعلية أو العرض الشبكي'}
+              {lang === 'en' ? 'Browse 4,298 exercises via interactive body map, video tutorials & MuscleWiki' : 'تصفح 4,298 تمرين رياضي معتمد مع الفيديوهات والتشريح ودليل MuscleWiki'}
             </p>
           </div>
 

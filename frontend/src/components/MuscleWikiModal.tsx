@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, memo } from 'react';
-import { X, Play, CheckCircle2, Dumbbell, ShieldAlert, Youtube, Activity } from 'lucide-react';
+import { X, Play, CheckCircle2, Dumbbell, ShieldAlert, Youtube, Activity, Globe } from 'lucide-react';
 import { ExerciseImage } from './ExerciseImage';
 
 export interface ExerciseItem {
@@ -23,11 +23,14 @@ export interface ExerciseItem {
   common_mistakes_ar?: string | string[];
   youtube_url?: string;
   video_url?: string;
+  musclewiki_url?: string;
   image_url?: string;
   gif_url?: string;
   sets?: number | string;
   reps?: string;
   weight?: string;
+  isHomeFriendly?: boolean;
+  homeCategory?: string;
 }
 
 interface MuscleWikiModalProps {
@@ -518,6 +521,11 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
                 🎯 {primaryMuscle}
               </span>
             )}
+            {exercise.isHomeFriendly && (
+              <span style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.35)', color: '#10b981', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }}>
+                🏠 {isAr ? 'تمرين منزلي' : 'Home Friendly'}
+              </span>
+            )}
           </div>
         </div>
 
@@ -634,10 +642,21 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             className="secondary-btn"
-            style={{ flex: 1, justifyContent: 'center', textDecoration: 'none', padding: '12px', fontSize: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ flex: 1, minWidth: '160px', justifyContent: 'center', textDecoration: 'none', padding: '12px', fontSize: '13px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Play size={16} />
-            <span>{isAr ? 'مشاهدة فيديو يوتيوب 🔴' : 'Watch on YouTube 🔴'}</span>
+            <Play size={15} />
+            <span>{isAr ? 'فيديو يوتيوب 🔴' : 'YouTube 🔴'}</span>
+          </a>
+
+          <a
+            href={exercise.musclewiki_url || 'https://musclewiki.com'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="secondary-btn"
+            style={{ flex: 1, minWidth: '160px', justifyContent: 'center', textDecoration: 'none', padding: '12px', fontSize: '13px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(0, 210, 255, 0.3)', background: 'rgba(0, 210, 255, 0.08)', color: 'var(--primary)' }}
+          >
+            <Globe size={15} />
+            <span>{isAr ? 'دليل MuscleWiki 🌐' : 'MuscleWiki 🌐'}</span>
           </a>
 
           {onAddToPlan && (
