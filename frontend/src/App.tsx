@@ -76,8 +76,51 @@ function App() {
   };
 
   useEffect(() => {
-    // Listen to Supabase auth state changes (OAuth redirects, tokens, signins)
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+    // 1. Check initial active session (handles OAuth redirect callback hash/query)
+    const initSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!error && session?.access_token) {
+          setToken(session.access_token);
+          try {
+            localStorage.setItem('token', session.access_token);
+          } catch {
+            // Ignore
+          }
+
+          if (session.user) {
+            const existingProfile: any = cacheStore.get('user_profile') || {};
+            const cleanEmail = session.user.email?.trim().toLowerCase() || existingProfile.email || '';
+            const cleanName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || cleanEmail.split('@')[0] || existingProfile.name || 'Beast Athlete';
+
+            const profile = {
+              ...existingProfile,
+              email: cleanEmail,
+              name: cleanName,
+              isGoogleLinked: true,
+              googleEmail: cleanEmail,
+              googleId: session.user.id,
+              onboardingCompleted: existingProfile.onboardingCompleted ?? true,
+              updatedAt: new Date().toISOString(),
+            };
+            cacheStore.set('user_profile', profile);
+          }
+
+          // Clean OAuth access token fragment from URL for clean routing
+          if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+            window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
+            setCurrentView('dashboard');
+          }
+        }
+      } catch (err) {
+        console.warn('[Supabase Auth Init Error]:', err);
+      }
+    };
+
+    initSession();
+
+    // 2. Listen to Supabase auth state changes (OAuth redirects, tokens, signins)
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       if (session?.access_token) {
         setToken(session.access_token);
         try {
@@ -85,6 +128,42 @@ function App() {
         } catch {
           // Ignore
         }
+
+        if (session.user) {
+          const existingProfile: any = cacheStore.get('user_profile') || {};
+          const cleanEmail = session.user.email?.trim().toLowerCase() || existingProfile.email || '';
+          const cleanName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || cleanEmail.split('@')[0] || existingProfile.name || 'Beast Athlete';
+
+          const profile = {
+            ...existingProfile,
+            email: cleanEmail,
+            name: cleanName,
+            isGoogleLinked: true,
+            googleEmail: cleanEmail,
+            googleId: session.user.id,
+            onboardingCompleted: existingProfile.onboardingCompleted ?? true,
+            updatedAt: new Date().toISOString(),
+          };
+          cacheStore.set('user_profile', profile);
+          try {
+            await supabase.from('User').upsert(profile, { onConflict: 'email' });
+          } catch {
+            // Non-fatal
+          }
+        }
+
+        if (event === 'SIGNED_IN') {
+          setCurrentView('dashboard');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setToken(null);
+        try {
+          localStorage.removeItem('token');
+        } catch {
+          // Ignore
+        }
+        cacheStore.clearAll();
+        setCurrentView('landing');
       }
     });
 
@@ -243,7 +322,7 @@ function App() {
       return <TermsOfService lang={lang} onBack={() => navigateTo('landing')} />;
     }
     if (currentView === 'login') {
-      return <Login onSuccess={handleLoginSuccess} onBack={() => navigateTo('landing')} onNavigateToLegal={(page) => navigateTo(page)} />;
+      return <Login lang={lang} onSuccess={handleLoginSuccess} onBack={() => navigateTo('landing')} onNavigateToLegal={(page) => navigateTo(page)} />;
     }
     return (
       <LandingPage
