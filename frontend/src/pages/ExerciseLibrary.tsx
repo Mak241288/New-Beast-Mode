@@ -31,11 +31,15 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
   const muscleGroups = [
     { id: 'ALL', label: lang === 'en' ? 'All Muscles' : 'كل العضلات' },
     { id: 'chest', label: lang === 'en' ? 'Chest' : 'الصدر' },
-    { id: 'back', label: lang === 'en' ? 'Back' : 'الظهر' },
+    { id: 'back', label: lang === 'en' ? 'Back & Lats' : 'الظهر واللاتس' },
     { id: 'shoulders', label: lang === 'en' ? 'Shoulders' : 'الأكتاف' },
-    { id: 'legs', label: lang === 'en' ? 'Legs' : 'الأرجل' },
-    { id: 'arms', label: lang === 'en' ? 'Arms' : 'الذراعين' },
-    { id: 'abs', label: lang === 'en' ? 'Abs' : 'البطن' },
+    { id: 'biceps', label: lang === 'en' ? 'Biceps' : 'البايسبس' },
+    { id: 'triceps', label: lang === 'en' ? 'Triceps' : 'الترايسبس' },
+    { id: 'legs', label: lang === 'en' ? 'Legs & Glutes' : 'الأرجل والأرداف' },
+    { id: 'calves', label: lang === 'en' ? 'Calves' : 'السمانة والبطات' },
+    { id: 'forearms', label: lang === 'en' ? 'Forearms' : 'السواعد' },
+    { id: 'abs', label: lang === 'en' ? 'Abs & Core' : 'البطن والجذع' },
+    { id: 'cardio', label: lang === 'en' ? 'Cardio & HIIT' : 'كارديو ولياقة' },
   ];
 
   const equipments = [
@@ -45,9 +49,11 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     { id: 'dumbbell', label: lang === 'en' ? '🏋️ Dumbbells' : '🏋️ دمبلز' },
     { id: 'band', label: lang === 'en' ? '🎗️ Bands' : '🎗️ حبال مقاومة' },
     { id: 'kettlebell', label: lang === 'en' ? '🔔 Kettlebell' : '🔔 كتلبل' },
-    { id: 'barbell', label: lang === 'en' ? '⚡ Barbell' : '⚡ بار' },
+    { id: 'barbell', label: lang === 'en' ? '⚡ Barbell' : '⚡ بار وأوزان' },
     { id: 'cable', label: lang === 'en' ? '🔌 Cables' : '🔌 كيبل' },
     { id: 'machine', label: lang === 'en' ? '🏢 Machines' : '🏢 أجهزة الجيم' },
+    { id: 'trx', label: lang === 'en' ? '🪢 TRX' : '🪢 أحزمة TRX' },
+    { id: 'mat', label: lang === 'en' ? '🧘 Mat & Yoga' : '🧘 فرشة ويوغا' },
   ];
 
   const difficulties = [
@@ -169,17 +175,24 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
       selectedMuscle === 'ALL' ||
       muscleEn === selectedMuscle ||
       muscleAr.includes(selectedMuscle) ||
-      (selectedMuscle === 'back' && (muscleEn.includes('back') || muscleEn.includes('lat'))) ||
-      (selectedMuscle === 'shoulders' && (muscleEn.includes('shoulder') || muscleEn.includes('trap'))) ||
-      (selectedMuscle === 'arms' && (muscleEn.includes('bicep') || muscleEn.includes('tricep') || muscleEn.includes('arm') || muscleEn.includes('forearm'))) ||
-      (selectedMuscle === 'legs' && (muscleEn.includes('quad') || muscleEn.includes('hamstring') || muscleEn.includes('calf') || muscleEn.includes('glute') || muscleEn.includes('leg') || muscleEn.includes('adductor') || muscleEn.includes('abductor'))) ||
-      (selectedMuscle === 'abs' && (muscleEn.includes('ab') || muscleEn.includes('core')));
+      (selectedMuscle === 'chest' && (muscleEn.includes('chest') || muscleEn.includes('pectoral'))) ||
+      (selectedMuscle === 'back' && (muscleEn.includes('back') || muscleEn.includes('lat') || muscleEn.includes('rhomboid') || muscleEn.includes('trapezius'))) ||
+      (selectedMuscle === 'shoulders' && (muscleEn.includes('shoulder') || muscleEn.includes('delt') || muscleEn.includes('trap'))) ||
+      (selectedMuscle === 'biceps' && (muscleEn.includes('bicep') || muscleEn.includes('brachii'))) ||
+      (selectedMuscle === 'triceps' && muscleEn.includes('tricep')) ||
+      (selectedMuscle === 'forearms' && (muscleEn.includes('forearm') || muscleEn.includes('wrist'))) ||
+      (selectedMuscle === 'legs' && (muscleEn.includes('quad') || muscleEn.includes('hamstring') || muscleEn.includes('glute') || muscleEn.includes('leg') || muscleEn.includes('adductor') || muscleEn.includes('abductor'))) ||
+      (selectedMuscle === 'calves' && (muscleEn.includes('calf') || muscleEn.includes('calves') || muscleEn.includes('soleus'))) ||
+      (selectedMuscle === 'abs' && (muscleEn.includes('ab') || muscleEn.includes('core') || muscleEn.includes('oblique'))) ||
+      (selectedMuscle === 'cardio' && (muscleEn.includes('cardio') || muscleEn.includes('hiit') || (ex.category || '').toLowerCase().includes('cardio')));
 
     const equipEn = (ex.equipment_en || '').toLowerCase();
     const equipAr = (ex.equipment_ar || '').toLowerCase();
     const matchesEquipment =
       selectedEquipment === 'ALL' ||
       (selectedEquipment === 'home' && (ex.isHomeFriendly || ['bodyweight', 'dumbbell', 'band', 'kettlebell', 'mat'].some(k => equipEn.includes(k)))) ||
+      (selectedEquipment === 'trx' && (equipEn.includes('trx') || equipEn.includes('suspension') || nameEn.includes('trx'))) ||
+      (selectedEquipment === 'mat' && (equipEn.includes('mat') || equipEn.includes('yoga') || equipEn.includes('floor'))) ||
       equipEn.includes(selectedEquipment) ||
       equipAr.includes(selectedEquipment) ||
       (selectedEquipment === 'bodyweight' && (equipEn.includes('body only') || equipEn.includes('none')));
