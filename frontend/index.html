@@ -56,12 +56,21 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Clean and safe Service Worker initialization (bypasses localhost dev to prevent stale cache white screens)
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('[Service Worker] Registered successfully:', reg.scope))
-            .catch((err) => console.error('[Service Worker] Registration failed:', err));
-        });
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) {
+              registration.unregister();
+            }
+          });
+        } else {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js')
+              .then(function(reg) { console.log('[Service Worker] Registered successfully:', reg.scope); })
+              .catch(function(err) { console.warn('[Service Worker] Registration skipped:', err); });
+          });
+        }
       }
     </script>
   </body>

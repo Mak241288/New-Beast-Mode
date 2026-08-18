@@ -29,6 +29,18 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const url = new URL(event.request.url);
+  // Bypass Vite dev server, hot module reload, and local development requests
+  if (
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.pathname.startsWith('/@vite') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/')
+  ) {
+    return;
+  }
+
   // Cache-first for static assets, network-first with cache fallback for APIs/pages
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
