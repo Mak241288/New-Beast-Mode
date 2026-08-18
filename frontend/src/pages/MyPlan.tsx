@@ -2621,7 +2621,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       {lang === 'en' ? 'Custom Workout Plan Architect' : 'منشئ ومصمم الجدول التدريبي المتقدم ✍️'}
                     </h2>
                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
-                      {lang === 'en' ? 'Design days 1–7 freely, search 4,200+ exercises with instant autocomplete.' : 'صمم أيامك التدريبية بحرية، مع بحث فوري واقتراحات تلقائية من 4,207 تمرين.'}
+                      {lang === 'en' ? 'Design days 1–7 freely, search 4,298+ exercises with instant autocomplete.' : 'صمم أيامك التدريبية بحرية، مع بحث فوري واقتراحات تلقائية من 4,298 تمرين.'}
                     </p>
                   </div>
                 </div>
@@ -3223,7 +3223,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                 <div style={{ position: 'relative' }}>
                                   <input
                                     type="text"
-                                    placeholder={lang === 'en' ? 'Search 4,200+ exercises...' : 'ابحث بين 4,207 تمرين (بنش، بلانك...)'}
+                                    placeholder={lang === 'en' ? 'Search 4,298+ exercises...' : 'ابحث بين 4,298 تمرين (بنش، بلانك...)'}
                                     value={ex.name}
                                     onChange={(e) => handleRowNameSearch(e.target.value, exIdx)}
                                     onFocus={() => {

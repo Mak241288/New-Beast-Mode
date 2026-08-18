@@ -271,7 +271,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Water, Sleep & Badges' : 'متتبع الماء والنوم والأوسمة'}</div>
           </div>
           <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(139, 92, 246, 0.25)', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.06), rgba(255,255,255,0.02))' }}>
-            <div style={{ fontSize: '24px', fontWeight: '900', color: '#8b5cf6' }}>+4,207</div>
+            <div style={{ fontSize: '24px', fontWeight: '900', color: '#8b5cf6' }}>+4,298</div>
             <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Enriched Exercises' : 'تمرين رياضي موثق'}</div>
           </div>
           <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.06), rgba(255,255,255,0.02))' }}>
@@ -411,12 +411,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </p>
           </div>
 
-          {/* Card 8: Interactive Anatomy & 4,207+ Exercises */}
+          {/* Card 8: Interactive Anatomy & 4,298+ Exercises */}
           <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Activity size={24} />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? '4,207+ Exercises & 3D Muscle Anatomy' : 'موسوعة 4,207 تمرين وخريطة التشريح'}</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? '4,298+ Exercises & 3D Muscle Anatomy' : 'موسوعة 4,298 تمرين وخريطة التشريح'}</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
               {isEn
                 ? 'Click any muscle zone to discover targeted exercises with biomechanical cues, common mistakes, and 3-tier reliable animated demonstrations.'

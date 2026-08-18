@@ -20,7 +20,7 @@ export const AboutUs: React.FC<AboutUsProps> = ({ lang, onBack, onNavigateToWork
     },
     {
       icon: <Database size={24} color="var(--secondary)" />,
-      title: isEn ? '4,207+ Enriched Exercise Encyclopedia' : 'موسوعة التمارين الرياضية (4,207 تمرين)',
+      title: isEn ? '4,298+ Enriched Exercise Encyclopedia' : 'موسوعة التمارين الرياضية (4,298 تمرين)',
       desc: isEn
         ? 'Massive exercise library indexing movement mechanics, muscle targets, animated visual demos, and MuscleWiki instructions with 3-tier offline/CDN fallback resilience.'
         : 'أضخم قاعدة بيانات عربية/إنجليزية مصنفة تشريحياً، مزودة برسوم حركية متحركة وتوجيهات أداء دقيقة مع نظام بدائل مرئي ثلاثي الطبقات يضمن ظهور الصور دائماً.'

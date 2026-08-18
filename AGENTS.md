@@ -28,7 +28,7 @@ New BeastMode/
 │   └── .env.example           # Environment variable template
 │
 └── workout_generator_python/  # Python Engine & Exercises SQLite DB
-    ├── database/              # exercises.db (4,207 enriched exercises)
+    ├── database/              # exercises.db (4,298 enriched exercises)
     └── src/                   # Database importer, resolver, and indexing scripts
 ```
 
