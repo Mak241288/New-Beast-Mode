@@ -33,12 +33,15 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     { id: 'chest', label: lang === 'en' ? 'Chest' : 'الصدر' },
     { id: 'back', label: lang === 'en' ? 'Back & Lats' : 'الظهر واللاتس' },
     { id: 'shoulders', label: lang === 'en' ? 'Shoulders' : 'الأكتاف' },
+    { id: 'traps', label: lang === 'en' ? 'Traps & Neck' : 'الترابيس والرقبة' },
     { id: 'biceps', label: lang === 'en' ? 'Biceps' : 'البايسبس' },
     { id: 'triceps', label: lang === 'en' ? 'Triceps' : 'الترايسبس' },
-    { id: 'legs', label: lang === 'en' ? 'Legs & Glutes' : 'الأرجل والأرداف' },
-    { id: 'calves', label: lang === 'en' ? 'Calves' : 'السمانة والبطات' },
-    { id: 'forearms', label: lang === 'en' ? 'Forearms' : 'السواعد' },
+    { id: 'forearms', label: lang === 'en' ? 'Forearms' : 'السواعد والقبضة' },
     { id: 'abs', label: lang === 'en' ? 'Abs & Core' : 'البطن والجذع' },
+    { id: 'quads', label: lang === 'en' ? 'Quads (Front)' : 'الفخذ الأمامي' },
+    { id: 'hamstrings', label: lang === 'en' ? 'Hamstrings (Back)' : 'الفخذ الخلفي' },
+    { id: 'glutes', label: lang === 'en' ? 'Glutes & Hips' : 'الأرداف والمؤخرة' },
+    { id: 'calves', label: lang === 'en' ? 'Calves' : 'السمانة والبطات' },
     { id: 'cardio', label: lang === 'en' ? 'Cardio & HIIT' : 'كارديو ولياقة' },
   ];
 
@@ -47,13 +50,18 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     { id: 'home', label: lang === 'en' ? '🏠 Home Friendly' : '🏠 تمارين منزلية' },
     { id: 'bodyweight', label: lang === 'en' ? '🤸 Bodyweight' : '🤸 وزن الجسم' },
     { id: 'dumbbell', label: lang === 'en' ? '🏋️ Dumbbells' : '🏋️ دمبلز' },
-    { id: 'band', label: lang === 'en' ? '🎗️ Bands' : '🎗️ حبال مقاومة' },
+    { id: 'barbell', label: lang === 'en' ? '⚡ Barbell & EZ' : '⚡ بار وأوزان' },
+    { id: 'band', label: lang === 'en' ? '🎗️ Resistance Bands' : '🎗️ حبال مقاومة' },
     { id: 'kettlebell', label: lang === 'en' ? '🔔 Kettlebell' : '🔔 كتلبل' },
-    { id: 'barbell', label: lang === 'en' ? '⚡ Barbell' : '⚡ بار وأوزان' },
-    { id: 'cable', label: lang === 'en' ? '🔌 Cables' : '🔌 كيبل' },
-    { id: 'machine', label: lang === 'en' ? '🏢 Machines' : '🏢 أجهزة الجيم' },
-    { id: 'trx', label: lang === 'en' ? '🪢 TRX' : '🪢 أحزمة TRX' },
-    { id: 'mat', label: lang === 'en' ? '🧘 Mat & Yoga' : '🧘 فرشة ويوغا' },
+    { id: 'cable', label: lang === 'en' ? '🔌 Cables' : '🔌 كوابل الجيم' },
+    { id: 'machine', label: lang === 'en' ? '🏢 Gym Machines' : '🏢 أجهزة الجيم' },
+    { id: 'pullup', label: lang === 'en' ? '🪜 Pull-up Bar & Dip' : '🪜 عقلة ومتوازي' },
+    { id: 'trx', label: lang === 'en' ? '🪢 Suspension & TRX' : '🪢 أحزمة TRX' },
+    { id: 'ball', label: lang === 'en' ? '⚽ Swiss / Exercise Ball' : '⚽ كرة سويسرية' },
+    { id: 'medicine_ball', label: lang === 'en' ? '🏐 Medicine Ball' : '🏐 الكرة الطبية' },
+    { id: 'bench', label: lang === 'en' ? '🛋️ Workout Bench' : '🛋️ بنش تدريب' },
+    { id: 'mat', label: lang === 'en' ? '🧘 Mat & Floor' : '🧘 فرشة وأرضية' },
+    { id: 'foam_roller', label: lang === 'en' ? '🪵 Foam Roller' : '🪵 فوم رولر واستشفاء' },
   ];
 
   const difficulties = [
@@ -175,27 +183,42 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
       selectedMuscle === 'ALL' ||
       muscleEn === selectedMuscle ||
       muscleAr.includes(selectedMuscle) ||
-      (selectedMuscle === 'chest' && (muscleEn.includes('chest') || muscleEn.includes('pectoral'))) ||
-      (selectedMuscle === 'back' && (muscleEn.includes('back') || muscleEn.includes('lat') || muscleEn.includes('rhomboid') || muscleEn.includes('trapezius'))) ||
-      (selectedMuscle === 'shoulders' && (muscleEn.includes('shoulder') || muscleEn.includes('delt') || muscleEn.includes('trap'))) ||
-      (selectedMuscle === 'biceps' && (muscleEn.includes('bicep') || muscleEn.includes('brachii'))) ||
-      (selectedMuscle === 'triceps' && muscleEn.includes('tricep')) ||
-      (selectedMuscle === 'forearms' && (muscleEn.includes('forearm') || muscleEn.includes('wrist'))) ||
-      (selectedMuscle === 'legs' && (muscleEn.includes('quad') || muscleEn.includes('hamstring') || muscleEn.includes('glute') || muscleEn.includes('leg') || muscleEn.includes('adductor') || muscleEn.includes('abductor'))) ||
-      (selectedMuscle === 'calves' && (muscleEn.includes('calf') || muscleEn.includes('calves') || muscleEn.includes('soleus'))) ||
-      (selectedMuscle === 'abs' && (muscleEn.includes('ab') || muscleEn.includes('core') || muscleEn.includes('oblique'))) ||
-      (selectedMuscle === 'cardio' && (muscleEn.includes('cardio') || muscleEn.includes('hiit') || (ex.category || '').toLowerCase().includes('cardio')));
+      (selectedMuscle === 'chest' && (muscleEn.includes('chest') || muscleEn.includes('pectoral') || muscleAr.includes('صدر'))) ||
+      (selectedMuscle === 'back' && (muscleEn.includes('back') || muscleEn.includes('lat') || muscleEn.includes('rhomboid') || muscleEn.includes('trapezius') || muscleAr.includes('ظهر'))) ||
+      (selectedMuscle === 'shoulders' && (muscleEn.includes('shoulder') || muscleEn.includes('delt') || muscleAr.includes('كتف'))) ||
+      (selectedMuscle === 'traps' && (muscleEn.includes('trap') || muscleEn.includes('neck') || nameEn.includes('shrug') || muscleAr.includes('ترابيس') || muscleAr.includes('رقبة'))) ||
+      (selectedMuscle === 'biceps' && (muscleEn.includes('bicep') || muscleEn.includes('brachii') || muscleAr.includes('باي'))) ||
+      (selectedMuscle === 'triceps' && (muscleEn.includes('tricep') || muscleAr.includes('تراي'))) ||
+      (selectedMuscle === 'forearms' && (muscleEn.includes('forearm') || muscleEn.includes('wrist') || muscleEn.includes('grip') || muscleAr.includes('ساعد'))) ||
+      (selectedMuscle === 'quads' && (muscleEn.includes('quad') || nameEn.includes('squat') || nameEn.includes('lunge') || nameEn.includes('leg extension') || muscleAr.includes('أمامي'))) ||
+      (selectedMuscle === 'hamstrings' && (muscleEn.includes('hamstring') || nameEn.includes('deadlift') || nameEn.includes('leg curl') || nameEn.includes('rdl') || muscleAr.includes('خلفي'))) ||
+      (selectedMuscle === 'glutes' && (muscleEn.includes('glute') || nameEn.includes('hip thrust') || nameEn.includes('bridge') || muscleAr.includes('أرداف') || muscleAr.includes('مؤخرة'))) ||
+      (selectedMuscle === 'legs' && (muscleEn.includes('quad') || muscleEn.includes('hamstring') || muscleEn.includes('glute') || muscleEn.includes('leg') || muscleEn.includes('calf') || muscleAr.includes('رجل') || muscleAr.includes('فخذ'))) ||
+      (selectedMuscle === 'calves' && (muscleEn.includes('calf') || muscleEn.includes('calves') || muscleEn.includes('soleus') || nameEn.includes('calf') || muscleAr.includes('سمانة') || muscleAr.includes('بطات'))) ||
+      (selectedMuscle === 'abs' && (muscleEn.includes('ab') || muscleEn.includes('core') || muscleEn.includes('oblique') || muscleEn.includes('plank') || muscleAr.includes('بطن') || muscleAr.includes('جذع'))) ||
+      (selectedMuscle === 'cardio' && (muscleEn.includes('cardio') || muscleEn.includes('hiit') || (ex.category || '').toLowerCase().includes('cardio') || (ex.category || '').toLowerCase().includes('plyometrics') || muscleAr.includes('كارديو')));
 
     const equipEn = (ex.equipment_en || '').toLowerCase();
     const equipAr = (ex.equipment_ar || '').toLowerCase();
     const matchesEquipment =
       selectedEquipment === 'ALL' ||
-      (selectedEquipment === 'home' && (ex.isHomeFriendly || ['bodyweight', 'dumbbell', 'band', 'kettlebell', 'mat'].some(k => equipEn.includes(k)))) ||
-      (selectedEquipment === 'trx' && (equipEn.includes('trx') || equipEn.includes('suspension') || nameEn.includes('trx'))) ||
-      (selectedEquipment === 'mat' && (equipEn.includes('mat') || equipEn.includes('yoga') || equipEn.includes('floor'))) ||
+      (selectedEquipment === 'home' && (ex.isHomeFriendly || ['bodyweight', 'dumbbell', 'band', 'kettlebell', 'mat', 'ball', 'floor', 'body only'].some(k => equipEn.includes(k)))) ||
+      (selectedEquipment === 'bodyweight' && (equipEn.includes('body only') || equipEn.includes('bodyweight') || equipEn.includes('none') || equipAr.includes('وزن الجسم'))) ||
+      (selectedEquipment === 'dumbbell' && (equipEn.includes('dumbbell') || equipAr.includes('دمبل'))) ||
+      (selectedEquipment === 'barbell' && (equipEn.includes('barbell') || equipEn.includes('sz-bar') || equipEn.includes('e-z') || equipEn.includes('bar') || equipAr.includes('بار'))) ||
+      (selectedEquipment === 'band' && (equipEn.includes('band') || equipAr.includes('مقاومة') || equipAr.includes('حبل'))) ||
+      (selectedEquipment === 'kettlebell' && (equipEn.includes('kettlebell') || equipAr.includes('كتلبل'))) ||
+      (selectedEquipment === 'cable' && (equipEn.includes('cable') || equipAr.includes('كيبل') || equipAr.includes('كابل'))) ||
+      (selectedEquipment === 'machine' && (equipEn.includes('machine') || equipAr.includes('جهاز') || equipAr.includes('آلة'))) ||
+      (selectedEquipment === 'pullup' && (equipEn.includes('pull-up') || nameEn.includes('pull-up') || nameEn.includes('chin-up') || nameEn.includes('dip') || equipAr.includes('عقلة') || equipAr.includes('متوازي'))) ||
+      (selectedEquipment === 'trx' && (equipEn.includes('trx') || equipEn.includes('suspension') || nameEn.includes('trx') || equipAr.includes('trx'))) ||
+      (selectedEquipment === 'ball' && (equipEn.includes('ball') || equipEn.includes('swiss') || equipEn.includes('exercise ball') || equipAr.includes('كرة'))) ||
+      (selectedEquipment === 'medicine_ball' && (equipEn.includes('medicine ball') || equipAr.includes('طبي'))) ||
+      (selectedEquipment === 'bench' && (equipEn.includes('bench') || equipEn.includes('incline') || nameEn.includes('bench') || equipAr.includes('بنش'))) ||
+      (selectedEquipment === 'mat' && (equipEn.includes('mat') || equipEn.includes('yoga') || equipEn.includes('floor') || equipAr.includes('فرشة') || equipAr.includes('يوغا'))) ||
+      (selectedEquipment === 'foam_roller' && (equipEn.includes('foam') || equipEn.includes('roll') || nameEn.includes('foam') || equipAr.includes('فوم') || equipAr.includes('رولر'))) ||
       equipEn.includes(selectedEquipment) ||
-      equipAr.includes(selectedEquipment) ||
-      (selectedEquipment === 'bodyweight' && (equipEn.includes('body only') || equipEn.includes('none')));
+      equipAr.includes(selectedEquipment);
 
     const matchesDifficulty =
       selectedDifficulty === 'ALL' ||
