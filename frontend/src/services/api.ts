@@ -1315,6 +1315,14 @@ export const api = {
     };
   },
 
+  completeDay: async (dayId: number | string) => {
+    return { success: true, dayId };
+  },
+
+  logWorkoutActivity: async (activityData: any) => {
+    return { success: true, activityData };
+  },
+
   testPerformance: async () => {
     return {
       status: 'optimal',

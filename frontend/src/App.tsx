@@ -16,6 +16,8 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe } from 'lucide-react';
 import { initWorkoutReminderScheduler } from './utils/notifications';
 import { cacheStore } from './utils/cacheStore';
+import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
+import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 
 import './App.css';
 
@@ -416,6 +418,10 @@ function App() {
           <Profile lang={lang} onLanguageChange={handleLanguageChange} onNavigate={navigateTo} />
         )}
       </main>
+
+      {/* GLOBAL WORKOUT SESSION PLAYER & FLOATING MINI-BAR */}
+      <GlobalWorkoutPlayer lang={lang} />
+      <FloatingWorkoutBar lang={lang} />
     </div>
   );
 }

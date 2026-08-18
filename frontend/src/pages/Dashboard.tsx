@@ -11,6 +11,7 @@ import { TransformationGalleryModal } from '../components/TransformationGalleryM
 import { calculateNutrition } from '../utils/nutritionCalculator';
 import { playTimerSound, type SoundPack } from '../utils/audioSynthesizer';
 import { cacheStore } from '../utils/cacheStore';
+import { useWorkoutSession } from '../context/WorkoutSessionContext';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -19,6 +20,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const t = translations[lang] || translations.ar;
+  const { startSession, maximizePlayer, state: sessionState } = useWorkoutSession();
   const [activePlan, setActivePlan] = useState<any>(() => cacheStore.get('active_plan'));
   const [profile, setProfile] = useState<any>(() => cacheStore.get('user_profile'));
   const [stats, setStats] = useState<any>(() => cacheStore.get('user_stats'));
@@ -327,17 +329,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   };
 
   const handleStartWorkout = () => {
-    const exercises = getSelectedDay()?.exercises || [];
-    if (exercises.length === 0) return;
-    
-    setCompletedReps([]);
-    setLoggedWeight([]);
-    setExerciseLogNotes('');
-    setActiveExerciseIndex(0);
-    setCurrentSet(1);
-    setIsResting(false);
-    setShowPlayer(true);
-    checkAndInitExerciseTimer(exercises[0]);
+    const today = getSelectedDay();
+    if (!today || !today.exercises || today.exercises.length === 0) return;
+    startSession(today);
   };
 
   const handleFinishSet = () => {
@@ -830,10 +824,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                 </div>
 
                 {!todayWorkout.isRestDay && (
-                  <button onClick={handleStartWorkout} className="glow-btn" style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Dumbbell size={16} />
-                    {lang === 'en' ? 'Start Active Player ⚡' : 'ابدأ مشغل التمرين التفاعلي ⚡'}
-                  </button>
+                  sessionState.status === 'active' || sessionState.status === 'resting' || sessionState.status === 'paused' ? (
+                    <button
+                      onClick={maximizePlayer}
+                      className="glow-btn"
+                      style={{
+                        padding: '10px 20px',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        border: 'none',
+                        boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
+                      }}
+                    >
+                      <Dumbbell size={16} />
+                      {lang === 'en' ? 'Resume Active Workout ⛶' : 'استئناف التمرين النشط ⛶'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStartWorkout}
+                      className="glow-btn"
+                      style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Dumbbell size={16} />
+                      {lang === 'en' ? 'Start Active Player ⚡' : 'ابدأ مشغل التمرين التفاعلي ⚡'}
+                    </button>
+                  )
                 )}
               </div>
 
