@@ -5,6 +5,7 @@ import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
 import { WorkoutSessionProvider } from './context/WorkoutSessionContext.tsx'
+import { registerAutoUpdateServiceWorker } from './utils/pwaUpdate.ts'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -16,11 +17,6 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// Register PWA Service Worker for Offline Gym Access
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
-      console.log('SW registration skipped or failed:', err);
-    });
-  });
-}
+// Register PWA Service Worker with Auto-Update & Zero-Stale Cache
+registerAutoUpdateServiceWorker();
+

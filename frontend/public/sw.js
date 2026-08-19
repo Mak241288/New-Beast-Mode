@@ -1,66 +1,114 @@
-const CACHE_NAME = 'beastmode-offline-v1';
-const OFFLINE_URLS = [
+// BeastMode AI Service Worker — High-Performance NetworkFirst PWA Cache
+const CACHE_NAME = 'beastmode-pwa-v2';
+const STATIC_CACHE = 'beastmode-static-v2';
+
+const OFFLINE_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.ico',
+  '/favicon.svg',
 ];
 
+// 1. Immediate Install with skipWaiting
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(OFFLINE_URLS);
+    caches.open(STATIC_CACHE).then((cache) => {
+      return cache.addAll(OFFLINE_SHELL).catch((err) => {
+        console.warn('[ServiceWorker] Pre-caching offline shell fallback:', err);
+      });
     })
   );
-  self.skipWaiting();
 });
 
+// 2. Activate with Immediate Clients Claim & Cache Cleanup
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((keys) => {
+        return Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME && key !== STATIC_CACHE)
+            .map((key) => caches.delete(key))
+        );
+      }),
+    ])
   );
-  self.clients.claim();
 });
 
+// 3. Listen for direct Skip Waiting message from frontend UI
+self.addEventListener('message', (event) => {
+  if (event.data && (event.data.type === 'SKIP_WAITING' || event.data === 'skipWaiting')) {
+    self.skipWaiting();
+  }
+});
+
+// 4. Fetch Event with NetworkFirst Strategy for Navigation & HTML
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
-  // Bypass Vite dev server, hot module reload, and local development requests
+
+  // Bypass Local Dev Server, Supabase, Groq/Gemini APIs, and external dynamic endpoints
   if (
     url.hostname === 'localhost' ||
     url.hostname === '127.0.0.1' ||
     url.pathname.startsWith('/@vite') ||
     url.pathname.startsWith('/src/') ||
-    url.pathname.startsWith('/node_modules/')
+    url.pathname.startsWith('/node_modules/') ||
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('groq.com') ||
+    url.hostname.includes('googleapis.com')
   ) {
     return;
   }
 
-  // Cache-first for static assets, network-first with cache fallback for APIs/pages
+  const isHtmlNavigation =
+    event.request.mode === 'navigate' ||
+    (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) ||
+    url.pathname === '/' ||
+    url.pathname.endsWith('.html');
+
+  // STRATEGY A: NetworkFirst for HTML / Navigation (Solves Stale Cache completely!)
+  if (isHtmlNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          console.warn('[ServiceWorker] Network unavailable, serving cached HTML shell.');
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+          return (await caches.match('/index.html')) || (await caches.match('/'));
+        })
+    );
+    return;
+  }
+
+  // STRATEGY B: Stale-While-Revalidate for Static Assets (JS, CSS, SVGs, Fonts)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
+      const fetchPromise = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
           }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
+          return networkResponse;
         })
-        .catch(() => {
-          return caches.match('/');
-        });
+        .catch(() => cachedResponse);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });
