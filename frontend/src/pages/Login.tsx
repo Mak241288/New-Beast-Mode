@@ -20,6 +20,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
   const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('bm_remember_me') === 'true');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [successNotice, setSuccessNotice] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Forgot Password / OTP State
@@ -87,6 +88,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessNotice('');
 
     if (!validateInputs()) return;
 
@@ -108,14 +110,29 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
         onSuccess(data.token);
       } else {
         const data = await api.register({ name: name.trim(), email: cleanEmail, password: cleanPassword });
+        
+        // If session is null or requires email confirmation, do NOT navigate to dashboard
+        if (!data.session || data.requiresEmailConfirmation || !data.token) {
+          setSuccessNotice(
+            data.message ||
+            (lang === 'en'
+              ? 'Account created successfully! Please check your email to confirm your account before logging in.'
+              : 'تم إنشاء الحساب بنجاح! يرجى مراجعة بريدك الإلكتروني لتأكيد الحساب قبل تسجيل الدخول.')
+          );
+          setError('');
+          setIsLogin(true); // Switch to login form so user can log in after verification
+          setPassword('');  // Clear password for security
+          return;
+        }
+
         if (data.token) {
           localStorage.setItem('token', data.token);
+          if (rememberMe) {
+            localStorage.setItem('bm_remember_email', cleanEmail);
+            localStorage.setItem('bm_remember_me', 'true');
+          }
+          onSuccess(data.token);
         }
-        if (rememberMe) {
-          localStorage.setItem('bm_remember_email', cleanEmail);
-          localStorage.setItem('bm_remember_me', 'true');
-        }
-        onSuccess(data.token);
       }
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء الاتصال بالسيرفر، يرجى المحاولة لاحقاً');
@@ -337,9 +354,26 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
             BEASTMODE
           </h2>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            خبير اللياقة والتغذية بالذكاء الاصطناعي
+            {lang === 'en' ? 'AI Fitness & Nutrition Specialist' : 'خبير اللياقة والتغذية بالذكاء الاصطناعي'}
           </p>
         </div>
+
+        {/* Account Confirmation / Success Alert */}
+        {successNotice && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(16, 185, 129, 0.12)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.35)', marginBottom: '20px', boxShadow: '0 4px 16px rgba(16, 185, 129, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <CheckCircle2 size={20} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <h4 style={{ margin: '0 0 4px 0', fontSize: '13.5px', fontWeight: '800', color: '#10b981' }}>
+                  {lang === 'en' ? 'Account Created Successfully! ✉️' : 'تم إنشاء الحساب بنجاح! ✉️'}
+                </h4>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-primary)', margin: 0, lineHeight: 1.6 }}>
+                  {successNotice}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           {!isLogin && (
@@ -553,6 +587,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
             onClick={() => {
               setIsLogin(!isLogin);
               setError('');
+              setSuccessNotice('');
             }}
             style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: '600', fontSize: '14px' }}
           >

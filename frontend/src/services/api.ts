@@ -44,8 +44,14 @@ export const api = {
       throw new Error(error.message || 'فشل إنشاء الحساب، يرجى المحاولة مرة أخرى');
     }
 
-    const token = data.session?.access_token || data.user?.id || 'bm_session_active';
-    localStorage.setItem('token', token);
+    const requiresEmailConfirmation = !data.session;
+    const token = data.session?.access_token || null;
+
+    if (token) {
+      localStorage.setItem('token', token);
+    } else {
+      localStorage.removeItem('token');
+    }
 
     // Upsert into User table in Supabase
     const defaultProfile = {
@@ -60,19 +66,24 @@ export const api = {
       updatedAt: new Date().toISOString(),
     };
 
-    try {
-      await supabase.from('User').upsert(defaultProfile, { onConflict: 'email' });
-    } catch {
-      // Non-fatal if table permissions restrict anon write
+    if (token) {
+      try {
+        await supabase.from('User').upsert(defaultProfile, { onConflict: 'email' });
+      } catch {
+        // Non-fatal if table permissions restrict anon write
+      }
+      cacheStore.set('user_profile', defaultProfile);
     }
-
-    cacheStore.set('user_profile', defaultProfile);
 
     return {
       token,
       user: data.user,
+      session: data.session,
+      requiresEmailConfirmation,
       profile: defaultProfile,
-      message: 'تم إنشاء الحساب بنجاح!',
+      message: requiresEmailConfirmation
+        ? 'تم إنشاء الحساب بنجاح! يرجى مراجعة بريدك الإلكتروني لتأكيد الحساب قبل تسجيل الدخول.'
+        : 'تم إنشاء الحساب بنجاح!',
     };
   },
 
