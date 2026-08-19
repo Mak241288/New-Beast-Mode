@@ -565,7 +565,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                     </div>
                   </div>
                   <p style={{ fontSize: '13.5px', lineHeight: '1.6', color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: '15px' }}>
-                    "{latestCheckIn.aiRecommendation}"
+                    "{latestCheckIn.aiRecommendation?.trim() || (lang === 'en' 
+                      ? 'Welcome Champion! Start logging your daily workout sessions so Coach AI can analyze your performance and deliver customized weekly advice to level up your strength 🦍🔥' 
+                      : 'أهلاً بك يا بطل! ابدأ بتسجيل تمارينك اليومية ليقوم المدرب الذكي بتحليل أدائك وتقديم خطة ونصائح أسبوعية مخصصة لتطوير مستواك 🦍🔥')}"
                   </p>
                   <button
                     onClick={handleApplySuggestions}
