@@ -1,7 +1,16 @@
 /**
  * BeastMode AI Workout Plan Text Parser
  * High-accuracy multi-day workout routine parser supporting rich Arabic & English formats.
+ * Standardized week starting on Sunday (Day 1) to Saturday (Day 7).
  */
+
+export const DAYS_OF_WEEK_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DAYS_OF_WEEK_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+export function getWeekdayName(dayIndex: number, lang: 'ar' | 'en' = 'ar'): string {
+  const normalized = ((dayIndex - 1) % 7 + 7) % 7;
+  return lang === 'en' ? DAYS_OF_WEEK_EN[normalized] : DAYS_OF_WEEK_AR[normalized];
+}
 
 export interface ParsedExercise {
   id: number;
@@ -43,6 +52,29 @@ export const DAY_HEADER_REGEX = /^(?:[#*•\-–—\d.)\]\s]*)(?:(?:اليوم\s
 
 // Regex to identify Rest Days
 export const REST_KEYWORDS_REGEX = /(?:راحة|استراحة|استشفاء|عطلة|rest|recovery|off\s*day|day\s*off)/i;
+
+/**
+ * Detect explicit day index from header line (Sunday=1, Monday=2 ... Saturday=7)
+ */
+export function detectExplicitDayIndex(line: string): number | undefined {
+  const lower = line.toLowerCase();
+
+  if (/أحد|sunday/i.test(lower)) return 1;
+  if (/إثنين|اثنين|monday/i.test(lower)) return 2;
+  if (/ثلاثاء|tuesday/i.test(lower)) return 3;
+  if (/أربعاء|اربعاء|wednesday/i.test(lower)) return 4;
+  if (/خميس|thursday/i.test(lower)) return 5;
+  if (/جمعة|friday/i.test(lower)) return 6;
+  if (/سبت|saturday/i.test(lower)) return 7;
+
+  const numMatch = line.match(/(?:اليوم|day)\s*(\d+)/i);
+  if (numMatch) {
+    const num = parseInt(numMatch[1], 10);
+    if (num >= 1 && num <= 7) return num;
+  }
+
+  return undefined;
+}
 
 /**
  * Infer primary muscle group from text (Arabic / English)
@@ -103,7 +135,7 @@ export function parseExerciseLine(rawLine: string, index: number): ParsedExercis
   if (cleanLine.includes('|')) {
     const parts = cleanLine.split('|').map((p) => p.trim());
 
-    // 1. Part 0: Exercise Name (which may optionally have sets like "بنش برس: 3 جولات")
+    // 1. Part 0: Exercise Name
     const rawName = parts[0];
     const nameSetsMatch = rawName.match(/^(.*?)(?:[:：]\s*|\s+)(\d+)\s*(?:جولات|مجموعات|sets|set)$/i);
     if (nameSetsMatch) {
@@ -251,6 +283,7 @@ export function parseExerciseLine(rawLine: string, index: number): ParsedExercis
 
 /**
  * Main Workout Parser: converts raw multi-day text into a complete 7-day structured WorkoutPlan
+ * Starting from Sunday (Day 1) to Saturday (Day 7)
  */
 export function parseBulkWorkoutText(rawText: string, lang: 'ar' | 'en' = 'ar'): ParsedWorkoutPlan {
   const lines = (rawText || '').split('\n').map((l) => l.trim()).filter(Boolean);
@@ -269,9 +302,7 @@ export function parseBulkWorkoutText(rawText: string, lang: 'ar' | 'en' = 'ar'):
     const isDayHeader = DAY_HEADER_REGEX.test(line);
 
     if (isDayHeader) {
-      // Check if explicit day index exists (e.g. "اليوم 2" or "Day 3")
-      const numMatch = line.match(/(?:اليوم|day)\s*(\d+)/i);
-      const explicitIndex = numMatch ? parseInt(numMatch[1], 10) : undefined;
+      const explicitIndex = detectExplicitDayIndex(line);
       const isRest = REST_KEYWORDS_REGEX.test(line);
 
       currentBucket = {
@@ -283,9 +314,9 @@ export function parseBulkWorkoutText(rawText: string, lang: 'ar' | 'en' = 'ar'):
       dayBuckets.push(currentBucket);
     } else {
       if (!currentBucket) {
-        // If lines start before any Day Header, create Day 1 automatically
+        // If lines start before any Day Header, create Day 1 (Sunday) automatically
         currentBucket = {
-          header: lang === 'en' ? 'Day 1: Workout' : 'اليوم 1: تمارين الجدول',
+          header: lang === 'en' ? 'Day 1 (Sunday): Workout' : 'اليوم 1 (الأحد): تمارين الجدول',
           explicitIndex: 1,
           lines: [],
           isRest: false,
@@ -296,35 +327,41 @@ export function parseBulkWorkoutText(rawText: string, lang: 'ar' | 'en' = 'ar'):
     }
   }
 
-  // Convert buckets into ParsedDayWorkout objects
-  const parsedDayWorkouts: ParsedDayWorkout[] = dayBuckets.map((bucket, bIdx) => {
-    const dayIndex = bucket.explicitIndex || (bIdx + 1);
+  // Map of dayIndex -> ParsedDayWorkout
+  const mappedDays: Map<number, ParsedDayWorkout> = new Map();
+
+  dayBuckets.forEach((bucket, bIdx) => {
+    let dayIndex = bucket.explicitIndex || (bIdx + 1);
+    if (dayIndex > 7) dayIndex = ((dayIndex - 1) % 7) + 1;
+
     const isRestDay = bucket.isRest || (bucket.lines.length > 0 && bucket.lines.every((l) => REST_KEYWORDS_REGEX.test(l)));
+    const weekdayName = getWeekdayName(dayIndex, lang);
 
     // Clean title
-    let title = bucket.header
+    let rawTitle = bucket.header
       .replace(/^[\s\d.\-*•#()>\[\]]+/, '')
       .replace(/[:：]$/, '')
       .trim();
 
-    if (!title) {
-      title = lang === 'en' ? `Day ${dayIndex}` : `اليوم ${dayIndex}`;
+    let title = rawTitle;
+    if (!title || title.length < 3) {
+      title = lang === 'en' ? `Day ${dayIndex} (${weekdayName})` : `اليوم ${dayIndex} (${weekdayName})`;
     }
 
     if (isRestDay) {
-      return {
+      mappedDays.set(dayIndex, {
         id: generateRandomId() + dayIndex,
         dayIndex,
         title: title.includes('راحة') || title.toLowerCase().includes('rest') ? title : `${title} (${lang === 'en' ? 'Rest Day' : 'يوم راحة'})`,
         focusArea: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء',
         isRestDay: true,
         exercises: [],
-      };
+      });
+      return;
     }
 
     const exercises: ParsedExercise[] = [];
     bucket.lines.forEach((line, lIdx) => {
-      // If line is just "راحة", skip adding as an exercise
       if (REST_KEYWORDS_REGEX.test(line) && line.length < 25) return;
 
       const parsed = parseExerciseLine(line, lIdx);
@@ -346,31 +383,27 @@ export function parseBulkWorkoutText(rawText: string, lang: 'ar' | 'en' = 'ar'):
 
     const focusArea = topMuscles.length > 0 ? topMuscles.slice(0, 2).join(' & ') : 'Full Body';
 
-    return {
+    mappedDays.set(dayIndex, {
       id: generateRandomId() + dayIndex,
       dayIndex,
       title,
       focusArea,
       isRestDay: exercises.length === 0,
       exercises,
-    };
+    });
   });
 
-  // Ensure full 7-day array (Days 1 to 7)
+  // Ensure full 7-day array strictly starting from Sunday (Day 1) to Saturday (Day 7)
   const full7Days: ParsedDayWorkout[] = [];
   for (let i = 1; i <= 7; i++) {
-    const existing = parsedDayWorkouts.find((d) => d.dayIndex === i) || parsedDayWorkouts[i - 1];
-    if (existing && !full7Days.some((d) => d.dayIndex === i)) {
-      full7Days.push({
-        ...existing,
-        dayIndex: i,
-      });
+    const weekdayName = getWeekdayName(i, lang);
+    if (mappedDays.has(i)) {
+      full7Days.push(mappedDays.get(i)!);
     } else {
-      // Fill missing days up to 7 as Rest Days
       full7Days.push({
         id: generateRandomId() + i,
         dayIndex: i,
-        title: lang === 'en' ? `Day ${i}: Rest Day` : `اليوم ${i}: يوم راحة واستشفاء`,
+        title: lang === 'en' ? `Day ${i} (${weekdayName}): Rest Day` : `اليوم ${i} (${weekdayName}): يوم راحة واستشفاء`,
         focusArea: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء',
         isRestDay: true,
         exercises: [],
@@ -387,7 +420,7 @@ export function parseBulkWorkoutText(rawText: string, lang: 'ar' | 'en' = 'ar'):
     active: true,
     durationWeeks: 4,
     startDate: new Date().toISOString(),
-    weeklyTips: lang === 'en' ? 'Smartly parsed across 7 structured days' : 'تم تجزئة هذا الجدول وتوزيعه بدقة على 7 أيام تدريب واستشفاء.',
+    weeklyTips: lang === 'en' ? 'Smartly structured from Sunday (Day 1) to Saturday (Day 7).' : 'تم تجزئة هذا الجدول وتوزيعه بدءاً من الأحد (اليوم 1) حتى السبت (اليوم 7).',
     dayWorkouts: full7Days,
     days: full7Days,
   };

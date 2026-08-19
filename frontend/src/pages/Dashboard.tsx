@@ -114,13 +114,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         cacheStore.set('active_plan', plan);
         if (plan.dayWorkouts && plan.dayWorkouts.length > 0) {
           const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const start = new Date(plan.startDate);
-          start.setHours(0, 0, 0, 0);
-          const diffDays = Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-          let calculatedDay = (diffDays % 7) + 1;
-          if (calculatedDay < 1) calculatedDay = 1;
-          setSelectedDayIndex(calculatedDay <= 7 ? calculatedDay : 1);
+          const todayDayIndex = today.getDay() + 1; // 0 = Sunday (Day 1), 1 = Monday (Day 2) ... 6 = Saturday (Day 7)
+          setSelectedDayIndex(todayDayIndex >= 1 && todayDayIndex <= 7 ? todayDayIndex : 1);
         }
       }
 

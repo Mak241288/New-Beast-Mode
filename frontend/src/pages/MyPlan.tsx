@@ -404,9 +404,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   };
 
   const getDayName = (index: number) => {
-    const daysEn = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const daysAr = ['الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
-    return lang === 'en' ? daysEn[index - 1] : daysAr[index - 1];
+    const daysEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const daysAr = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const normalized = ((index - 1) % 7 + 7) % 7;
+    return lang === 'en' ? daysEn[normalized] : daysAr[normalized];
   };
 
   const getRestTime = (ex: any) => {
@@ -485,7 +486,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         if (!days.find((d: any) => d.dayIndex === i)) {
           days.push({
             dayIndex: i,
-            title: lang === 'en' ? `Day ${i}: Rest Day` : `اليوم ${i}: يوم راحة`,
+            title: lang === 'en' ? `Day ${i} (${getDayName(i)}): Rest Day` : `اليوم ${i} (${getDayName(i)}): يوم راحة واستشفاء`,
             focusArea: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء',
             isRestDay: true,
             exercises: []
@@ -1810,9 +1811,9 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         type="button"
                         onClick={() => setPreviewDayIndex(day.dayIndex)}
                         className={isActive ? 'glow-btn' : 'secondary-btn'}
-                        style={{ padding: '6px 12px', fontSize: '12px', minWidth: '85px', justifyContent: 'center', borderRadius: '8px' }}
+                        style={{ padding: '6px 12px', fontSize: '12px', minWidth: '100px', justifyContent: 'center', borderRadius: '8px' }}
                       >
-                        {lang === 'en' ? `Day ${day.dayIndex}` : `اليوم ${day.dayIndex}`}
+                        {lang === 'en' ? `Day ${day.dayIndex} (${getDayName(day.dayIndex)})` : `اليوم ${day.dayIndex} (${getDayName(day.dayIndex)})`}
                       </button>
                     );
                   })}
@@ -2388,7 +2389,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       boxShadow: isActive ? '0 4px 15px var(--primary-glow)' : 'none',
                     }}
                   >
-                    <span>{lang === 'en' ? `Day ${day.dayIndex}` : `اليوم ${day.dayIndex}`}</span>
+                    <span>{lang === 'en' ? `Day ${day.dayIndex} (${getDayName(day.dayIndex)})` : `اليوم ${day.dayIndex} (${getDayName(day.dayIndex)})`}</span>
                     {day.isRestDay ? (
                       <span style={{ fontSize: '11px', opacity: 0.9 }}>💤</span>
                     ) : (

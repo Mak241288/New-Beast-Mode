@@ -82,13 +82,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ lang, onComplete }) => {
   };
 
   const weekdaysList = [
-    { id: 'saturday', label: lang === 'en' ? 'Sat' : 'السبت' },
     { id: 'sunday', label: lang === 'en' ? 'Sun' : 'الأحد' },
     { id: 'monday', label: lang === 'en' ? 'Mon' : 'الإثنين' },
     { id: 'tuesday', label: lang === 'en' ? 'Tue' : 'الثلاثاء' },
     { id: 'wednesday', label: lang === 'en' ? 'Wed' : 'الأربعاء' },
     { id: 'thursday', label: lang === 'en' ? 'Thu' : 'الخميس' },
     { id: 'friday', label: lang === 'en' ? 'Fri' : 'الجمعة' },
+    { id: 'saturday', label: lang === 'en' ? 'Sat' : 'السبت' },
   ];
 
   const handleRestDayChange = (id: string) => {

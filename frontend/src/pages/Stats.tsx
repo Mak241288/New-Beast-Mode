@@ -496,7 +496,7 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
                   });
 
                   const jsDay = day.getDay();
-                  const planDayIndex = jsDay === 0 ? 7 : jsDay;
+                  const planDayIndex = jsDay + 1; // 0 = Sunday (Day 1) ... 6 = Saturday (Day 7)
                   const planDay = activePlan?.dayWorkouts?.find((dw: any) => dw.dayIndex === planDayIndex);
                   const isScheduledRest = planDay?.isRestDay === true;
 
