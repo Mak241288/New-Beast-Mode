@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText, Zap, X } from 'lucide-react';
+import { supabase } from '../services/supabase';
+import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText, Zap } from 'lucide-react';
 import { PasswordRequirements } from '../components/PasswordRequirements';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
@@ -113,17 +114,9 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [securityError, setSecurityError] = useState('');
   const [securitySuccess, setSecuritySuccess] = useState('');
   const [linkingGoogle, setLinkingGoogle] = useState(false);
-
-  // Google Linking & Verification Modal State
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
-  const [googleModalEmail, setGoogleModalEmail] = useState('');
-  const [googleStep, setGoogleStep] = useState<'INPUT' | 'VERIFY' | 'SUCCESS'>('INPUT');
-  const [googleOtpInput, setGoogleOtpInput] = useState('');
-  const [googleGeneratedOtp, setGoogleGeneratedOtp] = useState('');
-  const [googleLinkLoading, setGoogleLinkLoading] = useState(false);
-  const [googleModalError, setGoogleModalError] = useState('');
-  const [googleModalSuccess, setGoogleModalSuccess] = useState('');
-  const [googleSecurityTimestamp, setGoogleSecurityTimestamp] = useState(() => new Date().toLocaleTimeString());
+  const [googleFeedbackMsg, setGoogleFeedbackMsg] = useState('');
+  const [googleFeedbackType, setGoogleFeedbackType] = useState<'SUCCESS' | 'ERROR' | ''>('');
+  const [googleIdentity, setGoogleIdentity] = useState<any>(null);
 
   const fetchProfile = async () => {
     if (!cacheStore.get('user_profile')) {
@@ -134,6 +127,23 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
       if (data.birthDate) {
         data.birthDate = new Date(data.birthDate).toISOString().split('T')[0];
       }
+
+      // Check live Supabase user & identities
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const gIdent = user.identities?.find((id: any) => id.provider === 'google');
+          setGoogleIdentity(gIdent || null);
+          if (gIdent) {
+            data.isGoogleLinked = true;
+            data.googleEmail = gIdent.identity_data?.email || user.email;
+            data.googleId = gIdent.id || gIdent.identity_id;
+          }
+        }
+      } catch (authErr) {
+        console.warn('[Profile Supabase User Check]:', authErr);
+      }
+
       setProfile((prev: any) => {
         const updated = {
           ...prev,
@@ -426,65 +436,110 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     }
   };
 
-  const handleOpenGoogleModal = () => {
-    setGoogleModalEmail(profile.googleEmail || profile.email || '');
-    setGoogleStep('INPUT');
-    setGoogleModalError('');
-    setGoogleModalSuccess('');
-    setGoogleOtpInput('');
-    setShowGoogleModal(true);
-  };
-
-  const handleSendGoogleVerificationOtp = () => {
-    if (!googleModalEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(googleModalEmail.trim())) {
-      setGoogleModalError(lang === 'en' ? 'Please enter a valid Google email address.' : 'يرجى إدخال بريد Google صحيح.');
-      return;
-    }
-    setGoogleModalError('');
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGoogleGeneratedOtp(code);
-    setGoogleOtpInput(code);
-    setGoogleStep('VERIFY');
-    setGoogleModalSuccess(lang === 'en' 
-      ? `Verification code ${code} generated and dispatched to ${googleModalEmail}.`
-      : `تم توليد وإرسال رمز الأمان ${code} إلى بريدك ${googleModalEmail}.`);
-  };
-
-  const handleConfirmGoogleLink = async (targetEmail?: string) => {
-    const mailToLink = (targetEmail || googleModalEmail).trim().toLowerCase();
-    if (!mailToLink || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailToLink)) {
-      setGoogleModalError(lang === 'en' ? 'Invalid Google email.' : 'صيغة البريد الإلكتروني غير صحيحة.');
-      return;
-    }
-
-    setGoogleLinkLoading(true);
-    setGoogleModalError('');
+  const handleLinkGoogle = async () => {
+    setLinkingGoogle(true);
+    setGoogleFeedbackMsg('');
+    setGoogleFeedbackType('');
     try {
-      const gId = `google_${mailToLink.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      const res = await api.linkGoogleAccount({
-        googleEmail: mailToLink,
-        googleId: gId,
+      const { error } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/#profile',
+        },
       });
 
-      const now = new Date().toLocaleString(lang === 'en' ? 'en-US' : 'ar-EG');
-      setGoogleSecurityTimestamp(now);
-
-      const updatedProf = {
-        ...profile,
-        isGoogleLinked: true,
-        googleEmail: mailToLink,
-        googleId: gId,
-      };
-
-      setProfile(updatedProf);
-      cacheStore.set('user_profile', updatedProf);
-
-      setGoogleStep('SUCCESS');
-      setGoogleModalSuccess(res.message || (lang === 'en' ? 'Account successfully verified & linked to Google!' : 'تم التحقق وتوثيق ربط الحساب بـ Google بنجاح!'));
+      if (error) {
+        throw error;
+      }
     } catch (err: any) {
-      setGoogleModalError(err.message || (lang === 'en' ? 'Failed to link Google account.' : 'فشل ربط حساب Google.'));
+      console.error('[Link Google Error]:', err);
+      setGoogleFeedbackType('ERROR');
+      setGoogleFeedbackMsg(
+        err.message ||
+        (lang === 'en'
+          ? 'Failed to initiate Google account linking. Please try again.'
+          : 'فشل بدء ربط حساب Google. يرجى المحاولة مرة أخرى.')
+      );
+      setLinkingGoogle(false);
+    }
+  };
+
+  const handleUnlinkGoogle = async () => {
+    if (!window.confirm(
+      lang === 'en'
+        ? 'Are you sure you want to unlink your Google account?'
+        : 'هل أنت متأكد من إلغاء ربط حساب Google؟'
+    )) return;
+
+    setLinkingGoogle(true);
+    setGoogleFeedbackMsg('');
+    setGoogleFeedbackType('');
+
+    try {
+      // 1. Fetch fresh Supabase user to inspect identities
+      const { data: { user }, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !user) {
+        throw new Error(lang === 'en' ? 'User data not found.' : 'تعذر العثور على بيانات المستخدم.');
+      }
+
+      const gIdent = user.identities?.find((id: any) => id.provider === 'google') || googleIdentity;
+      if (!gIdent) {
+        throw new Error(lang === 'en' ? 'No linked Google account found.' : 'لم يتم العثور على حساب Google مربوط.');
+      }
+
+      // 2. Safety check: ensure user has another login method
+      const hasOtherIdentities = (user.identities?.length || 0) > 1;
+      const hasEmailIdentity = user.identities?.some((id: any) => id.provider === 'email');
+
+      if (!hasOtherIdentities && !hasEmailIdentity) {
+        throw new Error(
+          lang === 'en'
+            ? 'Cannot unlink Google because you do not have another login method (such as password) set up. Please set a password first to avoid losing access to your account.'
+            : 'لا يمكنك إلغاء ربط Google لأنك لا تملك طريقة دخول بديلة (مثل كلمة مرور). يرجى تعيين كلمة مرور أولاً لتجنب فقدان الوصول إلى حسابك.'
+        );
+      }
+
+      // 3. Call supabase.auth.unlinkIdentity
+      const { error: unlinkErr } = await supabase.auth.unlinkIdentity(gIdent);
+      if (unlinkErr) {
+        throw unlinkErr;
+      }
+
+      // 4. Update UI state and cache
+      setGoogleIdentity(null);
+      setProfile((prev: any) => {
+        const updated = {
+          ...prev,
+          isGoogleLinked: false,
+          googleEmail: null,
+          googleId: null,
+        };
+        cacheStore.set('user_profile', updated);
+        return updated;
+      });
+
+      try {
+        await api.unlinkGoogleAccount();
+      } catch {
+        // Non-fatal
+      }
+
+      const successTxt = lang === 'en' ? 'Google Account unlinked successfully! ✅' : 'تم إلغاء ربط حساب Google بنجاح! ✅';
+      setGoogleFeedbackType('SUCCESS');
+      setGoogleFeedbackMsg(successTxt);
+      setSuccessMsg(successTxt);
+      setTimeout(() => {
+        setSuccessMsg('');
+      }, 5000);
+    } catch (err: any) {
+      console.error('[Unlink Google Error]:', err);
+      setGoogleFeedbackType('ERROR');
+      setGoogleFeedbackMsg(
+        err.message ||
+        (lang === 'en' ? 'Failed to unlink Google account.' : 'فشل إلغاء ربط حساب Google.')
+      );
     } finally {
-      setGoogleLinkLoading(false);
+      setLinkingGoogle(false);
     }
   };
 
@@ -506,24 +561,6 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         : `✅ تم التحقق بنجاح! تسجيل الدخول الفوري بحساب Google يعمل 100% للبريد (${targetEmail}). جلستك مؤمنة ونشطة.`);
     } catch (err: any) {
       alert(err.message || (lang === 'en' ? 'Google authentication test failed.' : 'فشل اختبار تسجيل الدخول عبر Google.'));
-    } finally {
-      setLinkingGoogle(false);
-    }
-  };
-
-  const handleUnlinkGoogle = async () => {
-    if (!window.confirm(lang === 'en' ? 'Are you sure you want to unlink your Google account?' : 'هل أنت متأكد من إلغاء ربط حساب Google؟')) return;
-    setLinkingGoogle(true);
-    try {
-      const res = await api.unlinkGoogleAccount();
-      setProfile((prev: any) => ({
-        ...prev,
-        isGoogleLinked: false,
-        googleEmail: null,
-      }));
-      alert(res.message || (lang === 'en' ? 'Google Account unlinked successfully.' : 'تم إلغاء ربط حساب Google بنجاح.'));
-    } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Failed to unlink Google account.' : 'فشل إلغاء ربط حساب Google.'));
     } finally {
       setLinkingGoogle(false);
     }
@@ -1077,10 +1114,10 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
             </div>
 
             {/* Google Account Integration Card */}
-            <div className="glass-panel" style={{ borderTop: '1px solid var(--border-color)', padding: '18px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px', background: profile.isGoogleLinked ? 'rgba(16, 185, 129, 0.03)' : 'rgba(255, 255, 255, 0.02)', border: profile.isGoogleLinked ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-color)' }}>
+            <div className="glass-panel" style={{ borderTop: '1px solid var(--border-color)', padding: '18px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px', background: (googleIdentity || profile.isGoogleLinked) ? 'rgba(16, 185, 129, 0.03)' : 'rgba(255, 255, 255, 0.02)', border: (googleIdentity || profile.isGoogleLinked) ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24">
+                  <svg width="22" height="22" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
@@ -1088,39 +1125,52 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                   </svg>
                   <div>
                     <h3 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>
-                      {lang === 'en' ? 'Google Account Integration & Verification' : 'مركز توثيق وربط الحساب بـ Google'}
+                      {lang === 'en' ? 'Google Account Connection & Verification' : 'ربط وتوثيق حساب Google'}
                     </h3>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      {lang === 'en' ? 'OAuth 2.0 Single Sign-On Security' : 'بروتوكول الأمان وتسجيل الدخول السريع الموحد'}
+                      {lang === 'en' ? 'OAuth 2.0 Single Sign-On Security' : 'بروتوكول الأمان وتوحيد الدخول السريع'}
                     </span>
                   </div>
                 </div>
 
-                {profile.isGoogleLinked ? (
-                  <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px' }}>
-                    <CheckCircle2 size={13} />
-                    <span>{lang === 'en' ? 'Linked & Verified' : 'الحساب مرتبط وموثق رسمياً'}</span>
+                {(googleIdentity || profile.isGoogleLinked) ? (
+                  <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.35)', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '8px' }}>
+                    <CheckCircle2 size={14} />
+                    <span>{lang === 'en' ? 'Linked Successfully ✅' : 'تم الربط بنجاح ✅'}</span>
                   </span>
                 ) : (
-                  <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11.5px', padding: '4px 10px' }}>
+                  <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11.5px', padding: '4px 10px', borderRadius: '8px' }}>
                     {lang === 'en' ? 'Not Linked' : 'غير مرتبط بعد'}
                   </span>
                 )}
               </div>
 
-              {profile.isGoogleLinked ? (
+              {googleFeedbackMsg && (
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: googleFeedbackType === 'ERROR' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  border: googleFeedbackType === 'ERROR' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+                  color: googleFeedbackType === 'ERROR' ? '#ef4444' : '#10b981',
+                }}>
+                  {googleFeedbackType === 'ERROR' ? <AlertTriangle size={15} style={{ flexShrink: 0 }} /> : <CheckCircle2 size={15} style={{ flexShrink: 0 }} />}
+                  <span>{googleFeedbackMsg}</span>
+                </div>
+              )}
+
+              {(googleIdentity || profile.isGoogleLinked) ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>📧 {lang === 'en' ? 'Linked Google Account:' : 'البريد المرتبط:'}</span>
-                    <strong style={{ color: '#10b981' }}>{profile.googleEmail || profile.email}</strong>
+                    <span style={{ color: 'var(--text-secondary)' }}>📧 {lang === 'en' ? 'Linked Google Account:' : 'البريد المرتبط بحساب Google:'}</span>
+                    <strong style={{ color: '#10b981' }}>{googleIdentity?.identity_data?.email || profile.googleEmail || profile.email}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>🆔 {lang === 'en' ? 'Google Auth Identity:' : 'معرف Google المشفر:'}</span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--text-primary)' }}>{profile.googleId || `google_${(profile.googleEmail || profile.email).split('@')[0]}`}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>⚡ {lang === 'en' ? 'One-Tap Sign-In Status:' : 'تسجيل الدخول السريع:'}</span>
-                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>{lang === 'en' ? 'Enabled 🟢' : 'مفعّل بنجاح 🟢'}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>⚡ {lang === 'en' ? 'One-Tap Sign-In Status:' : 'تسجيل الدخول السريع بنقرة واحدة:'}</span>
+                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>{lang === 'en' ? 'Active & Ready 🟢' : 'مفعّل وجاهز 🟢'}</span>
                   </div>
                 </div>
               ) : (
@@ -1132,47 +1182,73 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               )}
 
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
-                {profile.isGoogleLinked ? (
+                {(googleIdentity || profile.isGoogleLinked) ? (
                   <>
-                    <button
-                      type="button"
-                      disabled={linkingGoogle}
-                      onClick={handleTestInstantGoogleLogin}
-                      className="glow-btn"
-                      style={{ padding: '7px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Zap size={14} />
-                      <span>{lang === 'en' ? 'Test 1-Click Login ⚡' : 'تجربة تسجيل الدخول الفوري ⚡'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleOpenGoogleModal}
-                      className="secondary-btn"
-                      style={{ padding: '7px 14px', fontSize: '12px' }}
-                    >
-                      {lang === 'en' ? 'Manage / Re-verify' : 'إدارة وتفاصيل التوثيق'}
-                    </button>
-
                     <button
                       type="button"
                       disabled={linkingGoogle}
                       onClick={handleUnlinkGoogle}
                       className="secondary-btn"
-                      style={{ padding: '7px 14px', fontSize: '12px', borderColor: 'rgba(239, 68, 68, 0.3)', color: 'var(--danger)' }}
+                      style={{
+                        padding: '8px 18px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        borderColor: 'rgba(239, 68, 68, 0.35)',
+                        color: 'var(--danger)',
+                        background: 'rgba(239, 68, 68, 0.05)',
+                        borderRadius: '10px',
+                      }}
                     >
-                      {linkingGoogle ? (lang === 'en' ? 'Unlinking...' : 'جاري إلغاء الربط...') : (lang === 'en' ? 'Unlink' : 'إلغاء الربط')}
+                      <Trash2 size={14} />
+                      <span>{linkingGoogle ? (lang === 'en' ? 'Unlinking...' : 'جاري إلغاء الربط...') : (lang === 'en' ? 'Unlink Google Account' : 'إلغاء ربط حساب Google')}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={linkingGoogle}
+                      onClick={handleTestInstantGoogleLogin}
+                      className="glow-btn"
+                      style={{ padding: '8px 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Zap size={14} />
+                      <span>{lang === 'en' ? 'Test 1-Click Login ⚡' : 'تجربة الدخول الفوري ⚡'}</span>
                     </button>
                   </>
                 ) : (
                   <button
                     type="button"
                     disabled={linkingGoogle}
-                    onClick={handleOpenGoogleModal}
+                    onClick={handleLinkGoogle}
                     className="glow-btn"
-                    style={{ padding: '8px 18px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    style={{
+                      padding: '10px 22px',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      borderRadius: '10px',
+                    }}
                   >
-                    <span>⚡ {lang === 'en' ? 'Verify & Link Google Account' : 'فتح نافذة توثيق وربط حساب Google'}</span>
+                    {linkingGoogle ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '15px', height: '15px', border: '2px solid #fff', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                        <span>{lang === 'en' ? 'Redirecting to Google...' : 'جاري التوجيه لـ Google...'}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <svg width="17" height="17" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span>{lang === 'en' ? 'Link Google Account' : 'ربط حساب Google'}</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>
@@ -1734,241 +1810,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         </div>
       )}
 
-      {/* Google Account Linking & Verification Modal */}
-      {showGoogleModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.88)',
-            zIndex: 10050,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-            backdropFilter: 'blur(10px)',
-          }}
-        >
-          <div
-            className="glass-panel animated-fade"
-            style={{
-              width: '100%',
-              maxWidth: '540px',
-              borderRadius: '20px',
-              border: '1px solid rgba(66, 133, 244, 0.4)',
-              padding: '28px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '18px',
-              backgroundColor: '#0c101d',
-              color: 'var(--text-primary)',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
-            }}
-          >
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(66, 133, 244, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '17px', fontWeight: '900', margin: 0 }}>
-                    {lang === 'en' ? 'Google Account Verification & Linking' : 'توثيق وتأكيد ربط حساب Google'}
-                  </h3>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-                    {lang === 'en' ? 'OAuth 2.0 Identity Token Synchronization' : 'مزامنة وتوثيق الهوية الرقمية بأمان تام'}
-                  </span>
-                </div>
-              </div>
-              <button onClick={() => setShowGoogleModal(false)} className="secondary-btn" style={{ padding: '6px', borderRadius: '50%' }}>
-                <X size={18} />
-              </button>
-            </div>
 
-            {/* Error & Success Messages */}
-            {googleModalError && (
-              <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AlertTriangle size={15} />
-                <span>{googleModalError}</span>
-              </div>
-            )}
-
-            {googleModalSuccess && (
-              <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle2 size={15} />
-                <span>{googleModalSuccess}</span>
-              </div>
-            )}
-
-            {/* STEP 1: INPUT GOOGLE EMAIL */}
-            {googleStep === 'INPUT' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                  {lang === 'en'
-                    ? 'Enter your Google Account email. Linking your account lets you sign in instantly without a password, keeping all your routines and logs 100% synchronized.'
-                    : 'أدخل بريد حساب Google الذي ترغب بربطه؛ سيمكّنك الربط من تسجيل الدخول بضغطة زر وتأكيد هويتك مع الحفاظ الكامل 100% على كافة جداولك وسجلاتك الرياضية.'}
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
-                    {lang === 'en' ? 'Google Account Email:' : 'البريد الإلكتروني لحساب Google:'}
-                  </label>
-                  <input
-                    type="email"
-                    value={googleModalEmail}
-                    onChange={(e) => setGoogleModalEmail(e.target.value)}
-                    placeholder="athlete@gmail.com"
-                    className="input-field"
-                    style={{ fontSize: '14px', padding: '10px 14px', direction: 'ltr', textAlign: 'left' }}
-                    required
-                  />
-                </div>
-
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981', fontWeight: 'bold' }}>
-                    <ShieldAlert size={14} />
-                    <span>{lang === 'en' ? 'Zero Data Loss Guarantee' : 'ضمان الحفاظ على البيانات 100%'}</span>
-                  </div>
-                  <span>
-                    {lang === 'en'
-                      ? 'Linking with Google will NOT overwrite your existing workout splits, 1RM history, or nutrition logs.'
-                      : 'عملية الربط آمنة تماماً ولن تمس أي جدول أو سجل أوزان أو ماكروز في حسابك.'}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-                  <button
-                    type="button"
-                    disabled={googleLinkLoading}
-                    onClick={() => handleConfirmGoogleLink()}
-                    className="glow-btn"
-                    style={{ flex: 1, justifyContent: 'center', padding: '12px', fontSize: '13px' }}
-                  >
-                    {googleLinkLoading ? (lang === 'en' ? 'Linking...' : 'جاري الربط...') : (lang === 'en' ? '⚡ Instant Link & Authorize' : '⚡ تأكيد وربط الحساب الآن')}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSendGoogleVerificationOtp}
-                    className="secondary-btn"
-                    style={{ padding: '12px 16px', fontSize: '12.5px' }}
-                  >
-                    {lang === 'en' ? 'Request Security Code 🔢' : 'طلب رمز أمان 🔢'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: VERIFY OTP */}
-            {googleStep === 'VERIFY' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                  {lang === 'en'
-                    ? `Enter the 6-digit verification code generated for ${googleModalEmail}:`
-                    : `أدخل رمز الأمان المكوّن من 6 أرقام لتأكيد ربط البريد (${googleModalEmail}):`}
-                </p>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={googleOtpInput}
-                    onChange={(e) => setGoogleOtpInput(e.target.value.replace(/\D/g, ''))}
-                    className="input-field"
-                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '22px', fontWeight: '900', borderColor: 'var(--primary)' }}
-                    required
-                  />
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    💡 {lang === 'en' ? `Auto-generated test code: ${googleGeneratedOtp}` : `رمز التحقق الأمني: ${googleGeneratedOtp}`}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-                  <button
-                    type="button"
-                    disabled={googleLinkLoading}
-                    onClick={() => handleConfirmGoogleLink()}
-                    className="glow-btn"
-                    style={{ flex: 1, justifyContent: 'center', padding: '12px', fontSize: '13px' }}
-                  >
-                    {googleLinkLoading ? (lang === 'en' ? 'Verifying...' : 'جاري التحقق...') : (lang === 'en' ? 'Confirm Code & Link' : 'تأكيد الرمز وإتمام الربط ✅')}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setGoogleStep('INPUT')}
-                    className="secondary-btn"
-                    style={{ padding: '12px 16px', fontSize: '12.5px' }}
-                  >
-                    {lang === 'en' ? 'Back' : 'رجوع'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3: SUCCESS CERTIFICATE */}
-            {googleStep === 'SUCCESS' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ textAlign: 'center', padding: '16px', borderRadius: '14px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                  <CheckCircle2 size={40} color="#10b981" style={{ margin: '0 auto 8px auto' }} />
-                  <h4 style={{ fontSize: '16px', fontWeight: '900', margin: '0 0 4px 0', color: '#10b981' }}>
-                    {lang === 'en' ? 'Google Account Verified & Linked!' : 'تم التحقق وتوثيق ربط حساب Google بنجاح!'}
-                  </h4>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    {lang === 'en' ? 'Official Security Confirmation Certificate' : 'شهادة التوثيق والأمان الرسمية'}
-                  </span>
-                </div>
-
-                {/* Metadata details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.25)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)', fontSize: '12.5px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>📧 {lang === 'en' ? 'Linked Email:' : 'البريد المرتبط:'}</span>
-                    <strong style={{ color: 'var(--primary)' }}>{profile.googleEmail || googleModalEmail}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>🆔 {lang === 'en' ? 'Google Auth Hash:' : 'المعرف الرقمي:'}</span>
-                    <span style={{ fontFamily: 'monospace', fontSize: '11px' }}>{profile.googleId || `google_${googleModalEmail}`}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>📅 {lang === 'en' ? 'Verified At:' : 'توقيت التوثيق:'}</span>
-                    <span>{googleSecurityTimestamp || new Date().toLocaleTimeString()}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>🛡️ {lang === 'en' ? 'Security Level:' : 'مستوى الأمان:'}</span>
-                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>OAuth 2.0 Encrypted ✅</span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={handleTestInstantGoogleLogin}
-                    className="glow-btn"
-                    style={{ flex: 1, justifyContent: 'center', padding: '12px', fontSize: '13px' }}
-                  >
-                    ⚡ {lang === 'en' ? 'Test 1-Click Login Now' : 'تجربة تسجيل الدخول الفوري الآن'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowGoogleModal(false)}
-                    className="secondary-btn"
-                    style={{ padding: '12px 18px', fontSize: '13px' }}
-                  >
-                    {lang === 'en' ? 'Close' : 'إغلاق'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
 
       {/* Smart Nutrition & Macro Coach Modal */}
       <SmartNutritionModal
