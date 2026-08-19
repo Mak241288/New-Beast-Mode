@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { cacheStore } from '../utils/cacheStore';
 import { PRESET_WORKOUT_PLANS } from '../utils/presetWorkoutPlans';
+import { parseBulkWorkoutText } from '../utils/workoutParser';
 
 // Helper to get active user ID or email from Supabase Auth
 async function getCurrentUser() {
@@ -741,49 +742,41 @@ export const api = {
     };
   },
 
-  importBulkPlan: async (list: string, _lang?: string, preview?: boolean): Promise<any> => {
-    const lines = (list || '').split('\n').filter((l) => l.trim().length > 0);
-    const exercises = lines.map((line, idx) => ({
-      id: generateId() + idx,
-      name: line.trim(),
-      sets: 3,
-      reps: '10-12',
-      weight: 'Bodyweight',
-      targetMuscle: 'General',
-    }));
+  importBulkPlan: async (list: string, lang: string = 'ar', preview?: boolean): Promise<any> => {
+    const parsedPlan = parseBulkWorkoutText(list, lang === 'en' ? 'en' : 'ar');
+    const totalExercises = parsedPlan.days.reduce((acc, d) => acc + (d.exercises?.length || 0), 0);
 
     if (preview) {
-      return { preview: true, count: exercises.length, exercises, days: [] };
+      return {
+        ...parsedPlan,
+        preview: true,
+        count: totalExercises,
+      };
     }
 
-    const dayWorkouts = [
-      {
-        id: generateId(),
-        dayIndex: 1,
-        title: 'يوم التدريب المستورد',
-        focusArea: 'Full Body',
-        isRestDay: false,
-        exercises,
-      },
-    ];
-
-    const importedPlan = {
-      id: generateId(),
-      title: 'جدول مستورد مخصص',
-      active: true,
-      durationWeeks: 4,
-      startDate: new Date().toISOString(),
-      weeklyTips: 'تم استيراد هذا الجدول من نص مجمع.',
-      dayWorkouts,
-      days: dayWorkouts,
-    };
-
-    cacheStore.set('active_plan', importedPlan);
-    return importedPlan;
+    cacheStore.set('active_plan', parsedPlan);
+    return parsedPlan;
   },
 
-  importFilePlan: async (_fileBase64: string, fileName: string, _lang?: string, _preview?: boolean): Promise<any> => {
-    return api.importBulkPlan(`تمرين مستورد 1 (${fileName})\nتمرين مستورد 2\nتمرين مستورد 3`);
+  importFilePlan: async (fileBase64: string, fileName: string, lang: string = 'ar', preview?: boolean): Promise<any> => {
+    let decodedText = '';
+    try {
+      if (fileBase64.includes(',')) {
+        const base64Data = fileBase64.split(',')[1];
+        decodedText = decodeURIComponent(escape(atob(base64Data)));
+      } else {
+        decodedText = fileBase64;
+      }
+    } catch {
+      try {
+        const base64Data = fileBase64.includes(',') ? fileBase64.split(',')[1] : fileBase64;
+        decodedText = atob(base64Data);
+      } catch {
+        decodedText = fileName;
+      }
+    }
+
+    return api.importBulkPlan(decodedText || fileName, lang, preview);
   },
 
   saveStructuredPlan: async (structuredPlan: any, _lang?: string): Promise<any> => {

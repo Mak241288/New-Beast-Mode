@@ -2011,17 +2011,19 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   {lang === 'en' ? '— OR PASTE TEXT DIRECTLY —' : '— أو الصق نصوص التمارين مباشرة —'}
                 </div>
 
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
                   {lang === 'en'
-                    ? 'Paste any text, table rows or lists containing your workouts. AI will intelligently extract exercises and days:'
-                    : 'الصق أي نصوص أو جداول تمارين منسوخة، وسيتولى الذكاء الاصطناعي تنظيمها وتوزيعها:'}
+                    ? 'Paste your workout routine in any format. Supports "Day 1:", "Monday", "Exercise | Sets | Reps | Muscle", "Exercise: 3 sets 12 reps", and "Rest":'
+                    : 'الصق جدولك بأي صيغة (مثل "اليوم 1:" أو "السبت"، وصيغة "اسم التمرين | 4 | 10-12 | صدر" أو "سكوات: 3 جولات 12 تكرار" أو "راحة"): '}
                 </p>
 
                 <textarea
                   className="input-field"
-                  rows={8}
+                  rows={9}
                   style={{ fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }}
-                  placeholder={lang === 'en' ? "Day 1: Chest & Shoulders\nBench Press - 3 sets - 12 reps\nShoulder Press - 3 sets - 10 reps" : "اليوم 1: دفع (صدر وتراي)\nبنش برس بالبار - 3 جولات - 12 تكرار\nرفرفة جانبي دمبلز - 4 جولات - 15 تكرار"}
+                  placeholder={lang === 'en' 
+                    ? "Day 1: Chest & Triceps\nBench Press | 4 | 10-12 | Chest\nIncline DB Press: 3 sets of 12 reps\nTricep Dips 3x12\n\nDay 2: Back & Biceps\nLat Pulldown | 4 | 12 | Back\nBarbell Row: 3x10\n\nDay 3: Rest"
+                    : "اليوم 1: صدر وترايسبس\nبنش برس بالبار | 4 | 10-12 | صدر\nضغط دمبلز مائل: 3 جولات 12 تكرار\nترايسبس بالكيبل 3 × 12\n\nاليوم 2: ظهر وبايسبس\nسحب عالي للظهر | 4 | 12 | ظهر\nتجديف بالبار: 3 جولات 10 تكرار\n\nاليوم 3: راحة واستشفاء"}
                   value={importListText}
                   onChange={(e) => setImportListText(e.target.value)}
                 />
