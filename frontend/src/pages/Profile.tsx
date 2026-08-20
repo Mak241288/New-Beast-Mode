@@ -158,6 +158,11 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
 
   useEffect(() => {
     fetchProfile();
+    const handleCloudSync = () => {
+      fetchProfile();
+    };
+    window.addEventListener('beast_cloud_synced', handleCloudSync);
+    return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

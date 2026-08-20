@@ -349,6 +349,12 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       localStorage.removeItem('open_manual_builder');
       setShowManualBuilder(true);
     }
+    const handleCloudSync = () => {
+      fetchActivePlan();
+      fetchHistory();
+    };
+    window.addEventListener('beast_cloud_synced', handleCloudSync);
+    return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
   }, []);
 
   const handleNameChange = (val: string, type: 'custom' | 'edit' | 'preview', dayIdx?: number, exIdx?: number) => {

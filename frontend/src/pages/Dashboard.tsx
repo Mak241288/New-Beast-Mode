@@ -146,6 +146,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
     }
   };
 
+  useEffect(() => {
+    fetchDashboardData();
+    const handleCloudSync = () => {
+      fetchDashboardData();
+    };
+    window.addEventListener('beast_cloud_synced', handleCloudSync);
+    return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
+  }, []);
+
   const handleSubmitCheckIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmittingCheckIn(true);

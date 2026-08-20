@@ -52,6 +52,11 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
 
   useEffect(() => {
     fetchStats();
+    const handleCloudSync = () => {
+      fetchStats();
+    };
+    window.addEventListener('beast_cloud_synced', handleCloudSync);
+    return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
   }, []);
 
   const handleLogWeight = async (e: React.FormEvent) => {

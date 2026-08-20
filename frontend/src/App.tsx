@@ -16,6 +16,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe } from 'lucide-react';
 import { initWorkoutReminderScheduler } from './utils/notifications';
 import { cacheStore } from './utils/cacheStore';
+import { CloudSyncStatusBadge } from './components/CloudSyncStatusBadge';
 import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
 import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 
@@ -398,27 +399,30 @@ function App() {
         </div>
 
         <div className="sidebar-footer">
-          {/* Language Selection */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-            <Globe size={16} style={{ color: 'var(--text-secondary)' }} />
-            <select
-              value={lang}
-              onChange={(e) => handleLanguageChange(e.target.value as 'ar' | 'en')}
-              className="input-field"
-              style={{
-                flex: 1,
-                padding: '4px 8px',
-                fontSize: '12px',
-                background: 'transparent',
-                border: '1px solid var(--border-color)',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="ar" style={{ background: 'var(--bg-card)', color: '#fff' }}>العربية (AR)</option>
-              <option value="en" style={{ background: 'var(--bg-card)', color: '#fff' }}>English (EN)</option>
-            </select>
+          {/* Cloud Sync & Language Row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
+            <CloudSyncStatusBadge lang={lang} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+              <Globe size={14} style={{ color: 'var(--text-secondary)' }} />
+              <select
+                value={lang}
+                onChange={(e) => handleLanguageChange(e.target.value as 'ar' | 'en')}
+                className="input-field"
+                style={{
+                  width: '100%',
+                  padding: '4px 6px',
+                  fontSize: '11px',
+                  background: 'transparent',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <option value="ar" style={{ background: 'var(--bg-card)', color: '#fff' }}>العربية (AR)</option>
+                <option value="en" style={{ background: 'var(--bg-card)', color: '#fff' }}>English (EN)</option>
+              </select>
+            </div>
           </div>
 
           {/* Theme & Sign Out Row */}
@@ -454,12 +458,14 @@ function App() {
         >
           BEASTMODE
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Smart Cloud Sync Status Badge */}
+          <CloudSyncStatusBadge lang={lang} />
           {/* Mini Language Switcher */}
           <button
             onClick={() => handleLanguageChange(lang === 'en' ? 'ar' : 'en')}
             className="secondary-btn"
-            style={{ padding: '6px 10px', fontSize: '11px', borderRadius: '8px' }}
+            style={{ padding: '5px 8px', fontSize: '11px', borderRadius: '8px' }}
           >
             {lang === 'en' ? 'ع' : 'EN'}
           </button>
@@ -470,7 +476,7 @@ function App() {
             title={lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
             className="secondary-btn"
             style={{
-              padding: '6px 10px',
+              padding: '5px 8px',
               fontSize: '11px',
               borderRadius: '8px',
               color: 'var(--danger)',
