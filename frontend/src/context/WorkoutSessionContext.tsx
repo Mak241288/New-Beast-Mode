@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
+import { cacheStore } from '../utils/cacheStore';
 
 export type SessionStatus = 'idle' | 'active' | 'resting' | 'paused' | 'completed';
 
@@ -144,24 +145,51 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, []);
 
-  // Save to LocalStorage automatically whenever relevant session state changes
+  // Save to LocalStorage & Cloud automatically whenever relevant session state changes
   useEffect(() => {
     if (state.status === 'active' || state.status === 'resting' || state.status === 'paused') {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        cacheStore.set('active_gym_session', state);
         setHasSavedDraft(true);
+        api.pushUserDataToCloud();
       } catch {
         // Ignore quota error
       }
     } else if (state.status === 'idle' || state.status === 'completed') {
       try {
         localStorage.removeItem(STORAGE_KEY);
+        cacheStore.remove('active_gym_session');
         setHasSavedDraft(false);
+        api.pushUserDataToCloud();
       } catch {
         // Ignore
       }
     }
-  }, [state]);
+  }, [state.status, state.activeExerciseIndex, state.currentSetIndex, state.setLogs, state.isPaused]);
+
+  // Listen for Cross-Device Session Restore
+  useEffect(() => {
+    const handleCloudRestore = () => {
+      const cloudSession: any = cacheStore.get('active_gym_session');
+      if (cloudSession && (cloudSession.status === 'active' || cloudSession.status === 'resting' || cloudSession.status === 'paused')) {
+        setState(prev => {
+          if (prev.status === 'idle' || prev.status === 'completed') {
+            return {
+              ...cloudSession,
+              isMinimized: true,
+              isPlayerOpen: false,
+            };
+          }
+          return prev;
+        });
+        setHasSavedDraft(true);
+      }
+    };
+
+    window.addEventListener('beast_cloud_synced', handleCloudRestore);
+    return () => window.removeEventListener('beast_cloud_synced', handleCloudRestore);
+  }, []);
 
   // Master Elapsed Time & Rest Timer Engine (Anchored to Timestamps)
   useEffect(() => {

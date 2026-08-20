@@ -2540,6 +2540,24 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 setManualRowSuggestions(null);
               };
 
+              const moveExerciseUp = (exIdx: number) => {
+                if (exIdx === 0) return;
+                const updated = [...manualDays];
+                const item = updated[dayIdx].exercises.splice(exIdx, 1)[0];
+                updated[dayIdx].exercises.splice(exIdx - 1, 0, item);
+                setManualDays(updated);
+                setManualRowSuggestions(null);
+              };
+
+              const moveExerciseDown = (exIdx: number) => {
+                if (exIdx >= manualDays[dayIdx].exercises.length - 1) return;
+                const updated = [...manualDays];
+                const item = updated[dayIdx].exercises.splice(exIdx, 1)[0];
+                updated[dayIdx].exercises.splice(exIdx + 1, 0, item);
+                setManualDays(updated);
+                setManualRowSuggestions(null);
+              };
+
               const updateExercise = (exIdx: number, field: string, val: any) => {
                 const updated = [...manualDays];
                 updated[dayIdx].exercises[exIdx] = {
@@ -2589,6 +2607,24 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 }
               };
 
+              const duplicateCurrentDayAsNew = () => {
+                if (manualDays.length >= 7) {
+                  alert(lang === 'en' ? 'Maximum 7 days reached.' : 'وصلت للحد الأقصى المسموح (7 أيام).');
+                  return;
+                }
+                const nextDayNum = manualDays.length + 1;
+                const cloned = {
+                  dayIndex: nextDayNum,
+                  title: `${currentDay.title} (نسخة)`,
+                  focusArea: currentDay.focusArea,
+                  isRestDay: currentDay.isRestDay,
+                  exercises: JSON.parse(JSON.stringify(currentDay.exercises || [])),
+                };
+                setManualDays([...manualDays, cloned]);
+                setManualActiveDayIdx(nextDayNum);
+                alert(lang === 'en' ? `Day duplicated as Day ${nextDayNum}!` : `تم نسخ اليوم بنجاح كـ اليوم ${nextDayNum}!`);
+              };
+
               const duplicateDayToNext = () => {
                 const nextIdx = (dayIdx + 1) % 7;
                 const updated = [...manualDays];
@@ -2636,6 +2672,30 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 alert(lang === 'en' ? '🧊 Added recovery & stretching routine to day!' : '🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم بنجاح!');
               };
 
+              // Compute weekly muscle volume
+              const weeklyVolume: Record<string, { sets: number; ar: string; en: string }> = {
+                chest: { sets: 0, ar: 'صدر', en: 'Chest' },
+                back: { sets: 0, ar: 'ظهر', en: 'Back' },
+                shoulders: { sets: 0, ar: 'أكتاف', en: 'Shoulders' },
+                legs: { sets: 0, ar: 'أرجل', en: 'Legs' },
+                arms: { sets: 0, ar: 'ذراعين', en: 'Arms' },
+                core: { sets: 0, ar: 'بطن وكور', en: 'Core' },
+              };
+
+              manualDays.forEach((d) => {
+                if (d.isRestDay || !d.exercises) return;
+                d.exercises.forEach((ex: any) => {
+                  const s = parseInt(String(ex.sets)) || 3;
+                  const m = (ex.targetMuscle || '').toLowerCase();
+                  if (m.includes('chest') || m.includes('صدر')) weeklyVolume.chest.sets += s;
+                  else if (m.includes('back') || m.includes('ظهر') || m.includes('lats')) weeklyVolume.back.sets += s;
+                  else if (m.includes('shoulder') || m.includes('كتف') || m.includes('أكتاف') || m.includes('delts')) weeklyVolume.shoulders.sets += s;
+                  else if (m.includes('leg') || m.includes('quad') || m.includes('hamstring') || m.includes('glute') || m.includes('أرجل') || m.includes('فخذ') || m.includes('squat')) weeklyVolume.legs.sets += s;
+                  else if (m.includes('bicep') || m.includes('tricep') || m.includes('باي') || m.includes('تراي') || m.includes('arm')) weeklyVolume.arms.sets += s;
+                  else if (m.includes('abs') || m.includes('core') || m.includes('بطن') || m.includes('plank')) weeklyVolume.core.sets += s;
+                });
+              });
+
               return (
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   
@@ -2665,8 +2725,28 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       </div>
                     </div>
 
-                    {/* Navigation buttons: Prev / Next */}
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    {/* Navigation buttons: Prev / Duplicate / Next */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={duplicateCurrentDayAsNew}
+                        className="secondary-btn"
+                        style={{
+                          padding: '7px 12px',
+                          fontSize: '12px',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          borderColor: 'rgba(0, 210, 255, 0.4)',
+                          color: 'var(--primary)',
+                        }}
+                        title="نسخ هذا اليوم التدريبي بالكامل كـ يوم إضافي في الجدول"
+                      >
+                        <Copy size={13} />
+                        <span>{lang === 'en' ? 'Clone as New Day' : 'تكرار كـ يوم جديد 📋'}</span>
+                      </button>
+
                       <button
                         type="button"
                         disabled={dayIdx === 0}
@@ -2703,6 +2783,58 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       >
                         <span>{lang === 'en' ? 'Next Day ▶' : 'اليوم التالي ▶'}</span>
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Live Weekly Muscle Volume Breakdown */}
+                  <div style={{
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '14px',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📊 {lang === 'en' ? 'Live Weekly Muscle Volume & Sets:' : 'تحليل الحجم العضلي الأسبوعي (مجموع الجولات):'}</span>
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        {lang === 'en' ? '🟢 Optimal: 10-20 sets/week' : '🟢 النطاق المثالي للضخامة: 10-20 جولة/أسبوع'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {Object.entries(weeklyVolume).map(([k, v]) => {
+                        const isOptimal = v.sets >= 10 && v.sets <= 20;
+                        const isHigh = v.sets > 20;
+                        const isLow = v.sets > 0 && v.sets < 10;
+                        const badgeColor = isOptimal ? '#10b981' : isHigh ? '#f59e0b' : isLow ? '#38bdf8' : '#64748b';
+                        const badgeBg = isOptimal ? 'rgba(16, 185, 129, 0.12)' : isHigh ? 'rgba(245, 158, 11, 0.12)' : isLow ? 'rgba(56, 189, 248, 0.12)' : 'rgba(100, 116, 139, 0.12)';
+                        const label = lang === 'en' ? v.en : v.ar;
+
+                        return (
+                          <div
+                            key={k}
+                            style={{
+                              background: badgeBg,
+                              border: `1px solid ${badgeColor}40`,
+                              borderRadius: '10px',
+                              padding: '4px 10px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              fontSize: '11.5px',
+                            }}
+                          >
+                            <span style={{ color: 'var(--text-secondary)' }}>{label}:</span>
+                            <span style={{ fontWeight: '800', color: badgeColor }}>
+                              {v.sets} {lang === 'en' ? 'sets' : 'جولات'}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -2886,7 +3018,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             {/* Table Headers */}
                             <div style={{
                               display: 'grid',
-                              gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 38px',
+                              gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 96px',
                               gap: '8px',
                               padding: '6px 12px',
                               fontSize: '11px',
@@ -2900,7 +3032,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Sets' : 'الجولات 🔢'}</div>
                             <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Reps / Time' : 'التكرار أو المدة ⏱️'}</div>
                             <div>{lang === 'en' ? 'Equipment' : 'الأداة 🏋️'}</div>
-                            <div></div>
+                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Actions' : 'إجراءات'}</div>
                           </div>
 
                           {/* Exercise Rows */}
@@ -2914,7 +3046,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                 style={{
                                   position: 'relative',
                                   display: 'grid',
-                                  gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 38px',
+                                  gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 96px',
                                   gap: '8px',
                                   alignItems: 'center',
                                   padding: '10px 12px',
@@ -3154,26 +3286,73 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                   </select>
                                 </div>
 
-                                {/* Delete Exercise Button */}
-                                <button
-                                  type="button"
-                                  onClick={() => removeExercise(exIdx)}
-                                  style={{
-                                    background: 'rgba(239, 68, 68, 0.12)',
-                                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                                    color: '#ef4444',
-                                    borderRadius: '8px',
-                                    height: '34px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.15s',
-                                  }}
-                                  title="حذف هذا التمرين"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
+                                {/* Action Controls: Move Up, Move Down, Delete */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                                  <button
+                                    type="button"
+                                    disabled={exIdx === 0}
+                                    onClick={() => moveExerciseUp(exIdx)}
+                                    style={{
+                                      width: '26px',
+                                      height: '32px',
+                                      borderRadius: '6px',
+                                      background: 'rgba(255,255,255,0.06)',
+                                      border: '1px solid rgba(255,255,255,0.1)',
+                                      color: exIdx === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
+                                      cursor: exIdx === 0 ? 'not-allowed' : 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      opacity: exIdx === 0 ? 0.35 : 1,
+                                      fontSize: '11px',
+                                    }}
+                                    title={lang === 'en' ? 'Move Up' : 'تحريك للأعلى'}
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={exIdx >= currentDay.exercises.length - 1}
+                                    onClick={() => moveExerciseDown(exIdx)}
+                                    style={{
+                                      width: '26px',
+                                      height: '32px',
+                                      borderRadius: '6px',
+                                      background: 'rgba(255,255,255,0.06)',
+                                      border: '1px solid rgba(255,255,255,0.1)',
+                                      color: exIdx >= currentDay.exercises.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                                      cursor: exIdx >= currentDay.exercises.length - 1 ? 'not-allowed' : 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      opacity: exIdx >= currentDay.exercises.length - 1 ? 0.35 : 1,
+                                      fontSize: '11px',
+                                    }}
+                                    title={lang === 'en' ? 'Move Down' : 'تحريك للأسفل'}
+                                  >
+                                    ▼
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeExercise(exIdx)}
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.12)',
+                                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                                      color: '#ef4444',
+                                      borderRadius: '6px',
+                                      width: '28px',
+                                      height: '32px',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.15s',
+                                    }}
+                                    title={lang === 'en' ? 'Delete exercise' : 'حذف هذا التمرين'}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               </div>
                             );
                           })}

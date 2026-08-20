@@ -24,6 +24,9 @@ function generateId(): number {
 // ==========================================
 // AUTOMATIC CROSS-DEVICE CLOUD SYNC ENGINE
 // ==========================================
+// ==========================================
+// AUTOMATIC CROSS-DEVICE CLOUD SYNC ENGINE
+// ==========================================
 export async function pushUserDataToCloud(): Promise<void> {
   try {
     const user = await getCurrentUser();
@@ -36,6 +39,7 @@ export async function pushUserDataToCloud(): Promise<void> {
     const allRecoveryLogs = cacheStore.get('all_recovery_logs');
     const latestRecoveryLog = cacheStore.get('latest_recovery_log');
     const userStats = cacheStore.get('user_stats');
+    const activeGymSession = cacheStore.get('active_gym_session');
     const timerSoundPack = localStorage.getItem('bm_timer_sound_pack') || 'BOXING_BELL';
     const timerVolume = localStorage.getItem('bm_timer_volume') || '80';
 
@@ -47,6 +51,7 @@ export async function pushUserDataToCloud(): Promise<void> {
       allRecoveryLogs,
       latestRecoveryLog,
       userStats,
+      activeGymSession,
       userPreferences: {
         timerSoundPack,
         timerVolume,
@@ -61,6 +66,7 @@ export async function pushUserDataToCloud(): Promise<void> {
         beast_profile: userProfile,
         beast_active_plan: activePlan,
         beast_plan_history: planHistory,
+        beast_active_session: activeGymSession,
         beast_sync_data: JSON.stringify(payload),
       },
     });
@@ -96,6 +102,7 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
     let profileData: any = null;
     let planData: any = null;
     let historyData: any = null;
+    let activeSessionData: any = null;
 
     if (user.user_metadata?.beast_profile) {
       profileData = typeof user.user_metadata.beast_profile === 'string'
@@ -112,6 +119,11 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
         ? JSON.parse(user.user_metadata.beast_plan_history)
         : user.user_metadata.beast_plan_history;
     }
+    if (user.user_metadata?.beast_active_session) {
+      activeSessionData = typeof user.user_metadata.beast_active_session === 'string'
+        ? JSON.parse(user.user_metadata.beast_active_session)
+        : user.user_metadata.beast_active_session;
+    }
 
     const rawMeta = user.user_metadata?.beast_sync_data;
     if (rawMeta) {
@@ -125,6 +137,7 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
     const finalProfile = profileData || syncData?.userProfile;
     const finalPlan = planData || syncData?.activePlan;
     const finalHistory = historyData || syncData?.planHistory;
+    const finalSession = activeSessionData || syncData?.activeGymSession;
 
     if (finalProfile) {
       const localProf: any = cacheStore.get('user_profile') || {};
@@ -135,6 +148,12 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
     }
     if (finalHistory && finalHistory.length > 0) {
       cacheStore.set('plan_history', finalHistory);
+    }
+    if (finalSession && (finalSession.status === 'active' || finalSession.status === 'resting' || finalSession.status === 'paused')) {
+      cacheStore.set('active_gym_session', finalSession);
+      try {
+        localStorage.setItem('beastmode_active_gym_session', JSON.stringify(finalSession));
+      } catch {}
     }
     if (syncData?.userRecovery) {
       cacheStore.set('user_recovery', syncData.userRecovery);
@@ -170,9 +189,95 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
   }
 }
 
+export async function createCloudSnapshot(name: string): Promise<any> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error('يرجى تسجيل الدخول لحفظ نسخة احتياطية سحابية.');
+
+  const existingRaw = user.user_metadata?.beast_snapshots;
+  let snapshots: any[] = [];
+  if (existingRaw) {
+    try {
+      snapshots = typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw;
+    } catch {
+      snapshots = [];
+    }
+  }
+
+  const newSnapshot = {
+    id: generateId(),
+    name: name.trim() || `نسخة احتياطية (${new Date().toLocaleDateString('ar-EG')})`,
+    timestamp: Date.now(),
+    createdAt: new Date().toISOString(),
+    activePlan: cacheStore.get('active_plan'),
+    userProfile: cacheStore.get('user_profile'),
+    planHistory: cacheStore.get('plan_history'),
+    userRecovery: cacheStore.get('user_recovery'),
+    userStats: cacheStore.get('user_stats'),
+  };
+
+  const updated = [newSnapshot, ...snapshots.slice(0, 9)]; // Keep up to 10 snapshots
+  await supabase.auth.updateUser({
+    data: {
+      beast_snapshots: JSON.stringify(updated),
+    },
+  });
+
+  return newSnapshot;
+}
+
+export async function getCloudSnapshots(): Promise<any[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+
+  const existingRaw = user.user_metadata?.beast_snapshots;
+  if (!existingRaw) return [];
+
+  try {
+    return typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw;
+  } catch {
+    return [];
+  }
+}
+
+export async function restoreCloudSnapshot(snapshotId: string | number): Promise<boolean> {
+  const snapshots = await getCloudSnapshots();
+  const target = snapshots.find((s) => String(s.id) === String(snapshotId) || s.id === snapshotId);
+  if (!target) throw new Error('النسخة الاحتياطية غير موجودة.');
+
+  if (target.activePlan) cacheStore.set('active_plan', target.activePlan);
+  if (target.userProfile) cacheStore.set('user_profile', target.userProfile);
+  if (target.planHistory) cacheStore.set('plan_history', target.planHistory);
+  if (target.userRecovery) cacheStore.set('user_recovery', target.userRecovery);
+  if (target.userStats) cacheStore.set('user_stats', target.userStats);
+
+  await pushUserDataToCloud();
+  window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+  return true;
+}
+
+export async function deleteCloudSnapshot(snapshotId: string | number): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+
+  const snapshots = await getCloudSnapshots();
+  const filtered = snapshots.filter((s) => String(s.id) !== String(snapshotId) && s.id !== snapshotId);
+
+  await supabase.auth.updateUser({
+    data: {
+      beast_snapshots: JSON.stringify(filtered),
+    },
+  });
+
+  return true;
+}
+
 export const api = {
   pushUserDataToCloud,
   syncUserDataFromCloud,
+  createCloudSnapshot,
+  getCloudSnapshots,
+  restoreCloudSnapshot,
+  deleteCloudSnapshot,
   // ==========================================
   // AUTH API (Direct Supabase Auth + Database)
   // ==========================================
