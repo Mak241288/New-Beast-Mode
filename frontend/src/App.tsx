@@ -106,6 +106,9 @@ function App() {
             cacheStore.set('user_profile', profile);
           }
 
+          // Sync cloud data across devices
+          await api.syncUserDataFromCloud();
+
           // Clean OAuth access token fragment from URL for clean routing
           if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
             window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
@@ -151,6 +154,9 @@ function App() {
             // Non-fatal
           }
         }
+
+        // Sync cloud data across devices
+        await api.syncUserDataFromCloud();
 
         if (event === 'SIGNED_IN') {
           setCurrentView('dashboard');

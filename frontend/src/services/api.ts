@@ -21,7 +21,114 @@ function generateId(): number {
   return Math.floor(Date.now() + Math.random() * 1000);
 }
 
+// ==========================================
+// AUTOMATIC CROSS-DEVICE CLOUD SYNC ENGINE
+// ==========================================
+let syncTimeout: any = null;
+
+export async function pushUserDataToCloud(): Promise<void> {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    try {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      const activePlan = cacheStore.get('active_plan');
+      const userProfile = cacheStore.get('user_profile');
+      const planHistory = cacheStore.get('plan_history');
+      const userRecovery = cacheStore.get('user_recovery');
+      const userStats = cacheStore.get('user_stats');
+
+      const payload = {
+        activePlan,
+        userProfile,
+        planHistory,
+        userRecovery,
+        userStats,
+        lastSyncedAt: Date.now(),
+      };
+
+      // 1. Update Supabase User Metadata (Guaranteed to work across all devices with 0 extra SQL tables)
+      await supabase.auth.updateUser({
+        data: {
+          beast_sync_data: JSON.stringify(payload),
+        },
+      });
+
+      // 2. Also persist to User row if table accessible
+      const email = user.email || (userProfile as any)?.email;
+      if (email) {
+        try {
+          await supabase.from('User').upsert(
+            {
+              email,
+              name: (userProfile as any)?.name || user.user_metadata?.name || 'Beast Athlete',
+              updatedAt: new Date().toISOString(),
+            },
+            { onConflict: 'email' }
+          );
+        } catch {
+          // Non-fatal
+        }
+      }
+    } catch (err) {
+      console.warn('[CloudSync] Background sync push failed:', err);
+    }
+  }, 800);
+}
+
+export async function syncUserDataFromCloud(): Promise<boolean> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return false;
+
+    // 1. Read cloud sync data from Supabase Auth user_metadata
+    let syncData: any = null;
+    const rawMeta = user.user_metadata?.beast_sync_data;
+    if (rawMeta) {
+      try {
+        syncData = typeof rawMeta === 'string' ? JSON.parse(rawMeta) : rawMeta;
+      } catch {
+        syncData = null;
+      }
+    }
+
+    if (syncData) {
+      if (syncData.activePlan && syncData.activePlan.dayWorkouts && syncData.activePlan.dayWorkouts.length > 0) {
+        cacheStore.set('active_plan', syncData.activePlan);
+      }
+      if (syncData.userProfile) {
+        const localProf: any = cacheStore.get('user_profile') || {};
+        cacheStore.set('user_profile', { ...localProf, ...syncData.userProfile });
+      }
+      if (syncData.planHistory && syncData.planHistory.length > 0) {
+        cacheStore.set('plan_history', syncData.planHistory);
+      }
+      if (syncData.userRecovery) {
+        cacheStore.set('user_recovery', syncData.userRecovery);
+      }
+      if (syncData.userStats) {
+        cacheStore.set('user_stats', syncData.userStats);
+      }
+      return true;
+    } else {
+      // If cloud is empty but local has data, immediately push local to cloud!
+      const activePlan = cacheStore.get('active_plan');
+      const userProfile = cacheStore.get('user_profile');
+      if (activePlan || userProfile) {
+        await pushUserDataToCloud();
+      }
+      return true;
+    }
+  } catch (err) {
+    console.warn('[CloudSync] Failed to pull from cloud:', err);
+    return false;
+  }
+}
+
 export const api = {
+  pushUserDataToCloud,
+  syncUserDataFromCloud,
   // ==========================================
   // AUTH API (Direct Supabase Auth + Database)
   // ==========================================
@@ -131,10 +238,13 @@ export const api = {
 
     cacheStore.set('user_profile', profile);
 
+    // Sync cloud data across devices
+    await syncUserDataFromCloud();
+
     return {
       token,
       user: data.user,
-      profile,
+      profile: cacheStore.get('user_profile') || profile,
       message: 'تم تسجيل الدخول بنجاح!',
     };
   },
@@ -527,6 +637,7 @@ export const api = {
     };
 
     cacheStore.set('active_plan', newPlan);
+    pushUserDataToCloud();
 
     // Persist to Supabase if accessible
     try {
@@ -580,6 +691,7 @@ export const api = {
     };
 
     cacheStore.set('active_plan', generated);
+    pushUserDataToCloud();
     return generated;
   },
 
@@ -595,6 +707,7 @@ export const api = {
         }
       });
       cacheStore.set('active_plan', plan);
+      pushUserDataToCloud();
     }
 
     try {
@@ -615,6 +728,7 @@ export const api = {
         }
       });
       cacheStore.set('active_plan', plan);
+      pushUserDataToCloud();
     }
 
     try {
@@ -683,6 +797,7 @@ export const api = {
       if (day) {
         day.exercises = [...(day.exercises || []), newEx];
         cacheStore.set('active_plan', plan);
+        pushUserDataToCloud();
       }
     }
 
@@ -716,6 +831,7 @@ export const api = {
       if (dayIndex !== -1) {
         plan.dayWorkouts[dayIndex] = { ...plan.dayWorkouts[dayIndex], ...data };
         cacheStore.set('active_plan', plan);
+        pushUserDataToCloud();
       }
     }
     return { success: true };
@@ -733,6 +849,7 @@ export const api = {
         }
       });
       cacheStore.set('active_plan', plan);
+      pushUserDataToCloud();
     }
 
     return {
@@ -796,6 +913,7 @@ export const api = {
     const history: any[] = cacheStore.get('plan_history') || [];
     const updatedHistory = [plan, ...history.filter((p: any) => p.id !== plan.id && p.title !== plan.title).map((p: any) => ({ ...p, active: false }))];
     cacheStore.set('plan_history', updatedHistory);
+    pushUserDataToCloud();
 
     const user = await getCurrentUser();
     if (user?.email) {
@@ -882,6 +1000,7 @@ export const api = {
         active: String(p.id) === String(id) || p.id === id,
       }));
       cacheStore.set('plan_history', updatedHistory);
+      pushUserDataToCloud();
 
       const user = await getCurrentUser();
       if (user?.email) {
