@@ -346,14 +346,27 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
       </div>
 
       <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '420px', padding: '40px 30px', border: '1px solid rgba(255, 255, 255, 0.08)', margin: 'auto' }}>
-        <div className="flex-center" style={{ flexDirection: 'column', marginBottom: '24px' }}>
-          <div style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', padding: '16px', borderRadius: '50%', marginBottom: '16px', boxShadow: '0 8px 24px var(--primary-glow)' }}>
-            <Dumbbell size={36} color="#ffffff" />
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '26px' }}>
+          <div
+            style={{
+              width: '68px',
+              height: '68px',
+              background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+              borderRadius: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px',
+              boxShadow: '0 8px 24px var(--primary-glow)',
+              flexShrink: 0,
+            }}
+          >
+            <Dumbbell size={34} color="#ffffff" />
           </div>
-          <h2 style={{ fontSize: '28px', fontWeight: '800', background: 'linear-gradient(135deg, var(--text-primary), var(--text-secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: '900', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '0.5px', margin: 0 }}>
             BEASTMODE
           </h2>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+          <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', marginTop: '6px', marginBottom: 0 }}>
             {lang === 'en' ? 'AI Fitness & Nutrition Specialist' : 'خبير اللياقة والتغذية بالذكاء الاصطناعي'}
           </p>
         </div>

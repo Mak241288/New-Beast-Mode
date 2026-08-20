@@ -636,6 +636,13 @@ body[dir='rtl'] .routine-exercise-card:hover {
   gap: 24px;
 }
 
+/* Flex Center Helper */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Landing Page Responsive Navigation */
 .landing-header {
   position: sticky;
