@@ -1212,7 +1212,7 @@ export const activateHistoricalPlan = async (req: AuthRequest, res: Response): P
 
     // Deactivate current active plans
     await prisma.workoutPlan.updateMany({
-      where: { userId, active: true },
+      where: { userId: Number(userId), active: true },
       data: { active: false },
     });
 

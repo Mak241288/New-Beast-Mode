@@ -666,14 +666,16 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
   }
 
   try {
+    const numericUserId = Number(userId);
+
     // 1. Delete standalone CheckIns
     await prisma.checkIn.deleteMany({
-      where: { userId },
+      where: { userId: Number(numericUserId) },
     });
 
     // 2. Delete User (Cascades to WeightLogs, WorkoutPlans, DayWorkouts, Exercises, ProgressLogs)
     await prisma.user.delete({
-      where: { id: userId },
+      where: { id: Number(numericUserId) },
     });
 
     // Clear Auth Cookie
