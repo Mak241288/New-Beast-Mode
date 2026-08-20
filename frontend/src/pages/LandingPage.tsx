@@ -1,5 +1,29 @@
 import React, { useState } from 'react';
-import { Dumbbell, Activity, Zap, ArrowRight, ChevronDown, ChevronUp, Globe, FileText, Lock, Info, Crown, Layers, Utensils, Percent, Droplets, WifiOff, Brain } from 'lucide-react';
+import { 
+  Dumbbell, 
+  Activity, 
+  Zap, 
+  ArrowRight, 
+  ChevronDown, 
+  ChevronUp, 
+  Globe, 
+  FileText, 
+  Lock, 
+  Info, 
+  Crown, 
+  Layers, 
+  Utensils, 
+  Percent, 
+  Droplets, 
+  WifiOff, 
+  Brain,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  Timer,
+  Sparkles,
+  Calculator
+} from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 interface LandingPageProps {
@@ -19,6 +43,96 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const isEn = lang === 'en';
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [activePreviewTab, setActivePreviewTab] = useState<'player' | 'scanner' | 'macros' | 'plates'>('player');
+
+  // Mini-Calculator 1: Quick TDEE & Macro State
+  const [tdeeWeight, setTdeeWeight] = useState<number>(75);
+  const [tdeeHeight, setTdeeHeight] = useState<number>(178);
+  const [tdeeGender, setTdeeGender] = useState<'male' | 'female'>('male');
+  const [tdeeGoal, setTdeeGoal] = useState<'cut' | 'bulk' | 'maintain'>('bulk');
+  const [tdeeCalculated, setTdeeCalculated] = useState<boolean>(false);
+  const [tdeeResult, setTdeeResult] = useState<{ bmr: number; tdee: number; targetCals: number; protein: number; carbs: number; fats: number; trainingCals: number; restCals: number } | null>(null);
+
+  // Mini-Calculator 2: Quick 1RM & Plates State
+  const [oneRmWeight, setOneRmWeight] = useState<number>(100);
+  const [oneRmReps, setOneRmReps] = useState<number>(5);
+  const [barbellWeight, setBarbellWeight] = useState<number>(20);
+
+  // Mini Muscle Explorer State
+  const [selectedMuscle, setSelectedMuscle] = useState<string>('chest');
+
+  // Handle Quick TDEE calculation
+  const handleCalculateTdee = () => {
+    // Mifflin-St Jeor Formula
+    const bmr = tdeeGender === 'male'
+      ? Math.round(10 * tdeeWeight + 6.25 * tdeeHeight - 5 * 25 + 5)
+      : Math.round(10 * tdeeWeight + 6.25 * tdeeHeight - 5 * 25 - 161);
+    
+    const tdee = Math.round(bmr * 1.55); // Moderate activity multiplier
+    let targetCals = tdee;
+    if (tdeeGoal === 'bulk') targetCals = Math.round(tdee * 1.12);
+    if (tdeeGoal === 'cut') targetCals = Math.round(tdee * 0.82);
+
+    const protein = Math.round(tdeeWeight * 2.2); // 2.2g per kg
+    const fats = Math.round((targetCals * 0.25) / 9);
+    const carbs = Math.max(50, Math.round((targetCals - (protein * 4 + fats * 9)) / 4));
+
+    const trainingCals = Math.round(targetCals * 1.06);
+    const restCals = Math.round(targetCals * 0.94);
+
+    setTdeeResult({ bmr, tdee, targetCals, protein, carbs, fats, trainingCals, restCals });
+    setTdeeCalculated(true);
+  };
+
+  // Compute 1RM dynamically
+  const calculated1RM = Math.round(oneRmWeight * (1 + oneRmReps / 30));
+  const plateWeightPerSide = Math.max(0, (oneRmWeight - barbellWeight) / 2);
+
+  // Muscle exercises data for mini explorer
+  const muscleExercisesMap: Record<string, { nameEn: string; nameAr: string; tipsEn: string; tipsAr: string; level: string }> = {
+    chest: {
+      nameEn: 'Incline Dumbbell Bench Press',
+      nameAr: 'تجميع دمبلز عالي مائل (Incline Press)',
+      tipsEn: '30-degree incline targets upper clavicular head with 1.2x contraction.',
+      tipsAr: 'زاوية 30 درجة تركز على ألياف الصدر العلوي مع ثبات لوحي الكتف.',
+      level: 'Advanced Hypertrophy'
+    },
+    back: {
+      nameEn: 'Chest-Supported T-Bar Row',
+      nameAr: 'سحب تي-بار بمسند للصدر (T-Bar Row)',
+      tipsEn: 'Isolates the lats and rhomboids with zero lower back strain.',
+      tipsAr: 'عزل كامل للاتس والمجنص مع حماية 100% للفقرات القطنية.',
+      level: 'Elite V-Taper'
+    },
+    shoulders: {
+      nameEn: 'Cable Egyptian Lateral Raise',
+      nameAr: 'رفرفة جانبي بالكيبل مع انحناء (Egyptian Raise)',
+      tipsEn: 'Maintains constant mechanical tension throughout full shoulder ROM.',
+      tipsAr: 'شد ميكانيكي مستمر على الرأس الجانبي للكتف طوال المدى الحركي.',
+      level: '3D Delts'
+    },
+    legs: {
+      nameEn: 'Bulgarian Split Squat',
+      nameAr: 'سكوات بلغاري أحادي (Bulgarian Split Squat)',
+      tipsEn: 'Maximum quad and glute hypertrophy with unilateral balance correction.',
+      tipsAr: 'تضخيم مكثف للفخذ الأمامي والخلفي وعلاج الفروقات العضلية.',
+      level: 'Leg Day King'
+    },
+    arms: {
+      nameEn: 'Incline Dumbbell Biceps Curl',
+      nameAr: 'تبادل بايسبس على بنش مائل (Incline Curl)',
+      tipsEn: 'Places the long head under deep stretch for peak bicep building.',
+      tipsAr: 'استطالة عميقة للرأس الطويل للبايسبس لبروز قمة العضلة.',
+      level: 'Arm Annihilator'
+    },
+    core: {
+      nameEn: 'Hanging Leg Raises to 90°',
+      nameAr: 'رفع أرجل معلق للعقلة (Hanging Leg Raise)',
+      tipsEn: 'Targets lower abs and deep core transverse stabilizers without spine shear.',
+      tipsAr: 'استهداف مباشر للبطن السفلية والجذع دون ضغط على العمود الفقري.',
+      level: 'Six-Pack Shred'
+    }
+  };
 
   const faqs = isEn ? [
     {
@@ -138,11 +252,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
   ];
 
+  // Comparison Table Data
+  const comparisonItems = isEn ? [
+    { feature: 'AI Workout Plan Customization', traditional: 'Static repetitive templates', beastmode: 'Dual AI (Groq + Gemini) tailored to equipment & goals' },
+    { feature: 'Exercise Library Depth', traditional: '200 - 500 basic exercises', beastmode: '4,298+ Enriched Exercises + MuscleWiki + YouTube Form' },
+    { feature: 'Offline Gym Execution', traditional: 'Fails in gym basements (Requires internet)', beastmode: 'Full PWA Offline Support with synthesized audio timer' },
+    { feature: 'AI Physique & Symmetry Scanner', traditional: 'Not available or expensive subscription', beastmode: 'Built-in biomechanical analysis & V-Taper index' },
+    { feature: 'Barbell Plates & 1RM Simulator', traditional: 'External calculator required', beastmode: 'Visual Olympic plate loader with working set %' },
+    { feature: 'Pricing & Ads', traditional: 'Monthly subscriptions ($15-$30/mo) + ads', beastmode: '100% Free & Open Community Edition • Zero Ads' },
+  ] : [
+    { feature: 'تخصيص الجداول بالذكاء الاصطناعي', traditional: 'قوالب ثابتة ومكررة بدون فهم حقيقي', beastmode: 'ذكاء اصطناعي مزدوج (Groq + Gemini) يتكيف مع أدواتك' },
+    { feature: 'حجم وعمق مكتبة التمارين', traditional: '200 إلى 500 تمرين فقط', beastmode: '4,298+ تمرين مفصل + صور تشريح + فيديوهات التكنيك' },
+    { feature: 'العمل داخل صالات الجيم السفلية', traditional: 'يتوقف عن العمل عند انقطاع الإنترنت', beastmode: 'PWA أوفلاين كامل مع أصوات ومؤقتات بدون نت' },
+    { feature: 'ماسح التحول والتناسق العضلي', traditional: 'غير متوفر أو باشتراكات مكلفة جداً', beastmode: 'تحليل بيوميكانيكي مجاني للدهون ومؤشر الـ V-Taper' },
+    { feature: 'محاكي صفائح البار والـ 1RM', traditional: 'تحتاج تطبيقات خارجية منفصلة', beastmode: 'محاكي بصري ملون للبار وحساب الجولات بنقرة واحدة' },
+    { feature: 'الاشتراكات والإعلانات', traditional: 'اشتراكات شهرية مدفوعة وإعلانات مزعجة', beastmode: 'مجاني بالكامل للمجتمع الرياضي • بدون أي إعلانات' },
+  ];
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       
       {/* NAVIGATION BAR */}
-      <header className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderRadius: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderRadius: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backdropFilter: 'blur(16px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary-glow)' }}>
             <Dumbbell size={20} color="#ffffff" />
@@ -151,16 +282,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             BEASTMODE AI
           </span>
           <span style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            PRO v3.0 ECOSYSTEM
+            PRO v3.0
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* Language Switcher */}
           <button
             onClick={() => onLanguageChange(isEn ? 'ar' : 'en')}
             className="secondary-btn"
-            style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}
+            style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '8px' }}
           >
             <Globe size={14} />
             <span>{isEn ? 'العربية' : 'English'}</span>
@@ -171,7 +302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onLogin}
             className="secondary-btn"
-            style={{ padding: '8px 16px', fontSize: '13px' }}
+            style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '8px' }}
           >
             {isEn ? 'Sign In' : 'تسجيل الدخول'}
           </button>
@@ -179,7 +310,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onGetStarted}
             className="glow-btn"
-            style={{ padding: '8px 18px', fontSize: '13px' }}
+            style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '8px' }}
           >
             {isEn ? 'Get Started ⚡' : 'ابدأ مجاناً ⚡'}
           </button>
@@ -187,97 +318,455 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </header>
 
       {/* HERO SECTION */}
-      <section style={{ padding: '90px 20px 60px', maxWidth: '1150px', margin: '0 auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '26px' }}>
+      <section style={{ padding: '70px 20px 40px', maxWidth: '1180px', margin: '0 auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '22px' }}>
         
         {/* Elite Badge */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold', boxShadow: '0 0 20px rgba(16, 185, 129, 0.1)' }}>
           <Crown size={16} color="#f59e0b" />
-          <span>{isEn ? 'All-in-One AI Fitness, Nutrition, 1RM & Physique Scanner' : 'المنظومة الرياضية المتكاملة للياقة البدنية، التغذية الذكية، وأساطير كمال الأجسام'}</span>
+          <span>{isEn ? 'The All-in-One AI Fitness & Bodybuilding Ecosystem' : 'المنظومة الرياضية الشاملة للياقة البدنية، التغذية، وأساطير كمال الأجسام'}</span>
         </div>
 
         {/* Hero Title */}
-        <h1 style={{ fontSize: 'clamp(34px, 5.5vw, 60px)', fontWeight: '900', lineHeight: 1.15, maxWidth: '980px', letterSpacing: '-0.5px' }}>
+        <h1 style={{ fontSize: 'clamp(32px, 5.2vw, 56px)', fontWeight: '900', lineHeight: 1.18, maxWidth: '1000px', letterSpacing: '-0.5px' }}>
           {isEn ? (
-            <>Sculpt Your Ultimate Physique With <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Legendary Science</span>, AI Physique Scanning & Smart Macros</>
+            <>Train Like A Pro With <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Dual AI Intelligence</span>, 4,298+ Exercises & Smart Nutrition 🦍🔥</>
           ) : (
-            <>اصنع نسختك الأقوى.. ببرامج <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>أساطير كمال الأجسام</span>، ماسح الذكاء الاصطناعي، وتغذية دقيقة</>
+            <>درّب جسمك كالمحترفين.. بذكاء اصطناعي <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>يحلل عضلاتك</span>، يبني جدولك، ويحسب جرامات طعامك بدقة 🦍🔥</>
           )}
         </h1>
 
         {/* Hero Description */}
-        <p style={{ fontSize: 'clamp(15px, 2vw, 18.5px)', color: 'var(--text-secondary)', maxWidth: '840px', lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: 'clamp(15px, 1.8vw, 18px)', color: 'var(--text-secondary)', maxWidth: '880px', lineHeight: 1.7, margin: 0 }}>
           {isEn
-            ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, visualize Olympic barbell plates & 1RM, and manage multiple workout programs with zero latency.'
-            : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، حاكِ صفائح البار والـ 1RM، وأدر جداول تدريبية متعددة بسلاسة.'}
+            ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, visualize Olympic barbell plates & 1RM, and run seamless offline gym sessions with zero latency.'
+            : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، حاكِ صفائح البار والـ 1RM، وتدرب أوفلاين في الجيم بلا انقطاع.'}
         </p>
 
         {/* Hero Action Buttons */}
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '10px' }}>
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '10px' }}>
           <button
             onClick={onGetStarted}
             className="glow-btn"
-            style={{ padding: '15px 36px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px', borderRadius: '12px' }}
+            style={{ padding: '16px 36px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px', borderRadius: '12px', fontWeight: '800' }}
           >
-            <span>{isEn ? 'Build My Complete Plan ⚡' : 'صمم خطتك الرياضية والغذائية الآن ⚡'}</span>
+            <span>{isEn ? 'Build My Plan in 60s ⏱️⚡' : 'صمم خطتك المخصصة في 60 ثانية ⏱️⚡'}</span>
             <ArrowRight size={18} style={{ transform: isEn ? 'none' : 'rotate(180deg)' }} />
           </button>
 
           <button
             onClick={onLogin}
             className="secondary-btn"
-            style={{ padding: '15px 30px', fontSize: '15px', borderRadius: '12px' }}
+            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700' }}
           >
-            {isEn ? 'Existing User Login 🔑' : 'دخول المشتركين 🔑'}
+            {isEn ? 'Existing Athlete Sign In 🔑' : 'دخول الرياضيين المشتركين 🔑'}
           </button>
 
           <button
             onClick={() => onNavigateToLegal('about')}
             className="secondary-btn"
-            style={{ padding: '15px 24px', fontSize: '15px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '16px 22px', fontSize: '15px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Info size={16} />
             <span>{isEn ? 'About Platform' : 'عن المنصة ℹ️'}</span>
           </button>
         </div>
 
-        {/* Quick Highlights / Proof Numbers */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-            alignItems: 'stretch',
-            gap: '14px',
-            width: '100%',
-            maxWidth: '1080px',
-            marginTop: '36px',
-            marginInline: 'auto',
-          }}
-        >
-          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.06), rgba(255,255,255,0.02))' }}>
-            <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)' }}>🥗 TDEE</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Smart Macro Cycling' : 'تدوير السعرات والماكروز'}</div>
+        {/* Trust Badges Strip */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '18px', marginTop: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <ShieldCheck size={16} color="var(--primary)" />
+            {isEn ? '100% Private & OWASP Certified' : '100% خصوصية وأمان معتمد'}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Zap size={16} color="#f59e0b" />
+            {isEn ? 'Zero Ads & Instant Access' : 'بدون إعلانات تجارية'}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <WifiOff size={16} color="var(--secondary)" />
+            {isEn ? 'Works 100% Offline (PWA)' : 'يعمل أوفلاين في الجيم بدون نت'}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Sparkles size={16} color="#ec4899" />
+            {isEn ? '100% Free Community Edition' : 'مجاني بالكامل للمجتمع الرياضي'}
+          </span>
+        </div>
+
+        {/* Interactive App Mockup Showcase */}
+        <div className="glass-panel" style={{ width: '100%', maxWidth: '1080px', marginTop: '30px', padding: '24px', borderRadius: '24px', border: '1px solid rgba(16, 185, 129, 0.3)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.04), rgba(15, 23, 42, 0.6))' }}>
+          
+          {/* Tab Switcher */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '20px' }}>
+            {[
+              { id: 'player', labelEn: '⏱️ Workout Player & Timer', labelAr: '⏱️ مشغل الحصة ومؤقت الراحة' },
+              { id: 'scanner', labelEn: '🤖 AI Physique Scanner', labelAr: '🤖 ماسح التحول بالذكاء الاصطناعي' },
+              { id: 'macros', labelEn: '🥗 Smart Macro Cycling', labelAr: '🥗 تدوير السعرات والماكروز' },
+              { id: 'plates', labelEn: '🔢 Barbell Plate Simulator', labelAr: '🔢 محاكي صفائح البار والـ 1RM' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActivePreviewTab(tab.id as any)}
+                className={activePreviewTab === tab.id ? 'primary-btn' : 'secondary-btn'}
+                style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '10px', cursor: 'pointer' }}
+              >
+                {isEn ? tab.labelEn : tab.labelAr}
+              </button>
+            ))}
           </div>
-          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(236, 72, 153, 0.25)', background: 'linear-gradient(180deg, rgba(236, 72, 153, 0.06), rgba(255,255,255,0.02))' }}>
-            <div style={{ fontSize: '24px', fontWeight: '900', color: '#ec4899' }}>🤖 AI Scan</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Physique & Symmetry AI' : 'ماسح التحول والتناسق'}</div>
+
+          {/* Active Preview Content */}
+          <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            
+            {activePreviewTab === 'player' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ textAlign: isEn ? 'left' : 'right' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold' }}>EXERCISE 1 OF 6</span>
+                    <h3 style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: '800' }}>Incline Dumbbell Chest Press</h3>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.15)', padding: '6px 14px', borderRadius: '20px', color: 'var(--primary)', fontWeight: 'bold', fontSize: '14px' }}>
+                    <Timer size={16} />
+                    <span>REST: 01:30 🔔</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', width: '100%' }}>
+                  <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>SET 1</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold' }}>32 kg × 12 reps ✅</div>
+                  </div>
+                  <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>SET 2</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold' }}>34 kg × 10 reps ✅</div>
+                  </div>
+                  <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '11px', color: '#f59e0b' }}>SET 3 (ACTIVE)</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b' }}>36 kg × 8 reps 🔥</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activePreviewTab === 'scanner' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', textAlign: isEn ? 'left' : 'right' }}>
+                <div style={{ padding: '14px', background: 'rgba(236, 72, 153, 0.08)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.3)' }}>
+                  <div style={{ fontSize: '12px', color: '#ec4899', fontWeight: 'bold' }}>{isEn ? 'MUSCLE DEFINITION' : 'مؤشر البروز العضلي'}</div>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: '#ec4899' }}>88 / 100 🏆</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Sharp deltoid & chest separation' : 'بروز وتحديد عالي لألياف الصدر والأكتاف'}</div>
+                </div>
+                <div style={{ padding: '14px', background: 'rgba(6, 182, 212, 0.08)', borderRadius: '12px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--secondary)', fontWeight: 'bold' }}>{isEn ? 'ESTIMATED BODY FAT' : 'الدهون التقديرية'}</div>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--secondary)' }}>12.4% 🔥</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Optimal athletic lean mass range' : 'نطاق كتلة عضلية صافية ممتاز'}</div>
+                </div>
+                <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold' }}>{isEn ? 'V-TAPER SYMMETRY' : 'تناسق الظهر والخصر'}</div>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)' }}>92% 📐</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Target upper lats for next block' : 'يوصى بالتركيز على المجنص العلوي'}</div>
+                </div>
+              </div>
+            )}
+
+            {activePreviewTab === 'macros' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--primary)' }}>🏋️ {isEn ? 'TRAINING DAY (HYPERTROPHY)' : 'يوم التمرين (تغذية البناء)'}</div>
+                  <div style={{ fontSize: '24px', fontWeight: '900', margin: '6px 0' }}>2,850 kcal (+6%)</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Protein: 180g | Carbs: 360g | Fats: 65g</div>
+                </div>
+                <div style={{ padding: '16px', background: 'rgba(6, 182, 212, 0.08)', borderRadius: '12px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--secondary)' }}>🛌 {isEn ? 'REST DAY (DEEP RECOVERY)' : 'يوم الراحة (الاستشفاء العميق)'}</div>
+                  <div style={{ fontSize: '24px', fontWeight: '900', margin: '6px 0' }}>2,450 kcal (-6%)</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Protein: 180g | Carbs: 260g | Fats: 75g</div>
+                </div>
+              </div>
+            )}
+
+            {activePreviewTab === 'plates' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+                  {isEn ? 'Target Barbell Load: 120 kg (20 kg Bar + 50 kg per side)' : 'الوزن الإجمالي على البار: 120 كغ (بار 20 كغ + 50 كغ لكل جهة)'}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <span style={{ padding: '4px 10px', background: '#dc2626', color: '#fff', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px' }}>25 kg Red</span>
+                  <span style={{ padding: '4px 10px', background: '#2563eb', color: '#fff', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px' }}>20 kg Blue</span>
+                  <span style={{ padding: '4px 10px', background: '#ffffff', color: '#000', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px' }}>5 kg White</span>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>= 1RM Est: 138 kg 💥</span>
+                </div>
+              </div>
+            )}
+
           </div>
-          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'linear-gradient(180deg, rgba(245, 158, 11, 0.06), rgba(255,255,255,0.02))' }}>
-            <div style={{ fontSize: '24px', fontWeight: '900', color: '#f59e0b' }}>🔢 1RM</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Barbell Plate Visualizer' : 'محاكي صفائح البار والـ 1RM'}</div>
+
+        </div>
+
+      </section>
+
+      {/* INTERACTIVE MINI TOOLS SECTION */}
+      <section style={{ padding: '60px 20px', maxWidth: '1180px', margin: '0 auto', width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' }}>
+            <Calculator size={16} />
+            <span>{isEn ? 'Instant Free Micro-Tools' : 'أدوات تفاعلية وتجريبية فورية بدون تسجيل'}</span>
           </div>
-          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(6, 182, 212, 0.25)', background: 'linear-gradient(180deg, rgba(6, 182, 212, 0.06), rgba(255,255,255,0.02))' }}>
-            <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--secondary)' }}>💧 Recovery</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Water, Sleep & Badges' : 'متتبع الماء والنوم والأوسمة'}</div>
+          <h2 style={{ fontSize: '28px', fontWeight: '900', margin: 0 }}>
+            {isEn ? 'Try Our Scientific Engines Right Now' : 'جرّب محركاتنا العلمية فوراً بنقرة واحدة'}
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+          
+          {/* Tool 1: Instant Mini-TDEE & Macro Calculator */}
+          <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)' }}>
+                <Utensils size={20} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
+                {isEn ? 'Instant TDEE & Macro Split Calculator' : 'حاسبة السعرات والماكروز الفورية'}
+              </h3>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Weight (kg)' : 'الوزن (كغ)'}</label>
+                <input 
+                  type="number" 
+                  value={tdeeWeight} 
+                  onChange={(e) => setTdeeWeight(Number(e.target.value))} 
+                  className="input-field" 
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '14px', borderRadius: '8px', marginTop: '4px' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Height (cm)' : 'الطول (سم)'}</label>
+                <input 
+                  type="number" 
+                  value={tdeeHeight} 
+                  onChange={(e) => setTdeeHeight(Number(e.target.value))} 
+                  className="input-field" 
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '14px', borderRadius: '8px', marginTop: '4px' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Gender' : 'الجنس'}</label>
+                <select 
+                  value={tdeeGender} 
+                  onChange={(e) => setTdeeGender(e.target.value as any)}
+                  className="input-field"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', borderRadius: '8px', marginTop: '4px' }}
+                >
+                  <option value="male">{isEn ? 'Male 👨' : 'ذكر 👨'}</option>
+                  <option value="female">{isEn ? 'Female 👩' : 'أنثى 👩'}</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Target Goal' : 'الهدف'}</label>
+                <select 
+                  value={tdeeGoal} 
+                  onChange={(e) => setTdeeGoal(e.target.value as any)}
+                  className="input-field"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', borderRadius: '8px', marginTop: '4px' }}
+                >
+                  <option value="bulk">{isEn ? 'Lean Bulk (تضخيم)' : 'تضخيم عضلي (Lean Bulk)'}</option>
+                  <option value="cut">{isEn ? 'Fat Loss (تنشيف)' : 'حرق دهون (Fat Loss)'}</option>
+                  <option value="maintain">{isEn ? 'Maintain (محافظة)' : 'محافظة وتثبيت'}</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCalculateTdee}
+              className="primary-btn"
+              style={{ width: '100%', padding: '10px', fontSize: '14px', borderRadius: '8px', fontWeight: 'bold' }}
+            >
+              {isEn ? 'Calculate Macros Now ⚡' : 'احسب السعرات والماكروز الآن ⚡'}
+            </button>
+
+            {tdeeCalculated && tdeeResult && (
+              <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '15px' }}>
+                  <span>{isEn ? 'Target Calories:' : 'السعرات المستهدفة:'}</span>
+                  <span style={{ color: 'var(--primary)' }}>{tdeeResult.targetCals} kcal</span>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  🍗 {isEn ? 'Protein:' : 'بروتين:'} <b>{tdeeResult.protein}g</b> | 🍚 {isEn ? 'Carbs:' : 'كارب:'} <b>{tdeeResult.carbs}g</b> | 🥑 {isEn ? 'Fats:' : 'دهون:'} <b>{tdeeResult.fats}g</b>
+                </div>
+                <button
+                  onClick={onGetStarted}
+                  className="glow-btn"
+                  style={{ width: '100%', padding: '8px', fontSize: '12px', borderRadius: '6px', marginTop: '4px' }}
+                >
+                  {isEn ? 'Get Training Plan For These Macros 🚀' : 'اصنع جدول تمرين متناسق مع هذه السعرات 🚀'}
+                </button>
+              </div>
+            )}
           </div>
-          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(139, 92, 246, 0.25)', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.06), rgba(255,255,255,0.02))' }}>
-            <div style={{ fontSize: '24px', fontWeight: '900', color: '#8b5cf6' }}>+4,298</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Enriched Exercises' : 'تمرين رياضي موثق'}</div>
+
+          {/* Tool 2: Quick Barbell & 1RM Calculator */}
+          <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
+                <Percent size={20} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
+                {isEn ? '1RM Strength & Barbell Simulator' : 'حاسبة الـ 1RM وصفائح البار'}
+              </h3>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Barbell Type' : 'نوع البار المستخدم'}</label>
+              <select
+                value={barbellWeight}
+                onChange={(e) => setBarbellWeight(Number(e.target.value))}
+                className="input-field"
+                style={{ width: '100%', padding: '8px 12px', fontSize: '13px', borderRadius: '8px', marginTop: '4px' }}
+              >
+                <option value={20}>{isEn ? 'Olympic Standard (20 kg)' : 'بار أولمبي قياسي (20 كغ)'}</option>
+                <option value={15}>{isEn ? 'Women / Technique Bar (15 kg)' : 'بار تكنيك / سيدات (15 كغ)'}</option>
+                <option value={10}>{isEn ? 'EZ-Curl / Short Bar (10 kg)' : 'بار متعرج EZ قصير (10 كغ)'}</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Lifted Weight (kg)' : 'الوزن المرفوع (كغ)'}</label>
+                <input 
+                  type="number" 
+                  value={oneRmWeight} 
+                  onChange={(e) => setOneRmWeight(Number(e.target.value))} 
+                  className="input-field" 
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '14px', borderRadius: '8px', marginTop: '4px' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Reps (تكرارات)' : 'التكرارات (Reps)'}</label>
+                <input 
+                  type="number" 
+                  value={oneRmReps} 
+                  onChange={(e) => setOneRmReps(Number(e.target.value))} 
+                  className="input-field" 
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '14px', borderRadius: '8px', marginTop: '4px' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{isEn ? 'Calculated 1-Rep Max (1RM):' : 'أقصى وزن لتكرار واحد (1RM):'}</span>
+                <span style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b' }}>{calculated1RM} kg</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11.5px', marginTop: '4px' }}>
+                <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                  🔥 Hypertrophy 80%: <b>{Math.round(calculated1RM * 0.8)} kg</b>
+                </div>
+                <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                  ⚡ Strength 90%: <b>{Math.round(calculated1RM * 0.9)} kg</b>
+                </div>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                {isEn ? `Loading on 20kg bar: ${plateWeightPerSide} kg per side` : `تحميل البار 20 كغ: يحتاج ${plateWeightPerSide} كغ لكل جهة`}
+              </div>
+            </div>
           </div>
-          <div className="glass-panel" style={{ flex: '1 1 145px', maxWidth: '165px', minWidth: '135px', padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.06), rgba(255,255,255,0.02))' }}>
-            <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--primary)' }}>📶 PWA</div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>{isEn ? 'Offline Gym Mode' : 'وضع الجيم بدون نت'}</div>
+
+          {/* Tool 3: Mini Muscle & Exercise Explorer */}
+          <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
+                <Activity size={20} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
+                {isEn ? 'Interactive Muscle Exercise Preview' : 'مستكشف التمارين العضلية السريع'}
+              </h3>
+            </div>
+
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'chest', en: 'Chest', ar: 'الصدر' },
+                { id: 'back', en: 'Back', ar: 'الظهر' },
+                { id: 'shoulders', en: 'Shoulders', ar: 'الأكتاف' },
+                { id: 'legs', en: 'Legs', ar: 'الأرجل' },
+                { id: 'arms', en: 'Arms', ar: 'الذراعين' },
+                { id: 'core', en: 'Core', ar: 'البطن' },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setSelectedMuscle(m.id)}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    borderRadius: '8px',
+                    border: selectedMuscle === m.id ? '1px solid #8b5cf6' : '1px solid rgba(255,255,255,0.08)',
+                    background: selectedMuscle === m.id ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.02)',
+                    color: selectedMuscle === m.id ? '#8b5cf6' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontWeight: selectedMuscle === m.id ? 'bold' : 'normal'
+                  }}
+                >
+                  {isEn ? m.en : m.ar}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.25)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: 'bold' }}>
+                ⭐ {muscleExercisesMap[selectedMuscle].level}
+              </div>
+              <div style={{ fontSize: '15px', fontWeight: 'bold' }}>
+                {isEn ? muscleExercisesMap[selectedMuscle].nameEn : muscleExercisesMap[selectedMuscle].nameAr}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                {isEn ? muscleExercisesMap[selectedMuscle].tipsEn : muscleExercisesMap[selectedMuscle].tipsAr}
+              </div>
+            </div>
           </div>
+
+        </div>
+      </section>
+
+      {/* SMART COMPARISON TABLE SECTION */}
+      <section style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+          <h2 style={{ fontSize: '28px', fontWeight: '900', margin: 0 }}>
+            {isEn ? 'Why Athletes Choose BeastMode AI' : 'لماذا يفضل الرياضيون والمحترفون BeastMode AI؟'}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px' }}>
+            {isEn ? 'Compare BeastMode AI against traditional gym apps and expensive cookie-cutter subscriptions.' : 'مقارنة مباشرة توضح تفوق منظومة BeastMode مقابل تطبيقات الجيم التقليدية.'}
+          </p>
+        </div>
+
+        <div className="glass-panel" style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: isEn ? 'left' : 'right', fontSize: '14px' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <th style={{ padding: '16px 20px', fontWeight: '800' }}>{isEn ? 'Feature / Capability' : 'الميزة / الخاصية'}</th>
+                <th style={{ padding: '16px 20px', fontWeight: '800', color: '#ef4444' }}>{isEn ? 'Traditional Gym Apps ❌' : 'التطبيقات التقليدية ❌'}</th>
+                <th style={{ padding: '16px 20px', fontWeight: '800', color: 'var(--primary)' }}>{isEn ? 'BeastMode AI Ecosystem 🦍🔥' : 'منظومة BeastMode AI 🦍🔥'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonItems.map((item, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                  <td style={{ padding: '14px 20px', fontWeight: 'bold' }}>{item.feature}</td>
+                  <td style={{ padding: '14px 20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <XCircle size={15} color="#ef4444" style={{ flexShrink: 0 }} />
+                      <span>{item.traditional}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '14px 20px', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CheckCircle2 size={15} color="var(--primary)" style={{ flexShrink: 0 }} />
+                      <span>{item.beastmode}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -437,6 +926,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </p>
           </div>
 
+          {/* Card 10: Seamless Google Auth & OWASP Security */}
+          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Lock size={24} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Google Account Sync & OWASP Shield' : 'ربط Google السلس وحصن أمان OWASP'}</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              {isEn
+                ? 'Instant 1-click Google account linking with zero data loss, email OTP password recovery, and enterprise database protection.'
+                : 'ربط الحساب بحساب Google بضغطة زر مع الحفاظ على كافة البيانات، استعادة الحساب برموز OTP، وحماية أمنية مشددة وفق معايير OWASP.'}
+            </p>
+          </div>
+
         </div>
       </section>
 
@@ -485,7 +987,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onGetStarted}
             className="glow-btn"
-            style={{ padding: '16px 40px', fontSize: '16.5px', borderRadius: '12px' }}
+            style={{ padding: '16px 40px', fontSize: '16.5px', borderRadius: '12px', fontWeight: '800' }}
           >
             {isEn ? 'Get Started For Free ⚡' : 'ابدأ مجاناً الآن ⚡'}
           </button>
