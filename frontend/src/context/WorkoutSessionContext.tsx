@@ -297,6 +297,19 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       let nextExIdx = exIdx;
       let isCompleted = false;
 
+      // Smart Auto-Fill: Inherit weight & reps to next uncompleted set
+      if (nextSetIdx < updatedSetLogs.length && updatedSetLogs[nextSetIdx] && !updatedSetLogs[nextSetIdx].completed) {
+        const completedWeight = customValues?.weight ?? targetSet.weight;
+        const completedReps = customValues?.reps ?? targetSet.reps;
+        if (completedWeight) {
+          updatedSetLogs[nextSetIdx] = {
+            ...updatedSetLogs[nextSetIdx],
+            weight: completedWeight,
+            reps: completedReps || updatedSetLogs[nextSetIdx].reps,
+          };
+        }
+      }
+
       if (nextSetIdx >= updatedSetLogs.length) {
         // Exercise completed! Move to next exercise
         if (exIdx + 1 < exercises.length) {

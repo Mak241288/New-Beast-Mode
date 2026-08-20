@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { ExerciseImage } from './ExerciseImage';
 import { WorkoutCompletionModal } from './WorkoutCompletionModal';
@@ -19,7 +19,10 @@ import {
   Clock,
   Sparkles,
   Flame,
-  Share2
+  Share2,
+  Droplets,
+  RefreshCw,
+  Target
 } from 'lucide-react';
 
 interface GlobalWorkoutPlayerProps {
@@ -40,7 +43,6 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
     togglePauseWorkout,
     nextExercise,
     prevExercise,
-    selectExercise,
     finishWorkoutSession,
     discardSession,
     closeSummaryModal,
@@ -50,6 +52,61 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const [saving, setSaving] = useState(false);
   const [showShareCardModal, setShowShareCardModal] = useState(false);
   const [showWarmupModal, setShowWarmupModal] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+  const [showQuickSwapModal, setShowQuickSwapModal] = useState(false);
+  const [waterToast, setWaterToast] = useState<string | null>(null);
+
+  // 1. Calculate Remaining Sets & Estimated Workout Finish Time
+  const remainingSets = useMemo(() => {
+    let count = 0;
+    Object.values(state.setLogs).forEach((logs) => {
+      logs.forEach((s) => {
+        if (!s.completed) count++;
+      });
+    });
+    return count;
+  }, [state.setLogs]);
+
+  const estimatedFinishTimeStr = useMemo(() => {
+    if (remainingSets === 0) return isAr ? 'مكتمل' : 'Done';
+    const remainingSecondsTotal = remainingSets * 135; // ~45s work + 90s rest
+    const finishDate = new Date(Date.now() + remainingSecondsTotal * 1000);
+    return finishDate.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  }, [remainingSets, isAr]);
+
+  // 2. 1-Tap Hydration Sip (+200ml)
+  const handleQuickWaterSip = () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const key = `hydration_log_${today}`;
+      const current = Number(localStorage.getItem(key) || 0) + 200;
+      localStorage.setItem(key, String(current));
+      setWaterToast(isAr ? '+200 مل ماء 💧 عاش!' : '+200ml Water 💧 Hydrated!');
+      setTimeout(() => setWaterToast(null), 2000);
+    } catch {
+      // Non-fatal
+    }
+  };
+
+  // 3. Keyboard Spacebar Shortcut to Complete Set & Trigger Rest
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        const activeTag = (document.activeElement?.tagName || '').toLowerCase();
+        if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select') {
+          e.preventDefault();
+          const currentLogs = state.setLogs[state.activeExerciseIndex] || [];
+          const currentSet = currentLogs[state.currentSetIndex];
+          if (currentSet && !currentSet.completed) {
+            finishCurrentSet({ reps: currentSet.reps, weight: currentSet.weight });
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.activeExerciseIndex, state.currentSetIndex, state.setLogs, finishCurrentSet]);
 
   // If summary modal is active
   if (state.showSummaryModal && state.summaryData) {
@@ -216,6 +273,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
 
   const exName = isAr ? (currentEx.name_ar || currentEx.name || currentEx.name_en) : (currentEx.name_en || currentEx.name);
   const currentLogs = state.setLogs[state.activeExerciseIndex] || [];
+  const activeSet = currentLogs[state.currentSetIndex] || { setNumber: state.currentSetIndex + 1, reps: '10', weight: '20 kg', completed: false };
   const totalExercises = exercises.length;
 
   const formatTime = (secs: number) => {
@@ -235,6 +293,184 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
     }
   };
 
+  // Quick Equipment Swap Alternatives
+  const quickAlternatives = [
+    { titleEn: 'Dumbbell Variant', titleAr: 'بديل بالدمبلز الحر 🏋️', name: `Dumbbell ${currentEx.name_en || 'Variation'}` },
+    { titleEn: 'Cable Machine Variant', titleAr: 'بديل بجهاز الكيبل 🔌', name: `Cable ${currentEx.name_en || 'Variation'}` },
+    { titleEn: 'Bodyweight / Calisthenics', titleAr: 'بديل بوزن الجسم / مات 🤸', name: `Bodyweight ${currentEx.name_en || 'Variation'}` },
+  ];
+
+  const handleApplyAlternative = (altName: string) => {
+    if (currentEx) {
+      currentEx.name = altName;
+      currentEx.name_en = altName;
+      currentEx.name_ar = altName;
+      setShowQuickSwapModal(false);
+    }
+  };
+
+  // ==========================================
+  // VIEW 1: ULTRA-CLEAN GYM/HOME FOCUS COCKPIT
+  // ==========================================
+  if (isFocusMode) {
+    return (
+      <div
+        className="modal-backdrop animated-fade"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: '#000000',
+          zIndex: 10000,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '24px 20px',
+          color: '#fff',
+        }}
+      >
+        {/* Focus Top Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+          <button
+            onClick={() => setIsFocusMode(false)}
+            className="secondary-btn"
+            style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Minimize2 size={15} />
+            <span>{isAr ? 'الوضع العادي' : 'Exit Focus'}</span>
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            <span style={{ color: '#fff', fontWeight: 'bold' }}>⏱️ {formatTime(state.totalElapsedSeconds)}</span>
+            <span>•</span>
+            <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>⏳ {estimatedFinishTimeStr}</span>
+          </div>
+
+          <div style={{ fontSize: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
+            {state.activeExerciseIndex + 1} / {totalExercises}
+          </div>
+        </div>
+
+        {/* Water Toast */}
+        {waterToast && (
+          <div className="animated-fade" style={{ position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(6, 182, 212, 0.95)', color: '#000', padding: '8px 20px', borderRadius: '30px', fontWeight: '900', fontSize: '14px', zIndex: 10001, boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)' }}>
+            {waterToast}
+          </div>
+        )}
+
+        {/* Focus Center Cockpit */}
+        <div style={{ maxWidth: '640px', width: '100%', margin: '0 auto', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+          
+          {/* Exercise Title */}
+          <div>
+            <div style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase' }}>
+              🎯 {currentEx.muscle_ar || currentEx.muscle_en || currentEx.targetMuscle || 'TARGET MUSCLE'}
+            </div>
+            <h1 style={{ fontSize: 'clamp(26px, 6vw, 42px)', fontWeight: '900', margin: '6px 0 0', lineHeight: 1.2, color: '#ffffff' }}>
+              {exName}
+            </h1>
+          </div>
+
+          {/* Active Rest Timer Cockpit if Resting */}
+          {state.isResting ? (
+            <div className="glass-panel animated-fade" style={{ width: '100%', padding: '30px 20px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.08))', border: '2px solid rgba(245, 158, 11, 0.6)', boxShadow: '0 0 40px rgba(245, 158, 11, 0.2)' }}>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <Timer size={18} />
+                <span>{isAr ? 'فترة الراحة بين الجولات ⏳' : 'Rest Countdown ⏳'}</span>
+              </div>
+              <div style={{ fontSize: 'clamp(56px, 12vw, 84px)', fontWeight: '900', color: '#ffffff', fontVariantNumeric: 'tabular-nums', margin: '10px 0' }}>
+                {formatTime(state.restRemainingSeconds)}
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => addRestSeconds(30)}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', padding: '10px 18px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  +30s
+                </button>
+                <button
+                  onClick={handleQuickWaterSip}
+                  style={{ background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.4)', color: 'var(--secondary)', padding: '10px 18px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Droplets size={16} />
+                  <span>+200ml 💧</span>
+                </button>
+                <button
+                  onClick={skipRest}
+                  style={{ background: '#f59e0b', border: 'none', color: '#000', padding: '10px 22px', borderRadius: '12px', fontSize: '14px', fontWeight: '900', cursor: 'pointer' }}
+                >
+                  {isAr ? 'تخطي الراحة ⚡' : 'Skip Rest ⚡'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Active Set Cockpit */
+            <div className="glass-panel" style={{ width: '100%', padding: '28px 20px', borderRadius: '24px', border: '2px solid rgba(16, 185, 129, 0.5)', boxShadow: '0 0 40px rgba(16, 185, 129, 0.15)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(0,0,0,0.5))' }}>
+              <div style={{ fontSize: '15px', color: 'var(--primary)', fontWeight: '900', letterSpacing: '1px' }}>
+                {isAr ? `الجولة ${state.currentSetIndex + 1} من ${currentLogs.length}` : `SET ${state.currentSetIndex + 1} OF ${currentLogs.length}`}
+              </div>
+
+              {/* Large Weight & Reps Controllers */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', margin: '20px 0' }}>
+                <div style={{ padding: '16px', background: 'rgba(0,0,0,0.6)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{isAr ? 'الوزن المرفوع' : 'Weight'}</div>
+                  <input
+                    type="text"
+                    value={activeSet.weight}
+                    onChange={(e) => updateSetLog(state.activeExerciseIndex, state.currentSetIndex, { weight: e.target.value })}
+                    style={{ width: '100%', background: 'none', border: 'none', color: '#fff', fontSize: '32px', fontWeight: '900', textAlign: 'center' }}
+                  />
+                </div>
+                <div style={{ padding: '16px', background: 'rgba(0,0,0,0.6)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{isAr ? 'التكرار المنجز' : 'Reps'}</div>
+                  <input
+                    type="text"
+                    value={activeSet.reps}
+                    onChange={(e) => updateSetLog(state.activeExerciseIndex, state.currentSetIndex, { reps: e.target.value })}
+                    style={{ width: '100%', background: 'none', border: 'none', color: '#fff', fontSize: '32px', fontWeight: '900', textAlign: 'center' }}
+                  />
+                </div>
+              </div>
+
+              {/* GIANT 1-TAP COMPLETE BUTTON */}
+              <button
+                onClick={() => finishCurrentSet({ reps: activeSet.reps, weight: activeSet.weight })}
+                className="glow-btn"
+                style={{ width: '100%', padding: '20px', fontSize: '18px', fontWeight: '900', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              >
+                <Check size={24} />
+                <span>{isAr ? 'إنهاء الجولة وبدء الراحة (Space) ⚡' : 'COMPLETE SET & REST (Space) ⚡'}</span>
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* Focus Bottom Navigation */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: '800px', margin: '0 auto', gap: '12px' }}>
+          <button
+            onClick={prevExercise}
+            disabled={state.activeExerciseIndex === 0}
+            className="secondary-btn"
+            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex === 0 ? 0.4 : 1 }}
+          >
+            {isAr ? '← التمرين السابق' : '← Previous Ex'}
+          </button>
+          <button
+            onClick={nextExercise}
+            disabled={state.activeExerciseIndex >= exercises.length - 1}
+            className="secondary-btn"
+            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex >= exercises.length - 1 ? 0.4 : 1 }}
+          >
+            {isAr ? 'التالي →' : 'Next Ex →'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VIEW 2: STANDARD DETAILED WORKOUT PLAYER
+  // ==========================================
   return (
     <div
       className="modal-backdrop animated-fade"
@@ -255,7 +491,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
         className="glass-panel"
         style={{
           width: '100%',
-          maxWidth: '840px',
+          maxWidth: '860px',
           maxHeight: '92vh',
           borderRadius: '24px',
           display: 'flex',
@@ -274,9 +510,11 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             alignItems: 'center',
             justifyContent: 'space-between',
             background: 'rgba(255, 255, 255, 0.02)',
+            flexWrap: 'wrap',
+            gap: '10px',
           }}
         >
-          {/* Day Title & Timer */}
+          {/* Day Title & Estimated Finish */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '16px', fontWeight: '900', color: '#fff' }}>
@@ -321,97 +559,76 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                 {state.isPaused ? <Play size={12} /> : <Pause size={12} />}
                 <span>{state.isPaused ? (isAr ? 'استئناف' : 'Resume') : (isAr ? 'إيقاف مؤقت' : 'Pause')}</span>
               </button>
+              <span>•</span>
+              <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
+                ⏳ {isAr ? `انتهاء: ${estimatedFinishTimeStr} (${remainingSets} جولات)` : `Finish: ${estimatedFinishTimeStr} (${remainingSets} sets)`}
+              </span>
             </div>
           </div>
 
-          {/* Minimize & Discard Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Action Buttons: Focus Mode, Minimize & Discard */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            
+            {/* 🎯 Focus Mode Toggle */}
+            <button
+              onClick={() => setIsFocusMode(true)}
+              className="glow-btn"
+              style={{
+                padding: '7px 14px',
+                fontSize: '12px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 'bold',
+              }}
+            >
+              <Target size={14} />
+              <span>{isAr ? 'وضع التركيز 🎯' : 'Focus Mode 🎯'}</span>
+            </button>
+
             <button
               onClick={minimizePlayer}
               title={isAr ? 'تصغير والتصفح في الخلفية' : 'Minimize to background'}
               className="secondary-btn"
               style={{
-                padding: '8px 14px',
-                fontSize: '12.5px',
-                borderRadius: '12px',
+                padding: '7px 12px',
+                fontSize: '12px',
+                borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 background: 'rgba(255, 255, 255, 0.06)',
               }}
             >
-              <Minimize2 size={15} />
-              <span>{isAr ? 'تصغير 🗕' : 'Minimize'}</span>
+              <Minimize2 size={14} />
+              <span>{isAr ? 'تصغير' : 'Minimize'}</span>
             </button>
 
             <button
               onClick={discardSession}
               title={isAr ? 'إلغاء التمرين نهائياً' : 'Discard Workout'}
               style={{
+                padding: '7px 10px',
                 background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#f87171',
-                padding: '8px 12px',
-                borderRadius: '12px',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                color: '#ef4444',
+                borderRadius: '10px',
                 cursor: 'pointer',
                 fontSize: '12px',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
               }}
             >
               <Square size={13} />
-              <span>{isAr ? 'إلغاء' : 'Cancel'}</span>
             </button>
           </div>
         </div>
 
-        {/* Exercises Scrollable Pill Navigator */}
-        <div
-          style={{
-            padding: '10px 20px',
-            background: 'rgba(0, 0, 0, 0.3)',
-            display: 'flex',
-            gap: '8px',
-            overflowX: 'auto',
-            borderBottom: '1px solid var(--border-color)',
-          }}
-        >
-          {exercises.map((ex: any, idx: number) => {
-            const isCurrent = idx === state.activeExerciseIndex;
-            const exLogs = state.setLogs[idx] || [];
-            const isAllCompleted = exLogs.length > 0 && exLogs.every((s: any) => s.completed);
-
-            return (
-              <button
-                key={idx}
-                onClick={() => selectExercise(idx)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '10px',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  border: isCurrent
-                    ? '1px solid var(--primary)'
-                    : '1px solid rgba(255, 255, 255, 0.08)',
-                  background: isCurrent
-                    ? 'rgba(0, 210, 255, 0.15)'
-                    : (isAllCompleted ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.03)'),
-                  color: isCurrent ? 'var(--primary)' : (isAllCompleted ? '#10b981' : 'var(--text-secondary)'),
-                  fontWeight: isCurrent ? 'bold' : 'normal',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <span>{idx + 1}. {isAr ? (ex.name_ar || ex.name || ex.name_en) : (ex.name_en || ex.name)}</span>
-                {isAllCompleted && <Check size={12} />}
-              </button>
-            );
-          })}
-        </div>
+        {/* Water Toast Notification */}
+        {waterToast && (
+          <div className="animated-fade" style={{ background: 'rgba(6, 182, 212, 0.9)', color: '#000', padding: '6px 16px', textAlign: 'center', fontWeight: 'bold', fontSize: '13px' }}>
+            {waterToast}
+          </div>
+        )}
 
         {/* Main Content Area: Exercise Details + Sets Logger */}
         <div
@@ -464,6 +681,30 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                 <span style={{ fontSize: '11px', background: 'rgba(255, 255, 255, 0.06)', color: 'var(--text-secondary)', padding: '3px 8px', borderRadius: '6px' }}>
                   🏋️ {currentEx.equipment_ar || currentEx.equipment_en || 'وزن الجسم'}
                 </span>
+                
+                {/* 🔀 Quick Alternative Switcher */}
+                <button
+                  type="button"
+                  onClick={() => setShowQuickSwapModal(!showQuickSwapModal)}
+                  style={{
+                    background: 'rgba(139, 92, 246, 0.15)',
+                    border: '1px solid rgba(139, 92, 246, 0.4)',
+                    color: '#8b5cf6',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <RefreshCw size={11} />
+                  <span>{isAr ? 'بديل سريع 🔀' : 'Quick Swap 🔀'}</span>
+                </button>
+
+                {/* 🔥 Warm-Up Sets Pyramid Button */}
                 <button
                   type="button"
                   onClick={() => setShowWarmupModal(true)}
@@ -481,11 +722,31 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                     gap: '4px',
                   }}
                 >
-                  <Flame size={12} />
+                  <Flame size={11} />
                   <span>{isAr ? 'الإحماء الهرمي 🔥' : 'Warm-up Sets 🔥'}</span>
                 </button>
               </div>
             </div>
+
+            {/* Quick Swap Options Dropdown */}
+            {showQuickSwapModal && (
+              <div className="glass-panel animated-fade" style={{ padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#8b5cf6', marginBottom: '6px' }}>
+                  {isAr ? 'اختر بديلاً فورياً للجهاز المشغول:' : 'Swap busy equipment instantly:'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {quickAlternatives.map((alt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleApplyAlternative(alt.name)}
+                      style={{ padding: '6px 10px', fontSize: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '8px', textAlign: isAr ? 'right' : 'left', cursor: 'pointer' }}
+                    >
+                      {isAr ? alt.titleAr : alt.titleEn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Pro Tip Cue */}
             {currentEx.exerciseTips && (
@@ -552,6 +813,26 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                     }}
                   >
                     +30s
+                  </button>
+
+                  <button
+                    onClick={handleQuickWaterSip}
+                    style={{
+                      background: 'rgba(6, 182, 212, 0.15)',
+                      border: '1px solid rgba(6, 182, 212, 0.35)',
+                      color: 'var(--secondary)',
+                      padding: '6px 10px',
+                      borderRadius: '8px',
+                      fontSize: '11.5px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Droplets size={13} />
+                    <span>+200ml 💧</span>
                   </button>
 
                   <button
@@ -716,7 +997,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           </button>
                         </td>
 
-                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
                           {currentLogs.length > 1 && (
                             <button
                               onClick={() => removeSet(state.activeExerciseIndex, sIdx)}
@@ -741,8 +1022,9 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               style={{
                 width: '100%',
                 padding: '10px',
-                fontSize: '12.5px',
-                borderRadius: '10px',
+                borderRadius: '12px',
+                fontSize: '13px',
+                fontWeight: 'bold',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
