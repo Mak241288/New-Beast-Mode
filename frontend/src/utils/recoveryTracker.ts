@@ -1,3 +1,6 @@
+import { cacheStore } from './cacheStore';
+import { api } from '../services/api';
+
 export interface DailyRecoveryLog {
   date: string; // YYYY-MM-DD
   waterMl: number;
@@ -25,10 +28,15 @@ export function getTodayKey(): string {
 }
 
 export function getDailyRecovery(dateKey: string = getTodayKey(), defaultTargetLiters: number = 3.0): DailyRecoveryLog {
+  const cached = cacheStore.get<DailyRecoveryLog>(`recovery_log_${dateKey}`);
+  if (cached) return cached;
+
   const raw = localStorage.getItem(`recovery_log_${dateKey}`);
   if (raw) {
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      cacheStore.set(`recovery_log_${dateKey}`, parsed);
+      return parsed;
     } catch (e) {
       // fallback
     }
@@ -44,6 +52,16 @@ export function getDailyRecovery(dateKey: string = getTodayKey(), defaultTargetL
 
 export function saveDailyRecovery(log: DailyRecoveryLog): void {
   localStorage.setItem(`recovery_log_${log.date}`, JSON.stringify(log));
+  cacheStore.set(`recovery_log_${log.date}`, log);
+  cacheStore.set('latest_recovery_log', log);
+  
+  // Also update recovery map in cache
+  const allLogs: Record<string, DailyRecoveryLog> = cacheStore.get('all_recovery_logs') || {};
+  allLogs[log.date] = log;
+  cacheStore.set('all_recovery_logs', allLogs);
+
+  // Push to Cloud
+  api.pushUserDataToCloud();
 }
 
 export function computeBadges(globalStreak: number, totalWorkouts: number, todayLog: DailyRecoveryLog): Badge[] {

@@ -33,14 +33,24 @@ export async function pushUserDataToCloud(): Promise<void> {
     const userProfile = cacheStore.get('user_profile');
     const planHistory = cacheStore.get('plan_history');
     const userRecovery = cacheStore.get('user_recovery');
+    const allRecoveryLogs = cacheStore.get('all_recovery_logs');
+    const latestRecoveryLog = cacheStore.get('latest_recovery_log');
     const userStats = cacheStore.get('user_stats');
+    const timerSoundPack = localStorage.getItem('bm_timer_sound_pack') || 'BOXING_BELL';
+    const timerVolume = localStorage.getItem('bm_timer_volume') || '80';
 
     const payload = {
       activePlan,
       userProfile,
       planHistory,
       userRecovery,
+      allRecoveryLogs,
+      latestRecoveryLog,
       userStats,
+      userPreferences: {
+        timerSoundPack,
+        timerVolume,
+      },
       lastSyncedAt: Date.now(),
     };
 
@@ -129,8 +139,28 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
     if (syncData?.userRecovery) {
       cacheStore.set('user_recovery', syncData.userRecovery);
     }
+    if (syncData?.latestRecoveryLog) {
+      cacheStore.set('latest_recovery_log', syncData.latestRecoveryLog);
+      if (syncData.latestRecoveryLog.date) {
+        cacheStore.set(`recovery_log_${syncData.latestRecoveryLog.date}`, syncData.latestRecoveryLog);
+      }
+    }
+    if (syncData?.allRecoveryLogs) {
+      cacheStore.set('all_recovery_logs', syncData.allRecoveryLogs);
+      Object.keys(syncData.allRecoveryLogs).forEach((dKey) => {
+        cacheStore.set(`recovery_log_${dKey}`, syncData.allRecoveryLogs[dKey]);
+      });
+    }
     if (syncData?.userStats) {
       cacheStore.set('user_stats', syncData.userStats);
+    }
+    if (syncData?.userPreferences) {
+      if (syncData.userPreferences.timerSoundPack) {
+        localStorage.setItem('bm_timer_sound_pack', syncData.userPreferences.timerSoundPack);
+      }
+      if (syncData.userPreferences.timerVolume) {
+        localStorage.setItem('bm_timer_volume', syncData.userPreferences.timerVolume);
+      }
     }
 
     return true;
