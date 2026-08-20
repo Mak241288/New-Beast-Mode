@@ -377,7 +377,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                 <Timer size={18} />
                 <span>{isAr ? 'فترة الراحة بين الجولات ⏳' : 'Rest Countdown ⏳'}</span>
               </div>
-              <div style={{ fontSize: 'clamp(56px, 12vw, 84px)', fontWeight: '900', color: '#ffffff', fontVariantNumeric: 'tabular-nums', margin: '10px 0' }}>
+              <div className={`animated-fade ${state.restRemainingSeconds <= 5 && state.restRemainingSeconds > 0 ? 'rest-timer-pulse' : ''}`} style={{ fontSize: 'clamp(56px, 12vw, 84px)', fontWeight: '900', color: state.restRemainingSeconds <= 5 ? '#10b981' : '#ffffff', fontVariantNumeric: 'tabular-nums', margin: '10px 0', transition: 'color 0.3s ease' }}>
                 {formatTime(state.restRemainingSeconds)}
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -791,7 +791,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                     <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 'bold' }}>
                       {isAr ? 'فترة راحة بين الجولات ⏳' : 'Resting Between Sets ⏳'}
                     </div>
-                    <div style={{ fontSize: '24px', fontWeight: '900', color: '#fff', fontVariantNumeric: 'tabular-nums' }}>
+                    <div className={`animated-fade ${state.restRemainingSeconds <= 5 && state.restRemainingSeconds > 0 ? 'rest-timer-pulse' : ''}`} style={{ fontSize: '24px', fontWeight: '900', color: state.restRemainingSeconds <= 5 ? '#10b981' : '#fff', fontVariantNumeric: 'tabular-nums', transition: 'color 0.3s ease' }}>
                       {formatTime(state.restRemainingSeconds)}
                     </div>
                   </div>

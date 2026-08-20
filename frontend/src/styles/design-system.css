@@ -82,38 +82,64 @@ body {
   direction: rtl; /* Arabic first layout */
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Ultra Thin & Sleek */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.15);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.5), rgba(0, 210, 255, 0.5));
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary);
+  background: linear-gradient(180deg, #10b981, #00d2ff);
 }
 
 /* --- REUSABLE CLASS UTILITIES (Aesthetic & Glassmorphism) --- */
 .glass-panel {
+  position: relative;
   background: var(--bg-card);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: var(--glass-border);
   border-radius: var(--border-radius-md);
   box-shadow: var(--glass-shadow);
-  transition: transform var(--transition-medium), background var(--transition-medium), border var(--transition-medium);
+  transition: transform var(--transition-fast), background var(--transition-medium), border var(--transition-medium), box-shadow var(--transition-medium);
+}
+
+/* Subtle Ambient Top Border Glow */
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.35), rgba(0, 210, 255, 0.35), transparent);
+  pointer-events: none;
+  border-radius: 999px;
+}
+
+.glass-panel:hover {
+  border-color: rgba(0, 210, 255, 0.22);
 }
 
 .glass-panel-hover:hover {
   background: var(--bg-card-hover);
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   border-color: var(--border-color-glow);
-  box-shadow: 0 12px 40px var(--primary-glow);
+  box-shadow: 0 12px 36px var(--primary-glow);
+}
+
+/* Tactile Micro-Click Bounce for all buttons */
+button:active,
+.glow-btn:active,
+.secondary-btn:active {
+  transform: scale(0.97) !important;
+  transition: transform 0.08s ease-out !important;
 }
 
 .glow-btn {
@@ -133,12 +159,8 @@ body {
 }
 
 .glow-btn:hover {
-  transform: scale(1.03);
+  transform: scale(1.02);
   box-shadow: 0 6px 20px var(--secondary-glow);
-}
-
-.glow-btn:active {
-  transform: scale(0.98);
 }
 
 .glow-btn:disabled {
@@ -192,27 +214,28 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes restPulseFinal {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.9));
+    color: #10b981 !important;
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+  }
+}
+
+.rest-timer-pulse {
+  animation: restPulseFinal 1.2s infinite ease-in-out;
+}
+
 .animated-fade {
   animation: fadeIn var(--transition-medium) forwards;
-}
-
-/* Flex & Grid layouts */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px;
-}
-
-.flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.grid-responsive {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
 }
 
 /* Badges */
@@ -227,6 +250,24 @@ body {
 .badge-primary {
   background-color: var(--primary-glow);
   color: var(--primary);
+}
+
+.badge-compound {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(6, 182, 212, 0.15));
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge-isolation {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(168, 85, 247, 0.15));
+  color: #c084fc;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.badge-warmup {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.15));
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 /* Typography styles */
