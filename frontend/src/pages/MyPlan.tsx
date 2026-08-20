@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2 } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
@@ -274,6 +274,33 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       fetchActivePlan();
     } catch (err: any) {
       alert(lang === 'en' ? 'Failed to add cooldown routine.' : 'فشل إضافة تمارين الاستشفاء.');
+    }
+  };
+
+  const handleShareToWhatsApp = () => {
+    if (!activePlan || !activePlan.dayWorkouts) return;
+    const isEn = lang === 'en';
+    let text = `🦍 *${activePlan.title || 'BeastMode AI Workout Routine'}* ⚡\n`;
+    text += `${isEn ? '🎯 Goal:' : '🎯 الهدف:'} ${activePlan.goal || (isEn ? 'Hypertrophy & Strength' : 'تضخيم وقوة')}\n\n`;
+
+    activePlan.dayWorkouts.forEach((d: any) => {
+      if (d.isRestDay) {
+        text += `🛌 *${isEn ? `Day ${d.dayIndex}: Rest & Anabolic Recovery` : `اليوم ${d.dayIndex}: راحة واستشفاء`}*\n\n`;
+      } else {
+        text += `🏋️ *${isEn ? `Day ${d.dayIndex}: ${d.title}` : `اليوم ${d.dayIndex}: ${d.title}`}*\n`;
+        (d.exercises || []).forEach((ex: any, idx: number) => {
+          const exTitle = isEn ? (ex.name_en || ex.name) : (ex.name_ar || ex.name || ex.name_en);
+          text += `  ${idx + 1}. ${exTitle} (${ex.sets} ${isEn ? 'sets' : 'جولات'} × ${ex.reps} ${isEn ? 'reps' : 'تكرار'})\n`;
+        });
+        text += `\n`;
+      }
+    });
+
+    text += `⚡ ${isEn ? 'Generated via BeastMode AI:' : 'تم إنشاء الجدول عبر منصة BeastMode AI:'} https://new-beast-mode-git-master-ma-k1.vercel.app/`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      alert(isEn ? '✅ Workout plan copied to clipboard formatted for WhatsApp!' : '✅ تم نسخ الخطة كرسالة واتساب منسقة بنجاح!');
     }
   };
 
@@ -1072,6 +1099,24 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               >
                 <Download size={16} />
                 <span>{lang === 'en' ? 'Export CSV' : 'تصدير CSV'}</span>
+              </button>
+              <button 
+                onClick={handleShareToWhatsApp} 
+                className="secondary-btn" 
+                title={lang === 'en' ? 'Share plan to WhatsApp' : 'مشاركة الخطة عبر واتساب'}
+                style={{ 
+                  padding: '8px 14px', 
+                  fontSize: '13px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  borderColor: '#25D366',
+                  color: '#25D366',
+                  background: 'rgba(37, 211, 102, 0.08)',
+                }}
+              >
+                <Share2 size={16} />
+                <span>{lang === 'en' ? 'Share WhatsApp 📲' : 'مشاركة واتساب 📲'}</span>
               </button>
               <button 
                 onClick={triggerPrint} 

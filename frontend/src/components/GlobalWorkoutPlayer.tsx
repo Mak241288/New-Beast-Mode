@@ -22,7 +22,10 @@ import {
   Share2,
   Droplets,
   RefreshCw,
-  Target
+  Target,
+  Volume2,
+  VolumeX,
+  TrendingUp
 } from 'lucide-react';
 
 interface GlobalWorkoutPlayerProps {
@@ -55,6 +58,58 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showQuickSwapModal, setShowQuickSwapModal] = useState(false);
   const [waterToast, setWaterToast] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Isometric Hold Timer State
+  const [isHolding, setIsHolding] = useState(false);
+  const [holdTimerSeconds, setHoldTimerSeconds] = useState(0);
+
+  // Web Audio Native Synthesized Rest Bell (0 KB, 100% Offline)
+  const playRestEndBell = () => {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      const playChime = (freq: number, startTime: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.25, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      playChime(880, now, 0.35);       // A5 Note
+      playChime(1174.66, now + 0.15, 0.55); // D6 Note
+    } catch {
+      // Non-fatal
+    }
+  };
+
+  // Play bell when rest finishes
+  useEffect(() => {
+    if (state.isResting && state.restRemainingSeconds === 1) {
+      playRestEndBell();
+    }
+  }, [state.isResting, state.restRemainingSeconds]);
+
+  // Isometric Hold interval
+  useEffect(() => {
+    let interval: any = null;
+    if (isHolding) {
+      interval = setInterval(() => {
+        setHoldTimerSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isHolding]);
 
   // 1. Calculate Remaining Sets & Estimated Workout Finish Time
   const remainingSets = useMemo(() => {
@@ -196,6 +251,35 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 {isAr ? '🏋️ إجمالي الحجم' : 'Total Volume'}
+              </div>
+            </div>
+          </div>
+
+          {/* Progressive Overload Auto-Predictor Hint */}
+          <div
+            style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(0, 210, 255, 0.08))',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              borderRadius: '16px',
+              padding: '12px 16px',
+              textAlign: isAr ? 'right' : 'left',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+          >
+            <div style={{ padding: '6px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', borderRadius: '10px' }}>
+              <TrendingUp size={20} />
+            </div>
+            <div>
+              <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#10b981' }}>
+                {isAr ? '💡 مؤشر الزيادة التدريجية للجلسة القادمة (Progressive Overload):' : '💡 Next Session Progressive Overload Hint:'}
+              </div>
+              <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: 1.4 }}>
+                {isAr
+                  ? 'أداؤك كان قوياً اليوم! ننصح بإضافة +2.5 كغ على التمارين المركبة أو زيادة +1-2 تكرار في جلستك القادمة لكسر الثبات العضلي.'
+                  : 'Great intensity today! We recommend adding +2.5kg to compound lifts or +1-2 reps next session to stimulate continuous hypertrophy.'}
               </div>
             </div>
           </div>
@@ -386,6 +470,13 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                   style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', padding: '10px 18px', borderRadius: '12px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
                 >
                   +30s
+                </button>
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  title={soundEnabled ? 'صوت الجرس مفعل' : 'الصوت مكتوم'}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.25)', color: soundEnabled ? '#10b981' : '#94a3b8', padding: '10px 14px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
                 </button>
                 <button
                   onClick={handleQuickWaterSip}
@@ -725,6 +816,36 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                   <Flame size={11} />
                   <span>{isAr ? 'الإحماء الهرمي 🔥' : 'Warm-up Sets 🔥'}</span>
                 </button>
+
+                {/* ⏱️ Isometric Hold Timer for Static Exercises */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isHolding) {
+                      setIsHolding(false);
+                      updateSetLog(state.activeExerciseIndex, state.currentSetIndex, { reps: `${holdTimerSeconds}s` });
+                    } else {
+                      setHoldTimerSeconds(0);
+                      setIsHolding(true);
+                    }
+                  }}
+                  style={{
+                    background: isHolding ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.15)',
+                    border: isHolding ? '1px solid #ef4444' : '1px solid rgba(16, 185, 129, 0.4)',
+                    color: isHolding ? '#ef4444' : '#10b981',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Timer size={11} />
+                  <span>{isHolding ? `${isAr ? 'إيقاف الثبات' : 'Stop'}: ${holdTimerSeconds}s ⏱️` : (isAr ? 'مؤقت الثبات (Plank) ⏱️' : 'Hold Timer ⏱️')}</span>
+                </button>
               </div>
             </div>
 
@@ -813,6 +934,24 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                     }}
                   >
                     +30s
+                  </button>
+
+                  <button
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    title={soundEnabled ? 'صوت الجرس مفعل' : 'الصوت مكتوم'}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      color: soundEnabled ? '#10b981' : '#94a3b8',
+                      padding: '6px 8px',
+                      borderRadius: '8px',
+                      fontSize: '11.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
                   </button>
 
                   <button
