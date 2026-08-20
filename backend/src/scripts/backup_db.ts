@@ -16,9 +16,9 @@ const EXERCISES_DB_PATH = path.resolve(__dirname, '../../../workout_generator_py
  * Prevents File Inclusion & Path Traversal attacks.
  */
 export function getSafeBackupPath(baseDir: string, filename: string): string {
-  const safeFilename = path.basename(filename);
+  const safeFilename = path.basename(String(filename || '').trim());
   const resolvedBase = path.resolve(baseDir);
-  const safePath = path.resolve(resolvedBase, safeFilename);
+  const safePath = path.resolve(resolvedBase, path.basename(safeFilename));
 
   if (!safePath.startsWith(path.resolve(resolvedBase))) {
     throw new Error('Unauthorized path traversal detected');
@@ -29,8 +29,18 @@ export function getSafeBackupPath(baseDir: string, filename: string): string {
 
 export const runDatabaseBackup = (targetBackupDir: string = BACKUP_DIR): { success: boolean; backupsCreated: string[]; error?: string } => {
   try {
+    // Sanitize targetBackupDir strictly to eliminate null-bytes and traversal sequences
+    const sanitizedDirString = String(targetBackupDir || '')
+      .replace(/\0/g, '')
+      .replace(/\.\./g, '')
+      .trim();
+
+    if (!sanitizedDirString || sanitizedDirString.includes('..')) {
+      throw new Error('Invalid backup directory path');
+    }
+
     const resolvedBase = path.resolve(BACKUP_DIR);
-    const resolvedTarget = path.resolve(targetBackupDir);
+    const resolvedTarget = path.resolve(sanitizedDirString);
     const relativePath = path.relative(resolvedBase, resolvedTarget);
     if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
       throw new Error('Invalid backup directory');
@@ -50,7 +60,7 @@ export const runDatabaseBackup = (targetBackupDir: string = BACKUP_DIR): { succe
     // 1. Backup dev.db if exists (Location 1: dev.db backup file write/copy)
     if (fs.existsSync(DEV_DB_PATH)) {
       const devBackupName = path.basename(`dev_backup_${timestamp}.db`);
-      const devBackupDest = path.resolve(resolvedBackupDir, devBackupName);
+      const devBackupDest = path.resolve(resolvedBackupDir, path.basename(devBackupName));
 
       if (!devBackupDest.startsWith(path.resolve(resolvedBackupDir))) {
         throw new Error('Unauthorized path traversal detected');
@@ -66,7 +76,7 @@ export const runDatabaseBackup = (targetBackupDir: string = BACKUP_DIR): { succe
     // 2. Backup exercises.db if exists (Location 2: exercises.db backup file write/copy)
     if (fs.existsSync(EXERCISES_DB_PATH)) {
       const exBackupName = path.basename(`exercises_backup_${timestamp}.db`);
-      const exBackupDest = path.resolve(resolvedBackupDir, exBackupName);
+      const exBackupDest = path.resolve(resolvedBackupDir, path.basename(exBackupName));
 
       if (!exBackupDest.startsWith(path.resolve(resolvedBackupDir))) {
         throw new Error('Unauthorized path traversal detected');
@@ -84,7 +94,7 @@ export const runDatabaseBackup = (targetBackupDir: string = BACKUP_DIR): { succe
     const files = fs.readdirSync(resolvedBackupDir);
     files.forEach((file) => {
       const safeFileName = path.basename(file);
-      const safeFilePath = path.resolve(resolvedBackupDir, safeFileName);
+      const safeFilePath = path.resolve(resolvedBackupDir, path.basename(safeFileName));
 
       if (!safeFilePath.startsWith(path.resolve(resolvedBackupDir))) {
         throw new Error('Unauthorized path traversal detected');
