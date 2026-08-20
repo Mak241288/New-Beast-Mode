@@ -135,18 +135,31 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
     const restDaysStr = Array.isArray(restDays) ? restDays.join(',') : '';
     const exercisesLimit = exercisesPerDay ? parseInt(exercisesPerDay) : 0;
 
-    const { exec } = require('child_process');
+    const { execFile } = require('child_process');
     const path = require('path');
     const fs = require('fs').promises;
 
     const pythonDir = path.join(__dirname, '../../../workout_generator_python');
-    const planFileName = `generated_plan_${userId}.json`;
+    const safeUserId = String(userId).replace(/[^a-zA-Z0-9_-]/g, '');
+    const planFileName = `generated_plan_${safeUserId}.json`;
     const planFilePath = path.join(pythonDir, 'data/processed', planFileName);
-    const command = `python src/generator.py --days ${daysPerWeek} --location ${finalLocation} --equipment "${equipStr}" --level ${level || 'intermediate'} --goal ${finalGoal} --muscles "${muscleStr}" --rest-days "${restDaysStr}" --limit ${exercisesLimit} --output "data/processed/${planFileName}"`;
 
-    console.log(`[WorkoutController] Executing: ${command}`);
+    const args = [
+      'src/generator.py',
+      '--days', String(daysPerWeek),
+      '--location', String(finalLocation),
+      '--equipment', String(equipStr),
+      '--level', String(level || 'intermediate'),
+      '--goal', String(finalGoal),
+      '--muscles', String(muscleStr),
+      '--rest-days', String(restDaysStr),
+      '--limit', String(exercisesLimit),
+      '--output', `data/processed/${planFileName}`
+    ];
 
-    exec(command, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
+    console.log(`[WorkoutController] Executing Python generator with safe args array`);
+
+    execFile('python', args, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
       console.log('[WorkoutController] Python Generator Output:', stdout);
       if (error) {
         console.error('[WorkoutController] Python Generator Error:', error, stderr);
@@ -1059,28 +1072,43 @@ export const importFilePlan = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const { exec } = require('child_process');
+    const { execFile } = require('child_process');
     const path = require('path');
     const fs = require('fs').promises;
 
-    const ext = path.extname(fileName).toLowerCase();
-    const fileBuffer = Buffer.from(fileBase64.split(',')[1] || fileBase64, 'base64');
+    // Validate and sanitize filename to prevent Path Traversal
+    const rawFileName = typeof fileName === 'string' ? fileName : 'upload.txt';
+    const safeBaseName = path.basename(rawFileName);
+    const ext = path.extname(safeBaseName).toLowerCase();
+
+    // Allowed extensions check
+    const allowedExtensions = ['.txt', '.pdf', '.docx', '.xlsx', '.csv', '.json', '.jpg', '.jpeg', '.png'];
+    const safeExt = allowedExtensions.includes(ext) ? ext : '.txt';
+
+    const fileBuffer = Buffer.from(typeof fileBase64 === 'string' ? (fileBase64.split(',')[1] || fileBase64) : '', 'base64');
     
-    // Create temporary file path
+    // Create temporary file path strictly confined to allowed data directory
     const pythonDir = path.join(__dirname, '../../../workout_generator_python');
-    const tempFileName = `temp_import_${Date.now()}${ext}`;
-    const tempFilePath = path.join(pythonDir, 'data', tempFileName);
+    const allowedDir = path.resolve(pythonDir, 'data');
+    const tempFileName = `temp_import_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${safeExt}`;
+    const tempFilePath = path.resolve(allowedDir, tempFileName);
+
+    // Verify tempFilePath does not escape allowedDir
+    if (!tempFilePath.startsWith(allowedDir)) {
+      res.status(400).json({ error: 'مسار الملف غير صالح.' });
+      return;
+    }
 
     // Make sure data folder exists
-    await fs.mkdir(path.join(pythonDir, 'data'), { recursive: true });
+    await fs.mkdir(allowedDir, { recursive: true });
 
     // Write file
     await fs.writeFile(tempFilePath, fileBuffer);
 
-    // Execute python parser script
-    const command = `python src/file_parser.py --file "data/${tempFileName}"`;
+    // Execute python parser script using execFile
+    const args = ['src/file_parser.py', '--file', `data/${tempFileName}`];
 
-    exec(command, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
+    execFile('python', args, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
       // Clean up file immediately
       try {
         await fs.unlink(tempFilePath);

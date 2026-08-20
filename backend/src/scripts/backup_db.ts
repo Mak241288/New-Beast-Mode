@@ -11,11 +11,24 @@ const BACKUP_DIR = path.join(__dirname, '../../backups');
 const DEV_DB_PATH = path.join(__dirname, '../../prisma/dev.db');
 const EXERCISES_DB_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
 
-export const runDatabaseBackup = (): { success: boolean; backupsCreated: string[]; error?: string } => {
+/**
+ * Resolves and validates that a given path stays strictly inside an allowed base directory.
+ */
+function resolveSafePath(baseDir: string, relativeOrFileName: string): string {
+  const safeBase = path.basename(relativeOrFileName);
+  const resolved = path.resolve(baseDir, safeBase);
+  if (!resolved.startsWith(path.resolve(baseDir))) {
+    throw new Error(`[Security] Path traversal attempt detected: ${relativeOrFileName}`);
+  }
+  return resolved;
+}
+
+export const runDatabaseBackup = (targetBackupDir: string = BACKUP_DIR): { success: boolean; backupsCreated: string[]; error?: string } => {
   try {
+    const safeTargetDir = path.resolve(targetBackupDir);
     // Ensure backups directory exists
-    if (!fs.existsSync(BACKUP_DIR)) {
-      fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    if (!fs.existsSync(safeTargetDir)) {
+      fs.mkdirSync(safeTargetDir, { recursive: true });
     }
 
     const now = new Date();
@@ -25,7 +38,7 @@ export const runDatabaseBackup = (): { success: boolean; backupsCreated: string[
     // Backup dev.db if exists
     if (fs.existsSync(DEV_DB_PATH)) {
       const devBackupName = `dev_backup_${timestamp}.db`;
-      const devBackupDest = path.join(BACKUP_DIR, devBackupName);
+      const devBackupDest = resolveSafePath(safeTargetDir, devBackupName);
       fs.copyFileSync(DEV_DB_PATH, devBackupDest);
       backupsCreated.push(devBackupName);
       console.log(`[Backup] Dev Database backed up -> ${devBackupName}`);
@@ -36,7 +49,7 @@ export const runDatabaseBackup = (): { success: boolean; backupsCreated: string[
     // Backup exercises.db if exists
     if (fs.existsSync(EXERCISES_DB_PATH)) {
       const exBackupName = `exercises_backup_${timestamp}.db`;
-      const exBackupDest = path.join(BACKUP_DIR, exBackupName);
+      const exBackupDest = resolveSafePath(safeTargetDir, exBackupName);
       fs.copyFileSync(EXERCISES_DB_PATH, exBackupDest);
       backupsCreated.push(exBackupName);
       console.log(`[Backup] Exercises Database backed up -> ${exBackupName}`);
@@ -46,9 +59,9 @@ export const runDatabaseBackup = (): { success: boolean; backupsCreated: string[
 
     // Auto-prune backups older than 14 days
     const maxAgeMs = 14 * 24 * 60 * 60 * 1000;
-    const files = fs.readdirSync(BACKUP_DIR);
+    const files = fs.readdirSync(safeTargetDir);
     files.forEach((file) => {
-      const filePath = path.join(BACKUP_DIR, file);
+      const filePath = resolveSafePath(safeTargetDir, file);
       const stat = fs.statSync(filePath);
       if (now.getTime() - stat.mtimeMs > maxAgeMs) {
         fs.unlinkSync(filePath);

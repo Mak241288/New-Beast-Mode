@@ -127,6 +127,30 @@ const MuscleAnatomySVG: React.FC<{ muscle: string; uid: string }> = memo(({ musc
 
 MuscleAnatomySVG.displayName = 'MuscleAnatomySVG';
 
+// Strict URL Protocol & Domain Validator to prevent DOM-based XSS (javascript: and untrusted origins)
+export const sanitizeSafeUrl = (rawUrl?: string, fallback = 'https://musclewiki.com', allowedHostnames?: string[]): string => {
+  if (!rawUrl || typeof rawUrl !== 'string') return fallback;
+  const trimmed = rawUrl.trim();
+  try {
+    const parsed = new URL(trimmed);
+    // Enforce https protocol only (prevent javascript:, data:, vbscript:)
+    if (parsed.protocol !== 'https:') {
+      return fallback;
+    }
+    if (allowedHostnames && allowedHostnames.length > 0) {
+      const isAllowed = allowedHostnames.some(
+        (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`)
+      );
+      if (!isAllowed) {
+        return fallback;
+      }
+    }
+    return parsed.toString();
+  } catch {
+    return fallback;
+  }
+};
+
 // Helper: Safely parse array or multi-line string text
 const parseInstructionsArray = (raw: string | string[] | undefined): string[] => {
   if (!raw) return [];
@@ -369,38 +393,35 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         ];
   }, [exercise, isAr]);
 
-  // Video URLs extraction & Security Sanitizer (Prevents javascript: URI XSS)
+  // Video URLs extraction & Security Sanitizer (Prevents javascript: URI and Open Redirect XSS)
   const youtubeUrl = useMemo(() => {
     if (!exercise) return '';
 
     const rawVideo = String(exercise.youtube_url || exercise.video_url || '').trim();
-    
-    // Strict URL Protocol Validation: Only allow http: and https: protocols
-    const isSafeUrl = (url: string): boolean => {
-      try {
-        const parsed = new URL(url, window.location.origin);
-        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-      } catch {
-        return false;
-      }
-    };
+    const allowedHosts = ['youtube.com', 'youtu.be', 'www.youtube.com', 'm.youtube.com'];
 
     const searchQuery = encodeURIComponent(`${exercise.name_en || name || 'exercise'} tutorial proper form`);
     const fallbackSearchUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
 
-    if (rawVideo && isSafeUrl(rawVideo) && rawVideo.includes('watch?v=')) {
-      return rawVideo;
+    if (rawVideo && rawVideo.includes('watch?v=')) {
+      return sanitizeSafeUrl(rawVideo, fallbackSearchUrl, allowedHosts);
     }
 
     return fallbackSearchUrl;
   }, [exercise, name]);
+
+  const muscleWikiSafeUrl = useMemo(() => {
+    const raw = exercise?.musclewiki_url;
+    return sanitizeSafeUrl(raw, 'https://musclewiki.com', ['musclewiki.com', 'www.musclewiki.com']);
+  }, [exercise?.musclewiki_url]);
 
   const mediaSource = exercise?.gif_url || exercise?.image_url;
 
   if (!exercise) return null;
 
   const handleOpenVideo = () => {
-    window.open(youtubeUrl, '_blank', 'noopener,noreferrer');
+    const safeUrl = sanitizeSafeUrl(youtubeUrl, 'https://www.youtube.com', ['youtube.com', 'youtu.be', 'www.youtube.com', 'm.youtube.com']);
+    window.open(safeUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -649,7 +670,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
           </a>
 
           <a
-            href={exercise.musclewiki_url || 'https://musclewiki.com'}
+            href={muscleWikiSafeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="secondary-btn"

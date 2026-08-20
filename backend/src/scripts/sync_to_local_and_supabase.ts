@@ -54,8 +54,17 @@ async function syncLocalSQLite(exercises: FullyEnrichedExercise[]): Promise<void
         )
       `);
 
-      // Add columns if table already existed without new ones
+      // Add columns if table already existed without new ones with strict column allowlist
+      const ALLOWED_COLUMNS: Record<string, string> = {
+        musclewiki_url: 'TEXT',
+        is_home_friendly: 'INTEGER',
+        home_category: 'TEXT'
+      };
+
       const addColumnSafe = (col: string, type: string) => {
+        if (!ALLOWED_COLUMNS[col] || ALLOWED_COLUMNS[col] !== type) {
+          throw new Error(`[Security] Column definition '${col} ${type}' is not permitted.`);
+        }
         db.run(`ALTER TABLE exercises ADD COLUMN ${col} ${type}`, () => {});
       };
       addColumnSafe('musclewiki_url', 'TEXT');

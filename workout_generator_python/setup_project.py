@@ -35,7 +35,7 @@ def setup_project():
     print("\n[2/3] Generating requirements.txt...")
     requirements_path = os.path.join(base_dir, "requirements.txt")
     requirements_content = """pandas>=2.0.0
-requests>=2.31.0
+requests>=2.32.3
 python-dotenv>=1.0.1
 """
     with open(requirements_path, "w", encoding="utf-8") as f:

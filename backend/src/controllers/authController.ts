@@ -15,7 +15,10 @@ const generateToken = (id: number, email: string) => {
 };
 
 // Input Validation Helpers
+const isPrimitiveString = (val: any): val is string => typeof val === 'string';
+
 const isValidEmail = (email: string): boolean => {
+  if (!isPrimitiveString(email)) return false;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
@@ -32,10 +35,16 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
       return;
     }
 
+    // 0.1 Type Validation (Prevents NoSQL / Operator Object Injection)
+    if (!isPrimitiveString(name) || !isPrimitiveString(email) || !isPrimitiveString(password)) {
+      res.status(400).json({ error: 'صيغة البيانات المدخلة غير صحيحة.' });
+      return;
+    }
+
     // 1. Sanitization
-    const cleanName = (name || '').trim();
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanPassword = (password || '').trim();
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
     if (!cleanName || !cleanEmail || !cleanPassword) {
       res.status(400).json({ error: 'الرجاء إدخال الاسم، البريد الإلكتروني وكلمة المرور' });
@@ -102,9 +111,15 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
   try {
+    // 0.1 Type Validation (Prevents NoSQL / Operator Object Injection)
+    if (!isPrimitiveString(email) || !isPrimitiveString(password)) {
+      res.status(400).json({ error: 'الرجاء إدخال البريد الإلكتروني وكلمة المرور' });
+      return;
+    }
+
     // 1. Sanitization
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanPassword = (password || '').trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
     if (!cleanEmail || !cleanPassword) {
       res.status(400).json({ error: 'الرجاء إدخال البريد الإلكتروني وكلمة المرور' });
@@ -299,7 +314,12 @@ export const requestPasswordResetOtp = async (req: AuthRequest, res: Response): 
   const { email } = req.body;
 
   try {
-    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!isPrimitiveString(email)) {
+      res.status(400).json({ error: 'الرجاء إدخال بريد إلكتروني صحيح' });
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !isValidEmail(cleanEmail)) {
       res.status(400).json({ error: 'الرجاء إدخال بريد إلكتروني صحيح' });
       return;
@@ -345,9 +365,14 @@ export const verifyOtpAndResetPassword = async (req: AuthRequest, res: Response)
   const { email, otp, newPassword } = req.body;
 
   try {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanOtp = (otp || '').trim();
-    const cleanPassword = (newPassword || '').trim();
+    if (!isPrimitiveString(email) || !isPrimitiveString(otp) || !isPrimitiveString(newPassword)) {
+      res.status(400).json({ error: 'البيانات المدخلة غير صالحة' });
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.trim();
+    const cleanPassword = newPassword.trim();
 
     if (!cleanEmail || !cleanOtp || !cleanPassword) {
       res.status(400).json({ error: 'الرجاء إدخال البريد الإلكتروني، رمز التحقق (OTP) وكلمة المرور الجديدة' });
@@ -661,7 +686,12 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
   const { email, name, googleId, password, otp, idToken } = req.body;
 
   try {
-    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!isPrimitiveString(email) || (name !== undefined && !isPrimitiveString(name)) || (googleId !== undefined && !isPrimitiveString(googleId))) {
+      res.status(400).json({ error: 'بيانات حساب Google غير صحيحة' });
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
     const cleanName = (name || 'Beast Athlete').trim();
     const cleanGoogleId = (googleId || cleanEmail).trim();
 
@@ -687,13 +717,13 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
       const isAlreadyLinked = Boolean(user.isGoogleLinked && (user.googleId === cleanGoogleId || (user.googleEmail && user.googleEmail.toLowerCase() === cleanEmail)));
 
       if (!isAlreadyLinked && !idToken) {
-        if (password) {
+        if (password && isPrimitiveString(password)) {
           const isMatch = await bcrypt.compare(password, user.password);
           if (!isMatch) {
             res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة لتأكيد ربط هذا الحساب بـ Google' });
             return;
           }
-        } else if (otp) {
+        } else if (otp && isPrimitiveString(otp)) {
           if (!user.resetOtp || user.resetOtp !== otp.trim() || !user.resetOtpExpiry || new Date() > user.resetOtpExpiry) {
             res.status(400).json({ error: 'رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية' });
             return;
@@ -778,7 +808,12 @@ export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promis
   }
 
   try {
-    const cleanEmail = (googleEmail || '').trim().toLowerCase();
+    if (!isPrimitiveString(googleEmail) || (googleId !== undefined && !isPrimitiveString(googleId)) || (currentPassword !== undefined && !isPrimitiveString(currentPassword))) {
+      res.status(400).json({ error: 'البيانات المدخلة غير صالحة' });
+      return;
+    }
+
+    const cleanEmail = googleEmail.trim().toLowerCase();
     const cleanId = (googleId || cleanEmail).trim();
 
     if (!cleanEmail || !isValidEmail(cleanEmail)) {

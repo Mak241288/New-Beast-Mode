@@ -48,12 +48,36 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  const url = new URL(event.request.url);
+  let url;
+  try {
+    url = new URL(event.request.url);
+  } catch {
+    return;
+  }
 
-  // Bypass Local Dev Server, Supabase, Groq/Gemini APIs, and external dynamic endpoints
+  // Only handle http and https schemes
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  // SSRF Protection: Validate destination request URL against an allowlist of permitted origins
+  const isSameOrigin = url.origin === self.location.origin;
+  const ALLOWED_EXTERNAL_HOSTS = [
+    'fonts.googleapis.com',
+    'fonts.gstatic.com',
+    'images.unsplash.com',
+    'raw.githubusercontent.com',
+    'cdn.jsdelivr.net',
+  ];
+  const isAllowedExternal = ALLOWED_EXTERNAL_HOSTS.some(
+    (host) => url.hostname === host || url.hostname.endsWith(`.${host}`)
+  );
+
+  // If destination is neither same-origin nor in the permitted static asset allowlist, bypass ServiceWorker
+  if (!isSameOrigin && !isAllowedExternal) {
+    return;
+  }
+
+  // Bypass Local Dev Server dynamic paths, Supabase, Groq/Gemini APIs
   if (
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
     url.pathname.startsWith('/@vite') ||
     url.pathname.startsWith('/src/') ||
     url.pathname.startsWith('/node_modules/') ||

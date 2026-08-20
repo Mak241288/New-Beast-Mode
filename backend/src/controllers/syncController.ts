@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { syncService } from '../services/syncService';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import path from 'path';
 
 export const syncController = {
@@ -39,7 +39,7 @@ export const syncController = {
       const cwd = path.join(__dirname, '../../../workout_generator_python');
       
       console.log('[SyncController] Launching Python cache performance benchmark test...');
-      exec('python test_performance.py', { cwd, env: process.env }, (error, stdout, stderr) => {
+      execFile('python', ['test_performance.py'], { cwd, env: process.env }, (error, stdout, stderr) => {
         if (error) {
           console.error('[SyncController] Performance test execution error:', error);
           res.status(500).json({
