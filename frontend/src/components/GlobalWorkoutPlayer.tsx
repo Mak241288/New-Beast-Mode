@@ -723,13 +723,11 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
 
         {/* Main Content Area: Exercise Details + Sets Logger */}
         <div
+          className="workout-player-grid"
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '20px',
-            display: 'grid',
-            gridTemplateColumns: 'minmax(280px, 340px) 1fr',
-            gap: '20px',
+            padding: '16px 20px',
           }}
         >
           {/* Left Column: Visual Demonstration & Pro-Tips */}

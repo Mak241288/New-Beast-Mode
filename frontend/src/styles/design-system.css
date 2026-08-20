@@ -615,6 +615,27 @@ body[dir='rtl'] .routine-exercise-card:hover {
   gap: 12px;
 }
 
+/* Workout Player Responsive Grid */
+.workout-player-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  gap: 20px;
+}
+
+/* Streak Heatmap Responsive Grid */
+.streak-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 6px;
+}
+
+/* Landing Micro-Tools Grid */
+.landing-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
 .responsive-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -650,6 +671,11 @@ body[dir='rtl'] .routine-exercise-card:hover {
   .grid-responsive-4col {
     grid-template-columns: repeat(2, 1fr) !important;
   }
+
+  .workout-player-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
 }
 
 @media (max-width: 600px) {
@@ -673,6 +699,16 @@ body[dir='rtl'] .routine-exercise-card:hover {
     gap: 8px !important;
   }
 
+  .streak-heatmap-grid {
+    grid-template-columns: repeat(7, 1fr) !important;
+    gap: 5px !important;
+  }
+
+  .landing-tools-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
   .responsive-toolbar {
     gap: 6px !important;
   }
@@ -680,6 +716,20 @@ body[dir='rtl'] .routine-exercise-card:hover {
   .responsive-toolbar button {
     font-size: 11.5px !important;
     padding: 6px 10px !important;
+  }
+
+  /* Prevent Safari input auto-zoom */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .modal-backdrop {
+    padding: 8px !important;
   }
 }
 

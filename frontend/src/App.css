@@ -124,12 +124,12 @@ html[dir="ltr"] .main-content {
 /* Mobile Header & Bottom Navigation */
 .mobile-header {
   display: none;
-  height: 60px;
+  height: calc(60px + env(safe-area-inset-top, 0px));
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  padding: 0 20px;
+  padding: env(safe-area-inset-top, 0px) 16px 0 16px;
   align-items: center;
   justify-content: space-between;
   border-radius: 0;
@@ -137,11 +137,12 @@ html[dir="ltr"] .main-content {
   border-left: none;
   border-right: none;
   z-index: 100;
+  touch-action: manipulation;
 }
 
 .mobile-nav {
   display: none;
-  height: 70px;
+  height: calc(65px + env(safe-area-inset-bottom, 0px));
   position: fixed;
   bottom: 0;
   left: 0;
@@ -153,7 +154,8 @@ html[dir="ltr"] .main-content {
   z-index: 100;
   justify-content: space-around;
   align-items: center;
-  padding: 0 10px;
+  padding: 0 8px env(safe-area-inset-bottom, 0px) 8px;
+  touch-action: manipulation;
 }
 
 .mobile-nav-item {
@@ -170,6 +172,8 @@ html[dir="ltr"] .main-content {
   cursor: pointer;
   flex: 1;
   height: 100%;
+  padding: 6px 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-nav-item.active {
@@ -189,7 +193,7 @@ html[dir="ltr"] .main-content {
   }
 
   .main-content {
-    padding: 75px 16px 85px 16px;
+    padding: calc(70px + env(safe-area-inset-top, 0px)) 16px calc(80px + env(safe-area-inset-bottom, 0px)) 16px;
     max-width: 100%;
     overflow-x: hidden;
   }
@@ -205,12 +209,12 @@ html[dir="ltr"] .main-content {
 
 @media (max-width: 576px) {
   .main-content {
-    padding: 70px 10px 80px 10px;
+    padding: calc(66px + env(safe-area-inset-top, 0px)) 10px calc(76px + env(safe-area-inset-bottom, 0px)) 10px;
   }
 
   .grid-responsive-stats {
     grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
 }
 

@@ -739,13 +739,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
             </div>
 
             {/* 28-Day Heatmap Grid */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(14, 1fr)',
-                gap: '6px',
-              }}
-            >
+            <div className="streak-heatmap-grid">
               {Array.from({ length: 28 }).map((_, idx) => {
                 const dayNum = idx + 1;
                 const currentStreak = stats?.workoutStats?.globalStreak || 3;
