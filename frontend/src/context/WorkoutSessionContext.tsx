@@ -276,7 +276,21 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
 
       const exercises = prev.dayData?.exercises || [];
       const currentEx = exercises[exIdx];
-      const restSeconds = currentEx?.restSeconds || currentEx?.rest_seconds || 60;
+
+      // Scientific Smart Rest Duration Recommender
+      const getSmartRestSeconds = (ex: any): number => {
+        if (ex?.restSeconds && typeof ex.restSeconds === 'number' && ex.restSeconds > 0) return ex.restSeconds;
+        if (ex?.rest_seconds && typeof ex.rest_seconds === 'number' && ex.rest_seconds > 0) return ex.rest_seconds;
+        const name = (ex?.name_en || ex?.name || '').toLowerCase();
+        const muscle = (ex?.target_muscle_en || ex?.target_muscle || ex?.muscle || '').toLowerCase();
+        if (name.includes('deadlift') || name.includes('squat') || name.includes('leg press') || name.includes('barbell row')) return 150;
+        if (name.includes('bench press') || name.includes('overhead press') || name.includes('military press') || name.includes('pull up') || name.includes('dips')) return 120;
+        if (muscle.includes('quad') || muscle.includes('hamstring') || muscle.includes('glute') || name.includes('lunge')) return 90;
+        if (muscle.includes('biceps') || muscle.includes('triceps') || muscle.includes('calves') || muscle.includes('abs') || name.includes('lateral raise') || name.includes('fly')) return 60;
+        return 90;
+      };
+
+      const restSeconds = getSmartRestSeconds(currentEx);
 
       // Determine next set or next exercise
       let nextSetIdx = setIdx + 1;

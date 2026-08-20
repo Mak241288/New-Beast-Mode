@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { ExerciseImage } from './ExerciseImage';
+import { WorkoutCompletionModal } from './WorkoutCompletionModal';
+import { BarbellPlate1RMModal } from './BarbellPlate1RMModal';
 import { 
   Play, 
   Pause, 
@@ -15,7 +17,9 @@ import {
   Trash2, 
   Timer, 
   Clock,
-  Sparkles
+  Sparkles,
+  Flame,
+  Share2
 } from 'lucide-react';
 
 interface GlobalWorkoutPlayerProps {
@@ -44,6 +48,8 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
 
   const isAr = lang === 'ar';
   const [saving, setSaving] = useState(false);
+  const [showShareCardModal, setShowShareCardModal] = useState(false);
+  const [showWarmupModal, setShowWarmupModal] = useState(false);
 
   // If summary modal is active
   if (state.showSummaryModal && state.summaryData) {
@@ -106,7 +112,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: '12px',
-              marginBottom: '28px',
+              marginBottom: '24px',
             }}
           >
             <div className="glass-panel" style={{ padding: '14px 8px', borderRadius: '16px' }}>
@@ -137,6 +143,29 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             </div>
           </div>
 
+          {/* Social Share Achievement Card Button */}
+          <button
+            onClick={() => setShowShareCardModal(true)}
+            className="secondary-btn"
+            style={{
+              width: '100%',
+              padding: '12px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              borderRadius: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginBottom: '12px',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              color: 'var(--primary)',
+            }}
+          >
+            <Share2 size={16} />
+            <span>{isAr ? '📸 مشاركة بطاقة الإنجاز (Story / WhatsApp)' : '📸 Share Achievement Card (Story / WhatsApp)'}</span>
+          </button>
+
           <button
             onClick={closeSummaryModal}
             className="glow-btn"
@@ -155,6 +184,22 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             <Sparkles size={18} />
             <span>{isAr ? 'العودة للوحة التحكم 🚀' : 'Back to Dashboard 🚀'}</span>
           </button>
+
+          {/* Render WorkoutCompletionModal if requested */}
+          {showShareCardModal && (
+            <WorkoutCompletionModal
+              isOpen={showShareCardModal}
+              onClose={() => setShowShareCardModal(false)}
+              lang={lang as any}
+              summary={{
+                workoutTitle: s.dayTitle,
+                durationMinutes: s.durationMinutes,
+                completedCount: s.totalSetsCompleted,
+                totalExercises: s.exercisesCount || 5,
+                totalWeightKg: s.totalVolumeKg,
+              }}
+            />
+          )}
         </div>
       </div>
     );
@@ -412,13 +457,33 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', padding: '3px 8px', borderRadius: '6px' }}>
                   🎯 {currentEx.muscle_ar || currentEx.muscle_en || currentEx.targetMuscle || 'عام'}
                 </span>
                 <span style={{ fontSize: '11px', background: 'rgba(255, 255, 255, 0.06)', color: 'var(--text-secondary)', padding: '3px 8px', borderRadius: '6px' }}>
                   🏋️ {currentEx.equipment_ar || currentEx.equipment_en || 'وزن الجسم'}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setShowWarmupModal(true)}
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    color: '#f59e0b',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Flame size={12} />
+                  <span>{isAr ? 'الإحماء الهرمي 🔥' : 'Warm-up Sets 🔥'}</span>
+                </button>
               </div>
             </div>
 
@@ -531,11 +596,12 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    <th style={{ padding: '8px', width: '50px' }}>{isAr ? 'الجولة' : 'Set'}</th>
+                    <th style={{ padding: '8px', width: '45px' }}>{isAr ? 'الجولة' : 'Set'}</th>
                     <th style={{ padding: '8px' }}>{isAr ? 'الوزن' : 'Weight'}</th>
                     <th style={{ padding: '8px' }}>{isAr ? 'التكرار' : 'Reps'}</th>
-                    <th style={{ padding: '8px', width: '70px' }}>{isAr ? 'إنجاز' : 'Done'}</th>
-                    <th style={{ padding: '8px', width: '40px' }}></th>
+                    <th style={{ padding: '8px', width: '75px' }}>{isAr ? 'الجهد (RPE)' : 'RPE'}</th>
+                    <th style={{ padding: '8px', width: '65px' }}>{isAr ? 'إنجاز' : 'Done'}</th>
+                    <th style={{ padding: '8px', width: '35px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -553,11 +619,11 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           transition: 'background 0.2s ease',
                         }}
                       >
-                        <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: isTargetSet ? 'var(--primary)' : '#fff' }}>
+                        <td style={{ padding: '10px 6px', textAlign: 'center', fontWeight: 'bold', color: isTargetSet ? 'var(--primary)' : '#fff' }}>
                           {setLog.setNumber}
                         </td>
 
-                        <td style={{ padding: '8px' }}>
+                        <td style={{ padding: '6px' }}>
                           <input
                             type="text"
                             value={setLog.weight}
@@ -565,7 +631,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                             placeholder="15 kg"
                             style={{
                               width: '100%',
-                              padding: '8px',
+                              padding: '8px 4px',
                               textAlign: 'center',
                               background: 'rgba(0, 0, 0, 0.4)',
                               border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
@@ -576,7 +642,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           />
                         </td>
 
-                        <td style={{ padding: '8px' }}>
+                        <td style={{ padding: '6px' }}>
                           <input
                             type="text"
                             value={setLog.reps}
@@ -584,7 +650,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                             placeholder="10-12"
                             style={{
                               width: '100%',
-                              padding: '8px',
+                              padding: '8px 4px',
                               textAlign: 'center',
                               background: 'rgba(0, 0, 0, 0.4)',
                               border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
@@ -595,7 +661,32 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           />
                         </td>
 
-                        <td style={{ padding: '8px', textAlign: 'center' }}>
+                        <td style={{ padding: '6px' }}>
+                          <select
+                            value={setLog.rpe || ''}
+                            onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { rpe: e.target.value ? Number(e.target.value) : undefined })}
+                            style={{
+                              width: '100%',
+                              padding: '7px 2px',
+                              textAlign: 'center',
+                              background: 'rgba(0, 0, 0, 0.4)',
+                              border: '1px solid rgba(255, 255, 255, 0.15)',
+                              borderRadius: '8px',
+                              color: setLog.rpe && setLog.rpe >= 9 ? '#ef4444' : setLog.rpe && setLog.rpe >= 7 ? '#f59e0b' : 'var(--primary)',
+                              fontSize: '11.5px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            <option value="">RPE</option>
+                            <option value="6">6 (@4 RIR)</option>
+                            <option value="7">7 (@3 RIR)</option>
+                            <option value="8">8 (@2 RIR)</option>
+                            <option value="9">9 (@1 RIR)</option>
+                            <option value="10">10 (Max 🔥)</option>
+                          </select>
+                        </td>
+
+                        <td style={{ padding: '6px', textAlign: 'center' }}>
                           <button
                             onClick={() => {
                               if (!setLog.completed) {
@@ -719,6 +810,17 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
           </button>
         </div>
       </div>
+
+      {/* Render Warmup Sets & Plate Modal if requested */}
+      {showWarmupModal && (
+        <BarbellPlate1RMModal
+          isOpen={showWarmupModal}
+          onClose={() => setShowWarmupModal(false)}
+          lang={lang as any}
+          initialWeight={parseFloat(String(currentLogs[0]?.weight || 60)) || 60}
+          initialReps={10}
+        />
+      )}
     </div>
   );
 };

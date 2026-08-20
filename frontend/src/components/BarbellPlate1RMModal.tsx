@@ -18,7 +18,7 @@ export const BarbellPlate1RMModal: React.FC<BarbellPlate1RMModalProps> = ({
   onClose,
 }) => {
   const isEn = lang === 'en';
-  const [activeTab, setActiveTab] = useState<'plates' | '1rm'>('plates');
+  const [activeTab, setActiveTab] = useState<'plates' | '1rm' | 'warmup'>('plates');
 
   // Plate Calculator States
   const [targetWeight, setTargetWeight] = useState<number>(initialWeight || 80);
@@ -151,6 +151,16 @@ export const BarbellPlate1RMModal: React.FC<BarbellPlate1RMModalProps> = ({
           >
             <Percent size={16} />
             <span>{isEn ? '1-Rep Max (1RM) Engine 🎯' : 'حاسبة أقصى وزن (1RM) 🎯'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('warmup')}
+            className={activeTab === 'warmup' ? 'glow-btn' : 'secondary-btn'}
+            style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Dumbbell size={16} />
+            <span>{isEn ? 'Auto Warm-up Sets 🔥' : 'جولات الإحماء الهرمية 🔥'}</span>
           </button>
         </div>
 
@@ -530,6 +540,168 @@ export const BarbellPlate1RMModal: React.FC<BarbellPlate1RMModalProps> = ({
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 3: AUTO WARM-UP PYRAMID SETS */}
+          {activeTab === 'warmup' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '16px',
+                }}
+              >
+                <div className="glass-panel" style={{ padding: '18px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
+                    {isEn ? 'Working Target Weight (kg):' : 'وزن الجولة الأساسية المستهدف (كغ):'}
+                  </label>
+                  <input
+                    type="number"
+                    min={barWeight}
+                    step="2.5"
+                    value={targetWeight}
+                    onChange={(e) => setTargetWeight(Math.max(barWeight, parseFloat(e.target.value) || barWeight))}
+                    className="input-field"
+                    style={{ fontSize: '24px', fontWeight: '900', padding: '8px 14px', width: '100%' }}
+                  />
+                </div>
+
+                <div
+                  className="glass-panel"
+                  style={{
+                    padding: '18px 20px',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), transparent)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--primary)' }}>
+                    🛡️ {isEn ? 'Scientific Warm-up Protocol' : 'بروتوكول الإحماء العلمي لتفادي الإصابات'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', lineHeight: 1.5 }}>
+                    {isEn
+                      ? 'Prepares motor units and synovial fluid without accumulating metabolic fatigue prior to your top sets.'
+                      : 'يهيئ الجهاز العصبي وسائل المفاصل الزلالي دون مراكمة حمض اللاكتيك قبل الجولات القوية.'}
+                  </div>
+                </div>
+              </div>
+
+              {/* WARM-UP SETS CARDS */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  {
+                    num: '1',
+                    titleEn: 'Set 1: Barbell Only (Joint Lubrication)',
+                    titleAr: 'الجولة 1: بار فارغ (تليين المفاصل ورسم المسار الحركي)',
+                    weight: barWeight,
+                    reps: '10-12 reps',
+                    rest: '60s rest',
+                    tagEn: 'Warm-up 1',
+                    tagAr: 'إحماء أول',
+                    color: 'var(--text-secondary)',
+                  },
+                  {
+                    num: '2',
+                    titleEn: 'Set 2: 50% Working Weight (Motor Patterning)',
+                    titleAr: 'الجولة 2: 50% من الوزن (تفعيل الوحدات الحركية)',
+                    weight: Math.round(targetWeight * 0.5),
+                    reps: '5-6 reps',
+                    rest: '90s rest',
+                    tagEn: 'Warm-up 2',
+                    tagAr: 'إحماء ثانٍ',
+                    color: 'var(--secondary)',
+                  },
+                  {
+                    num: '3',
+                    titleEn: 'Set 3: 70% Working Weight (Potentiation)',
+                    titleAr: 'الجولة 3: 70% من الوزن (تهيئة الجهاز العصبي CNS)',
+                    weight: Math.round(targetWeight * 0.7),
+                    reps: '3 reps',
+                    rest: '90s rest',
+                    tagEn: 'Warm-up 3',
+                    tagAr: 'إحماء ثالث',
+                    color: '#f59e0b',
+                  },
+                  {
+                    num: '4',
+                    titleEn: 'Set 4: 85% Working Weight (Heavy Acclimation)',
+                    titleAr: 'الجولة 4: 85% من الوزن (استشعار ثقل الوزن بدون إجهاد)',
+                    weight: Math.round(targetWeight * 0.85),
+                    reps: '1 rep',
+                    rest: '120s rest',
+                    tagEn: 'Primer Set',
+                    tagAr: 'جولة تحضيرية',
+                    color: '#ec4899',
+                  },
+                  {
+                    num: '🔥',
+                    titleEn: 'Top Working Sets: 100% Target Load',
+                    titleAr: 'الجولات الأساسية: 100% الوزن المستهدف',
+                    weight: targetWeight,
+                    reps: 'Target Reps',
+                    rest: '120-150s rest',
+                    tagEn: 'WORK SET 🔥',
+                    tagAr: 'جولة البناء الأساسية 🔥',
+                    color: 'var(--primary)',
+                    isWork: true,
+                  },
+                ].map((s, idx) => (
+                  <div
+                    key={idx}
+                    className="glass-panel"
+                    style={{
+                      padding: '16px 20px',
+                      borderRadius: '12px',
+                      border: s.isWork ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.06)',
+                      background: s.isWork ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), transparent)' : 'rgba(255,255,255,0.02)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '10px',
+                          background: 'rgba(255,255,255,0.05)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: '900',
+                          fontSize: '15px',
+                          color: s.color,
+                        }}
+                      >
+                        {s.num}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '14px' }}>{isEn ? s.titleEn : s.titleAr}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          ⏱️ {s.rest}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ textAlign: isEn ? 'right' : 'left' }}>
+                        <div style={{ fontSize: '18px', fontWeight: '900', color: s.color }}>{s.weight} kg</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{s.reps}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
             </div>

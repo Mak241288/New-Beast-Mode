@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dumbbell, 
   Activity, 
@@ -22,7 +22,8 @@ import {
   XCircle,
   Timer,
   Sparkles,
-  Calculator
+  Calculator,
+  Download
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
@@ -44,6 +45,54 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const isEn = lang === 'en';
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [activePreviewTab, setActivePreviewTab] = useState<'player' | 'scanner' | 'macros' | 'plates'>('player');
+
+  // PWA Install Prompt & Mobile Sticky Bar States
+  const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
+  const [showStickyMobileBar, setShowStickyMobileBar] = useState<boolean>(false);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setInstallPromptEvent(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setInstallPromptEvent(null);
+    };
+
+    const handleScroll = () => {
+      if (window.scrollY > 350) {
+        setShowStickyMobileBar(true);
+      } else {
+        setShowStickyMobileBar(false);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPromptEvent) {
+      alert(isEn ? 'To install: Tap browser menu (⋮ or Share) -> "Add to Home Screen"' : 'لتثبيت التطبيق: اضغط على قائمة المتصفح (⋮ أو زر المشاركة) -> "إضافة إلى الشاشة الرئيسية"');
+      return;
+    }
+    installPromptEvent.prompt();
+    const { outcome } = await installPromptEvent.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+    }
+    setInstallPromptEvent(null);
+  };
 
   // Mini-Calculator 1: Quick TDEE & Macro State
   const [tdeeWeight, setTdeeWeight] = useState<number>(75);
@@ -369,6 +418,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <Info size={16} />
             <span>{isEn ? 'About Platform' : 'عن المنصة ℹ️'}</span>
           </button>
+
+          {!isInstalled && (
+            <button
+              onClick={handleInstallClick}
+              className="secondary-btn"
+              style={{
+                padding: '16px 22px',
+                fontSize: '15px',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                color: 'var(--primary)',
+                background: 'rgba(16, 185, 129, 0.08)',
+              }}
+            >
+              <Download size={16} />
+              <span>{isEn ? '📱 Install App on Mobile' : '📱 تثبيت التطبيق على هاتفك'}</span>
+            </button>
+          )}
         </div>
 
         {/* Trust Badges Strip */}
@@ -1014,6 +1084,60 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </button>
         </div>
       </footer>
+
+      {/* STICKY MOBILE QUICK ACTION BAR (Visible upon scroll) */}
+      {showStickyMobileBar && (
+        <div
+          className="animated-fade"
+          style={{
+            position: 'fixed',
+            bottom: '16px',
+            left: '16px',
+            right: '16px',
+            zIndex: 99,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 16px',
+            background: 'rgba(15, 23, 42, 0.88)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            borderRadius: '16px',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(16, 185, 129, 0.15)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ padding: '6px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', borderRadius: '8px' }}>
+              <Dumbbell size={16} />
+            </div>
+            <div>
+              <div style={{ fontSize: '12.5px', fontWeight: '800' }}>BEASTMODE AI</div>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+                {isEn ? 'Dual AI • 4,298+ Exercises' : 'ذكاء اصطناعي • 4,298 تمرين'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={onGetStarted}
+              className="glow-btn"
+              style={{
+                padding: '8px 16px',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              <span>{isEn ? 'Build Plan ⚡' : 'صمم خطتك ⚡'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
