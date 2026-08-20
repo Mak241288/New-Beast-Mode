@@ -483,26 +483,37 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       });
     }
 
-    // Update User
+    // Update User with strictly cast and sanitized primitives
+    const sanitizeFieldString = (f: unknown): string | undefined => (typeof f === 'string' ? f.trim() : undefined);
+    const sanitizeFieldNumber = (f: unknown): number | null | undefined => {
+      if (f === null) return null;
+      if (typeof f === 'number' && Number.isFinite(f)) return f;
+      if (typeof f === 'string' && f.trim()) {
+        const p = parseFloat(f.trim());
+        return Number.isFinite(p) ? p : undefined;
+      }
+      return undefined;
+    };
+
     const updatedUser = await (prisma as any).user.update({
       where: { id: userId },
       data: {
-        name: name !== undefined ? name : oldUser.name,
-        gender: gender !== undefined ? gender : oldUser.gender,
-        birthDate: birthDate !== undefined ? (birthDate ? new Date(birthDate) : null) : oldUser.birthDate,
-        height: height !== undefined ? (height ? parseFloat(height) : null) : oldUser.height,
+        name: name !== undefined ? sanitizeFieldString(name) : oldUser.name,
+        gender: gender !== undefined ? sanitizeFieldString(gender) : oldUser.gender,
+        birthDate: birthDate !== undefined ? (birthDate && typeof birthDate === 'string' ? new Date(birthDate) : null) : oldUser.birthDate,
+        height: height !== undefined ? sanitizeFieldNumber(height) : oldUser.height,
         currentWeight: parsedWeight !== null ? parsedWeight : oldUser.currentWeight,
-        targetWeight: targetWeight !== undefined ? (targetWeight ? parseFloat(targetWeight) : null) : oldUser.targetWeight,
-        medicalConditions: medicalConditions !== undefined ? medicalConditions : oldUser.medicalConditions,
-        labResults: labResults !== undefined ? labResults : oldUser.labResults,
-        workoutLocation: workoutLocation !== undefined ? workoutLocation : oldUser.workoutLocation,
-        fitnessGoal: fitnessGoal !== undefined ? fitnessGoal : oldUser.fitnessGoal,
-        fitnessLevel: fitnessLevel !== undefined ? fitnessLevel : oldUser.fitnessLevel,
-        equipment: equipment !== undefined ? (Array.isArray(equipment) ? equipment.join(',') : equipment) : oldUser.equipment,
-        age: age !== undefined ? (age ? parseInt(age) : null) : oldUser.age,
-        daysPerWeek: daysPerWeek !== undefined ? (daysPerWeek ? parseInt(daysPerWeek) : null) : oldUser.daysPerWeek,
+        targetWeight: targetWeight !== undefined ? sanitizeFieldNumber(targetWeight) : oldUser.targetWeight,
+        medicalConditions: medicalConditions !== undefined ? sanitizeFieldString(medicalConditions) : oldUser.medicalConditions,
+        labResults: labResults !== undefined ? sanitizeFieldString(labResults) : oldUser.labResults,
+        workoutLocation: workoutLocation !== undefined ? sanitizeFieldString(workoutLocation) : oldUser.workoutLocation,
+        fitnessGoal: fitnessGoal !== undefined ? sanitizeFieldString(fitnessGoal) : oldUser.fitnessGoal,
+        fitnessLevel: fitnessLevel !== undefined ? sanitizeFieldString(fitnessLevel) : oldUser.fitnessLevel,
+        equipment: equipment !== undefined ? (Array.isArray(equipment) ? equipment.filter((e) => typeof e === 'string').join(',') : sanitizeFieldString(equipment)) : oldUser.equipment,
+        age: age !== undefined ? (sanitizeFieldNumber(age) !== undefined ? Math.round(sanitizeFieldNumber(age)!) : null) : oldUser.age,
+        daysPerWeek: daysPerWeek !== undefined ? (sanitizeFieldNumber(daysPerWeek) !== undefined ? Math.round(sanitizeFieldNumber(daysPerWeek)!) : null) : oldUser.daysPerWeek,
         workoutReminder: workoutReminder !== undefined ? Boolean(workoutReminder) : oldUser.workoutReminder,
-        reminderTime: reminderTime !== undefined ? reminderTime : oldUser.reminderTime,
+        reminderTime: reminderTime !== undefined ? sanitizeFieldString(reminderTime) : oldUser.reminderTime,
         onboardingCompleted: onboardingCompleted !== undefined ? Boolean(onboardingCompleted) : oldUser.onboardingCompleted,
       },
     });

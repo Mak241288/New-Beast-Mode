@@ -1580,9 +1580,13 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
 // @desc    Get Alternatives for a specific exercise target muscle from SQLite
 // @route   GET /api/workout/exercise/:id/alternatives
 export const getAlternatives = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const exerciseId = parseInt(id);
+  const exerciseId = validateNumericId(req.params.id);
   const userId = req.user?.id;
+
+  if (!exerciseId) {
+    res.status(400).json({ error: 'معرف التمرين غير صالح' });
+    return;
+  }
 
   try {
     const targetExercise = await prisma.exercise.findUnique({
@@ -1650,7 +1654,7 @@ export const getAlternatives = async (req: AuthRequest, res: Response): Promise<
 // @route   POST /api/workout/exercise/:id/swap-ai
 export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
-  const exerciseId = parseInt(req.params.id);
+  const exerciseId = validateNumericId(req.params.id);
   const { reason, lang } = req.body;
 
   try {
@@ -1658,6 +1662,14 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
       res.status(401).json({ error: 'غير مصرح بالدخول' });
       return;
     }
+
+    if (!exerciseId) {
+      res.status(400).json({ error: 'معرف التمرين غير صالح' });
+      return;
+    }
+
+    const cleanReason = typeof reason === 'string' ? reason.trim() : '';
+    const cleanLang = (typeof lang === 'string' && lang.trim() === 'en' ? 'en' : 'ar') as 'ar' | 'en';
 
     const exercise = await prisma.exercise.findUnique({
       where: { id: exerciseId },
@@ -1686,9 +1698,9 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
       exercise.name,
       exercise.targetMuscle || '',
       exercise.category || '',
-      reason,
+      cleanReason,
       userEquip,
-      lang || 'ar'
+      cleanLang
     );
 
     // Search library for matching image and video URLs

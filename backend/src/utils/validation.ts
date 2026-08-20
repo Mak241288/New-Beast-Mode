@@ -10,10 +10,29 @@ export const validateNumericId = (paramValue: unknown): number | null => {
   return Number.isInteger(num) && num > 0 ? num : null;
 };
 
+// Check if value is a primitive string (prevents NoSQL/Object operator injection)
+export const isPrimitiveString = (val: unknown): val is string => typeof val === 'string';
+
+// Safely cast unknown input to primitive string
+export const castToString = (val: unknown, maxLen = 250, defaultVal = ''): string => {
+  if (typeof val !== 'string') return defaultVal;
+  return val.trim().slice(0, maxLen);
+};
+
 // Sanitizes and bounds arbitrary user string inputs
 export const sanitizeString = (val: unknown, maxLen = 250, defaultVal = ''): string => {
   if (typeof val !== 'string') return defaultVal;
   return val.trim().slice(0, maxLen);
+};
+
+// Safely cast unknown input to number
+export const castToNumber = (val: unknown, defaultVal = 0): number => {
+  if (typeof val === 'number' && Number.isFinite(val)) return val;
+  if (typeof val === 'string') {
+    const parsed = parseFloat(val.trim());
+    return Number.isFinite(parsed) ? parsed : defaultVal;
+  }
+  return defaultVal;
 };
 
 // Sanitizes integer inputs with min/max clamps

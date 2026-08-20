@@ -7,20 +7,27 @@ import path from 'path';
  * and auto-prunes backups older than 14 days.
  */
 
-const BACKUP_DIR = path.join(__dirname, '../../backups');
-const DEV_DB_PATH = path.join(__dirname, '../../prisma/dev.db');
-const EXERCISES_DB_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
+const BACKUP_DIR = path.resolve(__dirname, '../../backups');
+const DEV_DB_PATH = path.resolve(__dirname, '../../prisma/dev.db');
+const EXERCISES_DB_PATH = path.resolve(__dirname, '../../../workout_generator_python/database/exercises.db');
 
 /**
  * Resolves and validates that a given path stays strictly inside an allowed base directory.
+ * Prevents File Inclusion & Path Traversal attacks.
  */
 function resolveSafePath(baseDir: string, relativeOrFileName: string): string {
-  const safeBase = path.basename(relativeOrFileName);
-  const resolved = path.resolve(baseDir, safeBase);
-  if (!resolved.startsWith(path.resolve(baseDir))) {
+  const safeBase = path.basename(String(relativeOrFileName || '').trim());
+  if (!safeBase || safeBase === '.' || safeBase === '..') {
+    throw new Error(`[Security] Invalid filename: ${relativeOrFileName}`);
+  }
+  const resolvedBaseDir = path.resolve(baseDir);
+  const resolvedPath = path.resolve(resolvedBaseDir, safeBase);
+  
+  // Strict prefix confinement check with path delimiter
+  if (!resolvedPath.startsWith(resolvedBaseDir + path.sep) && resolvedPath !== resolvedBaseDir) {
     throw new Error(`[Security] Path traversal attempt detected: ${relativeOrFileName}`);
   }
-  return resolved;
+  return resolvedPath;
 }
 
 export const runDatabaseBackup = (targetBackupDir: string = BACKUP_DIR): { success: boolean; backupsCreated: string[]; error?: string } => {

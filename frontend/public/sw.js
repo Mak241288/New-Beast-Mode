@@ -58,21 +58,25 @@ self.addEventListener('fetch', (event) => {
   // Only handle http and https schemes
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-  // SSRF Protection: Validate destination request URL against an allowlist of permitted origins
+  // SSRF Protection: Validate request URLs against allowed origins before dispatching fetch requests
   const isSameOrigin = url.origin === self.location.origin;
-  const ALLOWED_EXTERNAL_HOSTS = [
-    'fonts.googleapis.com',
-    'fonts.gstatic.com',
-    'images.unsplash.com',
-    'raw.githubusercontent.com',
-    'cdn.jsdelivr.net',
+  const ALLOWED_TRUSTED_ORIGINS = [
+    'https://fonts.googleapis.com',
+    'https://fonts.gstatic.com',
+    'https://images.unsplash.com',
+    'https://raw.githubusercontent.com',
+    'https://cdn.jsdelivr.net',
   ];
-  const isAllowedExternal = ALLOWED_EXTERNAL_HOSTS.some(
-    (host) => url.hostname === host || url.hostname.endsWith(`.${host}`)
-  );
+  const isAllowedOrigin = isSameOrigin || ALLOWED_TRUSTED_ORIGINS.some((origin) => {
+    try {
+      return url.origin === new URL(origin).origin;
+    } catch {
+      return false;
+    }
+  });
 
-  // If destination is neither same-origin nor in the permitted static asset allowlist, bypass ServiceWorker
-  if (!isSameOrigin && !isAllowedExternal) {
+  // If destination does not match self.location.origin or trusted origins, bypass ServiceWorker
+  if (!isAllowedOrigin) {
     return;
   }
 
