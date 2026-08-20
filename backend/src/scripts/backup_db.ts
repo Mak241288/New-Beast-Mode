@@ -29,7 +29,15 @@ export function getSafeBackupPath(baseDir: string, filename: string): string {
 
 export const runDatabaseBackup = (targetBackupDir: string = BACKUP_DIR): { success: boolean; backupsCreated: string[]; error?: string } => {
   try {
-    const resolvedBackupDir = path.resolve(targetBackupDir);
+    const resolvedBase = path.resolve(BACKUP_DIR);
+    const resolvedTarget = path.resolve(targetBackupDir);
+    const relativePath = path.relative(resolvedBase, resolvedTarget);
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      throw new Error('Invalid backup directory');
+    }
+    const safeTargetDir = resolvedTarget;
+    const resolvedBackupDir = safeTargetDir;
+
     // Ensure backups directory exists
     if (!fs.existsSync(resolvedBackupDir)) {
       fs.mkdirSync(resolvedBackupDir, { recursive: true });
