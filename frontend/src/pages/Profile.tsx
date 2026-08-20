@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { supabase } from '../services/supabase';
-import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText, Zap } from 'lucide-react';
+import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText, Zap, LogOut } from 'lucide-react';
 import { PasswordRequirements } from '../components/PasswordRequirements';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
@@ -14,9 +14,10 @@ interface ProfileProps {
   lang: 'ar' | 'en';
   onLanguageChange: (lang: 'ar' | 'en') => void;
   onNavigate: (view: string) => void;
+  onLogout?: () => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavigate }) => {
+export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavigate, onLogout }) => {
   const t = translations[lang] || translations.ar;
   const cachedProfile = cacheStore.get<any>('user_profile');
   const [showNutritionModal, setShowNutritionModal] = useState(false);
@@ -1320,6 +1321,66 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Account Actions & Sign Out Card */}
+        <div className="glass-panel" style={{ border: '1px solid var(--border-color)', padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Lock size={16} color="var(--primary)" />
+            {lang === 'en' ? 'Account & Session Actions' : 'إدارة وأمان الحساب والجلسة'}
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+            {/* Sign Out Button */}
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="secondary-btn"
+                style={{
+                  padding: '12px 18px',
+                  borderRadius: '10px',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                  color: 'var(--danger)',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: '700',
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                }}
+              >
+                <LogOut size={16} />
+                <span>{lang === 'en' ? 'Sign Out of Account' : 'تسجيل الخروج من الحساب'}</span>
+              </button>
+            )}
+
+            {/* Change Password / Security */}
+            <button
+              type="button"
+              onClick={() => {
+                setSecurityError('');
+                setSecuritySuccess('');
+                setShowSecurityModal(true);
+              }}
+              className="secondary-btn"
+              style={{
+                padding: '12px 18px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+              }}
+            >
+              <KeyRound size={16} color="var(--primary)" />
+              <span>{lang === 'en' ? 'Security & Passwords' : 'الأمان وتغيير كلمة المرور'}</span>
+            </button>
           </div>
         </div>
 

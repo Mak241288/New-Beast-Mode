@@ -464,6 +464,26 @@ function App() {
             {lang === 'en' ? 'ع' : 'EN'}
           </button>
           <ThemeToggle />
+          {/* Quick Mobile Sign Out */}
+          <button
+            onClick={handleLogout}
+            title={lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}
+            className="secondary-btn"
+            style={{
+              padding: '6px 10px',
+              fontSize: '11px',
+              borderRadius: '8px',
+              color: 'var(--danger)',
+              borderColor: 'rgba(239, 68, 68, 0.25)',
+              background: 'rgba(239, 68, 68, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <LogOut size={13} />
+            <span>{lang === 'en' ? 'Exit' : 'خروج'}</span>
+          </button>
         </div>
       </header>
 
@@ -500,7 +520,7 @@ function App() {
         )}
 
         {currentView === 'profile' && (
-          <Profile lang={lang} onLanguageChange={handleLanguageChange} onNavigate={navigateTo} />
+          <Profile lang={lang} onLanguageChange={handleLanguageChange} onNavigate={navigateTo} onLogout={handleLogout} />
         )}
       </main>
 
