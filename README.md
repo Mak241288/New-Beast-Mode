@@ -1,6 +1,9 @@
 # 🦍 BeastMode AI — Next-Gen Smart Fitness & Nutrition Ecosystem
 
 <p align="center">
+  <a href="https://new-beast-mode-git-master-ma-k1.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/Live_Demo-Vercel_App-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live App" />
+  </a>
   <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
@@ -13,6 +16,17 @@
   <img src="https://img.shields.io/badge/Gemini_AI-2.0-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini" />
   <img src="https://img.shields.io/badge/Aikido-Security_Hardened-00D2FF?style=for-the-badge" alt="Security Hardened" />
   <img src="https://img.shields.io/badge/PWA-Ready-FF6F00?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA" />
+</p>
+
+---
+
+## 🌐 التجربة الحية على السحابة | Live Production Web App
+
+<p align="center">
+  <a href="https://new-beast-mode-git-master-ma-k1.vercel.app/" target="_blank">
+    <b>🚀 اضغط هنا لفتح وتجربة التطبيق المباشر على Vercel | Click Here to Launch Live App</b><br />
+    <code>https://new-beast-mode-git-master-ma-k1.vercel.app/</code>
+  </a>
 </p>
 
 ---
@@ -45,7 +59,8 @@
 ```mermaid
 graph TD
     A[Frontend: React 19 + Vite + TypeScript + PWA] -->|HTTPS / REST API| B[Backend: Node.js + Express + TypeScript]
-    B -->|User Auth & Sync| C[(Supabase Cloud PostgreSQL)]
+    A -->|Direct Cloud Sync & Auth| C[(Supabase Cloud PostgreSQL)]
+    B -->|User Auth & Sync| C
     B -->|High-Performance Cache| D[(Local SQLite exercises.db)]
     B -->|User Data & Active Routines| E[(Prisma dev.db)]
     B -->|AI Generation & Swaps| F[Groq LLaMA 3.3 70B API]
@@ -136,14 +151,12 @@ npm run dev
 
 ---
 
-### ⚡ تشغيل فوري بنقرة واحدة (Windows):
-قم بتشغيل الملف المساعد لتشغيل الواجهة والسيرفر معاً في ثوانٍ:
-```cmd
-run_servers.bat
-```
+### ⚡ روابط التشغيل والإنتاج | Access URLs:
 
-- 🌐 **Frontend URL:** `http://localhost:5173`
-- ⚙️ **Backend API URL:** `http://localhost:5000`
+- 🚀 **الرابط المباشر على السحابة (Live Production App):**  
+  👉 **[https://new-beast-mode-git-master-ma-k1.vercel.app/](https://new-beast-mode-git-master-ma-k1.vercel.app/)**
+- 💻 **الواجهة المحلية (Local Development):** `http://localhost:5173`
+- ⚙️ **خادم الـ API المحلي (Local Backend API):** `http://localhost:5000`
 
 ---
 
