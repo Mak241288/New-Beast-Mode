@@ -562,29 +562,34 @@ export const api = {
   // ==========================================
 
   getActivePlan: async () => {
-    const cached: any = cacheStore.get('active_plan');
     const user = await getCurrentUser();
 
-    // If we have a cached plan with dayWorkouts, it is our active source of truth
-    if (cached && cached.dayWorkouts && cached.dayWorkouts.length > 0) {
-      if (user?.email) {
-        try {
-          const { data: planRow } = await supabase
-            .from('WorkoutPlan')
-            .select('*, dayWorkouts:DayWorkout(*, exercises:Exercise(*))')
-            .eq('active', true)
-            .order('updatedAt', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (planRow && planRow.dayWorkouts && planRow.dayWorkouts.length > 0 && planRow.updatedAt && cached.updatedAt && new Date(planRow.updatedAt) > new Date(cached.updatedAt)) {
-            cacheStore.set('active_plan', planRow);
-            return planRow;
-          }
-        } catch {
-          // Non-fatal
+    // 1. Authoritative Cloud Plan from Supabase User Metadata
+    let cloudActive: any = null;
+    if (user?.user_metadata?.beast_active_plan) {
+      cloudActive = typeof user.user_metadata.beast_active_plan === 'string'
+        ? JSON.parse(user.user_metadata.beast_active_plan)
+        : user.user_metadata.beast_active_plan;
+    } else if (user?.user_metadata?.beast_sync_data) {
+      try {
+        const syncData = typeof user.user_metadata.beast_sync_data === 'string'
+          ? JSON.parse(user.user_metadata.beast_sync_data)
+          : user.user_metadata.beast_sync_data;
+        if (syncData?.activePlan) {
+          cloudActive = syncData.activePlan;
         }
+      } catch {
+        // Non-fatal
       }
+    }
+
+    if (cloudActive && cloudActive.dayWorkouts && cloudActive.dayWorkouts.length > 0) {
+      cacheStore.set('active_plan', cloudActive);
+      return cloudActive;
+    }
+
+    const cached: any = cacheStore.get('active_plan');
+    if (cached && cached.dayWorkouts && cached.dayWorkouts.length > 0) {
       return cached;
     }
 
@@ -973,6 +978,32 @@ export const api = {
   },
 
   getPlanHistory: async (): Promise<any[]> => {
+    const user = await getCurrentUser();
+
+    // 1. Authoritative Cloud Plan History from Supabase User Metadata
+    let cloudHistory: any[] | null = null;
+    if (user?.user_metadata?.beast_plan_history) {
+      cloudHistory = typeof user.user_metadata.beast_plan_history === 'string'
+        ? JSON.parse(user.user_metadata.beast_plan_history)
+        : user.user_metadata.beast_plan_history;
+    } else if (user?.user_metadata?.beast_sync_data) {
+      try {
+        const syncData = typeof user.user_metadata.beast_sync_data === 'string'
+          ? JSON.parse(user.user_metadata.beast_sync_data)
+          : user.user_metadata.beast_sync_data;
+        if (syncData?.planHistory && Array.isArray(syncData.planHistory)) {
+          cloudHistory = syncData.planHistory;
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+
+    if (cloudHistory && cloudHistory.length > 0) {
+      cacheStore.set('plan_history', cloudHistory);
+      return cloudHistory;
+    }
+
     let history: any[] = cacheStore.get('plan_history') || [];
     const active: any = cacheStore.get('active_plan');
 
@@ -985,7 +1016,6 @@ export const api = {
       }
     }
 
-    const user = await getCurrentUser();
     if (user?.email) {
       try {
         const { data: dbPlans } = await supabase
@@ -1038,7 +1068,7 @@ export const api = {
         active: String(p.id) === String(id) || p.id === id,
       }));
       cacheStore.set('plan_history', updatedHistory);
-      pushUserDataToCloud();
+      await pushUserDataToCloud();
 
       const user = await getCurrentUser();
       if (user?.email) {
@@ -1070,6 +1100,7 @@ export const api = {
       plan.title = title;
       cacheStore.set('active_plan', plan);
     }
+    await pushUserDataToCloud();
 
     const user = await getCurrentUser();
     if (user?.email) {
@@ -1099,6 +1130,7 @@ export const api = {
 
       const updatedHistory = [duplicated, ...history];
       cacheStore.set('plan_history', updatedHistory);
+      await pushUserDataToCloud();
 
       const user = await getCurrentUser();
       if (user?.email) {
@@ -1143,6 +1175,9 @@ export const api = {
         cacheStore.remove('active_plan');
       }
     }
+
+    // Immediately push the updated plan history to cloud!
+    await pushUserDataToCloud();
 
     const user = await getCurrentUser();
     if (user?.email) {
