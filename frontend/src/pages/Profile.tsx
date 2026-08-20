@@ -145,28 +145,10 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         console.warn('[Profile Supabase User Check]:', authErr);
       }
 
-      setProfile((prev: any) => {
-        const updated = {
-          ...prev,
-          ...data,
-          height: data.height || prev.height || '',
-          currentWeight: data.currentWeight || prev.currentWeight || '',
-          targetWeight: data.targetWeight || prev.targetWeight || '',
-          fitnessGoal: data.fitnessGoal || prev.fitnessGoal || 'HYPERTROPHY',
-          fitnessLevel: data.fitnessLevel || prev.fitnessLevel || 'intermediate',
-          daysPerWeek: data.daysPerWeek || prev.daysPerWeek || '4',
-          equipment: data.equipment !== undefined ? data.equipment : prev.equipment || '',
-          age: data.age || prev.age || '',
-          avatar: data.avatar || prev.avatar || '',
-          workoutReminder: data.workoutReminder ?? prev.workoutReminder ?? false,
-          reminderTime: data.reminderTime || prev.reminderTime || '08:00',
-          isGoogleLinked: Boolean(data.isGoogleLinked ?? prev.isGoogleLinked),
-          googleEmail: data.googleEmail || prev.googleEmail || '',
-          googleId: data.googleId || prev.googleId || '',
-        };
-        cacheStore.set('user_profile', updated);
-        return updated;
-      });
+      if (data) {
+        setProfile(data);
+        cacheStore.set('user_profile', data);
+      }
     } catch (err) {
       console.error('Failed to load profile:', err);
     } finally {

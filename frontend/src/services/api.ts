@@ -24,57 +24,56 @@ function generateId(): number {
 // ==========================================
 // AUTOMATIC CROSS-DEVICE CLOUD SYNC ENGINE
 // ==========================================
-let syncTimeout: any = null;
-
 export async function pushUserDataToCloud(): Promise<void> {
-  if (syncTimeout) clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(async () => {
-    try {
-      const user = await getCurrentUser();
-      if (!user) return;
+  try {
+    const user = await getCurrentUser();
+    if (!user) return;
 
-      const activePlan = cacheStore.get('active_plan');
-      const userProfile = cacheStore.get('user_profile');
-      const planHistory = cacheStore.get('plan_history');
-      const userRecovery = cacheStore.get('user_recovery');
-      const userStats = cacheStore.get('user_stats');
+    const activePlan = cacheStore.get('active_plan');
+    const userProfile = cacheStore.get('user_profile');
+    const planHistory = cacheStore.get('plan_history');
+    const userRecovery = cacheStore.get('user_recovery');
+    const userStats = cacheStore.get('user_stats');
 
-      const payload = {
-        activePlan,
-        userProfile,
-        planHistory,
-        userRecovery,
-        userStats,
-        lastSyncedAt: Date.now(),
-      };
+    const payload = {
+      activePlan,
+      userProfile,
+      planHistory,
+      userRecovery,
+      userStats,
+      lastSyncedAt: Date.now(),
+    };
 
-      // 1. Update Supabase User Metadata (Guaranteed to work across all devices with 0 extra SQL tables)
-      await supabase.auth.updateUser({
-        data: {
-          beast_sync_data: JSON.stringify(payload),
-        },
-      });
+    // 1. Persist directly to Supabase Auth User Metadata (immune to RLS or table issues, works across 100% of devices)
+    await supabase.auth.updateUser({
+      data: {
+        name: (userProfile as any)?.name || user.user_metadata?.name,
+        beast_profile: userProfile,
+        beast_active_plan: activePlan,
+        beast_plan_history: planHistory,
+        beast_sync_data: JSON.stringify(payload),
+      },
+    });
 
-      // 2. Also persist to User row if table accessible
-      const email = user.email || (userProfile as any)?.email;
-      if (email) {
-        try {
-          await supabase.from('User').upsert(
-            {
-              email,
-              name: (userProfile as any)?.name || user.user_metadata?.name || 'Beast Athlete',
-              updatedAt: new Date().toISOString(),
-            },
-            { onConflict: 'email' }
-          );
-        } catch {
-          // Non-fatal
-        }
+    // 2. Also persist to User row if table accessible
+    const email = user.email || (userProfile as any)?.email;
+    if (email) {
+      try {
+        await supabase.from('User').upsert(
+          {
+            email,
+            name: (userProfile as any)?.name || user.user_metadata?.name || 'Beast Athlete',
+            updatedAt: new Date().toISOString(),
+          },
+          { onConflict: 'email' }
+        );
+      } catch {
+        // Non-fatal
       }
-    } catch (err) {
-      console.warn('[CloudSync] Background sync push failed:', err);
     }
-  }, 800);
+  } catch (err) {
+    console.warn('[CloudSync] Sync push failed:', err);
+  }
 }
 
 export async function syncUserDataFromCloud(): Promise<boolean> {
@@ -84,6 +83,26 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
 
     // 1. Read cloud sync data from Supabase Auth user_metadata
     let syncData: any = null;
+    let profileData: any = null;
+    let planData: any = null;
+    let historyData: any = null;
+
+    if (user.user_metadata?.beast_profile) {
+      profileData = typeof user.user_metadata.beast_profile === 'string'
+        ? JSON.parse(user.user_metadata.beast_profile)
+        : user.user_metadata.beast_profile;
+    }
+    if (user.user_metadata?.beast_active_plan) {
+      planData = typeof user.user_metadata.beast_active_plan === 'string'
+        ? JSON.parse(user.user_metadata.beast_active_plan)
+        : user.user_metadata.beast_active_plan;
+    }
+    if (user.user_metadata?.beast_plan_history) {
+      historyData = typeof user.user_metadata.beast_plan_history === 'string'
+        ? JSON.parse(user.user_metadata.beast_plan_history)
+        : user.user_metadata.beast_plan_history;
+    }
+
     const rawMeta = user.user_metadata?.beast_sync_data;
     if (rawMeta) {
       try {
@@ -93,33 +112,28 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
       }
     }
 
-    if (syncData) {
-      if (syncData.activePlan && syncData.activePlan.dayWorkouts && syncData.activePlan.dayWorkouts.length > 0) {
-        cacheStore.set('active_plan', syncData.activePlan);
-      }
-      if (syncData.userProfile) {
-        const localProf: any = cacheStore.get('user_profile') || {};
-        cacheStore.set('user_profile', { ...localProf, ...syncData.userProfile });
-      }
-      if (syncData.planHistory && syncData.planHistory.length > 0) {
-        cacheStore.set('plan_history', syncData.planHistory);
-      }
-      if (syncData.userRecovery) {
-        cacheStore.set('user_recovery', syncData.userRecovery);
-      }
-      if (syncData.userStats) {
-        cacheStore.set('user_stats', syncData.userStats);
-      }
-      return true;
-    } else {
-      // If cloud is empty but local has data, immediately push local to cloud!
-      const activePlan = cacheStore.get('active_plan');
-      const userProfile = cacheStore.get('user_profile');
-      if (activePlan || userProfile) {
-        await pushUserDataToCloud();
-      }
-      return true;
+    const finalProfile = profileData || syncData?.userProfile;
+    const finalPlan = planData || syncData?.activePlan;
+    const finalHistory = historyData || syncData?.planHistory;
+
+    if (finalProfile) {
+      const localProf: any = cacheStore.get('user_profile') || {};
+      cacheStore.set('user_profile', { ...localProf, ...finalProfile });
     }
+    if (finalPlan && finalPlan.dayWorkouts && finalPlan.dayWorkouts.length > 0) {
+      cacheStore.set('active_plan', finalPlan);
+    }
+    if (finalHistory && finalHistory.length > 0) {
+      cacheStore.set('plan_history', finalHistory);
+    }
+    if (syncData?.userRecovery) {
+      cacheStore.set('user_recovery', syncData.userRecovery);
+    }
+    if (syncData?.userStats) {
+      cacheStore.set('user_stats', syncData.userStats);
+    }
+
+    return true;
   } catch (err) {
     console.warn('[CloudSync] Failed to pull from cloud:', err);
     return false;
@@ -354,8 +368,27 @@ export const api = {
     const cached: any = cacheStore.get('user_profile') || {};
     const email = user?.email || cached.email;
 
+    // 1. Authoritative Cloud Profile from Supabase Auth user_metadata
     let cloudProfile: any = null;
-    if (email) {
+    if (user?.user_metadata?.beast_profile) {
+      cloudProfile = typeof user.user_metadata.beast_profile === 'string'
+        ? JSON.parse(user.user_metadata.beast_profile)
+        : user.user_metadata.beast_profile;
+    } else if (user?.user_metadata?.beast_sync_data) {
+      try {
+        const syncData = typeof user.user_metadata.beast_sync_data === 'string'
+          ? JSON.parse(user.user_metadata.beast_sync_data)
+          : user.user_metadata.beast_sync_data;
+        if (syncData?.userProfile) {
+          cloudProfile = syncData.userProfile;
+        }
+      } catch {
+        // Non-fatal
+      }
+    }
+
+    // 2. Fallback to Supabase User table
+    if (!cloudProfile && email) {
       try {
         const { data: profileRow } = await supabase
           .from('User')
@@ -371,7 +404,7 @@ export const api = {
       }
     }
 
-    // Merge strategy: Preserve all valid attributes, prefer defined values over empty/null
+    // Merge strategy: Cloud profile is the source of truth across all devices!
     const mergedProfile: any = {
       email: email || 'athlete@beastmode.ai',
       name: user?.user_metadata?.name || 'Beast Athlete',
@@ -382,21 +415,14 @@ export const api = {
       ...(cloudProfile || {}),
     };
 
-    // Make sure fields from cached are not erased if cloudProfile had null/empty
-    const fieldsToPreserve = [
-      'name', 'height', 'currentWeight', 'targetWeight', 'fitnessGoal',
-      'fitnessLevel', 'daysPerWeek', 'equipment', 'age', 'gender',
-      'birthDate', 'medicalConditions', 'workoutLocation', 'avatar',
-      'workoutReminder', 'reminderTime', 'isGoogleLinked', 'googleEmail'
-    ];
-
-    fieldsToPreserve.forEach((f) => {
-      if (cached[f] !== undefined && cached[f] !== null && cached[f] !== '') {
-        if (!cloudProfile || cloudProfile[f] === undefined || cloudProfile[f] === null || cloudProfile[f] === '') {
-          mergedProfile[f] = cached[f];
+    // If cloud profile has values, use them over empty cached values
+    if (cloudProfile) {
+      Object.keys(cloudProfile).forEach((key) => {
+        if (cloudProfile[key] !== undefined && cloudProfile[key] !== null && cloudProfile[key] !== '') {
+          mergedProfile[key] = cloudProfile[key];
         }
-      }
-    });
+      });
+    }
 
     cacheStore.set('user_profile', mergedProfile);
     return mergedProfile;
@@ -416,20 +442,32 @@ export const api = {
 
     cacheStore.set('user_profile', merged);
 
+    // Direct Instant Cloud Sync to Supabase Auth User Metadata (Works on all devices instantly!)
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          name: merged.name || user?.user_metadata?.name,
+          beast_profile: merged,
+          beast_sync_data: JSON.stringify({
+            activePlan: cacheStore.get('active_plan'),
+            userProfile: merged,
+            planHistory: cacheStore.get('plan_history'),
+            userRecovery: cacheStore.get('user_recovery'),
+            userStats: cacheStore.get('user_stats'),
+            lastSyncedAt: Date.now(),
+          }),
+        },
+      });
+    } catch (authErr) {
+      console.warn('[Supabase Auth Profile Update]:', authErr);
+    }
+
     try {
       if (email) {
         await supabase.from('User').upsert(merged, { onConflict: 'email' });
       }
     } catch {
       // Non-fatal
-    }
-
-    if (profileData.name && user) {
-      try {
-        await supabase.auth.updateUser({ data: { name: profileData.name } });
-      } catch {
-        // Non-fatal
-      }
     }
 
     return merged;
