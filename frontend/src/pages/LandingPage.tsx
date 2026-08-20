@@ -322,27 +322,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       
       {/* NAVIGATION BAR */}
-      <header className="glass-panel" style={{ position: 'sticky', top: 0, zIndex: 100, borderRadius: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backdropFilter: 'blur(16px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', padding: '8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary-glow)' }}>
-            <Dumbbell size={20} color="#ffffff" />
+      <header className="glass-panel landing-header">
+        <div className="landing-logo">
+          <div style={{ background: 'linear-gradient(135deg, var(--primary), var(--secondary))', padding: '6px 8px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 15px var(--primary-glow)' }}>
+            <Dumbbell size={18} color="#ffffff" />
           </div>
-          <span style={{ fontSize: '22px', fontWeight: '900', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '0.5px' }}>
+          <span className="landing-logo-text">
             BEASTMODE AI
           </span>
-          <span style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+          <span className="landing-logo-badge" style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
             PRO v3.0
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="landing-nav-actions">
           {/* Language Switcher */}
           <button
             onClick={() => onLanguageChange(isEn ? 'ar' : 'en')}
             className="secondary-btn"
-            style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '8px' }}
+            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
           >
-            <Globe size={14} />
+            <Globe size={13} />
             <span>{isEn ? 'العربية' : 'English'}</span>
           </button>
           
@@ -350,8 +350,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <button
             onClick={onLogin}
-            className="secondary-btn"
-            style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '8px' }}
+            className="secondary-btn desktop-only-action"
+            style={{ padding: '8px 14px', fontSize: '12.5px', borderRadius: '8px' }}
           >
             {isEn ? 'Sign In' : 'تسجيل الدخول'}
           </button>
@@ -359,7 +359,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onGetStarted}
             className="glow-btn"
-            style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '8px' }}
+            style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '8px', whiteSpace: 'nowrap' }}
           >
             {isEn ? 'Get Started ⚡' : 'ابدأ مجاناً ⚡'}
           </button>
@@ -1065,7 +1065,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* FOOTER */}
-      <footer style={{ padding: '26px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', maxWidth: '1100px', margin: '0 auto', width: '100%', fontSize: '12px', color: 'var(--text-secondary)' }}>
+      <footer style={{ padding: '26px 20px 85px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', maxWidth: '1100px', margin: '0 auto', width: '100%', fontSize: '12px', color: 'var(--text-secondary)' }}>
         <div>
           © {new Date().getFullYear()} BeastMode AI Fitness. {isEn ? 'All rights reserved.' : 'جميع الحقوق محفوظة.'}
         </div>
@@ -1087,50 +1087,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* STICKY MOBILE QUICK ACTION BAR (Visible upon scroll) */}
       {showStickyMobileBar && (
-        <div
-          className="animated-fade"
-          style={{
-            position: 'fixed',
-            bottom: '16px',
-            left: '16px',
-            right: '16px',
-            zIndex: 99,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 16px',
-            background: 'rgba(15, 23, 42, 0.88)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(16, 185, 129, 0.4)',
-            borderRadius: '16px',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(16, 185, 129, 0.15)',
-          }}
-        >
+        <div className="sticky-mobile-cta animated-fade">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div style={{ padding: '6px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', borderRadius: '8px' }}>
               <Dumbbell size={16} />
             </div>
             <div>
-              <div style={{ fontSize: '12.5px', fontWeight: '800' }}>BEASTMODE AI</div>
-              <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: '800', whiteSpace: 'nowrap' }}>BEASTMODE AI</div>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                 {isEn ? 'Dual AI • 4,298+ Exercises' : 'ذكاء اصطناعي • 4,298 تمرين'}
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             <button
               onClick={onGetStarted}
               className="glow-btn"
               style={{
-                padding: '8px 16px',
-                fontSize: '13px',
+                padding: '8px 14px',
+                fontSize: '12.5px',
                 fontWeight: 'bold',
                 borderRadius: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
+                whiteSpace: 'nowrap',
               }}
             >
               <span>{isEn ? 'Build Plan ⚡' : 'صمم خطتك ⚡'}</span>
