@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2 } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
@@ -2404,53 +2404,110 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               />
             </div>
 
-            {/* Day Selector Tabs (Days 1 to 7) */}
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-              {manualDays.map((day) => {
-                const isActive = day.dayIndex === manualActiveDayIdx;
-                const count = day.exercises ? day.exercises.length : 0;
-                return (
+            {/* Day Selector & Navigation Section */}
+            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={18} color="var(--primary)" />
+                  <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                    {lang === 'en' ? 'Select Day to Edit Exercises:' : '📅 اختر اليوم التدريبي لتعديل تمارينه:'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    ({manualDays.length} {lang === 'en' ? 'days in routine' : 'أيام في البرنامج'})
+                  </span>
+                </div>
+
+                {/* Add Day Button */}
+                {manualDays.length < 7 && (
                   <button
-                    key={day.dayIndex}
                     type="button"
                     onClick={() => {
-                      setManualActiveDayIdx(day.dayIndex);
-                      setManualRowSuggestions(null);
+                      const nextDayNum = manualDays.length + 1;
+                      const newDay = {
+                        dayIndex: nextDayNum,
+                        title: `اليوم ${nextDayNum} (${getDayName(nextDayNum)})`,
+                        focusArea: 'صدر، ظهر',
+                        isRestDay: false,
+                        exercises: [
+                          { name: 'Pushups', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Bodyweight' }
+                        ]
+                      };
+                      setManualDays([...manualDays, newDay]);
+                      setManualActiveDayIdx(nextDayNum);
                     }}
-                    style={{
-                      padding: '10px 16px',
-                      borderRadius: '12px',
-                      fontSize: '13px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      border: isActive ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                      background: isActive ? 'linear-gradient(135deg, var(--primary), #00a8ff)' : 'rgba(255,255,255,0.04)',
-                      color: isActive ? '#050710' : (day.isRestDay ? 'var(--text-muted)' : 'var(--text-primary)'),
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      transition: 'all 0.2s',
-                      boxShadow: isActive ? '0 4px 15px var(--primary-glow)' : 'none',
-                    }}
+                    className="glow-btn"
+                    style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
-                    <span>{lang === 'en' ? `Day ${day.dayIndex} (${getDayName(day.dayIndex)})` : `اليوم ${day.dayIndex} (${getDayName(day.dayIndex)})`}</span>
-                    {day.isRestDay ? (
-                      <span style={{ fontSize: '11px', opacity: 0.9 }}>💤</span>
-                    ) : (
-                      <span style={{ background: isActive ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '10px', fontSize: '11px' }}>
-                        {count}
-                      </span>
-                    )}
+                    <span>+ {lang === 'en' ? 'Add Another Day' : 'إضافة يوم جديد'}</span>
                   </button>
-                );
-              })}
+                )}
+              </div>
+
+              {/* Day Selector Tabs (Days 1 to N) */}
+              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '6px', scrollbarWidth: 'thin' }}>
+                {manualDays.map((day, idx) => {
+                  const dayNum = day.dayIndex !== undefined ? day.dayIndex : idx + 1;
+                  const isActive = dayNum === manualActiveDayIdx || (manualActiveDayIdx === undefined && idx === 0);
+                  const count = day.exercises ? day.exercises.length : 0;
+                  const dayName = getDayName(dayNum);
+                  return (
+                    <button
+                      key={dayNum}
+                      type="button"
+                      onClick={() => {
+                        setManualActiveDayIdx(dayNum);
+                        setManualRowSuggestions(null);
+                      }}
+                      style={{
+                        padding: '12px 18px',
+                        borderRadius: '12px',
+                        fontSize: '13.5px',
+                        fontWeight: '800',
+                        cursor: 'pointer',
+                        border: isActive ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                        background: isActive ? 'linear-gradient(135deg, var(--primary), #00a8ff)' : 'rgba(255,255,255,0.05)',
+                        color: isActive ? '#050710' : (day.isRestDay ? 'var(--text-muted)' : 'var(--text-primary)'),
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                        minWidth: '120px',
+                        transition: 'all 0.25s ease',
+                        boxShadow: isActive ? '0 6px 20px var(--primary-glow)' : 'none',
+                        transform: isActive ? 'scale(1.03)' : 'scale(1)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{lang === 'en' ? `Day ${dayNum}` : `اليوم ${dayNum}`}</span>
+                        {day.isRestDay ? (
+                          <span style={{ fontSize: '13px' }}>💤</span>
+                        ) : (
+                          <span style={{
+                            background: isActive ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.12)',
+                            padding: '2px 7px',
+                            borderRadius: '10px',
+                            fontSize: '11px',
+                            fontWeight: '700'
+                          }}>
+                            {count} {lang === 'en' ? 'ex' : 'تمارين'}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '11px', opacity: isActive ? 0.95 : 0.7 }}>
+                        {dayName} • {day.isRestDay ? (lang === 'en' ? 'Rest' : 'راحة') : (day.focusArea?.split('،')[0] || (lang === 'en' ? 'Workout' : 'تمرين'))}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Active Day Card Editor */}
             {(() => {
-              const currentDay = manualDays.find(d => d.dayIndex === manualActiveDayIdx) || manualDays[0];
-              const dayIdx = manualDays.findIndex(d => d.dayIndex === manualActiveDayIdx);
+              const safeIndex = Math.max(0, manualDays.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+              const dayIdx = safeIndex !== -1 && safeIndex < manualDays.length ? safeIndex : 0;
+              const currentDay = manualDays[dayIdx] || manualDays[0];
 
               const updateCurrentDay = (field: string, val: any) => {
                 const updated = [...manualDays];
@@ -2576,6 +2633,73 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               return (
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   
+                  {/* Current Active Day Header & Navigation */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    background: 'rgba(0, 210, 255, 0.08)',
+                    padding: '12px 18px',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(0, 210, 255, 0.25)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '20px' }}>📌</span>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--primary)' }}>
+                          {lang === 'en'
+                            ? `Currently Editing: Day ${currentDay.dayIndex || dayIdx + 1} (${getDayName(currentDay.dayIndex || dayIdx + 1)})`
+                            : `أنت تعدل حالياً: اليوم ${currentDay.dayIndex || dayIdx + 1} (${getDayName(currentDay.dayIndex || dayIdx + 1)})`}
+                        </h4>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          {currentDay.isRestDay ? (lang === 'en' ? '🛌 Rest & Recovery Day' : '🛌 يوم مخصص للراحة والاستشفاء') : `🏋️ ${currentDay.title || 'تمارين اليوم'}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Navigation buttons: Prev / Next */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        disabled={dayIdx === 0}
+                        onClick={() => setManualActiveDayIdx(manualDays[dayIdx - 1]?.dayIndex || dayIdx)}
+                        className="secondary-btn"
+                        style={{
+                          padding: '7px 14px',
+                          fontSize: '12.5px',
+                          borderRadius: '8px',
+                          opacity: dayIdx === 0 ? 0.35 : 1,
+                          cursor: dayIdx === 0 ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <span>{lang === 'en' ? '◀ Prev Day' : '◀ اليوم السابق'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={dayIdx >= manualDays.length - 1}
+                        onClick={() => setManualActiveDayIdx(manualDays[dayIdx + 1]?.dayIndex || (dayIdx + 2))}
+                        className="secondary-btn"
+                        style={{
+                          padding: '7px 14px',
+                          fontSize: '12.5px',
+                          borderRadius: '8px',
+                          opacity: dayIdx >= manualDays.length - 1 ? 0.35 : 1,
+                          cursor: dayIdx >= manualDays.length - 1 ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <span>{lang === 'en' ? 'Next Day ▶' : 'اليوم التالي ▶'}</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Day Config & Focus Area */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1.5fr) minmax(200px, 1.5fr) auto', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     <div>
