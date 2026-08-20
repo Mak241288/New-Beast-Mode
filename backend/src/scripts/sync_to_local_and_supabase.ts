@@ -155,6 +155,9 @@ function generateSupabaseSqlScript(exercises: FullyEnrichedExercise[]) {
 
   const escapeSql = (val: any): string => {
     if (val === null || val === undefined) return 'NULL';
+    if (typeof val === 'number') {
+      return Number.isFinite(val) ? String(val) : '0';
+    }
     const s = typeof val === 'object' ? JSON.stringify(val) : String(val);
     return `'${s.replace(/'/g, "''")}'`;
   };
@@ -212,12 +215,12 @@ CREATE TABLE IF NOT EXISTS "ExerciseLibrary" (
       "secondary_muscles_en", "secondary_muscles_ar", "common_mistakes_en", "common_mistakes_ar",
       "updatedAt"
     ) VALUES (
-      ${ex.id}, ${escapeSql(ex.name_en)}, ${escapeSql(ex.name_en)}, ${escapeSql(ex.name_ar)},
+      ${escapeSql(ex.id)}, ${escapeSql(ex.name_en)}, ${escapeSql(ex.name_en)}, ${escapeSql(ex.name_ar)},
       ${escapeSql(ex.description_en)}, ${escapeSql(ex.description_en)}, ${escapeSql(ex.description_ar)},
       ${escapeSql(ex.instructions_en)}, ${escapeSql(ex.instructions_ar)}, ${escapeSql(ex.muscle_en)},
       ${escapeSql(ex.muscle_ar)}, ${escapeSql(ex.targetMuscle)}, ${escapeSql(ex.equipment_en)},
       ${escapeSql(ex.equipment_ar)}, ${escapeSql(ex.level)}, ${escapeSql(ex.category)},
-      ${ex.rating}, ${escapeSql(ex.source)}, ${escapeSql(ex.image_url)}, ${escapeSql(ex.image_url)},
+      ${escapeSql(ex.rating)}, ${escapeSql(ex.source)}, ${escapeSql(ex.image_url)}, ${escapeSql(ex.image_url)},
       ${escapeSql(ex.gif_url)}, ${escapeSql(ex.youtube_url)}, ${escapeSql(ex.youtube_url)},
       ${escapeSql(ex.anatomy_image_url || '')}, ${escapeSql(ex.secondary_muscles_en)},
       ${escapeSql(ex.secondary_muscles_ar)}, ${escapeSql(ex.common_mistakes_en)},
