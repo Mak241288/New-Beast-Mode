@@ -9,6 +9,42 @@ const OFFLINE_SHELL = [
   '/favicon.svg',
 ];
 
+// Predefined Set of Trusted Origins for SSRF Prevention
+const TRUSTED_ORIGINS = new Set([
+  self.location.origin,
+  'https://musclewiki.com',
+  'https://www.musclewiki.com',
+  'https://fonts.googleapis.com',
+  'https://fonts.gstatic.com',
+  'https://images.unsplash.com',
+  'https://raw.githubusercontent.com',
+  'https://cdn.jsdelivr.net',
+]);
+
+/**
+ * SSRF Protection Validator: Checks if the target URL origin is trusted.
+ */
+function isTrustedOrigin(rawUrl) {
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    if (parsed.origin === self.location.origin) {
+      return true;
+    }
+    if (TRUSTED_ORIGINS.has(parsed.origin)) {
+      return true;
+    }
+    if (parsed.hostname.endsWith('.supabase.co') || parsed.hostname.endsWith('.groq.com')) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 // 1. Immediate Install with skipWaiting
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -44,43 +80,26 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// 4. Fetch Event with NetworkFirst Strategy for Navigation & HTML
+// 4. Fetch Event with Strict SSRF Origin Validation & NetworkFirst Strategy
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const requestUrl = event.request.url;
   let url;
   try {
-    url = new URL(event.request.url);
+    url = new URL(requestUrl);
   } catch {
+    event.respondWith(new Response('Invalid URL', { status: 400 }));
     return;
   }
 
-  // Only handle http and https schemes
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
-
-  // SSRF Protection: Validate request URLs against allowed origins before dispatching fetch requests
-  const isSameOrigin = url.origin === self.location.origin;
-  const ALLOWED_TRUSTED_ORIGINS = [
-    'https://fonts.googleapis.com',
-    'https://fonts.gstatic.com',
-    'https://images.unsplash.com',
-    'https://raw.githubusercontent.com',
-    'https://cdn.jsdelivr.net',
-  ];
-  const isAllowedOrigin = isSameOrigin || ALLOWED_TRUSTED_ORIGINS.some((origin) => {
-    try {
-      return url.origin === new URL(origin).origin;
-    } catch {
-      return false;
-    }
-  });
-
-  // If destination does not match self.location.origin or trusted origins, bypass ServiceWorker
-  if (!isAllowedOrigin) {
+  // SSRF Protection: Validate request origin against trusted origins
+  if (!isTrustedOrigin(requestUrl)) {
+    event.respondWith(new Response('Forbidden: Untrusted Origin', { status: 403 }));
     return;
   }
 
-  // Bypass Local Dev Server dynamic paths, Supabase, Groq/Gemini APIs
+  // Bypass Local Dev Server dynamic paths, Supabase API, Groq/Gemini APIs
   if (
     url.pathname.startsWith('/@vite') ||
     url.pathname.startsWith('/src/') ||
@@ -101,42 +120,55 @@ self.addEventListener('fetch', (event) => {
   // STRATEGY A: NetworkFirst for HTML / Navigation (Solves Stale Cache completely!)
   if (isHtmlNavigation) {
     event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
+      (async () => {
+        // Validate origin before executing fetch
+        if (!isTrustedOrigin(event.request.url)) {
+          return new Response('Forbidden', { status: 403 });
+        }
+
+        try {
+          const networkResponse = await fetch(event.request);
           if (networkResponse && networkResponse.status === 200) {
             const responseClone = networkResponse.clone();
-            caches.open(STATIC_CACHE).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
+            const cache = await caches.open(STATIC_CACHE);
+            cache.put(event.request, responseClone);
           }
           return networkResponse;
-        })
-        .catch(async () => {
+        } catch (err) {
           console.warn('[ServiceWorker] Network unavailable, serving cached HTML shell.');
           const cached = await caches.match(event.request);
           if (cached) return cached;
-          return (await caches.match('/index.html')) || (await caches.match('/'));
-        })
+          return (await caches.match('/index.html')) || (await caches.match('/')) || new Response('Offline', { status: 503 });
+        }
+      })()
     );
     return;
   }
 
   // STRATEGY B: Stale-While-Revalidate for Static Assets (JS, CSS, SVGs, Fonts)
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
+    (async () => {
+      // Validate origin before executing fetch
+      if (!isTrustedOrigin(event.request.url)) {
+        return new Response('Forbidden', { status: 403 });
+      }
+
+      const cachedResponse = await caches.match(event.request);
+      const fetchPromise = (async () => {
+        try {
+          const networkResponse = await fetch(event.request);
           if (networkResponse && networkResponse.status === 200) {
             const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
+            const cache = await caches.open(CACHE_NAME);
+            cache.put(event.request, responseClone);
           }
           return networkResponse;
-        })
-        .catch(() => cachedResponse);
+        } catch {
+          return cachedResponse;
+        }
+      })();
 
-      return cachedResponse || fetchPromise;
-    })
+      return cachedResponse || (await fetchPromise);
+    })()
   );
 });
