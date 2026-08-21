@@ -1120,8 +1120,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
         </div>
 
-        {/* 10 Category Chips / Selector Bar */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', justifyContent: 'flex-start', scrollbarWidth: 'none' }}>
+        {/* 10 Category Chips / Selector Bar (All 10 Visible & Centered) */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '14px' }}>
           {[
             { en: '🥗 Nutrition & Macros', ar: '🥗 مدرب الماكروز' },
             { en: '🧠 AI Physique Scan', ar: '🧠 ماسح التحول' },
@@ -1144,17 +1144,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   setIsPillarsAutoPlay(false);
                 }}
                 style={{
-                  padding: '8px 16px',
+                  padding: '7px 14px',
                   borderRadius: '20px',
                   border: isPillActive ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
-                  background: isPillActive ? 'rgba(0, 210, 255, 0.18)' : 'rgba(15, 23, 42, 0.65)',
+                  background: isPillActive ? 'rgba(0, 210, 255, 0.2)' : 'rgba(15, 23, 42, 0.65)',
                   color: isPillActive ? '#fff' : 'var(--text-secondary)',
-                  fontSize: '12.5px',
+                  fontSize: '12px',
                   fontWeight: isPillActive ? '800' : '600',
                   whiteSpace: 'nowrap',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  flexShrink: 0,
+                  boxShadow: isPillActive ? '0 0 12px rgba(0, 210, 255, 0.3)' : 'none',
                 }}
               >
                 {isEn ? pill.en : pill.ar}
