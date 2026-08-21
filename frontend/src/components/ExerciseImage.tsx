@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dumbbell } from 'lucide-react';
 
 interface ExerciseImageProps {
   src?: string | null;
+  step2?: string | null;
   alt?: string;
   muscle?: string | null;
   className?: string;
   style?: React.CSSProperties;
+  autoAnimate?: boolean;
 }
 
 // Guaranteed High-Availability CDN Images per Muscle Group
@@ -43,16 +45,34 @@ function getMuscleFallback(muscle?: string | null): string {
 
 export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   src,
+  step2,
   alt = 'Exercise',
   muscle,
   className = '',
   style = {},
+  autoAnimate = true,
 }) => {
   const [currentTier, setCurrentTier] = useState<1 | 2 | 3>(src ? 1 : 2);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [activeFrame, setActiveFrame] = useState<0 | 1>(0);
+
+  // Compute second frame URL if available
+  const frame0 = src || '';
+  const frame1 = step2 || (frame0.includes('/0.jpg') ? frame0.replace('/0.jpg', '/1.jpg') : null);
+
+  useEffect(() => {
+    if (!autoAnimate || !frame1 || frame1 === frame0 || currentTier !== 1) return;
+
+    const interval = setInterval(() => {
+      setActiveFrame((prev) => (prev === 0 ? 1 : 0));
+    }, 1300);
+
+    return () => clearInterval(interval);
+  }, [autoAnimate, frame0, frame1, currentTier]);
 
   const fallbackUrl = getMuscleFallback(muscle);
-  const effectiveSrc = currentTier === 1 && src ? src : fallbackUrl;
+  const targetSrc = activeFrame === 1 && frame1 ? frame1 : frame0;
+  const effectiveSrc = currentTier === 1 && targetSrc ? targetSrc : fallbackUrl;
 
   const handleError = () => {
     if (currentTier === 1) {
@@ -93,22 +113,43 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   }
 
   return (
-    <img
-      src={effectiveSrc}
-      alt={alt}
-      className={className}
-      referrerPolicy="no-referrer"
-      loading="lazy"
-      onError={handleError}
-      onLoad={() => setImgLoaded(true)}
-      style={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        opacity: imgLoaded ? 1 : 0.6,
-        transition: 'opacity 0.2s ease-in-out',
-        ...style,
-      }}
-    />
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', ...style }}>
+      <img
+        src={effectiveSrc}
+        alt={alt}
+        className={className}
+        referrerPolicy="no-referrer"
+        loading="lazy"
+        onError={handleError}
+        onLoad={() => setImgLoaded(true)}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          opacity: imgLoaded ? 1 : 0.6,
+          transition: 'opacity 0.25s ease-in-out',
+        }}
+      />
+      {frame1 && currentTier === 1 && (
+        <span
+          style={{
+            position: 'absolute',
+            top: '6px',
+            right: '6px',
+            background: 'rgba(0, 210, 255, 0.2)',
+            border: '1px solid rgba(0, 210, 255, 0.4)',
+            color: 'var(--primary)',
+            fontSize: '9px',
+            fontWeight: 'bold',
+            padding: '2px 6px',
+            borderRadius: '6px',
+            backdropFilter: 'blur(4px)',
+            pointerEvents: 'none',
+          }}
+        >
+          {activeFrame === 0 ? 'START' : 'PEAK'}
+        </span>
+      )}
+    </div>
   );
 };
