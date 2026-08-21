@@ -452,7 +452,14 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   };
 
   const getRestTime = (ex: any) => {
+    if (ex.exerciseTips) {
+      const match = ex.exerciseTips.match(/(?:راحة|Rest|rest)[:\s]*(\d+)\s*(?:s|ثانية|seconds|sec)?/i);
+      if (match && match[1]) {
+        return `${match[1]} ${lang === 'en' ? 's' : 'ثانية'}`;
+      }
+    }
     const cat = (ex.category || '').toUpperCase();
+    if (cat === 'WARMUP' || cat === 'COOLDOWN' || cat === 'STRETCH') return lang === 'en' ? '15s' : '15 ثانية';
     if (cat === 'HIIT' || cat === 'CARDIO') return lang === 'en' ? '30s' : '30 ثانية';
     if (cat === 'YOGA' || cat === 'PILATES') return lang === 'en' ? 'None' : 'بدون';
     return lang === 'en' ? '90s' : '90 ثانية';
@@ -1556,14 +1563,110 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         </div>
       )}
 
-      {/* EDIT EXERCISE MODAL */}
+      {/* PRO ATHLETIC QUICK EDIT EXERCISE MODAL */}
       {editingExercise && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(5, 7, 16, 0.9)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setEditingExercise(null)}>
-          <form onSubmit={handleEditExerciseSubmit} className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '480px', padding: '24px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '15px' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800' }}>{lang === 'en' ? 'Edit Exercise details' : 'تعديل جولات وتكرارات التمرين'}</h3>
-            
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(5, 7, 16, 0.88)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => setEditingExercise(null)}
+        >
+          <form
+            onSubmit={handleEditExerciseSubmit}
+            className="glass-panel animated-fade"
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              padding: '24px',
+              border: '1px solid var(--primary)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 30px var(--primary-glow)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              borderRadius: '20px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header & Exercise Title */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '17px', fontWeight: '800', margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>⚡</span>
+                  <span>{lang === 'en' ? 'Quick Exercise Editor' : 'محرر التمرين السريع والذكي'}</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                  {lang === 'en' ? 'Customize role, sets, duration, and rest interval' : 'تعديل نوع التمرين، الجولات، الوقت وفترة الراحة'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingExercise(null)}
+                className="secondary-btn"
+                style={{ width: '32px', height: '32px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 1. Category / Role Segmented Selection */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                🏷️ {lang === 'en' ? 'Exercise Role & Category:' : 'نوع ودور التمرين في الحصة:'}
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                {[
+                  { id: 'IRON', labelAr: '🏋️ أساسي / حديد', labelEn: '🏋️ Main / Iron', color: 'var(--primary)', bg: 'rgba(204,255,0,0.1)' },
+                  { id: 'WARMUP', labelAr: '🔥 إحماء وتفعيل', labelEn: '🔥 Warm-up', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+                  { id: 'COOLDOWN', labelAr: '🧊 استشفاء وإطالة', labelEn: '🧊 Recovery / Stretch', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
+                  { id: 'CARDIO', labelAr: '🏃 كارديو ولياقة', labelEn: '🏃 Cardio', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
+                  { id: 'HIIT', labelAr: '⚡ HIIT حارق', labelEn: '⚡ HIIT Burn', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
+                  { id: 'CALISTHENICS', labelAr: '🤸 وزن الجسم', labelEn: '🤸 Calisthenics', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
+                ].map((cat) => {
+                  const isSelected = (editingExercise.category || 'IRON').toUpperCase() === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setEditingExercise({ ...editingExercise, category: cat.id })}
+                      style={{
+                        padding: '8px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: isSelected ? '800' : '600',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        border: isSelected ? `2px solid ${cat.color}` : '1px solid var(--border-color)',
+                        background: isSelected ? cat.bg : 'rgba(255,255,255,0.02)',
+                        color: isSelected ? cat.color : 'var(--text-secondary)',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {lang === 'en' ? cat.labelEn : cat.labelAr}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Exercise Name & Autocomplete Suggestions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
-              <label>{lang === 'en' ? 'Exercise Name' : 'اسم التمرين'}</label>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                ✍️ {lang === 'en' ? 'Exercise Name:' : 'اسم التمرين:'}
+              </label>
               <input
                 type="text"
                 value={editingExercise.name}
@@ -1571,15 +1674,16 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 onBlur={() => setTimeout(() => setEditSuggestions([]), 200)}
                 className="input-field"
                 required
+                style={{ fontSize: '13px', padding: '10px 14px' }}
               />
               {editSuggestions.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#0e111a', border: '1px solid var(--border-color)', borderRadius: '8px', zIndex: 1200, maxHeight: '150px', overflowY: 'auto', marginTop: '4px' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#0e111a', border: '1px solid var(--border-color)', borderRadius: '10px', zIndex: 1200, maxHeight: '160px', overflowY: 'auto', marginTop: '4px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
                   {editSuggestions.map((item) => (
                     <div
                       key={item.id}
                       onClick={() => handleSelectSuggestion(item, 'edit')}
-                      style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '12px' }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                      style={{ padding: '9px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '12px', color: '#fff' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       {lang === 'en' ? (item.name_en || item.name_ar) : (item.name_ar || item.name_en)}
@@ -1589,30 +1693,195 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            {/* 3. Sets & Reps/Duration Fast Controls */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {/* Sets Fast Counter */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label>{t.sets}</label>
-                <input type="number" value={editingExercise.sets} onChange={(e) => setEditingExercise({ ...editingExercise, sets: parseInt(e.target.value) || 3 })} className="input-field" required />
+                <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                  🔄 {t.sets}
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingExercise({ ...editingExercise, sets: Math.max(1, (editingExercise.sets || 3) - 1) })}
+                    className="secondary-btn"
+                    style={{ width: '36px', height: '36px', borderRadius: '8px', padding: 0, fontSize: '16px', fontWeight: 'bold' }}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={editingExercise.sets}
+                    onChange={(e) => setEditingExercise({ ...editingExercise, sets: parseInt(e.target.value) || 1 })}
+                    className="input-field num-display"
+                    style={{ textAlign: 'center', fontSize: '15px', fontWeight: 'bold', flex: 1, padding: '8px' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditingExercise({ ...editingExercise, sets: (editingExercise.sets || 3) + 1 })}
+                    className="secondary-btn"
+                    style={{ width: '36px', height: '36px', borderRadius: '8px', padding: 0, fontSize: '16px', fontWeight: 'bold' }}
+                  >
+                    +
+                  </button>
+                </div>
+                {/* Sets Quick Presets */}
+                <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
+                  {[2, 3, 4, 5].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setEditingExercise({ ...editingExercise, sets: s })}
+                      className="secondary-btn"
+                      style={{ flex: 1, padding: '3px 0', fontSize: '11px', borderRadius: '6px', opacity: editingExercise.sets === s ? 1 : 0.6, borderColor: editingExercise.sets === s ? 'var(--primary)' : undefined }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Reps vs Duration (Timed) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label>{t.reps}</label>
-                <input type="text" value={editingExercise.reps} onChange={(e) => setEditingExercise({ ...editingExercise, reps: e.target.value })} className="input-field" required />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                    🔢 {t.reps} / ⏱️ {lang === 'en' ? 'Duration' : 'الوقت'}
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  value={editingExercise.reps}
+                  onChange={(e) => setEditingExercise({ ...editingExercise, reps: e.target.value })}
+                  className="input-field num-display"
+                  placeholder="10-12 or 45s"
+                  required
+                  style={{ fontSize: '13px', padding: '8px 12px' }}
+                />
+                {/* Quick Reps / Time Presets */}
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                  {['8-10', '10-12', '12-15', '30s', '45s', '60s', 'Max'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setEditingExercise({ ...editingExercise, reps: preset })}
+                      className="secondary-btn"
+                      style={{ padding: '3px 6px', fontSize: '10.5px', borderRadius: '6px', opacity: editingExercise.reps === preset ? 1 : 0.6, borderColor: editingExercise.reps === preset ? 'var(--primary)' : undefined }}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
+            {/* 4. Rest Interval Fast Selector */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label>{t.weight}</label>
-              <input type="text" value={editingExercise.weight || ''} onChange={(e) => setEditingExercise({ ...editingExercise, weight: e.target.value })} className="input-field" />
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                ⏱️ {lang === 'en' ? 'Rest Time Between Sets:' : 'فترة الراحة بين الجولات:'}
+              </label>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { label: '0s (بدون)', val: 0, text: '0s' },
+                  { label: '15s', val: 15, text: '15s' },
+                  { label: '30s', val: 30, text: '30s' },
+                  { label: '45s', val: 45, text: '45s' },
+                  { label: '60s', val: 60, text: '60s' },
+                  { label: '90s', val: 90, text: '90s' },
+                  { label: '120s (2د)', val: 120, text: '120s' },
+                  { label: '180s (3د)', val: 180, text: '180s' },
+                ].map((item) => {
+                  const currentRestStr = getRestTime(editingExercise);
+                  const isCurrent = currentRestStr.includes(String(item.val)) || (item.val === 0 && currentRestStr === 'None');
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        const cleanTips = (editingExercise.exerciseTips || '').replace(/(?:راحة|Rest|rest)[:\s]*\d+\s*(?:s|ثانية|seconds|sec)?\s*[|•-]?\s*/gi, '').trim();
+                        const newTips = item.val > 0
+                          ? `Rest: ${item.val}s ${cleanTips ? `| ${cleanTips}` : ''}`
+                          : cleanTips;
+                        setEditingExercise({ ...editingExercise, exerciseTips: newTips });
+                      }}
+                      className="secondary-btn"
+                      style={{
+                        padding: '5px 8px',
+                        fontSize: '11px',
+                        borderRadius: '8px',
+                        borderColor: isCurrent ? 'var(--primary)' : undefined,
+                        background: isCurrent ? 'var(--primary-glow)' : undefined,
+                        color: isCurrent ? '#fff' : undefined,
+                        fontWeight: isCurrent ? 'bold' : 'normal',
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
+            {/* 5. Suggested Weight */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label>{t.perfTip}</label>
-              <textarea value={editingExercise.exerciseTips || ''} onChange={(e) => setEditingExercise({ ...editingExercise, exerciseTips: e.target.value })} className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} />
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                ⚖️ {t.weight}
+              </label>
+              <input
+                type="text"
+                value={editingExercise.weight || ''}
+                onChange={(e) => setEditingExercise({ ...editingExercise, weight: e.target.value })}
+                className="input-field"
+                placeholder={lang === 'en' ? 'e.g. 20kg, Dumbbells, Bodyweight' : 'مثال: 20kg، دمبلز، وزن الجسم'}
+                style={{ fontSize: '13px', padding: '8px 12px' }}
+              />
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {['Bodyweight', 'Dumbbells', 'Barbell', 'Cable', 'Machine', '15kg', '20kg'].map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => setEditingExercise({ ...editingExercise, weight: w })}
+                    className="secondary-btn"
+                    style={{ padding: '3px 8px', fontSize: '10.5px', borderRadius: '6px' }}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <button type="submit" className="glow-btn" style={{ flex: 1, justifyContent: 'center' }}>{t.save}</button>
-              <button type="button" onClick={() => setEditingExercise(null)} className="secondary-btn" style={{ flex: 1, justifyContent: 'center' }}>{t.cancel}</button>
+            {/* 6. Form Tips */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>
+                💡 {t.perfTip}
+              </label>
+              <textarea
+                value={editingExercise.exerciseTips || ''}
+                onChange={(e) => setEditingExercise({ ...editingExercise, exerciseTips: e.target.value })}
+                className="input-field"
+                style={{ minHeight: '65px', resize: 'vertical', fontSize: '12px' }}
+                placeholder={lang === 'en' ? 'Form advice, rest notes, cadence...' : 'توجيهات التكنيك، ملاحظات الراحة، سرعة الحركة...'}
+              />
+            </div>
+
+            {/* Footer Actions */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
+              <button
+                type="button"
+                onClick={() => setEditingExercise(null)}
+                className="secondary-btn"
+                style={{ flex: 1, justifyContent: 'center', padding: '12px', borderRadius: '10px' }}
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="submit"
+                className="glow-btn"
+                style={{ flex: 2, justifyContent: 'center', padding: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}
+              >
+                <span>⚡</span>
+                <span>{lang === 'en' ? 'Save & Apply Changes ⚡' : 'حفظ وتطبيق التعديل ⚡'}</span>
+              </button>
             </div>
           </form>
         </div>

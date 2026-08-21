@@ -371,7 +371,7 @@ export const getActivePlan = async (req: AuthRequest, res: Response): Promise<vo
 export const updateExercise = async (req: AuthRequest, res: Response): Promise<void> => {
   const exerciseId = validateNumericId(req.params.id);
   const userId = req.user?.id;
-  const { sets, reps, weight, name, targetMuscle, exerciseTips, imageUrl, videoUrl } = req.body;
+  const { sets, reps, weight, name, targetMuscle, exerciseTips, imageUrl, videoUrl, category } = req.body;
 
   if (!exerciseId) {
     res.status(400).json({ error: 'معرّف التمرين غير صالح' });
@@ -397,6 +397,7 @@ export const updateExercise = async (req: AuthRequest, res: Response): Promise<v
         weight: weight !== undefined ? sanitizeString(weight, 100) : undefined,
         name: name !== undefined ? sanitizeString(name, 150) : undefined,
         targetMuscle: targetMuscle !== undefined ? sanitizeString(targetMuscle, 100) : undefined,
+        category: category !== undefined ? sanitizeString(category, 50) : undefined,
         exerciseTips: exerciseTips !== undefined ? sanitizeString(exerciseTips, 1000) : undefined,
         imageUrl: imageUrl !== undefined ? sanitizeString(imageUrl, 500) : undefined,
         videoUrl: videoUrl !== undefined ? sanitizeString(videoUrl, 500) : undefined,
