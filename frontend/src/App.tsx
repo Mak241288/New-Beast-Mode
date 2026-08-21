@@ -428,7 +428,7 @@ function App() {
 
           {/* Theme & Sign Out Row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '10px' }}>
-            <ThemeToggle />
+            <ThemeToggle placement="up" />
             <button
               onClick={handleLogout}
               className="secondary-btn"

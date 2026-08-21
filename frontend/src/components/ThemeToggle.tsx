@@ -10,10 +10,14 @@ const PALETTES: Array<{ id: ColorTheme; nameAr: string; nameEn: string; color: s
   { id: 'cyan', nameAr: 'أزرق جليدي (Cyan)', nameEn: 'Aurora Cyan', color: '#00d2ff', icon: '💎' },
 ];
 
-export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean }> = ({ showPaletteDropdown = true }) => {
+export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 'auto' | 'up' | 'down' }> = ({
+  showPaletteDropdown = true,
+  placement = 'auto',
+}) => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [colorTheme, setColorTheme] = useState<ColorTheme>('volt');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,8 +54,22 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean }> = ({ showP
     setShowDropdown(false);
   };
 
+  const handleToggleDropdown = () => {
+    if (!showDropdown && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      // If there's less than 240px below the element, or placement forced to 'up', open upwards!
+      if (placement === 'up' || (placement === 'auto' && spaceBelow < 240)) {
+        setOpenUpwards(true);
+      } else {
+        setOpenUpwards(false);
+      }
+    }
+    setShowDropdown((prev) => !prev);
+  };
+
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+    <div ref={dropdownRef} className="theme-toggle" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
       {/* Light / Dark Mode Toggle Button */}
       <button
         onClick={toggleTheme}
@@ -65,7 +83,7 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean }> = ({ showP
       {/* Color Palette Menu Button */}
       {showPaletteDropdown && (
         <button
-          onClick={() => setShowDropdown(!showDropdown)}
+          onClick={handleToggleDropdown}
           className="secondary-btn"
           style={{
             width: '36px',
@@ -76,7 +94,7 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean }> = ({ showP
             alignItems: 'center',
             justifyContent: 'center',
             borderColor: 'var(--primary)',
-            background: 'rgba(255, 255, 255, 0.04)',
+            background: showDropdown ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)',
             boxShadow: '0 0 10px var(--primary-glow)',
           }}
           title="تغيير ثيم وهوية الألوان الرياضية (Theme Palette)"
@@ -85,30 +103,33 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean }> = ({ showP
         </button>
       )}
 
-      {/* Palette Popover Menu */}
+      {/* Palette Popover Menu with Smart Collision Avoidance */}
       {showDropdown && (
         <div
           className="glass-panel animated-fade"
           style={{
             position: 'absolute',
-            top: 'calc(100% + 8px)',
+            ...(openUpwards
+              ? { bottom: 'calc(100% + 10px)', top: 'auto' }
+              : { top: 'calc(100% + 10px)', bottom: 'auto' }),
             right: 0,
-            minWidth: '210px',
+            minWidth: '220px',
             padding: '10px',
             borderRadius: '16px',
             border: '1px solid var(--primary)',
-            background: 'rgba(10, 14, 26, 0.96)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.8), 0 0 25px var(--primary-glow)',
-            zIndex: 99999,
+            background: 'rgba(10, 14, 26, 0.98)',
+            backdropFilter: 'blur(25px)',
+            WebkitBackdropFilter: 'blur(25px)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.85), 0 0 25px var(--primary-glow)',
+            zIndex: 999999,
             display: 'flex',
             flexDirection: 'column',
             gap: '6px',
           }}
         >
-          <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', padding: '4px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            🎨 اختر هوية الألوان الرياضية
+          <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', padding: '4px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>🎨</span>
+            <span>اختر هوية الألوان الرياضية</span>
           </div>
 
           {PALETTES.map((p) => {
