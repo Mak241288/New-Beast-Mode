@@ -242,7 +242,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
               </span>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
-              {lang === 'en' ? 'Browse 4,298 exercises via interactive body map, video tutorials & MuscleWiki' : 'تصفح 4,298 تمرين رياضي معتمد مع الفيديوهات والتشريح ودليل MuscleWiki'}
+              {lang === 'en' ? 'Browse 4,100+ exercises via interactive body map, video tutorials & MuscleWiki' : 'تصفح أكثر من 4,100 تمرين رياضي معتمد مع الفيديوهات والتشريح ودليل MuscleWiki'}
             </p>
           </div>
 

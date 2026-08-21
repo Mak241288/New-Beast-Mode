@@ -94,6 +94,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     setInstallPromptEvent(null);
   };
 
+  // Rotating Slogans State for Cinematic Hero
+  const ROTATING_SLOGANS = {
+    ar: [
+      'يحلل تناسقك العضلي بالذكاء الاصطناعي 🧠',
+      'يوجهك بـ +4,100 تمرين بدقة HD 🎬',
+      'يحسب سعراتك وماكروزك بدقة الغرام 🥗',
+      'يحاكي أوزان البار الأولمبي والـ 1RM 🏋️',
+      'يتتبع زيادة أحمالك واستشفاءك التلقائي ⚡'
+    ],
+    en: [
+      'AI Muscle Symmetry & Physique Analysis 🧠',
+      'Guided by 4,100+ HD Exercise Videos 🎬',
+      'Precision Macro & TDEE Nutrition Engine 🥗',
+      'Olympic Barbell Plates & 1RM Lab 🏋️',
+      'Progressive Overload & Recovery Tracker ⚡'
+    ]
+  };
+
+  const [sloganIndex, setSloganIndex] = useState(0);
+  const [sloganFade, setSloganFade] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSloganFade(false);
+      setTimeout(() => {
+        setSloganIndex((prev) => (prev + 1) % ROTATING_SLOGANS[lang].length);
+        setSloganFade(true);
+      }, 260);
+    }, 2800);
+    return () => clearInterval(timer);
+  }, [lang]);
+
   // Mini-Calculator 1: Quick TDEE & Macro State
   const [tdeeWeight, setTdeeWeight] = useState<number>(75);
   const [tdeeHeight, setTdeeHeight] = useState<number>(178);
@@ -304,14 +336,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   // Comparison Table Data
   const comparisonItems = isEn ? [
     { feature: 'AI Workout Plan Customization', traditional: 'Static repetitive templates', beastmode: 'Dual AI (Groq + Gemini) tailored to equipment & goals' },
-    { feature: 'Exercise Library Depth', traditional: '200 - 500 basic exercises', beastmode: '4,298+ Enriched Exercises + MuscleWiki + YouTube Form' },
+    { feature: 'Exercise Library Depth', traditional: '200 - 500 basic exercises', beastmode: '4,100+ Enriched Exercises + MuscleWiki + YouTube Form' },
     { feature: 'Offline Gym Execution', traditional: 'Fails in gym basements (Requires internet)', beastmode: 'Full PWA Offline Support with synthesized audio timer' },
     { feature: 'AI Physique & Symmetry Scanner', traditional: 'Not available or expensive subscription', beastmode: 'Built-in biomechanical analysis & V-Taper index' },
     { feature: 'Barbell Plates & 1RM Simulator', traditional: 'External calculator required', beastmode: 'Visual Olympic plate loader with working set %' },
     { feature: 'Pricing & Ads', traditional: 'Monthly subscriptions ($15-$30/mo) + ads', beastmode: '100% Free & Open Community Edition • Zero Ads' },
   ] : [
     { feature: 'تخصيص الجداول بالذكاء الاصطناعي', traditional: 'قوالب ثابتة ومكررة بدون فهم حقيقي', beastmode: 'ذكاء اصطناعي مزدوج (Groq + Gemini) يتكيف مع أدواتك' },
-    { feature: 'حجم وعمق مكتبة التمارين', traditional: '200 إلى 500 تمرين فقط', beastmode: '4,298+ تمرين مفصل + صور تشريح + فيديوهات التكنيك' },
+    { feature: 'حجم وعمق مكتبة التمارين', traditional: '200 إلى 500 تمرين فقط', beastmode: '4,100+ تمرين مفصل + صور تشريح + فيديوهات التكنيك' },
     { feature: 'العمل داخل صالات الجيم السفلية', traditional: 'يتوقف عن العمل عند انقطاع الإنترنت', beastmode: 'PWA أوفلاين كامل مع أصوات ومؤقتات بدون نت' },
     { feature: 'ماسح التحول والتناسق العضلي', traditional: 'غير متوفر أو باشتراكات مكلفة جداً', beastmode: 'تحليل بيوميكانيكي مجاني للدهون ومؤشر الـ V-Taper' },
     { feature: 'محاكي صفائح البار والـ 1RM', traditional: 'تحتاج تطبيقات خارجية منفصلة', beastmode: 'محاكي بصري ملون للبار وحساب الجولات بنقرة واحدة' },
@@ -366,33 +398,81 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </header>
 
-      {/* HERO SECTION */}
-      <section style={{ padding: '70px 20px 40px', maxWidth: '1180px', margin: '0 auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '22px' }}>
+      {/* HERO SECTION WITH LUXURY KINETIC TYPOGRAPHY */}
+      <section
+        style={{
+          padding: '80px 20px 40px',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '22px',
+          position: 'relative',
+          borderRadius: '32px',
+          backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(0, 210, 255, 0.12), rgba(6, 8, 20, 0.96)), url("/assets/beastmode_hero_bg.jpg")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          boxShadow: '0 20px 80px rgba(0, 0, 0, 0.6)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          marginTop: '15px'
+        }}
+      >
         
         {/* Elite Badge */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)', fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold', boxShadow: '0 0 20px rgba(16, 185, 129, 0.1)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold', boxShadow: '0 0 25px rgba(16, 185, 129, 0.15)', backdropFilter: 'blur(8px)' }}>
           <Crown size={16} color="#f59e0b" />
           <span>{isEn ? 'The All-in-One AI Fitness & Bodybuilding Ecosystem' : 'المنظومة الرياضية الشاملة للياقة البدنية، التغذية، وأساطير كمال الأجسام'}</span>
         </div>
 
-        {/* Hero Title */}
-        <h1 style={{ fontSize: 'clamp(32px, 5.2vw, 56px)', fontWeight: '900', lineHeight: 1.18, maxWidth: '1000px', letterSpacing: '-0.5px' }}>
-          {isEn ? (
-            <>Train Like A Pro With <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Dual AI Intelligence</span>, 4,298+ Exercises & Smart Nutrition 🦍🔥</>
-          ) : (
-            <>درّب جسمك كالمحترفين.. بذكاء اصطناعي <span style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>يحلل عضلاتك</span>، يبني جدولك، ويحسب جرامات طعامك بدقة 🦍🔥</>
-          )}
-        </h1>
+        {/* Kinetic Rotating Headline */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', maxWidth: '1020px' }}>
+          <h1 style={{ fontSize: 'clamp(32px, 5vw, 54px)', fontWeight: '900', lineHeight: 1.2, margin: 0, letterSpacing: '-0.5px' }}>
+            {isEn ? 'Train Like A Pro With Intelligent AI' : 'درّب جسمك كالمحترفين بذكاء اصطناعي'}
+          </h1>
+          
+          <div
+            style={{
+              minHeight: '48px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.26s ease-in-out',
+              opacity: sloganFade ? 1 : 0,
+              transform: sloganFade ? 'translateY(0)' : 'translateY(8px)',
+              background: 'rgba(0, 0, 0, 0.4)',
+              padding: '6px 20px',
+              borderRadius: '20px',
+              border: '1px solid rgba(0, 210, 255, 0.25)',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 0 20px rgba(0, 210, 255, 0.15)'
+            }}
+          >
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #00d2ff, #a855f7, #10b981)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: '900',
+                fontSize: 'clamp(18px, 3.2vw, 32px)',
+                letterSpacing: '-0.3px',
+              }}
+            >
+              {ROTATING_SLOGANS[lang][sloganIndex]}
+            </span>
+          </div>
+        </div>
 
         {/* Hero Description */}
-        <p style={{ fontSize: 'clamp(15px, 1.8vw, 18px)', color: 'var(--text-secondary)', maxWidth: '880px', lineHeight: 1.7, margin: 0 }}>
+        <p style={{ fontSize: 'clamp(15px, 1.8vw, 17.5px)', color: '#cbd5e1', maxWidth: '880px', lineHeight: 1.7, margin: 0, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
           {isEn
             ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, visualize Olympic barbell plates & 1RM, and run seamless offline gym sessions with zero latency.'
             : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، حاكِ صفائح البار والـ 1RM، وتدرب أوفلاين في الجيم بلا انقطاع.'}
         </p>
 
         {/* Hero Action Buttons */}
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '10px' }}>
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '6px' }}>
           <button
             onClick={onGetStarted}
             className="glow-btn"
@@ -405,7 +485,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onLogin}
             className="secondary-btn"
-            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700' }}
+            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700', backdropFilter: 'blur(8px)' }}
           >
             {isEn ? 'Existing Athlete Sign In 🔑' : 'دخول الرياضيين المشتركين 🔑'}
           </button>
@@ -970,12 +1050,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </p>
           </div>
 
-          {/* Card 8: Interactive Anatomy & 4,298+ Exercises */}
+          {/* Card 8: Interactive Anatomy & 4,100+ Exercises */}
           <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Activity size={24} />
             </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? '4,298+ Exercises & 3D Muscle Anatomy' : 'موسوعة 4,298 تمرين وخريطة التشريح'}</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? '4,100+ Exercises & 3D Muscle Anatomy' : 'موسوعة +4,100 تمرين وخريطة التشريح'}</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
               {isEn
                 ? 'Click any muscle zone to discover targeted exercises with biomechanical cues, common mistakes, and 3-tier reliable animated demonstrations.'
@@ -1095,7 +1175,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div>
               <div style={{ fontSize: '12.5px', fontWeight: '800', whiteSpace: 'nowrap' }}>BEASTMODE AI</div>
               <div style={{ fontSize: '10.5px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                {isEn ? 'Dual AI • 4,298+ Exercises' : 'ذكاء اصطناعي • 4,298 تمرين'}
+                {isEn ? 'Dual AI • 4,100+ Exercises' : 'ذكاء اصطناعي • +4,100 تمرين'}
               </div>
             </div>
           </div>

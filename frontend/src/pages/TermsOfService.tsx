@@ -97,8 +97,8 @@ export const TermsOfService: React.FC<TermsProps> = ({ lang, onBack }) => {
           </h2>
           <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
             {isEn
-              ? 'The BeastMode AI software interface, algorithmic generators, anatomical diagrams, and enriched database of 4,298 exercises are proprietary assets protected under international copyright and software intellectual property laws.'
-              : 'تعتبر واجهة تطبيق BeastMode AI وخوارزميات الذكاء الاصطناعي والخرائط التشريحية ومكتبة التمارين الغنية التي تضم 4,298 تمرين أصولاً رقمية محمية بموجب قوانين الملكية الفكرية وحقوق النشر البرمجية.'}
+              ? 'The BeastMode AI software interface, algorithmic generators, anatomical diagrams, and enriched database of 4,100+ exercises are proprietary assets protected under international copyright and software intellectual property laws.'
+              : 'تعتبر واجهة تطبيق BeastMode AI وخوارزميات الذكاء الاصطناعي والخرائط التشريحية ومكتبة التمارين الغنية التي تضم أكثر من 4,100 تمرين أصولاً رقمية محمية بموجب قوانين الملكية الفكرية وحقوق النشر البرمجية.'}
           </p>
         </section>
 

@@ -106,6 +106,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [regeneratingPlan, setRegeneratingPlan] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 1: true });
 
+  // Manual Architect Smart Swap Modal State
+  const [manualSwapTarget, setManualSwapTarget] = useState<{ dayIdx: number; exIdx: number; exercise: any } | null>(null);
+  const [manualSwapQuery, setManualSwapQuery] = useState<string>('');
+
   // Smart Warmup & Cooldown Routines mapped to Focus Area
   const getSmartWarmupRoutine = (focus: string = '', title: string = '') => {
     const text = `${focus} ${title}`.toLowerCase();
@@ -2202,7 +2206,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       {lang === 'en' ? 'Custom Workout Plan Architect' : 'منشئ ومصمم الجدول التدريبي المتقدم ✍️'}
                     </h2>
                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
-                      {lang === 'en' ? 'Design days 1–7 freely, search 4,298+ exercises with instant autocomplete.' : 'صمم أيامك التدريبية بحرية، مع بحث فوري واقتراحات تلقائية من 4,298 تمرين.'}
+                      {lang === 'en' ? 'Design days 1–7 freely, search 4,100+ exercises with instant autocomplete.' : 'صمم أيامك التدريبية بحرية، مع بحث فوري واقتراحات تلقائية من أكثر من 4,100 تمرين.'}
                     </p>
                   </div>
                 </div>
@@ -2838,6 +2842,68 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                     </div>
                   </div>
 
+                  {/* Live Active Day Target Muscles & Estimated Duration / Burn Banner */}
+                  {(() => {
+                    const activeMuscles = Array.from(new Set(
+                      (currentDay.exercises || [])
+                        .map((e: any) => e.targetMuscle)
+                        .filter(Boolean)
+                    ));
+                    const totalDaySets = (currentDay.exercises || []).reduce((sum: number, e: any) => sum + (parseInt(String(e.sets)) || 3), 0);
+                    const estMinutes = currentDay.isRestDay ? 0 : Math.max(15, Math.round(totalDaySets * 2.5 + ((currentDay.exercises || []).length > 0 ? 5 : 0)));
+                    const estCalories = Math.round(estMinutes * 7.5);
+
+                    return (
+                      <div style={{
+                        background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.08), rgba(168, 85, 247, 0.08))',
+                        border: '1px solid rgba(0, 210, 255, 0.25)',
+                        borderRadius: '14px',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '10px',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '12.5px', fontWeight: '800', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            🧬 {lang === 'en' ? 'Day Target Muscles:' : 'العضلات المستهدفة اليوم:'}
+                          </span>
+                          {activeMuscles.length > 0 ? (
+                            activeMuscles.map((m: any) => (
+                              <span key={m} style={{
+                                background: 'rgba(0, 210, 255, 0.15)',
+                                border: '1px solid rgba(0, 210, 255, 0.35)',
+                                color: '#fff',
+                                fontSize: '11px',
+                                fontWeight: '700',
+                                padding: '2px 8px',
+                                borderRadius: '8px'
+                              }}>
+                                {m}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                              {lang === 'en' ? 'No exercises added yet' : 'لم تتم إضافة تمارين بعد'}
+                            </span>
+                          )}
+                        </div>
+
+                        {!currentDay.isRestDay && (currentDay.exercises || []).length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', fontWeight: 'bold' }}>
+                            <span style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              ⏱️ {lang === 'en' ? `Est. Duration: ~${estMinutes} min` : `المدة التقديرية: ~${estMinutes} دقيقة`}
+                            </span>
+                            <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              🔥 {lang === 'en' ? `~${estCalories} kcal` : `~${estCalories} سعرة`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Day Config & Focus Area */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1.5fr) minmax(200px, 1.5fr) auto', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                     <div>
@@ -3290,6 +3356,29 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
                                   <button
                                     type="button"
+                                    onClick={() => {
+                                      setManualSwapTarget({ dayIdx, exIdx, exercise: ex });
+                                      setManualSwapQuery('');
+                                    }}
+                                    style={{
+                                      width: '28px',
+                                      height: '32px',
+                                      borderRadius: '6px',
+                                      background: 'rgba(0, 210, 255, 0.12)',
+                                      border: '1px solid rgba(0, 210, 255, 0.35)',
+                                      color: 'var(--primary)',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '12px',
+                                    }}
+                                    title={lang === 'en' ? 'Smart Exercise Alternative Swap 🔄' : 'المبادلة الذكية للتمرين (بدائل فورية) 🔄'}
+                                  >
+                                    🔄
+                                  </button>
+                                  <button
+                                    type="button"
                                     disabled={exIdx === 0}
                                     onClick={() => moveExerciseUp(exIdx)}
                                     style={{
@@ -3412,6 +3501,182 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 <Sparkles size={18} />
                 <span>{manualSaving ? (lang === 'en' ? 'Saving & Activating...' : 'جاري الحفظ والتفعيل...') : (lang === 'en' ? 'Save & Activate Custom Plan ⚡' : 'حفظ وتفعيل الجدول اليدوي ⚡')}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Smart Exercise Alternative Swap Modal */}
+      {manualSwapTarget && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 1250,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => {
+            setManualSwapTarget(null);
+            setManualSwapQuery('');
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              padding: '22px',
+              border: '1px solid rgba(0, 210, 255, 0.4)',
+              background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.98), rgba(4, 7, 18, 0.99))',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Swap Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>🔄</span>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: '#fff' }}>
+                    {lang === 'en' ? 'Smart Exercise Alternative Swap' : 'المبادلة الذكية لبدائل التمارين 🔄'}
+                  </h3>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {lang === 'en' ? `Target Muscle: ${manualSwapTarget.exercise.targetMuscle || 'Muscle'}` : `العضلة المستهدفة: ${manualSwapTarget.exercise.targetMuscle || 'تمرين'}`}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setManualSwapTarget(null);
+                  setManualSwapQuery('');
+                }}
+                className="secondary-btn"
+                style={{ width: '32px', height: '32px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Current Exercise Badge */}
+            <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold' }}>
+                  {lang === 'en' ? 'CURRENT EXERCISE TO REPLACE:' : 'التمرين الحالي المراد استبداله:'}
+                </span>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff', marginTop: '2px' }}>
+                  {manualSwapTarget.exercise.name || (lang === 'en' ? 'Empty Slot' : 'تمرين فارغ')}
+                </div>
+              </div>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {manualSwapTarget.exercise.sets} × {manualSwapTarget.exercise.reps}
+              </span>
+            </div>
+
+            {/* Search Input */}
+            <input
+              type="text"
+              placeholder={lang === 'en' ? 'Search alternative exercise...' : 'ابحث عن تمرين بديل مخصص...'}
+              value={manualSwapQuery}
+              onChange={(e) => setManualSwapQuery(e.target.value)}
+              className="input-field"
+              style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', width: '100%' }}
+              autoFocus
+            />
+
+            {/* Alternatives List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }}>
+              {(() => {
+                const targetM = (manualSwapTarget.exercise.targetMuscle || '').toLowerCase();
+                const q = manualSwapQuery.toLowerCase().trim();
+                let alts = libraryExercises || [];
+                if (q) {
+                  alts = alts.filter(ex =>
+                    (ex.name_ar && ex.name_ar.toLowerCase().includes(q)) ||
+                    (ex.name_en && ex.name_en.toLowerCase().includes(q)) ||
+                    (ex.muscle_en && ex.muscle_en.toLowerCase().includes(q))
+                  );
+                } else if (targetM) {
+                  alts = alts.filter(ex =>
+                    (ex.muscle_en && ex.muscle_en.toLowerCase().includes(targetM)) ||
+                    (ex.targetMuscle && ex.targetMuscle.toLowerCase().includes(targetM)) ||
+                    (ex.muscle_ar && ex.muscle_ar.toLowerCase().includes(targetM))
+                  );
+                }
+
+                if (alts.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                      {lang === 'en' ? 'No alternatives found. Type a name to search.' : 'لا توجد بدائل مباشرة. اكتب اسم التمرين في مربع البحث أعلاه.'}
+                    </div>
+                  );
+                }
+
+                return alts.slice(0, 12).map((altEx, idx) => {
+                  const altName = lang === 'en' ? (altEx.name_en || altEx.name) : (altEx.name_ar || altEx.name_en || altEx.name);
+                  const altEquip = lang === 'en' ? (altEx.equipment_en || altEx.equipment) : (altEx.equipment_ar || altEx.equipment_en || altEx.equipment);
+                  const altMuscle = lang === 'en' ? (altEx.muscle_en || altEx.targetMuscle) : (altEx.muscle_ar || altEx.muscle_en || altEx.targetMuscle);
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        const { dayIdx, exIdx } = manualSwapTarget;
+                        const updated = [...manualDays];
+                        const prevEx = updated[dayIdx].exercises[exIdx];
+                        updated[dayIdx].exercises[exIdx] = {
+                          ...prevEx,
+                          name: altName,
+                          targetMuscle: altEx.muscle_en || altEx.targetMuscle || prevEx.targetMuscle,
+                          weight: altEx.equipment_en || altEx.equipment || prevEx.weight || 'Dumbbells',
+                          imageUrl: altEx.image_url || altEx.imageUrl || '',
+                        } as any;
+                        setManualDays(updated);
+                        setManualSwapTarget(null);
+                        setManualSwapQuery('');
+                      }}
+                      className="secondary-btn"
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        textAlign: lang === 'en' ? 'left' : 'right',
+                        border: '1px solid rgba(0, 210, 255, 0.2)',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        transition: 'all 0.15s',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '13px' }}>
+                          {altName}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', gap: '8px' }}>
+                          <span>🏋️ {altEquip || 'Free Weight'}</span>
+                          <span>🎯 {altMuscle || ''}</span>
+                        </div>
+                      </div>
+                      <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(0, 210, 255, 0.15)', color: 'var(--primary)', fontSize: '11px', fontWeight: 'bold' }}>
+                        {lang === 'en' ? 'Select ⚡' : 'استبدال ⚡'}
+                      </span>
+                    </button>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
