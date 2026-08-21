@@ -8,6 +8,9 @@ import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
 import { RecoveryTrackerModal } from '../components/RecoveryTrackerModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
+import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
+import { DynamicWarmupModal } from '../components/DynamicWarmupModal';
+import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
 import { calculateNutrition } from '../utils/nutritionCalculator';
 import { playTimerSound, type SoundPack } from '../utils/audioSynthesizer';
 import { cacheStore } from '../utils/cacheStore';
@@ -34,6 +37,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [showRoutineCardModal, setShowRoutineCardModal] = useState(false);
+  const [showDynamicWarmupModal, setShowDynamicWarmupModal] = useState(false);
+  const [showBodyMap, setShowBodyMap] = useState(false);
+  const [selectedBodyMuscle, setSelectedBodyMuscle] = useState('ALL');
   const [timerSoundPack, setTimerSoundPack] = useState<SoundPack>(() => (localStorage.getItem('bm_timer_sound_pack') as SoundPack) || 'BOXING_BELL');
   const [timerVolume, setTimerVolume] = useState<number>(() => parseInt(localStorage.getItem('bm_timer_volume') || '80', 10));
   const [showSoundSettings, setShowSoundSettings] = useState(false);
@@ -893,37 +900,81 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                   </p>
                 </div>
 
-                {!todayWorkout.isRestDay && (
-                  sessionState.status === 'active' || sessionState.status === 'resting' || sessionState.status === 'paused' ? (
-                    <button
-                      onClick={maximizePlayer}
-                      className="glow-btn"
-                      style={{
-                        padding: '10px 20px',
-                        fontSize: '14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: 'linear-gradient(135deg, #10b981, #059669)',
-                        border: 'none',
-                        boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
-                      }}
-                    >
-                      <Dumbbell size={16} />
-                      {lang === 'en' ? 'Resume Active Workout ⛶' : 'استئناف التمرين النشط ⛶'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleStartWorkout}
-                      className="glow-btn"
-                      style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Dumbbell size={16} />
-                      {lang === 'en' ? 'Start Active Player ⚡' : 'ابدأ مشغل التمرين التفاعلي ⚡'}
-                    </button>
-                  )
-                )}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {!todayWorkout.isRestDay && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowDynamicWarmupModal(true)}
+                        className="secondary-btn"
+                        style={{ padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#f59e0b', color: '#f59e0b' }}
+                      >
+                        <span>🤸‍♂️ {lang === 'en' ? 'Warmup (3m)' : 'إحماء (3د) 🔥'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowRoutineCardModal(true)}
+                        className="secondary-btn"
+                        style={{ padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                      >
+                        <span>📷 {lang === 'en' ? 'Routine Card' : 'بطاقة التمرين 📷'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowBodyMap(!showBodyMap)}
+                        className={showBodyMap ? 'glow-btn' : 'secondary-btn'}
+                        style={{ padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                      >
+                        <span>🗺️ {lang === 'en' ? 'Anatomy Map' : 'مجسم التشريح 🗺️'}</span>
+                      </button>
+                    </>
+                  )}
+
+                  {!todayWorkout.isRestDay && (
+                    sessionState.status === 'active' || sessionState.status === 'resting' || sessionState.status === 'paused' ? (
+                      <button
+                        onClick={maximizePlayer}
+                        className="glow-btn"
+                        style={{
+                          padding: '10px 20px',
+                          fontSize: '14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          border: 'none',
+                          boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
+                        }}
+                      >
+                        <Dumbbell size={16} />
+                        {lang === 'en' ? 'Resume Active Workout ⛶' : 'استئناف التمرين النشط ⛶'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStartWorkout}
+                        className="glow-btn shimmer-glow"
+                        style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Dumbbell size={16} />
+                        {lang === 'en' ? 'Start Active Player ⚡' : 'ابدأ مشغل التمرين التفاعلي ⚡'}
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
+
+              {/* Collapsible Interactive 3D Anatomy Map */}
+              {showBodyMap && (
+                <div className="animated-fade" style={{ marginBottom: '20px' }}>
+                  <InteractiveBodyMap
+                    lang={lang}
+                    selectedMuscle={selectedBodyMuscle}
+                    onSelectMuscle={(m) => setSelectedBodyMuscle(m)}
+                  />
+                </div>
+              )}
 
               {todayWorkout.isRestDay ? (
                 <div style={{ textAlign: 'center', padding: '30px 10px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
@@ -1453,6 +1504,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         lang={lang}
         currentWeight={profile?.currentWeight ? parseFloat(profile.currentWeight) : 75}
         onClose={() => setShowGalleryModal(false)}
+      />
+
+      {/* Routine Card Export Modal */}
+      {todayWorkout && (
+        <RoutineCardExportModal
+          isOpen={showRoutineCardModal}
+          lang={lang}
+          planTitle={activePlan?.title || (lang === 'en' ? 'BeastMode Routine' : 'جدول الوحش اليومي')}
+          dayTitle={todayWorkout.title}
+          dayIndex={todayWorkout.dayIndex || 1}
+          focusArea={todayWorkout.focusArea}
+          exercises={todayWorkout.exercises || []}
+          onClose={() => setShowRoutineCardModal(false)}
+        />
+      )}
+
+      {/* Dynamic Mobility Warmup Modal */}
+      <DynamicWarmupModal
+        isOpen={showDynamicWarmupModal}
+        lang={lang}
+        focusArea={todayWorkout?.focusArea || ''}
+        onClose={() => setShowDynamicWarmupModal(false)}
       />
     </div>
   );

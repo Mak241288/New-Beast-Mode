@@ -3,6 +3,8 @@ import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { ExerciseImage } from './ExerciseImage';
 import { WorkoutCompletionModal } from './WorkoutCompletionModal';
 import { BarbellPlate1RMModal } from './BarbellPlate1RMModal';
+import { DynamicWarmupModal } from './DynamicWarmupModal';
+import { RoutineCardExportModal } from './RoutineCardExportModal';
 import { 
   Play, 
   Pause, 
@@ -25,7 +27,8 @@ import {
   Target,
   Volume2,
   VolumeX,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 
 interface GlobalWorkoutPlayerProps {
@@ -55,6 +58,9 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const [saving, setSaving] = useState(false);
   const [showShareCardModal, setShowShareCardModal] = useState(false);
   const [showWarmupModal, setShowWarmupModal] = useState(false);
+  const [showDynamicWarmupModal, setShowDynamicWarmupModal] = useState(false);
+  const [showRoutineCardModal, setShowRoutineCardModal] = useState(false);
+  const [isExpressMode, setIsExpressMode] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showQuickSwapModal, setShowQuickSwapModal] = useState(false);
   const [waterToast, setWaterToast] = useState<string | null>(null);
@@ -657,25 +663,84 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             </div>
           </div>
 
-          {/* Action Buttons: Focus Mode, Minimize & Discard */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Action Buttons: Express 30m, Warmup, Card, Focus, Minimize & Discard */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             
+            {/* ⚡ Express 30m Mode Toggle */}
+            <button
+              onClick={() => setIsExpressMode(!isExpressMode)}
+              className={isExpressMode ? 'glow-btn shimmer-glow' : 'secondary-btn'}
+              style={{
+                padding: '6px 11px',
+                fontSize: '11.5px',
+                borderRadius: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                borderColor: isExpressMode ? '#f59e0b' : 'rgba(245, 158, 11, 0.4)',
+                color: isExpressMode ? '#fff' : '#f59e0b',
+                background: isExpressMode ? 'linear-gradient(135deg, #f59e0b, #d97706)' : undefined,
+              }}
+              title={isAr ? 'وضع التمرين السريع 30 دقيقة: يركز على التمارين الأساسية ويقلص وقت الراحة' : 'Express 30m Workout: focuses on heavy compound lifts and caps rest'}
+            >
+              <Zap size={13} />
+              <span>{isExpressMode ? (isAr ? 'سريع 30د ⚡' : 'Express 30m ⚡') : (isAr ? 'وضع 30د ⚡' : '30m Mode ⚡')}</span>
+            </button>
+
+            {/* 🤸‍♂️ Warmup 3m */}
+            <button
+              onClick={() => setShowDynamicWarmupModal(true)}
+              className="secondary-btn"
+              style={{
+                padding: '6px 10px',
+                fontSize: '11.5px',
+                borderRadius: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                borderColor: '#10b981',
+                color: '#10b981',
+              }}
+              title={isAr ? 'الإحماء الحركي الذكي (3 دقائق)' : '3-min Dynamic Mobility Warmup'}
+            >
+              <span>🤸‍♂️ {isAr ? 'إحماء' : 'Warmup'}</span>
+            </button>
+
+            {/* 📷 Routine Card */}
+            <button
+              onClick={() => setShowRoutineCardModal(true)}
+              className="secondary-btn"
+              style={{
+                padding: '6px 10px',
+                fontSize: '11.5px',
+                borderRadius: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                borderColor: 'var(--primary)',
+                color: 'var(--primary)',
+              }}
+              title={isAr ? 'تصدير بطاقة التمرين للجيم' : 'Export Gym Routine Card'}
+            >
+              <span>📷 {isAr ? 'بطاقة' : 'Card'}</span>
+            </button>
+
             {/* 🎯 Focus Mode Toggle */}
             <button
               onClick={() => setIsFocusMode(true)}
               className="glow-btn"
               style={{
-                padding: '7px 14px',
-                fontSize: '12px',
-                borderRadius: '10px',
+                padding: '6px 12px',
+                fontSize: '11.5px',
+                borderRadius: '9px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 fontWeight: 'bold',
               }}
             >
-              <Target size={14} />
-              <span>{isAr ? 'وضع التركيز 🎯' : 'Focus Mode 🎯'}</span>
+              <Target size={13} />
+              <span>{isAr ? 'تركيز 🎯' : 'Focus 🎯'}</span>
             </button>
 
             <button
@@ -1245,6 +1310,31 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
           initialReps={10}
         />
       )}
+
+      {/* Dynamic 3-Min Mobility Warmup Modal */}
+      <DynamicWarmupModal
+        isOpen={showDynamicWarmupModal}
+        lang={lang as any}
+        focusArea={state.dayData?.focusArea || ''}
+        onClose={() => setShowDynamicWarmupModal(false)}
+      />
+
+      {/* Routine Card Export Modal */}
+      <RoutineCardExportModal
+        isOpen={showRoutineCardModal}
+        lang={lang as any}
+        planTitle={state.dayData?.planTitle || (isAr ? 'جلسة تدريب الوحش' : 'BeastMode Routine')}
+        dayTitle={state.dayData?.title || (isAr ? 'اليوم التدريبي' : 'Training Day')}
+        dayIndex={state.dayData?.dayIndex || 1}
+        focusArea={state.dayData?.focusArea || ''}
+        exercises={exercises.map((e: any) => ({
+          name: isAr ? (e.name_ar || e.name || e.name_en) : (e.name_en || e.name),
+          sets: e.sets || 3,
+          reps: e.reps || '8-12',
+          targetMuscle: isAr ? (e.muscle_ar || e.targetMuscle) : (e.muscle_en || e.targetMuscle),
+        }))}
+        onClose={() => setShowRoutineCardModal(false)}
+      />
     </div>
   );
 };

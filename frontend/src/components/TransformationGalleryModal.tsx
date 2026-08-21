@@ -46,6 +46,8 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
   const [compareBeforeId, setCompareBeforeId] = useState<string | null>(null);
   const [compareAfterId, setCompareAfterId] = useState<string | null>(null);
   const [compareMode, setCompareMode] = useState(false);
+  const [compareViewType, setCompareViewType] = useState<'split_slider' | 'side_by_side'>('split_slider');
+  const [splitPos, setSplitPos] = useState<number>(50);
 
   // AI Physique Analysis State
   const [analyzingPhysique, setAnalyzingPhysique] = useState(false);
@@ -445,27 +447,145 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                {/* Before Photo Card */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-secondary)' }}>
-                    ⏳ {isEn ? 'BEFORE (البداية)' : 'قبل (البداية)'} • {beforePhoto.date} ({beforePhoto.weightKg} kg)
-                  </span>
-                  <div style={{ width: '100%', height: '320px', borderRadius: '14px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={beforePhoto.imageDataBase64} alt="Before" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  </div>
-                </div>
-
-                {/* After Photo Card */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--primary)' }}>
-                    🔥 {isEn ? 'AFTER (النتيجة الحالية)' : 'بعد (النتيجة الحالية)'} • {afterPhoto.date} ({afterPhoto.weightKg} kg)
-                  </span>
-                  <div style={{ width: '100%', height: '320px', borderRadius: '14px', overflow: 'hidden', border: '2px solid var(--primary)', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={afterPhoto.imageDataBase64} alt="After" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  </div>
-                </div>
+              {/* Toggle Split Slider vs Side-by-Side */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setCompareViewType('split_slider')}
+                  className={compareViewType === 'split_slider' ? 'primary-btn' : 'secondary-btn'}
+                  style={{ padding: '6px 14px', fontSize: '11.5px', borderRadius: '8px' }}
+                >
+                  ↔️ {isEn ? 'Interactive Drag Slider' : 'شريط السحب التفاعلي ↔️'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCompareViewType('side_by_side')}
+                  className={compareViewType === 'side_by_side' ? 'primary-btn' : 'secondary-btn'}
+                  style={{ padding: '6px 14px', fontSize: '11.5px', borderRadius: '8px' }}
+                >
+                  ⫽ {isEn ? 'Side by Side' : 'جنباً إلى جنب ⫽'}
+                </button>
               </div>
+
+              {compareViewType === 'split_slider' ? (
+                /* INTERACTIVE SPLIT SLIDER */
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <div
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      maxWidth: '480px',
+                      height: '380px',
+                      borderRadius: '16px',
+                      overflow: 'hidden',
+                      border: '2px solid rgba(236, 72, 153, 0.5)',
+                      background: '#000',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {/* After Image (Background) */}
+                    <img
+                      src={afterPhoto.imageDataBase64}
+                      alt="After"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                      }}
+                    />
+                    <div style={{ position: 'absolute', bottom: '12px', right: isEn ? '12px' : 'auto', left: isEn ? 'auto' : '12px', background: 'rgba(0,0,0,0.7)', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold', border: '1px solid var(--primary)' }}>
+                      🔥 {isEn ? 'AFTER' : 'بعد'}: {afterPhoto.date} ({afterPhoto.weightKg}kg)
+                    </div>
+
+                    {/* Before Image (Clipped Overlay) */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: `${splitPos}%`,
+                        overflow: 'hidden',
+                        borderRight: '2px solid #ec4899',
+                        boxShadow: '0 0 15px rgba(236, 72, 153, 0.8)',
+                      }}
+                    >
+                      <img
+                        src={beforePhoto.imageDataBase64}
+                        alt="Before"
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '480px',
+                          height: '380px',
+                          objectFit: 'contain',
+                        }}
+                      />
+                      <div style={{ position: 'absolute', bottom: '12px', left: isEn ? '12px' : 'auto', right: isEn ? 'auto' : '12px', background: 'rgba(0,0,0,0.7)', padding: '4px 10px', borderRadius: '8px', fontSize: '11px', color: '#ec4899', fontWeight: 'bold', border: '1px solid #ec4899' }}>
+                        ⏳ {isEn ? 'BEFORE' : 'قبل'}: {beforePhoto.date} ({beforePhoto.weightKg}kg)
+                      </div>
+                    </div>
+
+                    {/* Slider Line Handle */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        left: `${splitPos}%`,
+                        width: '4px',
+                        transform: 'translateX(-50%)',
+                        background: '#fff',
+                        cursor: 'ew-resize',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#ec4899', border: '2px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', color: '#fff', boxShadow: '0 0 10px rgba(0,0,0,0.8)' }}>
+                        ↔
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Range Input for Touch/Mouse Slider */}
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={splitPos}
+                    onChange={(e) => setSplitPos(Number(e.target.value))}
+                    style={{ width: '100%', maxWidth: '480px', accentColor: '#ec4899', cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {isEn ? 'Drag slider left/right to reveal physique transformation' : 'اسحب المؤشر لليمين واليسار لرؤية الفرق بين الصورتين'}
+                  </span>
+                </div>
+              ) : (
+                /* SIDE BY SIDE */
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  {/* Before Photo Card */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-secondary)' }}>
+                      ⏳ {isEn ? 'BEFORE (البداية)' : 'قبل (البداية)'} • {beforePhoto.date} ({beforePhoto.weightKg} kg)
+                    </span>
+                    <div style={{ width: '100%', height: '320px', borderRadius: '14px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={beforePhoto.imageDataBase64} alt="Before" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    </div>
+                  </div>
+
+                  {/* After Photo Card */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--primary)' }}>
+                      🔥 {isEn ? 'AFTER (النتيجة الحالية)' : 'بعد (النتيجة الحالية)'} • {afterPhoto.date} ({afterPhoto.weightKg} kg)
+                    </span>
+                    <div style={{ width: '100%', height: '320px', borderRadius: '14px', overflow: 'hidden', border: '2px solid var(--primary)', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img src={afterPhoto.imageDataBase64} alt="After" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

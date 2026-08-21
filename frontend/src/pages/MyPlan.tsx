@@ -7,6 +7,8 @@ import { ExerciseImage } from '../components/ExerciseImage';
 import { PresetPlansModal } from '../components/PresetPlansModal';
 import { MultiPlanManagerModal } from '../components/MultiPlanManagerModal';
 import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
+import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
+import { DynamicWarmupModal } from '../components/DynamicWarmupModal';
 import type { PresetPlan } from '../utils/presetWorkoutPlans';
 import { cacheStore } from '../utils/cacheStore';
 import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
@@ -34,6 +36,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [showPresetPlansModal, setShowPresetPlansModal] = useState(false);
   const [showMultiPlanModal, setShowMultiPlanModal] = useState(false);
   const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
+  const [routineCardDay, setRoutineCardDay] = useState<any | null>(null);
+  const [dynamicWarmupDay, setDynamicWarmupDay] = useState<any | null>(null);
   const [manualTitle, setManualTitle] = useState(lang === 'en' ? 'Custom Gym Routine' : 'جدولي التدريبي اليدوي');
   const [manualActiveDayIdx, setManualActiveDayIdx] = useState(1);
   const [manualSaving, setManualSaving] = useState(false);
@@ -1355,12 +1359,28 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             </div>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                               <button
+                                onClick={() => setDynamicWarmupDay(dw)}
+                                className="secondary-btn"
+                                style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: '#f59e0b', color: '#f59e0b' }}
+                                title={lang === 'en' ? '3-min Dynamic Mobility Warmup' : 'الإحماء الحركي الذكي لتليين المفاصل (3 دقائق)'}
+                              >
+                                <span>🤸‍♂️ {lang === 'en' ? '3-Min Warmup' : 'إحماء حركي (3د)'}</span>
+                              </button>
+                              <button
+                                onClick={() => setRoutineCardDay(dw)}
+                                className="secondary-btn"
+                                style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                                title={lang === 'en' ? 'Export Gym Routine Card' : 'تصدير بطاقة التمرين السينمائية للجيم'}
+                              >
+                                <span>📷 {lang === 'en' ? 'Routine Card' : 'بطاقة التمرين 📷'}</span>
+                              </button>
+                              <button
                                 onClick={() => handleAddWarmupToDay(dw)}
                                 className="secondary-btn"
                                 style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
                                 title={lang === 'en' ? 'Add 2 smart warm-up exercises for this day' : 'إضافة تمرينين إحماء مخصصين لليوم'}
                               >
-                                <span>🔥 + {lang === 'en' ? 'Add Warm-up' : 'إضافة إحماء لليوم'}</span>
+                                <span>🔥 + {lang === 'en' ? 'Add Warm-up' : 'إضافة إحماء'}</span>
                               </button>
                               <button
                                 onClick={() => handleAddCooldownToDay(dw)}
@@ -1368,7 +1388,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                 style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(6, 182, 212, 0.4)', color: '#22d3ee' }}
                                 title={lang === 'en' ? 'Add 2 recovery/stretching exercises for this day' : 'إضافة تمرينين استشفاء وإطالة لليوم'}
                               >
-                                <span>🧊 + {lang === 'en' ? 'Add Recovery' : 'إضافة استشفاء لليوم'}</span>
+                                <span>🧊 + {lang === 'en' ? 'Add Recovery' : 'إضافة استشفاء'}</span>
                               </button>
                             </div>
                           </div>
@@ -3766,6 +3786,30 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         lang={lang}
         onClose={() => setShowStrengthCalcModal(false)}
       />
+
+      {/* Routine Card Export Modal */}
+      {routineCardDay && (
+        <RoutineCardExportModal
+          isOpen={Boolean(routineCardDay)}
+          lang={lang}
+          planTitle={activePlan?.title || (lang === 'en' ? 'BeastMode Routine' : 'جدولي التدريبي')}
+          dayTitle={routineCardDay.title}
+          dayIndex={routineCardDay.dayIndex || 1}
+          focusArea={routineCardDay.focusArea}
+          exercises={routineCardDay.exercises || []}
+          onClose={() => setRoutineCardDay(null)}
+        />
+      )}
+
+      {/* Dynamic 3-Min Warmup Modal */}
+      {dynamicWarmupDay && (
+        <DynamicWarmupModal
+          isOpen={Boolean(dynamicWarmupDay)}
+          lang={lang}
+          focusArea={dynamicWarmupDay.focusArea || ''}
+          onClose={() => setDynamicWarmupDay(null)}
+        />
+      )}
     </div>
   );
 };
