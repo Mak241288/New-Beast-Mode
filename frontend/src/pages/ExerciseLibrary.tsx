@@ -237,7 +237,24 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
               <h1 style={{ fontSize: '22px', fontWeight: '800', margin: 0 }}>
                 {lang === 'en' ? 'Exercise Library 📚' : 'مكتبة التمارين الرياضية 📚'}
               </h1>
-              <span className="badge" style={{ background: 'rgba(0, 210, 255, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', color: 'var(--primary)', fontSize: '11px', padding: '2px 8px', fontWeight: 'bold' }}>
+              <span
+                className="badge"
+                style={{
+                  background: 'rgba(0, 210, 255, 0.15)',
+                  border: '1px solid rgba(0, 210, 255, 0.3)',
+                  color: 'var(--primary)',
+                  fontSize: '11.5px',
+                  padding: '4px 10px',
+                  fontWeight: '800',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
+                  borderRadius: '20px',
+                  lineHeight: '1.2'
+                }}
+              >
                 {lang === 'en' ? `${filteredExercises.length} Exercises` : `${filteredExercises.length} تمرين متاح`}
               </span>
             </div>
@@ -279,7 +296,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
           border: isDbEmpty ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid rgba(0, 210, 255, 0.2)',
           borderRadius: '12px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <Database size={18} color={isDbEmpty ? '#f59e0b' : 'var(--primary)'} />
             <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
               {lang === 'en' ? 'Supabase Live Database:' : 'اتصال قاعدة بيانات Supabase:'}
@@ -288,8 +305,16 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
               background: isDbEmpty ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
               color: isDbEmpty ? '#f59e0b' : '#10b981',
               border: isDbEmpty ? '1px solid #f59e0b' : '1px solid #10b981',
-              fontSize: '11px',
-              padding: '2px 8px'
+              fontSize: '11.5px',
+              padding: '4px 10px',
+              fontWeight: '700',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+              borderRadius: '20px',
+              lineHeight: '1.2'
             }}>
               {isDbEmpty ? (lang === 'en' ? 'Table Empty / Waiting for Seed' : 'جدول التمارين فارغ / في انتظار المزامنة') : (lang === 'en' ? `${exercises.length} Exercises Live` : `تم تحميل ${exercises.length} تمرين مباشرة`)}
             </span>

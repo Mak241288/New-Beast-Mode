@@ -97,10 +97,10 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
       <div className="body-map-interactive-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '340px', padding: '10px' }}>
         <svg
           viewBox="0 0 400 520"
-          style={{ width: '100%', maxWidth: '360px', height: 'auto', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.4))' }}
+          style={{ width: '100%', maxWidth: '380px', height: 'auto', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.4))' }}
         >
           {/* Human Body Silhouette Background Outline */}
-          <g opacity="0.15" fill="var(--text-primary)" stroke="var(--text-secondary)" strokeWidth="2">
+          <g opacity="0.18" fill="var(--text-primary)" stroke="var(--text-secondary)" strokeWidth="2">
             {/* Head */}
             <circle cx="200" cy="45" r="28" />
             {/* Neck */}
@@ -118,9 +118,10 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('shoulders') ? 'active-muscle' : ''}`}
               >
-                <path d="M130 100 Q115 115 125 140 Q145 135 142 108 Z" fill={isSelected('shoulders') ? 'var(--primary)' : 'rgba(59, 130, 246, 0.4)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M270 100 Q285 115 275 140 Q255 135 258 108 Z" fill={isSelected('shoulders') ? 'var(--primary)' : 'rgba(59, 130, 246, 0.4)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="110" y="120" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'كتف' : 'Shoulder'}</text>
+                <path d="M130 100 Q115 115 125 140 Q145 135 142 108 Z" fill={isSelected('shoulders') ? 'var(--primary)' : 'rgba(59, 130, 246, 0.5)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M270 100 Q285 115 275 140 Q255 135 258 108 Z" fill={isSelected('shoulders') ? 'var(--primary)' : 'rgba(59, 130, 246, 0.5)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="108" y="122" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="10.5" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'كتف' : 'Shoulder'}</text>
+                <text x="292" y="122" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="10.5" fontWeight="bold" textAnchor="start">{lang === 'ar' ? 'كتف' : 'Shoulder'}</text>
               </g>
 
               {/* Chest (Pectoralis Major) */}
@@ -129,9 +130,9 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('chest') ? 'active-muscle' : ''}`}
               >
-                <path d="M145 105 C160 105 195 112 196 142 C170 150 144 140 142 110 Z" fill={isSelected('chest') ? 'var(--primary)' : 'rgba(239, 68, 68, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M255 105 C240 105 205 112 204 142 C230 150 256 140 258 110 Z" fill={isSelected('chest') ? 'var(--primary)' : 'rgba(239, 68, 68, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="200" y="125" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'الصدر' : 'Chest'}</text>
+                <path d="M142 105 C158 105 195 112 196 142 C168 150 142 140 140 110 Z" fill={isSelected('chest') ? 'var(--primary)' : 'rgba(239, 68, 68, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M258 105 C242 105 205 112 204 142 C232 150 258 140 260 110 Z" fill={isSelected('chest') ? 'var(--primary)' : 'rgba(239, 68, 68, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="128" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="13" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'الصدر' : 'Chest'}</text>
               </g>
 
               {/* Biceps (Left & Right Biceps Brachii) */}
@@ -140,9 +141,10 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('biceps') ? 'active-muscle' : ''}`}
               >
-                <path d="M122 142 Q112 165 125 185 Q136 168 135 142 Z" fill={isSelected('biceps') ? 'var(--primary)' : 'rgba(16, 185, 129, 0.5)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M278 142 Q288 165 275 185 Q264 168 265 142 Z" fill={isSelected('biceps') ? 'var(--primary)' : 'rgba(16, 185, 129, 0.5)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="95" y="165" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'بايسبس' : 'Biceps'}</text>
+                <path d="M122 142 Q112 165 125 185 Q136 168 135 142 Z" fill={isSelected('biceps') ? 'var(--primary)' : 'rgba(16, 185, 129, 0.6)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M278 142 Q288 165 275 185 Q264 168 265 142 Z" fill={isSelected('biceps') ? 'var(--primary)' : 'rgba(16, 185, 129, 0.6)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="96" y="165" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="10" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'بايسبس' : 'Biceps'}</text>
+                <text x="304" y="165" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="10" fontWeight="bold" textAnchor="start">{lang === 'ar' ? 'بايسبس' : 'Biceps'}</text>
               </g>
 
               {/* Forearms (Left & Right) */}
@@ -151,18 +153,25 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('forearms') ? 'active-muscle' : ''}`}
               >
-                <path d="M120 190 L105 235 L120 240 L128 192 Z" fill={isSelected('forearms') ? 'var(--primary)' : 'rgba(245, 158, 11, 0.5)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M280 190 L295 235 L280 240 L272 192 Z" fill={isSelected('forearms') ? 'var(--primary)' : 'rgba(245, 158, 11, 0.5)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M120 190 L105 235 L120 240 L128 192 Z" fill={isSelected('forearms') ? 'var(--primary)' : 'rgba(234, 179, 8, 0.6)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M280 190 L295 235 L280 240 L272 192 Z" fill={isSelected('forearms') ? 'var(--primary)' : 'rgba(234, 179, 8, 0.6)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="92" y="215" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="9.5" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'سواعد' : 'Forearms'}</text>
+                <text x="308" y="215" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="9.5" fontWeight="bold" textAnchor="start">{lang === 'ar' ? 'سواعد' : 'Forearms'}</text>
               </g>
 
-              {/* Abs & Core (Abdominals) */}
+              {/* Abs & Core (Rectus Abdominis & Obliques) */}
               <g
                 onClick={() => handleSelectMuscle('abs')}
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('abs') ? 'active-muscle' : ''}`}
               >
-                <rect x="170" y="148" width="28" height="70" rx="6" fill={isSelected('abs') ? 'var(--primary)' : 'rgba(168, 85, 247, 0.5)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="184" y="188" fill="#fff" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'البطن' : 'Abs'}</text>
+                {/* Main Abdominal Core Shape */}
+                <rect x="164" y="146" width="72" height="84" rx="10" fill={isSelected('abs') ? 'var(--primary)' : 'rgba(168, 85, 247, 0.55)'} stroke="#fff" strokeWidth="1.5" />
+                {/* 6-Pack Grid Accent Lines */}
+                <line x1="200" y1="148" x2="200" y2="228" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                <line x1="166" y1="174" x2="234" y2="174" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+                <line x1="166" y1="202" x2="234" y2="202" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+                <text x="200" y="190" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="12" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'البطن والكور' : 'Abs & Core'}</text>
               </g>
 
               {/* Quadriceps (Front Legs/Quads) */}
@@ -171,9 +180,9 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('legs') ? 'active-muscle' : ''}`}
               >
-                <path d="M152 245 C145 270 155 350 174 350 C185 330 185 260 178 245 Z" fill={isSelected('legs') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.5)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M248 245 C255 270 245 350 226 350 C215 330 215 260 222 245 Z" fill={isSelected('legs') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.5)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="200" y="300" fill="#fff" fontSize="12" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'الفخذ' : 'Quads'}</text>
+                <path d="M152 245 C145 270 155 350 174 350 C185 330 185 260 178 245 Z" fill={isSelected('legs') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.55)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M248 245 C255 270 245 350 226 350 C215 330 215 260 222 245 Z" fill={isSelected('legs') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.55)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="300" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="12" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'الفخذ' : 'Quads'}</text>
               </g>
 
               {/* Calves Front */}
@@ -182,8 +191,9 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('calves') ? 'active-muscle' : ''}`}
               >
-                <path d="M165 375 Q158 420 172 455 Q180 420 178 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.5)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M235 375 Q242 420 228 455 Q220 420 222 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.5)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M165 375 Q158 420 172 455 Q180 420 178 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.55)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M235 375 Q242 420 228 455 Q220 420 222 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.55)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="420" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'السمانة' : 'Calves'}</text>
               </g>
             </g>
           )}
@@ -197,8 +207,8 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('traps') ? 'active-muscle' : ''}`}
               >
-                <path d="M184 75 L216 75 L235 105 L165 105 Z" fill={isSelected('traps') ? 'var(--primary)' : 'rgba(245, 158, 11, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="200" y="93" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'ترابيس' : 'Traps'}</text>
+                <path d="M184 75 L216 75 L235 105 L165 105 Z" fill={isSelected('traps') ? 'var(--primary)' : 'rgba(245, 158, 11, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="93" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'ترابيس' : 'Traps'}</text>
               </g>
 
               {/* Triceps (Rear Arms) */}
@@ -209,7 +219,20 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
               >
                 <path d="M125 110 Q112 140 122 175 Q135 150 138 115 Z" fill={isSelected('triceps') ? 'var(--primary)' : 'rgba(16, 185, 129, 0.6)'} stroke="#fff" strokeWidth="1.5" />
                 <path d="M275 110 Q288 140 278 175 Q265 150 262 115 Z" fill={isSelected('triceps') ? 'var(--primary)' : 'rgba(16, 185, 129, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="95" y="145" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'ترايسبس' : 'Triceps'}</text>
+                <text x="96" y="145" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="10" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'ترايسبس' : 'Triceps'}</text>
+                <text x="304" y="145" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="10" fontWeight="bold" textAnchor="start">{lang === 'ar' ? 'ترايسبس' : 'Triceps'}</text>
+              </g>
+
+              {/* Forearms Rear */}
+              <g
+                onClick={() => handleSelectMuscle('forearms')}
+                style={{ cursor: 'pointer' }}
+                className={`muscle-node ${isSelected('forearms') ? 'active-muscle' : ''}`}
+              >
+                <path d="M120 190 L105 235 L120 240 L128 192 Z" fill={isSelected('forearms') ? 'var(--primary)' : 'rgba(234, 179, 8, 0.6)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M280 190 L295 235 L280 240 L272 192 Z" fill={isSelected('forearms') ? 'var(--primary)' : 'rgba(234, 179, 8, 0.6)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="92" y="215" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="9.5" fontWeight="bold" textAnchor="end">{lang === 'ar' ? 'سواعد' : 'Forearms'}</text>
+                <text x="308" y="215" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="9.5" fontWeight="bold" textAnchor="start">{lang === 'ar' ? 'سواعد' : 'Forearms'}</text>
               </g>
 
               {/* Lats & Upper/Lower Back */}
@@ -218,8 +241,8 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('back') ? 'active-muscle' : ''}`}
               >
-                <path d="M145 110 C160 110 240 110 255 110 L235 220 C200 230 200 230 165 220 Z" fill={isSelected('back') ? 'var(--primary)' : 'rgba(59, 130, 246, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="200" y="160" fill="#fff" fontSize="13" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'الظهر (Lats)' : 'Back & Lats'}</text>
+                <path d="M145 110 C160 110 240 110 255 110 L235 220 C200 230 200 230 165 220 Z" fill={isSelected('back') ? 'var(--primary)' : 'rgba(59, 130, 246, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="160" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="13" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'الظهر واللاتس' : 'Back & Lats'}</text>
               </g>
 
               {/* Glutes (Arse / Buttocks) */}
@@ -228,9 +251,9 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('glutes') ? 'active-muscle' : ''}`}
               >
-                <circle cx="172" cy="255" r="26" fill={isSelected('glutes') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <circle cx="228" cy="255" r="26" fill={isSelected('glutes') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="200" y="260" fill="#fff" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'مؤخرة' : 'Glutes'}</text>
+                <circle cx="172" cy="255" r="26" fill={isSelected('glutes') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <circle cx="228" cy="255" r="26" fill={isSelected('glutes') ? 'var(--primary)' : 'rgba(236, 72, 153, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="260" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="11.5" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'الأرداف' : 'Glutes'}</text>
               </g>
 
               {/* Hamstrings (Rear Thighs) */}
@@ -239,9 +262,9 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('hamstrings') ? 'active-muscle' : ''}`}
               >
-                <path d="M150 285 Q145 330 168 360 Q180 330 178 285 Z" fill={isSelected('hamstrings') ? 'var(--primary)' : 'rgba(168, 85, 247, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M250 285 Q255 330 232 360 Q220 330 222 285 Z" fill={isSelected('hamstrings') ? 'var(--primary)' : 'rgba(168, 85, 247, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="200" y="325" fill="#fff" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'فخذ خلفي' : 'Hamstrings'}</text>
+                <path d="M150 285 Q145 330 168 360 Q180 330 178 285 Z" fill={isSelected('hamstrings') ? 'var(--primary)' : 'rgba(168, 85, 247, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M250 285 Q255 330 232 360 Q220 330 222 285 Z" fill={isSelected('hamstrings') ? 'var(--primary)' : 'rgba(168, 85, 247, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="325" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'فخذ خلفي' : 'Hamstrings'}</text>
               </g>
 
               {/* Calves (Gastrocnemius Rear) */}
@@ -250,9 +273,9 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
                 style={{ cursor: 'pointer' }}
                 className={`muscle-node ${isSelected('calves') ? 'active-muscle' : ''}`}
               >
-                <path d="M162 375 Q152 420 170 460 Q182 420 178 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <path d="M238 375 Q248 420 230 460 Q218 420 222 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.6)'} stroke="#fff" strokeWidth="1.5" />
-                <text x="200" y="420" fill="#fff" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'سمانة' : 'Calves'}</text>
+                <path d="M162 375 Q152 420 170 460 Q182 420 178 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <path d="M238 375 Q248 420 230 460 Q218 420 222 375 Z" fill={isSelected('calves') ? 'var(--primary)' : 'rgba(14, 165, 233, 0.65)'} stroke="#fff" strokeWidth="1.5" />
+                <text x="200" y="420" fill="#fff" stroke="rgba(0,0,0,0.85)" strokeWidth="3" paintOrder="stroke fill" fontSize="11" fontWeight="bold" textAnchor="middle">{lang === 'ar' ? 'السمانة' : 'Calves'}</text>
               </g>
             </g>
           )}
@@ -261,25 +284,30 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
 
       {/* Quick Muscle Selector Chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '16px' }}>
-        {Object.keys(muscleLabels).map((key) => (
-          <button
-            key={key}
-            onClick={() => handleSelectMuscle(key)}
-            className={`btn-chip ${isSelected(key) ? 'active' : ''}`}
-            style={{
-              padding: '6px 14px',
-              fontSize: '12px',
-              borderRadius: '20px',
-              border: isSelected(key) ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-              background: isSelected(key) ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
-              color: isSelected(key) ? '#fff' : 'var(--text-primary)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {lang === 'ar' ? muscleLabels[key].ar : muscleLabels[key].en}
-          </button>
-        ))}
+        {Object.keys(muscleLabels).map((key) => {
+          const active = isSelected(key);
+          return (
+            <button
+              key={key}
+              onClick={() => handleSelectMuscle(key)}
+              className={`btn-chip ${active ? 'active' : ''}`}
+              style={{
+                padding: '6px 14px',
+                fontSize: '12px',
+                borderRadius: '20px',
+                border: active ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                background: active ? 'var(--primary)' : 'rgba(255,255,255,0.04)',
+                color: active ? '#050710' : 'var(--text-primary)',
+                fontWeight: active ? '800' : '500',
+                boxShadow: active ? '0 0 16px var(--primary-glow)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {lang === 'ar' ? muscleLabels[key].ar : muscleLabels[key].en}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
