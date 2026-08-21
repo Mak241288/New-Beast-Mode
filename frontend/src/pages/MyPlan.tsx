@@ -304,7 +304,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       }
     });
 
-    text += `⚡ ${isEn ? 'Generated via BeastMode AI:' : 'تم إنشاء الجدول عبر منصة BeastMode AI:'} https://new-beast-mode-git-master-ma-k1.vercel.app/`;
+    text += `⚡ ${isEn ? 'Generated via BeastMode AI:' : 'تم إنشاء الجدول عبر منصة BeastMode AI:'} https://new-beast-mode.vercel.app/`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);

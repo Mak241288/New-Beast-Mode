@@ -51,7 +51,7 @@ export const RoutineCardExportModal: React.FC<RoutineCardExportModalProps> = ({
     exercises.forEach((ex, idx) => {
       text += `${idx + 1}. ${ex.name} — ${ex.sets} × ${ex.reps}\n`;
     });
-    text += `\n⚡ https://new-beast-mode-git-master-ma-k1.vercel.app/`;
+    text += `\n⚡ https://new-beast-mode.vercel.app/`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);

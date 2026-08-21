@@ -1,8 +1,8 @@
 # 🦍 BeastMode AI — Next-Gen Smart Fitness & Nutrition Ecosystem
 
 <p align="center">
-  <a href="https://new-beast-mode-git-master-ma-k1.vercel.app/" target="_blank">
-    <img src="https://img.shields.io/badge/Live_Demo-Vercel_App-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live App" />
+  <a href="https://new-beast-mode.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/BeastMode_AI-Launch_Live_App-0070F3?style=for-the-badge&logo=vercel&logoColor=white" alt="BeastMode AI Live App" />
   </a>
   <img src="https://img.shields.io/badge/Theme-⚡_Cyber_Volt_%26_Carbon-CCFF00?style=for-the-badge&logoColor=black" alt="Cyber Volt" />
   <img src="https://img.shields.io/badge/UI/UX-Pro_Max_Suite-00F0FF?style=for-the-badge" alt="UI/UX Pro Max" />
@@ -21,9 +21,9 @@
 ## 🌐 التجربة الحية على السحابة | Live Production Web App
 
 <p align="center">
-  <a href="https://new-beast-mode-git-master-ma-k1.vercel.app/" target="_blank">
-    <b>🚀 اضغط هنا لفتح وتجربة التطبيق المباشر على Vercel | Click Here to Launch Live App</b><br />
-    <code>https://new-beast-mode-git-master-ma-k1.vercel.app/</code>
+  <a href="https://new-beast-mode.vercel.app/" target="_blank">
+    <b style="color: #0070F3; font-size: 18px;">🚀 BeastMode AI — اضغط هنا لفتح التطبيق المباشر | Launch Live Web App</b><br />
+    <code>https://new-beast-mode.vercel.app/</code>
   </a>
 </p>
 
