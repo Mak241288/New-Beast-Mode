@@ -1023,6 +1023,125 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               />
             </div>
 
+            {/* 🎨 UI/UX PRO MAX AESTHETICS & THEMES STUDIO */}
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div>
+                  <h3 style={{ fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800', margin: 0, color: '#fff' }}>
+                    🎨 {lang === 'en' ? 'Aesthetics & Visual Theme Studio' : 'استوديو المظهر وهويات الألوان الرياضية'}
+                  </h3>
+                  <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                    {lang === 'en' ? 'Select your preferred athletic mood, color palette, and visual identity:' : 'اختر الطابع الجرافيكي واللوني المفضل لواجهات BeastMode:'}
+                  </p>
+                </div>
+              </div>
+
+              {/* 4 Theme Visual Selection Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                {[
+                  {
+                    id: 'volt',
+                    nameAr: '⚡ نيون ليموني (Cyber Volt)',
+                    nameEn: '⚡ Cyber Volt (Nike Pro)',
+                    descAr: 'طاقة قصوى، تركيز حاد، وتباين نيون',
+                    descEn: 'Maximum energy, sharp focus & high contrast',
+                    color: '#ccff00',
+                    borderGlow: 'rgba(204, 255, 0, 0.4)',
+                  },
+                  {
+                    id: 'crimson',
+                    nameAr: '🔥 الحديد الناري (Crimson Iron)',
+                    nameEn: '🔥 Crimson Iron & Blood',
+                    descAr: 'قوة غاشمة، رفع أثقال، وحماس كمال أجسام',
+                    descEn: 'Brute strength, heavy lifting & high drive',
+                    color: '#ff1744',
+                    borderGlow: 'rgba(255, 23, 68, 0.4)',
+                  },
+                  {
+                    id: 'gold',
+                    nameAr: '👑 ذهب أولمبيا (Imperial Gold)',
+                    nameEn: '👑 Imperial Gold (Mr. Olympia)',
+                    descAr: 'فخامة ملكية، بطولة، وتجربة VIP',
+                    descEn: 'Championship luxury, prestige & VIP feel',
+                    color: '#f59e0b',
+                    borderGlow: 'rgba(245, 158, 11, 0.4)',
+                  },
+                  {
+                    id: 'cyan',
+                    nameAr: '💎 الذكاء المستقبلي (Cyber Frost)',
+                    nameEn: '💎 Cyber Frost (Sci-Fi Bio)',
+                    descAr: 'تكنولوجيا ذكية، استشفاء، وبيانات مستقبلية',
+                    descEn: 'AI tech, recovery metrics & futuristic HUD',
+                    color: '#00d2ff',
+                    borderGlow: 'rgba(0, 210, 255, 0.4)',
+                  },
+                ].map((item) => {
+                  const currentSavedTheme = (typeof window !== 'undefined' && localStorage.getItem('color_theme')) || 'volt';
+                  const isSelected = currentSavedTheme === item.id;
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        document.documentElement.setAttribute('data-color-theme', item.id);
+                        localStorage.setItem('color_theme', item.id);
+                        // Trigger re-render
+                        setProfile({ ...profile });
+                      }}
+                      className="glass-panel-hover"
+                      style={{
+                        padding: '14px',
+                        borderRadius: '14px',
+                        cursor: 'pointer',
+                        background: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                        border: isSelected ? `2px solid ${item.color}` : '1px solid var(--border-color)',
+                        boxShadow: isSelected ? `0 0 20px ${item.borderGlow}` : 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '50%',
+                              background: item.color,
+                              boxShadow: `0 0 10px ${item.color}`,
+                              display: 'inline-block',
+                            }}
+                          />
+                          <strong style={{ fontSize: '13px', color: '#fff' }}>
+                            {lang === 'en' ? item.nameEn : item.nameAr}
+                          </strong>
+                        </div>
+                        {isSelected && (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: item.color,
+                              color: '#000',
+                              fontWeight: '900',
+                            }}
+                          >
+                            ✓ {lang === 'en' ? 'Active' : 'مفعل'}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                        {lang === 'en' ? item.descEn : item.descAr}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Notifications Section */}
             <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '15px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <h3 style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '700', margin: 0 }}>
