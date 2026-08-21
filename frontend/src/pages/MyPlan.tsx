@@ -1028,121 +1028,123 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           </p>
         </div>
 
-        {/* Quick Tools */}
-        <div className="responsive-toolbar">
-          <button 
-            onClick={() => {
-              fetchHistory();
-              setShowMultiPlanModal(true);
-            }} 
-            className="secondary-btn" 
-            style={{ 
-              padding: '8px 15px', 
-              fontSize: '13px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px',
-              borderColor: 'rgba(6, 182, 212, 0.4)',
-              background: 'rgba(6, 182, 212, 0.08)'
-            }}
-          >
-            <Layers size={16} color="var(--secondary)" />
-            <span>{lang === 'en' ? `Multi-Plan Hub (${historyList.length || 1}) 📑` : `إدارة جداولي المتعددة (${historyList.length || 1}) 📑`}</span>
-          </button>
-          <button 
-            onClick={() => setShowPresetPlansModal(true)} 
-            className="glow-btn" 
-            style={{ 
-              padding: '8px 16px', 
-              fontSize: '13px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px',
-              background: 'linear-gradient(135deg, #f59e0b, #ec4899)',
-              border: 'none',
-              boxShadow: '0 0 16px rgba(245, 158, 11, 0.35)'
-            }}
-          >
-            <Crown size={16} />
-            <span>{lang === 'en' ? 'Curated Pro Plans 👑' : 'الخطط الجاهزة والأساطير 👑'}</span>
-          </button>
-          <button 
-            onClick={() => setShowStrengthCalcModal(true)} 
-            className="secondary-btn" 
-            style={{ 
-              padding: '8px 14px', 
-              fontSize: '13px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px',
-              borderColor: '#f59e0b',
-              color: '#f59e0b',
-              background: 'rgba(245, 158, 11, 0.08)',
-            }}
-          >
-            <Percent size={15} />
-            <span>{lang === 'en' ? 'Plate & 1RM Calculator 🔢' : 'حاسبة أوزان البار والـ 1RM 🔢'}</span>
-          </button>
-          <button onClick={() => setShowManualBuilder(true)} className="glow-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Plus size={16} />
-            <span>{lang === 'en' ? 'Create Custom Plan ✍️' : 'تصميم جدول يدوي ✍️'}</span>
-          </button>
-          <button onClick={handleRegeneratePlan} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <RefreshCw size={16} />
-            {lang === 'en' ? 'Regenerate Plan' : 'إعادة توليد الجدول ⚡'}
-          </button>
-          <button onClick={handleUpgradePlan} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Sparkles size={16} />
-            {lang === 'en' ? 'AI Upgrade' : 'ترقية بالذكاء الاصطناعي'}
-          </button>
-          <button onClick={() => setShowImport(true)} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Upload size={16} />
-            {t.importBtn}
-          </button>
-          <button onClick={() => { setShowHistory(true); fetchHistory(); }} className="secondary-btn" style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <History size={16} />
-            {t.historyBtn}
-          </button>
-          {activePlan && (
-            <>
-              <button 
-                onClick={() => exportWorkoutPlanToCSV(activePlan, lang)} 
-                className="secondary-btn" 
-                title={lang === 'en' ? 'Export CSV' : 'تصدير إكسل'}
-                style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Download size={16} />
-                <span>{lang === 'en' ? 'Export CSV' : 'تصدير CSV'}</span>
-              </button>
-              <button 
-                onClick={handleShareToWhatsApp} 
-                className="secondary-btn" 
-                title={lang === 'en' ? 'Share plan to WhatsApp' : 'مشاركة الخطة عبر واتساب'}
-                style={{ 
-                  padding: '8px 14px', 
-                  fontSize: '13px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px',
-                  borderColor: '#25D366',
-                  color: '#25D366',
-                  background: 'rgba(37, 211, 102, 0.08)',
-                }}
-              >
-                <Share2 size={16} />
-                <span>{lang === 'en' ? 'Share WhatsApp 📲' : 'مشاركة واتساب 📲'}</span>
-              </button>
-              <button 
-                onClick={triggerPrint} 
-                className="secondary-btn" 
-                title={lang === 'en' ? 'Print Workout Plan' : 'طباعة الجدول الورقي'}
-                style={{ padding: '8px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Printer size={16} />
-                <span>{lang === 'en' ? 'Print Sheet' : 'طباعة الجدول 🖨️'}</span>
-              </button>
-            </>
-          )}
+        {/* Clean Segmented Quick Tools */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', width: '100%', maxWidth: '100%' }}>
+          {/* Primary Action Buttons */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowManualBuilder(true)}
+              className="glow-btn"
+              style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={15} />
+              <span>{lang === 'en' ? 'Custom Plan Architect ✍️' : 'تصميم جدول يدوي ✍️'}</span>
+            </button>
+            <button
+              onClick={() => setShowPresetPlansModal(true)}
+              className="secondary-btn"
+              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Crown size={15} color="#f59e0b" />
+              <span>{lang === 'en' ? 'Pro Plans 👑' : 'الخطط الجاهزة 👑'}</span>
+            </button>
+            <button
+              onClick={() => {
+                fetchHistory();
+                setShowMultiPlanModal(true);
+              }}
+              className="secondary-btn"
+              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Layers size={15} color="var(--secondary)" />
+              <span>{lang === 'en' ? `My Plans (${historyList.length || 1}) 📑` : `إدارة جداولي (${historyList.length || 1}) 📑`}</span>
+            </button>
+            <button
+              onClick={() => setShowStrengthCalcModal(true)}
+              className="secondary-btn"
+              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Percent size={15} color="#38bdf8" />
+              <span>{lang === 'en' ? '1RM Calc 🔢' : 'حاسبة 1RM 🔢'}</span>
+            </button>
+          </div>
+
+          {/* Secondary Utilities Strip */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+            <button
+              onClick={handleRegeneratePlan}
+              className="secondary-btn"
+              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
+            >
+              <RefreshCw size={13} />
+              <span>{lang === 'en' ? 'Regenerate' : 'إعادة توليد ⚡'}</span>
+            </button>
+            <button
+              onClick={handleUpgradePlan}
+              className="secondary-btn"
+              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
+            >
+              <Sparkles size={13} />
+              <span>{lang === 'en' ? 'AI Upgrade' : 'ترقية AI ✨'}</span>
+            </button>
+            <button
+              onClick={() => setShowImport(true)}
+              className="secondary-btn"
+              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
+            >
+              <Upload size={13} />
+              <span>{t.importBtn}</span>
+            </button>
+            <button
+              onClick={() => { setShowHistory(true); fetchHistory(); }}
+              className="secondary-btn"
+              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
+            >
+              <History size={13} />
+              <span>{t.historyBtn}</span>
+            </button>
+
+            {activePlan && (
+              <>
+                <button
+                  onClick={() => exportWorkoutPlanToCSV(activePlan, lang)}
+                  className="secondary-btn"
+                  title={lang === 'en' ? 'Export CSV' : 'تصدير إكسل'}
+                  style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
+                >
+                  <Download size={13} />
+                  <span>CSV</span>
+                </button>
+                <button
+                  onClick={handleShareToWhatsApp}
+                  className="secondary-btn"
+                  title={lang === 'en' ? 'Share plan to WhatsApp' : 'مشاركة الخطة عبر واتساب'}
+                  style={{
+                    padding: '5px 10px',
+                    fontSize: '11.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    borderColor: 'rgba(37, 211, 102, 0.3)',
+                    color: '#25D366',
+                    opacity: 0.9,
+                  }}
+                >
+                  <Share2 size={13} />
+                  <span>WhatsApp 📲</span>
+                </button>
+                <button
+                  onClick={triggerPrint}
+                  className="secondary-btn"
+                  title={lang === 'en' ? 'Print Workout Plan' : 'طباعة الجدول الورقي'}
+                  style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
+                >
+                  <Printer size={13} />
+                  <span>{lang === 'en' ? 'Print' : 'طباعة 🖨️'}</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

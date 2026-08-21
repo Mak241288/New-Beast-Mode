@@ -54,8 +54,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [checkInCompleted, setCheckInCompleted] = useState<'YES' | 'MOSTLY' | 'NO'>('YES');
   const [checkInPain, setCheckInPain] = useState('');
   const [submittingCheckIn, setSubmittingCheckIn] = useState(false);
-  const [hasStartedWorkouts, setHasStartedWorkouts] = useState(false);
-  const [daysRemaining, setDaysRemaining] = useState(0);
+  const [, setHasStartedWorkouts] = useState(false);
+  const [, setDaysRemaining] = useState(0);
 
   // Active Player state
   const [showPlayer, setShowPlayer] = useState(false);
@@ -624,37 +624,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
               );
             }
 
-            // Locked Check-In Card
-            return (
-              <div className="glass-panel animated-fade" style={{ padding: '20px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.01)', opacity: 0.6, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                  <div>
-                    <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontWeight: 'bold' }}>
-                      🔒 {lang === 'en' ? 'Weekly AI Check-In' : 'التقييم الأسبوعي بالذكاء الاصطناعي'}
-                    </span>
-                    <h3 style={{ fontSize: '17px', fontWeight: '900', marginTop: '8px', color: 'var(--text-secondary)' }}>
-                      {hasStartedWorkouts 
-                        ? (lang === 'en' ? `Next check-in available in ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}` : `التقييم الأسبوعي القادم متاح خلال ${daysRemaining} أيام`)
-                        : (lang === 'en' ? 'Check-in locked' : 'التقييم الأسبوعي مقفل')
-                      }
-                    </h3>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '12.5px', marginTop: '4px', maxWidth: '600px', lineHeight: '1.5' }}>
-                      {hasStartedWorkouts 
-                        ? (lang === 'en' ? 'Your weekly progress assessment is being scheduled. Stay consistent to unlock coaching feedback!' : 'يتم إعداد تقييم تقدمك الرياضي حالياً. استمر في تمرينك لفتح نصائح المدرب!')
-                        : (lang === 'en' ? 'Start and log your first active workout session to initiate the weekly check-in schedule!' : 'ابدأ وسجّل جولتك الأولى في التمرين لتفعيل جدول التقييم الأسبوعي الخاص بك!')
-                      }
-                    </p>
-                  </div>
-                  <button
-                    disabled
-                    className="secondary-btn"
-                    style={{ padding: '10px 22px', fontSize: '13.5px', opacity: 0.5, cursor: 'not-allowed' }}
-                  >
-                    {lang === 'en' ? 'Locked 🔒' : 'مغلق 🔒'}
-                  </button>
-                </div>
-              </div>
-            );
+            // If not due and no pending recommendations, keep dashboard clean and focused
+            return null;
           })()}
 
           {/* Top Widgets Row: Streak, Workouts, Minutes, Exercises */}
