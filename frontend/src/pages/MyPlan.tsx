@@ -43,7 +43,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [manualSaving, setManualSaving] = useState(false);
   const [manualRowSuggestions, setManualRowSuggestions] = useState<{ dayIdx: number; exIdx: number; list: any[] } | null>(null);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
-  const [manualDays, setManualDays] = useState([
+  const [manualDays, setManualDays] = useState<Array<{ dayIndex: number; title: string; focusArea: string; isRestDay: boolean; exercises: any[] }>>([
     { dayIndex: 1, title: lang === 'en' ? 'Push (Chest & Triceps)' : 'دفع (صدر وترايسبس وأكتاف)', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [
       { name: lang === 'en' ? 'Barbell Bench Press' : 'بنش برس بالبار مستوي', targetMuscle: 'Chest', sets: 4, reps: '8-10', weight: 'Barbell' },
       { name: lang === 'en' ? 'Incline Dumbbell Press' : 'ضغط دمبلز مائل للأعلى', targetMuscle: 'Chest', sets: 3, reps: '10-12', weight: 'Dumbbells' },
@@ -2200,17 +2200,18 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
             className="glass-card"
             style={{
               width: '100%',
-              maxWidth: '960px',
-              maxHeight: '92vh',
+              maxWidth: '1020px',
+              maxHeight: '94vh',
               overflowY: 'auto',
+              overflowX: 'hidden',
               borderRadius: '24px',
-              padding: '24px',
-              border: '1px solid rgba(0, 210, 255, 0.35)',
+              padding: '22px 20px',
+              border: '1px solid rgba(204, 255, 0, 0.35)',
               background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.98), rgba(4, 7, 18, 0.99))',
               display: 'flex',
               flexDirection: 'column',
               gap: '18px',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 210, 255, 0.1)',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px var(--primary-glow)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2553,7 +2554,16 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   sets: 3,
                   reps: '10-12',
                   weight: 'Dumbbells',
+                  category: 'MAIN',
+                  restSeconds: 60,
                 });
+                setManualDays(updated);
+              };
+
+              const duplicateExercise = (exIdx: number) => {
+                const updated = [...manualDays];
+                const item = JSON.parse(JSON.stringify(updated[dayIdx].exercises[exIdx]));
+                updated[dayIdx].exercises.splice(exIdx + 1, 0, item);
                 setManualDays(updated);
               };
 
@@ -3099,54 +3109,186 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           </button>
                         </div>
                       ) : (
-                        <div className="table-scroll-container">
-                          <div style={{ minWidth: '780px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {/* Table Headers */}
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 96px',
-                              gap: '8px',
-                              padding: '6px 12px',
-                              fontSize: '11px',
-                              fontWeight: 'bold',
-                              color: 'var(--text-secondary)',
-                              textTransform: 'uppercase',
-                            }}>
-                            <div>{lang === 'en' ? 'Exercise (Search 🔍)' : 'اسم التمرين (بحث ذكي 🔍)'}</div>
-                            <div>{lang === 'en' ? 'Muscle' : 'العضلة 🎯'}</div>
-                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Mode' : 'النوع ⏱️/🔢'}</div>
-                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Sets' : 'الجولات 🔢'}</div>
-                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Reps / Time' : 'التكرار أو المدة ⏱️'}</div>
-                            <div>{lang === 'en' ? 'Equipment' : 'الأداة 🏋️'}</div>
-                            <div style={{ textAlign: 'center' }}>{lang === 'en' ? 'Actions' : 'إجراءات'}</div>
-                          </div>
-
-                          {/* Exercise Rows */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
                           {currentDay.exercises.map((ex, exIdx) => {
                             const isSugActive = manualRowSuggestions && manualRowSuggestions.dayIdx === dayIdx && manualRowSuggestions.exIdx === exIdx;
                             const isTimed = (ex as any).isTimed || (typeof ex.reps === 'string' && (ex.reps.includes('s') || ex.reps.includes('m') || ex.reps.includes('sec') || ex.reps.includes('ثانية') || ex.reps.includes('دقيقة')));
+                            const role = (ex as any).category || 'MAIN';
+
+                            // Role badge styling
+                            const roleStyles = {
+                              MAIN: { label: lang === 'en' ? '🏋️ Main Lift' : '🏋️ أساسي', color: 'var(--primary)', bg: 'rgba(204, 255, 0, 0.12)', border: 'var(--primary)' },
+                              WARMUP: { label: lang === 'en' ? '🔥 Warm-up' : '🔥 إحماء', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: '#f59e0b' },
+                              COOLDOWN: { label: lang === 'en' ? '🧊 Recovery' : '🧊 استشفاء', color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)', border: '#06b6d4' },
+                              SUPERSET: { label: lang === 'en' ? '⚡ Superset' : '⚡ سوبر سيت', color: '#ec4899', bg: 'rgba(236, 72, 153, 0.12)', border: '#ec4899' },
+                              CARDIO: { label: lang === 'en' ? '⏱️ Cardio' : '⏱️ كارديو', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)', border: '#10b981' },
+                            }[role as string] || { label: '🏋️ أساسي', color: 'var(--primary)', bg: 'rgba(204, 255, 0, 0.12)', border: 'var(--primary)' };
 
                             return (
                               <div
                                 key={exIdx}
+                                className="glass-card"
                                 style={{
                                   position: 'relative',
-                                  display: 'grid',
-                                  gridTemplateColumns: 'minmax(210px, 2.5fr) minmax(120px, 1.3fr) 90px 100px minmax(130px, 1.6fr) minmax(110px, 1.2fr) 96px',
-                                  gap: '8px',
-                                  alignItems: 'center',
-                                  padding: '10px 12px',
-                                  background: isTimed ? 'rgba(0, 210, 255, 0.04)' : 'rgba(255,255,255,0.03)',
-                                  borderRadius: '12px',
-                                  border: isTimed ? '1px solid rgba(0, 210, 255, 0.3)' : '1px solid var(--border-color)',
-                                  transition: 'all 0.2s',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '12px',
+                                  padding: '14px 16px',
+                                  borderRadius: '16px',
+                                  border: `1px solid ${roleStyles.border}35`,
+                                  background: 'rgba(15, 23, 42, 0.6)',
+                                  boxShadow: `0 4px 15px rgba(0,0,0,0.3), 0 0 10px ${roleStyles.border}10`,
+                                  transition: 'all 0.2s ease',
+                                  width: '100%',
                                 }}
                               >
-                                {/* Exercise Name Input with Floating Suggestions */}
-                                <div style={{ position: 'relative' }}>
+                                {/* Top Bar: Index Number, Role Selector Dropdown, Timed Badge, and Actions */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    {/* Exercise Index Badge */}
+                                    <span style={{
+                                      width: '26px',
+                                      height: '26px',
+                                      borderRadius: '8px',
+                                      background: 'rgba(255,255,255,0.08)',
+                                      color: '#fff',
+                                      fontSize: '12px',
+                                      fontWeight: '900',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}>
+                                      #{exIdx + 1}
+                                    </span>
+
+                                    {/* Role / Category Selector (إحماء / استشفاء / أساسي / سوبر سيت / كارديو) */}
+                                    <select
+                                      value={role}
+                                      onChange={(e) => updateExercise(exIdx, 'category', e.target.value)}
+                                      style={{
+                                        padding: '4px 10px',
+                                        fontSize: '11.5px',
+                                        fontWeight: '800',
+                                        borderRadius: '20px',
+                                        background: roleStyles.bg,
+                                        color: roleStyles.color,
+                                        border: `1px solid ${roleStyles.border}`,
+                                        cursor: 'pointer',
+                                        outline: 'none',
+                                      }}
+                                    >
+                                      <option value="MAIN" style={{ background: '#0f172a', color: '#fff' }}>🏋️ تمرين أساسي (Main Lift)</option>
+                                      <option value="WARMUP" style={{ background: '#0f172a', color: '#f59e0b' }}>🔥 إحماء وتفعيل (Warm-up)</option>
+                                      <option value="COOLDOWN" style={{ background: '#0f172a', color: '#06b6d4' }}>🧊 استشفاء وإطالة (Recovery)</option>
+                                      <option value="SUPERSET" style={{ background: '#0f172a', color: '#ec4899' }}>⚡ سوبر سيت / دروب سيت</option>
+                                      <option value="CARDIO" style={{ background: '#0f172a', color: '#10b981' }}>⏱️ كارديو ولياقة (Cardio)</option>
+                                    </select>
+
+                                    {/* Timed Mode Toggle */}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const nextTimed = !isTimed;
+                                        updateExercise(exIdx, 'isTimed', nextTimed);
+                                        if (nextTimed) {
+                                          updateExercise(exIdx, 'reps', '45s');
+                                        } else {
+                                          updateExercise(exIdx, 'reps', '10-12');
+                                        }
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        fontSize: '11px',
+                                        borderRadius: '16px',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        border: isTimed ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)',
+                                        background: isTimed ? 'rgba(0, 210, 255, 0.15)' : 'rgba(255,255,255,0.05)',
+                                        color: isTimed ? 'var(--primary)' : 'var(--text-secondary)',
+                                      }}
+                                      title={isTimed ? 'التبديل إلى تكرار عادي' : 'التبديل إلى مؤقت زمني'}
+                                    >
+                                      {isTimed ? <Timer size={12} /> : <span>🔢</span>}
+                                      <span>{isTimed ? (lang === 'en' ? 'Timed' : 'مؤقت') : (lang === 'en' ? 'Reps' : 'تكرار')}</span>
+                                    </button>
+                                  </div>
+
+                                  {/* Action Controls: Smart Swap, Duplicate, Reorder, Delete */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setManualSwapTarget({ dayIdx, exIdx, exercise: ex });
+                                        setManualSwapQuery('');
+                                      }}
+                                      className="secondary-btn"
+                                      style={{ padding: '5px 8px', fontSize: '11.5px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', borderColor: 'rgba(0, 210, 255, 0.3)' }}
+                                      title={lang === 'en' ? 'Smart Exercise Alternative Swap 🔄' : 'المبادلة الذكية للتمرين (بدائل فورية) 🔄'}
+                                    >
+                                      <span>🔄 {lang === 'en' ? 'Swap' : 'تبديل'}</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => duplicateExercise(exIdx)}
+                                      className="secondary-btn"
+                                      style={{ padding: '5px 8px', fontSize: '11.5px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '3px' }}
+                                      title={lang === 'en' ? 'Duplicate exercise' : 'تكرار هذا التمرين'}
+                                    >
+                                      <Copy size={12} />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={exIdx === 0}
+                                      onClick={() => moveExerciseUp(exIdx)}
+                                      className="secondary-btn"
+                                      style={{ padding: '5px 8px', fontSize: '11px', borderRadius: '8px', opacity: exIdx === 0 ? 0.3 : 1 }}
+                                      title={lang === 'en' ? 'Move Up' : 'تحريك للأعلى'}
+                                    >
+                                      ▲
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={exIdx >= currentDay.exercises.length - 1}
+                                      onClick={() => moveExerciseDown(exIdx)}
+                                      className="secondary-btn"
+                                      style={{ padding: '5px 8px', fontSize: '11px', borderRadius: '8px', opacity: exIdx >= currentDay.exercises.length - 1 ? 0.3 : 1 }}
+                                      title={lang === 'en' ? 'Move Down' : 'تحريك للأسفل'}
+                                    >
+                                      ▼
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => removeExercise(exIdx)}
+                                      style={{
+                                        background: 'rgba(239, 68, 68, 0.15)',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        color: '#ef4444',
+                                        borderRadius: '8px',
+                                        padding: '5px 8px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                      }}
+                                      title={lang === 'en' ? 'Delete exercise' : 'حذف هذا التمرين'}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Row 1: Exercise Search Name Input with Live Autocomplete */}
+                                <div style={{ position: 'relative', width: '100%' }}>
                                   <input
                                     type="text"
-                                    placeholder={lang === 'en' ? 'Search 4,298+ exercises...' : 'ابحث بين 4,298 تمرين (بنش، بلانك...)'}
+                                    placeholder={lang === 'en' ? 'Search 4,100+ exercises with autocomplete...' : '🔍 ابحث بين 4,100+ تمرين (بنش، سحب، سكوات، بلانك...)'}
                                     value={ex.name}
                                     onChange={(e) => handleRowNameSearch(e.target.value, exIdx)}
                                     onFocus={() => {
@@ -3155,7 +3297,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       }
                                     }}
                                     className="input-field"
-                                    style={{ padding: '8px 12px', fontSize: '13px', width: '100%', borderRadius: '8px' }}
+                                    style={{ padding: '10px 14px', fontSize: '13.5px', width: '100%', borderRadius: '10px', fontWeight: 'bold' }}
                                   />
 
                                   {/* Floating Dropdown Autocomplete */}
@@ -3229,107 +3371,100 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                   )}
                                 </div>
 
-                                {/* Target Muscle Select */}
-                                <div>
-                                  <select
-                                    value={ex.targetMuscle}
-                                    onChange={(e) => updateExercise(exIdx, 'targetMuscle', e.target.value)}
-                                    className="input-field"
-                                    style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
-                                  >
-                                    <option value="Chest" style={{ background: '#0f172a' }}>الصدر (Chest)</option>
-                                    <option value="Back" style={{ background: '#0f172a' }}>الظهر (Back / Lats)</option>
-                                    <option value="Shoulders" style={{ background: '#0f172a' }}>الأكتاف (Shoulders)</option>
-                                    <option value="Quadriceps" style={{ background: '#0f172a' }}>الأرجل الأمامية (Quads)</option>
-                                    <option value="Hamstrings" style={{ background: '#0f172a' }}>الأرجل الخلفية (Hamstrings)</option>
-                                    <option value="Biceps" style={{ background: '#0f172a' }}>البايسبس (Biceps)</option>
-                                    <option value="Triceps" style={{ background: '#0f172a' }}>الترايسبس (Triceps)</option>
-                                    <option value="Abs" style={{ background: '#0f172a' }}>عضلات البطن والكور (Abs)</option>
-                                    <option value="Calves" style={{ background: '#0f172a' }}>السمانة (Calves)</option>
-                                    <option value="Cardio" style={{ background: '#0f172a' }}>كارديو ولياقة (Cardio)</option>
-                                    <option value="Full Body" style={{ background: '#0f172a' }}>كامل الجسم (Full Body)</option>
-                                  </select>
-                                </div>
+                                {/* Row 2: Fluid Parameters Grid (Muscle, Equipment, Sets, Reps, Rest Interval) */}
+                                <div style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                                  gap: '10px',
+                                  alignItems: 'center',
+                                  width: '100%',
+                                }}>
+                                  {/* Muscle Target */}
+                                  <div>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                      🎯 {lang === 'en' ? 'Muscle Target:' : 'العضلة المستهدفة:'}
+                                    </label>
+                                    <select
+                                      value={ex.targetMuscle}
+                                      onChange={(e) => updateExercise(exIdx, 'targetMuscle', e.target.value)}
+                                      className="input-field"
+                                      style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
+                                    >
+                                      <option value="Chest" style={{ background: '#0f172a' }}>الصدر (Chest)</option>
+                                      <option value="Back" style={{ background: '#0f172a' }}>الظهر (Back / Lats)</option>
+                                      <option value="Shoulders" style={{ background: '#0f172a' }}>الأكتاف (Shoulders)</option>
+                                      <option value="Quadriceps" style={{ background: '#0f172a' }}>الأرجل الأمامية (Quads)</option>
+                                      <option value="Hamstrings" style={{ background: '#0f172a' }}>الأرجل الخلفية (Hamstrings)</option>
+                                      <option value="Biceps" style={{ background: '#0f172a' }}>البايسبس (Biceps)</option>
+                                      <option value="Triceps" style={{ background: '#0f172a' }}>الترايسبس (Triceps)</option>
+                                      <option value="Abs" style={{ background: '#0f172a' }}>عضلات البطن والكور (Abs)</option>
+                                      <option value="Calves" style={{ background: '#0f172a' }}>السمانة (Calves)</option>
+                                      <option value="Cardio" style={{ background: '#0f172a' }}>كارديو ولياقة (Cardio)</option>
+                                      <option value="Full Body" style={{ background: '#0f172a' }}>كامل الجسم (Full Body)</option>
+                                    </select>
+                                  </div>
 
-                                {/* Mode Switch: Timed vs Reps */}
-                                <div style={{ textAlign: 'center' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const nextTimed = !isTimed;
-                                      updateExercise(exIdx, 'isTimed', nextTimed);
-                                      if (nextTimed) {
-                                        updateExercise(exIdx, 'reps', '45s');
-                                      } else {
-                                        updateExercise(exIdx, 'reps', '10-12');
-                                      }
-                                    }}
-                                    style={{
-                                      padding: '6px 8px',
-                                      fontSize: '11px',
-                                      borderRadius: '8px',
-                                      cursor: 'pointer',
-                                      fontWeight: 'bold',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: '4px',
-                                      width: '100%',
-                                      border: isTimed ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)',
-                                      background: isTimed ? 'rgba(0, 210, 255, 0.15)' : 'rgba(255,255,255,0.05)',
-                                      color: isTimed ? 'var(--primary)' : 'var(--text-secondary)',
-                                      transition: 'all 0.2s',
-                                    }}
-                                    title={isTimed ? 'تمرين يعتمد على المؤقت الزمني' : 'تمرين يعتمد على عدد التكرارات'}
-                                  >
+                                  {/* Equipment */}
+                                  <div>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                      🏋️ {lang === 'en' ? 'Equipment:' : 'الأداة المستخدمة:'}
+                                    </label>
+                                    <select
+                                      value={ex.weight || 'Dumbbells'}
+                                      onChange={(e) => updateExercise(exIdx, 'weight', e.target.value)}
+                                      className="input-field"
+                                      style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
+                                    >
+                                      <option value="Barbell" style={{ background: '#0f172a' }}>بار حديد (Barbell)</option>
+                                      <option value="Dumbbells" style={{ background: '#0f172a' }}>دمبلز (Dumbbells)</option>
+                                      <option value="Cable" style={{ background: '#0f172a' }}>كيبل (Cable)</option>
+                                      <option value="Machine" style={{ background: '#0f172a' }}>أجهزة (Machine)</option>
+                                      <option value="Bodyweight" style={{ background: '#0f172a' }}>وزن الجسم (Bodyweight)</option>
+                                      <option value="Cardio Machine" style={{ background: '#0f172a' }}>جهاز كارديو (Cardio)</option>
+                                    </select>
+                                  </div>
+
+                                  {/* Sets Controls */}
+                                  <div>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                      🔢 {lang === 'en' ? 'Sets:' : 'الجولات:'}
+                                    </label>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateExercise(exIdx, 'sets', Math.max(1, (parseInt(String(ex.sets)) || 3) - 1))}
+                                        style={{ width: '28px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
+                                      >
+                                        -
+                                      </button>
+                                      <input
+                                        type="number"
+                                        value={ex.sets}
+                                        onChange={(e) => updateExercise(exIdx, 'sets', parseInt(e.target.value) || 3)}
+                                        className="input-field"
+                                        style={{ padding: '6px 2px', fontSize: '12.5px', width: '40px', textAlign: 'center', borderRadius: '6px', fontWeight: 'bold' }}
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => updateExercise(exIdx, 'sets', (parseInt(String(ex.sets)) || 3) + 1)}
+                                        style={{ width: '28px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Reps or Time Duration */}
+                                  <div>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                      ⏱️ {isTimed ? (lang === 'en' ? 'Duration:' : 'المدة الزمنية:') : (lang === 'en' ? 'Reps:' : 'التكرار:')}
+                                    </label>
                                     {isTimed ? (
-                                      <>
-                                        <Timer size={12} />
-                                        <span>مؤقت</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span>🔢</span>
-                                        <span>تكرار</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-
-                                {/* Sets Controls */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateExercise(exIdx, 'sets', Math.max(1, (parseInt(String(ex.sets)) || 3) - 1))}
-                                    style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                  >
-                                    -
-                                  </button>
-                                  <input
-                                    type="number"
-                                    value={ex.sets}
-                                    onChange={(e) => updateExercise(exIdx, 'sets', parseInt(e.target.value) || 3)}
-                                    className="input-field"
-                                    style={{ padding: '6px 2px', fontSize: '12px', width: '34px', textAlign: 'center', borderRadius: '6px' }}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => updateExercise(exIdx, 'sets', (parseInt(String(ex.sets)) || 3) + 1)}
-                                    style={{ width: '24px', height: '24px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                  >
-                                    +
-                                  </button>
-                                </div>
-
-                                {/* Reps or Time Duration Input & Quick Selector */}
-                                <div>
-                                  {isTimed ? (
-                                    <div style={{ display: 'flex', gap: '4px' }}>
                                       <select
                                         value={ex.reps}
                                         onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
                                         className="input-field"
-                                        style={{ padding: '6px 4px', fontSize: '11px', width: '100%', borderRadius: '8px', background: 'rgba(0, 210, 255, 0.08)', color: 'var(--primary)', fontWeight: 'bold' }}
+                                        style={{ padding: '7px 6px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(0, 210, 255, 0.08)', color: 'var(--primary)', fontWeight: 'bold' }}
                                       >
                                         <option value="30s" style={{ background: '#0f172a' }}>⏱️ 30 ثانية</option>
                                         <option value="45s" style={{ background: '#0f172a' }}>⏱️ 45 ثانية</option>
@@ -3340,132 +3475,76 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                         <option value="10 mins" style={{ background: '#0f172a' }}>⏱️ 10 دقائق</option>
                                         <option value="15 mins" style={{ background: '#0f172a' }}>⏱️ 15 دقيقة</option>
                                         <option value="20 mins" style={{ background: '#0f172a' }}>⏱️ 20 دقيقة</option>
-                                        <option value="30 mins" style={{ background: '#0f172a' }}>⏱️ 30 دقيقة</option>
                                       </select>
-                                    </div>
-                                  ) : (
-                                    <input
-                                      type="text"
-                                      placeholder="10-12"
-                                      value={ex.reps}
-                                      onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
+                                    ) : (
+                                      <input
+                                        type="text"
+                                        placeholder="10-12"
+                                        value={ex.reps}
+                                        onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
+                                        className="input-field"
+                                        style={{ padding: '7px 8px', fontSize: '12px', width: '100%', textAlign: 'center', borderRadius: '8px', fontWeight: 'bold' }}
+                                      />
+                                    )}
+                                  </div>
+
+                                  {/* Rest Interval Selector */}
+                                  <div>
+                                    <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                      💤 {lang === 'en' ? 'Rest Time:' : 'راحة الجولة:'}
+                                    </label>
+                                    <select
+                                      value={(ex as any).restSeconds || 60}
+                                      onChange={(e) => updateExercise(exIdx, 'restSeconds', parseInt(e.target.value) || 60)}
                                       className="input-field"
-                                      style={{ padding: '6px 8px', fontSize: '12px', width: '100%', textAlign: 'center', borderRadius: '8px' }}
-                                    />
-                                  )}
+                                      style={{ padding: '7px 8px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)' }}
+                                    >
+                                      <option value="30" style={{ background: '#0f172a' }}>30 ثانية</option>
+                                      <option value="45" style={{ background: '#0f172a' }}>45 ثانية</option>
+                                      <option value="60" style={{ background: '#0f172a' }}>60 ثانية (1 دقيقة)</option>
+                                      <option value="90" style={{ background: '#0f172a' }}>90 ثانية (1.5 دقيقة)</option>
+                                      <option value="120" style={{ background: '#0f172a' }}>120 ثانية (2 دقيقة)</option>
+                                      <option value="180" style={{ background: '#0f172a' }}>180 ثانية (3 دقائق)</option>
+                                    </select>
+                                  </div>
                                 </div>
 
-                                {/* Equipment / Weight Selector */}
-                                <div>
-                                  <select
-                                    value={ex.weight || 'Dumbbells'}
-                                    onChange={(e) => updateExercise(exIdx, 'weight', e.target.value)}
-                                    className="input-field"
-                                    style={{ padding: '8px 8px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
-                                  >
-                                    <option value="Barbell" style={{ background: '#0f172a' }}>بار حديد (Barbell)</option>
-                                    <option value="Dumbbells" style={{ background: '#0f172a' }}>دمبلز (Dumbbells)</option>
-                                    <option value="Cable" style={{ background: '#0f172a' }}>كيبل (Cable)</option>
-                                    <option value="Machine" style={{ background: '#0f172a' }}>أجهزة (Machine)</option>
-                                    <option value="Bodyweight" style={{ background: '#0f172a' }}>وزن الجسم (Bodyweight)</option>
-                                    <option value="Cardio Machine" style={{ background: '#0f172a' }}>جهاز كارديو (Cardio)</option>
-                                  </select>
-                                </div>
-
-                                {/* Action Controls: Move Up, Move Down, Delete */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setManualSwapTarget({ dayIdx, exIdx, exercise: ex });
-                                      setManualSwapQuery('');
-                                    }}
-                                    style={{
-                                      width: '28px',
-                                      height: '32px',
-                                      borderRadius: '6px',
-                                      background: 'rgba(0, 210, 255, 0.12)',
-                                      border: '1px solid rgba(0, 210, 255, 0.35)',
-                                      color: 'var(--primary)',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: '12px',
-                                    }}
-                                    title={lang === 'en' ? 'Smart Exercise Alternative Swap 🔄' : 'المبادلة الذكية للتمرين (بدائل فورية) 🔄'}
-                                  >
-                                    🔄
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={exIdx === 0}
-                                    onClick={() => moveExerciseUp(exIdx)}
-                                    style={{
-                                      width: '26px',
-                                      height: '32px',
-                                      borderRadius: '6px',
-                                      background: 'rgba(255,255,255,0.06)',
-                                      border: '1px solid rgba(255,255,255,0.1)',
-                                      color: exIdx === 0 ? 'var(--text-muted)' : 'var(--text-primary)',
-                                      cursor: exIdx === 0 ? 'not-allowed' : 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      opacity: exIdx === 0 ? 0.35 : 1,
-                                      fontSize: '11px',
-                                    }}
-                                    title={lang === 'en' ? 'Move Up' : 'تحريك للأعلى'}
-                                  >
-                                    ▲
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={exIdx >= currentDay.exercises.length - 1}
-                                    onClick={() => moveExerciseDown(exIdx)}
-                                    style={{
-                                      width: '26px',
-                                      height: '32px',
-                                      borderRadius: '6px',
-                                      background: 'rgba(255,255,255,0.06)',
-                                      border: '1px solid rgba(255,255,255,0.1)',
-                                      color: exIdx >= currentDay.exercises.length - 1 ? 'var(--text-muted)' : 'var(--text-primary)',
-                                      cursor: exIdx >= currentDay.exercises.length - 1 ? 'not-allowed' : 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      opacity: exIdx >= currentDay.exercises.length - 1 ? 0.35 : 1,
-                                      fontSize: '11px',
-                                    }}
-                                    title={lang === 'en' ? 'Move Down' : 'تحريك للأسفل'}
-                                  >
-                                    ▼
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeExercise(exIdx)}
-                                    style={{
-                                      background: 'rgba(239, 68, 68, 0.12)',
-                                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                                      color: '#ef4444',
-                                      borderRadius: '6px',
-                                      width: '28px',
-                                      height: '32px',
-                                      cursor: 'pointer',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'all 0.15s',
-                                    }}
-                                    title={lang === 'en' ? 'Delete exercise' : 'حذف هذا التمرين'}
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
+                                {/* Row 3: 1-Click Fast Reps Preset Pills */}
+                                {!isTimed && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', paddingTop: '2px' }}>
+                                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                                      ⚡ {lang === 'en' ? 'Quick Reps Preset:' : 'تكرار سريع بنقرة:'}
+                                    </span>
+                                    {[
+                                      { label: '8-10 (ضخامة عضلية)', val: '8-10' },
+                                      { label: '10-12 (توازن مثالي)', val: '10-12' },
+                                      { label: '12-15 (تحمل وضخ)', val: '12-15' },
+                                      { label: '4-6 (قوة قصوى)', val: '4-6' },
+                                      { label: '15-20 (حرق ونحت)', val: '15-20' },
+                                    ].map((preset, pIdx) => (
+                                      <button
+                                        key={pIdx}
+                                        type="button"
+                                        onClick={() => updateExercise(exIdx, 'reps', preset.val)}
+                                        style={{
+                                          background: ex.reps === preset.val ? 'rgba(0, 210, 255, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                                          border: ex.reps === preset.val ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.08)',
+                                          color: ex.reps === preset.val ? 'var(--primary)' : 'var(--text-secondary)',
+                                          borderRadius: '12px',
+                                          padding: '2px 8px',
+                                          fontSize: '10.5px',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                      >
+                                        {preset.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
-                          </div>
                         </div>
                       )}
                     </div>
