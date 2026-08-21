@@ -45,7 +45,10 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
       return;
     }
 
-    setSyncState('syncing');
+    if (_manual) {
+      setSyncState('syncing');
+    }
+
     try {
       await api.syncUserDataFromCloud();
       setLastSyncedTimestamp(Date.now());
@@ -55,7 +58,11 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
         showSyncNotification(isEn ? '⚡ Cloud data synced successfully!' : '⚡ تمت المزامنة السحابية بنجاح!');
       }
     } catch {
-      setSyncState('offline');
+      if (!navigator.onLine) {
+        setSyncState('offline');
+      } else {
+        setSyncState('synced');
+      }
     }
   };
 
@@ -109,34 +116,39 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
     setLastSyncedText(formatLastSynced(lastSyncedTimestamp));
     const interval = setInterval(() => {
       setLastSyncedText(formatLastSynced(lastSyncedTimestamp));
-    }, 15000);
+    }, 30000);
 
     // 2. Network connection change listeners
     const handleOnline = () => {
-      setSyncState('syncing');
-      triggerSmartSync();
+      triggerSmartSync(false);
     };
     const handleOffline = () => {
       setSyncState('offline');
     };
 
-    // 3. Tab focus / Phone Unlock visibility listeners (The Golden Smart Sync)
+    // 3. Silent Tab focus / Phone Unlock visibility listeners (10-minute throttle)
     let lastFocusSync = Date.now();
     const handleFocusOrVisible = () => {
       if (document.visibilityState === 'visible' || document.hasFocus()) {
         const now = Date.now();
-        // Throttle sync to at most once per 6 seconds
-        if (now - lastFocusSync > 6000) {
+        // Throttle sync to at most once per 10 minutes (600,000 ms)
+        if (now - lastFocusSync > 10 * 60 * 1000) {
           lastFocusSync = now;
-          triggerSmartSync();
+          triggerSmartSync(false);
         }
       }
+    };
+
+    const handleLocalSyncEvent = () => {
+      setLastSyncedTimestamp(Date.now());
+      setSyncState('synced');
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('focus', handleFocusOrVisible);
     document.addEventListener('visibilitychange', handleFocusOrVisible);
+    window.addEventListener('beast_cloud_synced', handleLocalSyncEvent);
 
     return () => {
       clearInterval(interval);
@@ -144,6 +156,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('focus', handleFocusOrVisible);
       document.removeEventListener('visibilitychange', handleFocusOrVisible);
+      window.removeEventListener('beast_cloud_synced', handleLocalSyncEvent);
     };
   }, [lastSyncedTimestamp, isEn]);
 
