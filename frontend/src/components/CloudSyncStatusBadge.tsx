@@ -157,7 +157,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
         title={isEn ? `Cloud Sync: ${lastSyncedText}` : `المزامنة السحابية: ${lastSyncedText}`}
         className="secondary-btn flex-center"
         style={{
-          padding: '5px 9px',
+          padding: '5px 8px',
           fontSize: '11px',
           borderRadius: '10px',
           gap: '5px',
@@ -178,6 +178,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
             : 'var(--primary)',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          whiteSpace: 'nowrap',
         }}
       >
         {syncState === 'syncing' ? (
@@ -189,11 +190,18 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
         )}
         <span style={{ fontWeight: '700' }}>
           {syncState === 'syncing' 
-            ? (isEn ? 'Syncing...' : 'جاري المزامنة') 
+            ? (isEn ? 'Syncing' : 'مزامنة') 
             : syncState === 'offline' 
             ? (isEn ? 'Offline' : 'أوفلاين') 
             : (isEn ? 'Synced' : 'سحابي')}
         </span>
+        <span style={{
+          width: '6px',
+          height: '6px',
+          borderRadius: '50%',
+          background: syncState === 'offline' ? '#ef4444' : syncState === 'syncing' ? '#f59e0b' : '#10b981',
+          boxShadow: syncState === 'synced' ? '0 0 6px #10b981' : 'none',
+        }} />
       </button>
 
       {/* FLOATING TOAST NOTIFICATION */}
@@ -228,23 +236,32 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
         <>
           <div 
             onClick={() => setShowTooltip(false)} 
-            style={{ position: 'fixed', inset: 0, zIndex: 9998 }} 
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
+              zIndex: 99998,
+            }} 
           />
           <div
             className="glass-panel animated-fade"
             style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              right: isEn ? 0 : 'auto',
-              left: isEn ? 'auto' : 0,
-              minWidth: '260px',
-              maxWidth: '320px',
-              padding: '12px 14px',
-              borderRadius: '14px',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
-              backgroundColor: 'var(--bg-card, #111827)',
-              zIndex: 9999,
+              position: 'fixed',
+              top: '65px',
+              right: '16px',
+              left: '16px',
+              maxWidth: '340px',
+              margin: '0 auto',
+              padding: '14px 16px',
+              borderRadius: '16px',
+              border: '1px solid var(--primary)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.8), 0 0 25px var(--primary-glow)',
+              backgroundColor: 'rgba(11, 15, 28, 0.98)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              zIndex: 99999,
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',
