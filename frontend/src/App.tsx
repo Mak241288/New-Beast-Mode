@@ -19,6 +19,7 @@ import { cacheStore } from './utils/cacheStore';
 import { CloudSyncStatusBadge } from './components/CloudSyncStatusBadge';
 import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
 import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
+import { FloatingSpeedDial } from './components/FloatingSpeedDial';
 
 import './App.css';
 
@@ -530,9 +531,10 @@ function App() {
         )}
       </main>
 
-      {/* GLOBAL WORKOUT SESSION PLAYER & FLOATING MINI-BAR */}
+      {/* GLOBAL WORKOUT SESSION PLAYER, MINI-BAR & SPEED DIAL */}
       <GlobalWorkoutPlayer lang={lang} />
       <FloatingWorkoutBar lang={lang} />
+      <FloatingSpeedDial lang={lang} />
     </div>
   );
 }

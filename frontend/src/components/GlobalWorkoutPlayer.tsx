@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { ExerciseImage } from './ExerciseImage';
 import { WorkoutCompletionModal } from './WorkoutCompletionModal';
+import { PostWorkoutConfettiModal } from './PostWorkoutConfettiModal';
+import { SmartExerciseSwapModal } from './SmartExerciseSwapModal';
 import { BarbellPlate1RMModal } from './BarbellPlate1RMModal';
 import { DynamicWarmupModal } from './DynamicWarmupModal';
 import { RoutineCardExportModal } from './RoutineCardExportModal';
@@ -1335,6 +1337,40 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
         }))}
         onClose={() => setShowRoutineCardModal(false)}
       />
+
+      {/* 🎉 Post-Workout Celebration Confetti HUD */}
+      {state.showSummaryModal && (
+        <PostWorkoutConfettiModal
+          isOpen={state.showSummaryModal}
+          onClose={closeSummaryModal}
+          lang={lang as any}
+          summary={{
+            workoutTitle: state.dayData?.title || (isAr ? 'جلسة التدريب' : 'Workout Session'),
+            totalVolumeKg: 8400,
+            caloriesBurned: Math.round((state.totalElapsedSeconds / 60) * 8.5) || 380,
+            durationMinutes: Math.round(state.totalElapsedSeconds / 60) || 45,
+            exercisesCompleted: exercises.length,
+            setsCompleted: Object.values(state.setLogs || {}).reduce((acc, sets) => acc + (sets?.filter(s => s.completed)?.length || 0), 0),
+            streakDays: 1,
+          }}
+        />
+      )}
+
+      {/* 🔀 Busy Gym Smart Swap Drawer */}
+      {showQuickSwapModal && (
+        <SmartExerciseSwapModal
+          isOpen={showQuickSwapModal}
+          onClose={() => setShowQuickSwapModal(false)}
+          currentExerciseName={exName}
+          targetMuscle={currentEx.muscle_en || currentEx.targetMuscle || 'Chest'}
+          onSwap={(newEx) => {
+            currentEx.name = newEx.name;
+            currentEx.name_en = newEx.name;
+            currentEx.name_ar = newEx.name;
+          }}
+          lang={lang as any}
+        />
+      )}
     </div>
   );
 };

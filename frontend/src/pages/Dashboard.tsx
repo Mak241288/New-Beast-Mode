@@ -15,6 +15,7 @@ import { calculateNutrition } from '../utils/nutritionCalculator';
 import { playTimerSound, type SoundPack } from '../utils/audioSynthesizer';
 import { cacheStore } from '../utils/cacheStore';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -523,8 +524,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       )}
 
       {loading && !regenerating && (
-        <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>
-          {lang === 'en' ? 'Loading your fitness dashboard...' : 'جاري تحميل لوحتك الرئيسية...'}
+        <div style={{ padding: '20px 0' }}>
+          <SkeletonLoader type="card" count={3} />
         </div>
       )}
 

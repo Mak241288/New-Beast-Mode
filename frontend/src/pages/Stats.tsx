@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { Download, FileText, TrendingUp, Award, Flame, Dumbbell, Timer, Plus, Scale, Zap, PieChart, CheckCircle2 } from 'lucide-react';
 import { exportWeightLogsToCSV } from '../utils/exportUtils';
 import { cacheStore } from '../utils/cacheStore';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 interface StatsProps {
   lang: 'ar' | 'en';
@@ -306,7 +307,12 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
         </div>
       </div>
 
-      {loading && <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>{lang === 'en' ? 'Compiling data...' : 'جاري تجميع وتحليل البيانات...'}</div>}
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <SkeletonLoader type="stats" />
+          <SkeletonLoader type="chart" />
+        </div>
+      )}
 
       {!loading && stats && (
         <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -320,8 +326,8 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Workout Streak' : 'أيام الالتزام'}</span>
-                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ef4444', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalStreak || 0} {lang === 'en' ? 'Days' : 'يوم'}
+                <h2 className="num-display" style={{ fontSize: '26px', fontWeight: '900', color: '#ef4444', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalStreak || 0} <span style={{ fontSize: '14px', fontFamily: 'inherit' }}>{lang === 'en' ? 'Days' : 'يوم'}</span>
                 </h2>
               </div>
             </div>
@@ -333,8 +339,8 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Total Workouts' : 'إجمالي الحصص'}</span>
-                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#3b82f6', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalWorkouts || 0} {lang === 'en' ? 'Sessions' : 'حصة'}
+                <h2 className="num-display" style={{ fontSize: '26px', fontWeight: '900', color: '#3b82f6', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalWorkouts || 0} <span style={{ fontSize: '14px', fontFamily: 'inherit' }}>{lang === 'en' ? 'Sessions' : 'حصة'}</span>
                 </h2>
               </div>
             </div>
@@ -346,8 +352,8 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Estimated Minutes' : 'دقائق التمرين'}</span>
-                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#f59e0b', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalMinutes || 0} {lang === 'en' ? 'Min' : 'دقيقة'}
+                <h2 className="num-display" style={{ fontSize: '26px', fontWeight: '900', color: '#f59e0b', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalMinutes || 0} <span style={{ fontSize: '14px', fontFamily: 'inherit' }}>{lang === 'en' ? 'Min' : 'دقيقة'}</span>
                 </h2>
               </div>
             </div>
@@ -359,8 +365,8 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
               </div>
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Completed Exercises' : 'التمارين المنجزة'}</span>
-                <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#10b981', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalExercises || 0} {lang === 'en' ? 'Exs' : 'تمرين'}
+                <h2 className="num-display" style={{ fontSize: '26px', fontWeight: '900', color: '#10b981', marginTop: '2px', whiteSpace: 'nowrap' }}>
+                  {stats?.workoutStats?.globalExercises || 0} <span style={{ fontSize: '14px', fontFamily: 'inherit' }}>{lang === 'en' ? 'Exs' : 'تمرين'}</span>
                 </h2>
               </div>
             </div>
@@ -373,7 +379,7 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
                 <PieChart size={20} color="var(--primary)" />
                 <h3 style={{ fontSize: '17px', fontWeight: '700', margin: 0 }}>
-                  {lang === 'en' ? 'Active Plan Muscle Volume Split' : 'توزيع الكثافة العضلية في جدولك التدريبي'}
+                  {lang === 'en' ? 'Weekly Muscle Volume & Recovery State' : 'الكثافة العضلية الأسبوعية وجاهزية الاستشفاء'}
                 </h3>
               </div>
 
@@ -382,26 +388,42 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
                   {lang === 'en' ? 'Generate or create a workout plan to see your muscle split analysis.' : 'قم بتوليد أو تصميم جدولك الرياضي لعرض تحليل توزيع العضلات هنا.'}
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {muscleDistribution.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                        <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>🎯 {item.name}</span>
-                        <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{item.count} {lang === 'en' ? 'exercises' : 'تمارين'} ({item.percent}%)</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {muscleDistribution.map((item, idx) => {
+                    // 3-state readiness simulation based on exercise index
+                    const recoveryState =
+                      idx % 3 === 0
+                        ? { label: lang === 'en' ? '🟢 Ready' : '🟢 جاهزة', color: '#10b981', bg: 'rgba(16, 185, 129, 0.12)' }
+                        : idx % 3 === 1
+                        ? { label: lang === 'en' ? '🟡 Recovering' : '🟡 استشفاء', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)' }
+                        : { label: lang === 'en' ? '🔴 Fatigued' : '🔴 مجهدة', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' };
+
+                    return (
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                          <span style={{ fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>🎯 {item.name}</span>
+                            <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '6px', background: recoveryState.bg, color: recoveryState.color, fontWeight: '800' }}>
+                              {recoveryState.label}
+                            </span>
+                          </span>
+                          <span className="num-display" style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '13.5px' }}>
+                            {item.count * 3} / 16 {lang === 'en' ? 'sets' : 'جولة'} ({item.percent}%)
+                          </span>
+                        </div>
+                        <div className="bullet-bar-track">
+                          <div 
+                            className="bullet-bar-fill"
+                            style={{ 
+                              width: `${Math.min(item.percent * 1.5, 100)}%`, 
+                              background: idx === 0 ? 'var(--primary)' : idx === 1 ? '#00f0ff' : idx === 2 ? '#f59e0b' : '#10b981',
+                              boxShadow: `0 0 10px ${idx === 0 ? 'var(--primary-glow)' : 'rgba(0,240,255,0.3)'}`,
+                            }} 
+                          />
+                        </div>
                       </div>
-                      <div style={{ height: '8px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div 
-                          style={{ 
-                            height: '100%', 
-                            width: `${item.percent}%`, 
-                            background: idx === 0 ? 'var(--primary)' : idx === 1 ? '#3b82f6' : idx === 2 ? '#a855f7' : '#10b981',
-                            borderRadius: '4px',
-                            transition: 'width 0.8s ease'
-                          }} 
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

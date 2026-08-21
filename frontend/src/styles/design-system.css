@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&family=Outfit:wght@300;400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;600;700&family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;600;700;800&display=swap');
 
 /* --- DESIGN SYSTEM VARIABLES --- */
 :root {
   /* Common variables */
   --font-arabic: 'Cairo', sans-serif;
   --font-english: 'Outfit', sans-serif;
+  --font-numbers: 'Barlow Condensed', 'Outfit', sans-serif;
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-medium: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -877,5 +878,90 @@ body[dir='rtl'] .routine-exercise-card:hover {
   }
 }
 
+/* --- UI/UX PRO MAX UTILITY STYLES --- */
+/* Athletic Numeric Display */
+.num-display {
+  font-family: var(--font-numbers);
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
 
+/* Large Gym-Floor Touch Target */
+.touch-target-lg {
+  min-height: 52px;
+  min-width: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
 
+/* Skeleton Shimmer Loading Effect */
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.8s infinite ease-in-out;
+  border-radius: 8px;
+}
+
+.skeleton-card {
+  height: 110px;
+  width: 100%;
+  border-radius: 16px;
+}
+
+.skeleton-text {
+  height: 16px;
+  width: 60%;
+  margin-bottom: 8px;
+}
+
+/* Volume & Target Bullet Bar */
+.bullet-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bullet-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Floating Action Speed Dial */
+.speed-dial-fab {
+  position: fixed;
+  bottom: 95px;
+  z-index: 9990;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[dir="rtl"] .speed-dial-fab {
+  left: 20px;
+}
+
+html[dir="ltr"] .speed-dial-fab {
+  right: 20px;
+}

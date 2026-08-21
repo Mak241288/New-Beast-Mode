@@ -75,24 +75,55 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
       >
         <div
           style={{
-            width: '42px',
-            height: '42px',
+            width: '44px',
+            height: '44px',
             borderRadius: '12px',
             background: state.isResting
-              ? 'rgba(245, 158, 11, 0.2)'
-              : 'rgba(0, 210, 255, 0.2)',
+              ? 'rgba(245, 158, 11, 0.15)'
+              : 'rgba(204, 255, 0, 0.12)',
             color: state.isResting ? '#f59e0b' : 'var(--primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '18px',
+            position: 'relative',
             boxShadow: state.isResting
-              ? '0 0 15px rgba(245, 158, 11, 0.4)'
-              : '0 0 15px rgba(0, 210, 255, 0.4)',
-            animation: state.isResting ? 'pulse 2s infinite' : 'none',
+              ? '0 0 15px rgba(245, 158, 11, 0.35)'
+              : '0 0 15px var(--primary-glow)',
           }}
         >
-          {state.isResting ? <Timer size={20} /> : <Activity size={20} />}
+          {state.isResting ? (
+            <>
+              <svg width="40" height="40" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="20" cy="20" r="15" stroke="rgba(255,255,255,0.08)" strokeWidth="3" fill="none" />
+                <circle
+                  cx="20"
+                  cy="20"
+                  r="15"
+                  stroke={state.restRemainingSeconds <= 5 ? '#ef4444' : '#f59e0b'}
+                  strokeWidth="3"
+                  strokeDasharray={2 * Math.PI * 15}
+                  strokeDashoffset={2 * Math.PI * 15 * (1 - Math.max(0, Math.min(state.restRemainingSeconds / Math.max(state.restTotalDuration || 60, 1), 1)))}
+                  strokeLinecap="round"
+                  fill="none"
+                  style={{ transition: 'stroke-dashoffset 0.35s ease' }}
+                />
+              </svg>
+              <span
+                className="num-display"
+                style={{
+                  position: 'absolute',
+                  fontSize: '11px',
+                  fontWeight: '900',
+                  color: '#fff',
+                  lineHeight: 1,
+                }}
+              >
+                {state.restRemainingSeconds}
+              </span>
+            </>
+          ) : (
+            <Activity size={20} />
+          )}
         </div>
 
         <div>
@@ -101,8 +132,9 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
               {exName}
             </span>
             <span
+              className="num-display"
               style={{
-                fontSize: '10.5px',
+                fontSize: '11px',
                 padding: '2px 8px',
                 borderRadius: '6px',
                 background: 'rgba(255, 255, 255, 0.1)',
@@ -118,13 +150,15 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
             {state.isResting ? (
               <span style={{ color: '#f59e0b', fontSize: '12.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>⏳ {isAr ? 'فترة راحة:' : 'Resting:'}</span>
-                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatTime(state.restRemainingSeconds)}</span>
+                <Timer size={13} />
+                <span>{isAr ? 'فترة راحة:' : 'Resting:'}</span>
+                <span className="num-display" style={{ fontSize: '14px', fontWeight: '800' }}>{formatTime(state.restRemainingSeconds)}</span>
               </span>
             ) : (
               <span style={{ color: 'var(--primary)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>⏱️ {isAr ? 'الوقت المنقضي:' : 'Elapsed:'}</span>
-                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatTime(state.totalElapsedSeconds)}</span>
+                <Timer size={13} />
+                <span>{isAr ? 'الوقت المنقضي:' : 'Elapsed:'}</span>
+                <span className="num-display" style={{ fontSize: '13.5px', fontWeight: '800' }}>{formatTime(state.totalElapsedSeconds)}</span>
                 {state.isPaused && <span style={{ color: '#f87171', fontWeight: 'bold' }}>({isAr ? 'مؤقت' : 'Paused'})</span>}
               </span>
             )}
