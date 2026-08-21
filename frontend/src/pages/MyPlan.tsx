@@ -11,7 +11,7 @@ import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
 import { DynamicWarmupModal } from '../components/DynamicWarmupModal';
 import type { PresetPlan } from '../utils/presetWorkoutPlans';
 import { cacheStore } from '../utils/cacheStore';
-import { exportWorkoutPlanToCSV, triggerPrint } from '../utils/exportUtils';
+import { exportWorkoutPlanToCSV } from '../utils/exportUtils';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
 
 interface MyPlanProps {
@@ -509,6 +509,19 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       return;
     }
     startSession(dw);
+  };
+
+  const handlePrintWorkoutPlan = () => {
+    if (activePlan?.dayWorkouts) {
+      const allOpen: Record<number, boolean> = {};
+      activePlan.dayWorkouts.forEach((dw: any) => {
+        allOpen[dw.dayIndex] = true;
+      });
+      setExpandedDays(allOpen);
+    }
+    setTimeout(() => {
+      window.print();
+    }, 150);
   };
 
   useEffect(() => {
@@ -1134,7 +1147,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   <span>WhatsApp 📲</span>
                 </button>
                 <button
-                  onClick={triggerPrint}
+                  onClick={handlePrintWorkoutPlan}
                   className="secondary-btn"
                   title={lang === 'en' ? 'Print Workout Plan' : 'طباعة الجدول الورقي'}
                   style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
@@ -1185,7 +1198,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               const cort = getCortisolAndCnsMetrics(dw);
 
               return (
-                <div key={dw.id} className="glass-panel" style={{ padding: '0', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                <div key={dw.id} className="glass-panel day-workout-card" style={{ padding: '0', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
                   {/* Accordion Header */}
                   <div
                     onClick={() => toggleDayExpanded(dw.dayIndex)}
@@ -1228,7 +1241,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                       {!dw.isRestDay && (
                         <>
                           <button
@@ -1354,7 +1367,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                           {/* Day Quick Routine Protocol Toolbar */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                               <span>⚡</span>
                               <span style={{ fontWeight: 'bold' }}>{lang === 'en' ? 'Day Protocols:' : 'بروتوكولات اليوم المخصصة:'}</span>
@@ -1464,7 +1477,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                 </div>
 
                                 {/* Actions Group */}
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <div className="no-print" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                   {/* Swap Button is highly visible */}
                                   <button
                                     onClick={() => {

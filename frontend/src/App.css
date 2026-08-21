@@ -300,22 +300,51 @@ html[dir="ltr"] .main-content {
   }
 }
 
-/* Printing Style Customizations */
+/* Printing Style Customizations - Professional Crisp Athletic Print Layout */
 @media print {
+  @page {
+    margin: 12mm 15mm;
+    size: auto;
+  }
+
+  *, *::before, *::after {
+    background-color: transparent !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
   body {
     background: #ffffff !important;
     color: #000000 !important;
-    direction: rtl;
+    font-size: 12pt;
+    line-height: 1.4;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  .no-print, header, nav, button, form, .sidebar, .mobile-header, .mobile-nav {
+
+  .no-print,
+  header,
+  nav,
+  button,
+  form,
+  .sidebar,
+  .mobile-header,
+  .mobile-nav,
+  .floating-workout-bar,
+  .speed-dial-fab,
+  .theme-toggle,
+  .no-print-element {
     display: none !important;
   }
+
   .main-content {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
   }
+
   .print-area {
     width: 100% !important;
     max-width: 100% !important;
@@ -325,11 +354,54 @@ html[dir="ltr"] .main-content {
     background: none !important;
     border: none !important;
   }
+
+  /* Day workout cards */
+  .day-workout-card,
   .glass-panel {
     background: #ffffff !important;
-    border: 1px solid #ccc !important;
+    border: 1px solid #d1d5db !important;
     box-shadow: none !important;
-    color: #000 !important;
+    color: #000000 !important;
+    border-radius: 8px !important;
+    margin-bottom: 14px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Force accordion body to remain fully expanded and visible */
+  .day-accordion-body,
+  .glass-panel > div {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+  }
+
+  /* Exercise item styling in print */
+  .glass-panel .glass-panel {
+    border: 1px solid #e5e7eb !important;
+    background: #f9fafb !important;
+    padding: 10px 14px !important;
+    margin-bottom: 8px !important;
+    border-radius: 6px !important;
+  }
+
+  h1, h2, h3, h4 {
+    color: #111827 !important;
+    font-weight: 800 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  span, p, strong, td, th {
+    color: #1f2937 !important;
+  }
+
+  /* Exercise stats in print */
+  .num-display {
+    font-weight: bold !important;
+    color: #000000 !important;
   }
 }
+
 
