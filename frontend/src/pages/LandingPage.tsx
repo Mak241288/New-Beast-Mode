@@ -149,6 +149,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     return () => clearInterval(interval);
   }, [isPillarsAutoPlay]);
 
+  // Top Scroll Progress State
+  const [scrollPercent, setScrollPercent] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalHeight > 0) {
+        setScrollPercent(Math.min(100, Math.max(0, (window.scrollY / totalHeight) * 100)));
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Mini-Calculator 1: Quick TDEE & Macro State
   const [tdeeWeight, setTdeeWeight] = useState<number>(75);
   const [tdeeHeight, setTdeeHeight] = useState<number>(178);
@@ -376,6 +390,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       
+      {/* TOP SCROLL PROGRESS BAR */}
+      <div className="top-scroll-progress" style={{ width: `${scrollPercent}%` }} />
+
       {/* NAVIGATION BAR */}
       <header className="glass-panel landing-header">
         <div className="landing-logo">
@@ -413,7 +430,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           <button
             onClick={onGetStarted}
-            className="glow-btn"
+            className="glow-btn shimmer-glow"
             style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '8px', whiteSpace: 'nowrap' }}
           >
             {isEn ? 'Get Started ⚡' : 'ابدأ مجاناً ⚡'}
@@ -501,7 +518,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
           <button
             onClick={onGetStarted}
-            className="glow-btn"
+            className="glow-btn shimmer-glow"
             style={{ padding: '16px 36px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px', borderRadius: '12px', fontWeight: '800' }}
           >
             <span>{isEn ? 'Build My Plan in 60s ⏱️⚡' : 'صمم خطتك المخصصة في 60 ثانية ⏱️⚡'}</span>
@@ -1265,7 +1282,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           return (
             <div
-              className="glass-panel"
+              className="glass-panel ambient-breathing"
               onMouseEnter={() => setIsPillarsAutoPlay(false)}
               onMouseLeave={() => setIsPillarsAutoPlay(true)}
               style={{

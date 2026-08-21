@@ -890,10 +890,14 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             {/* Rest Timer Overlay Banner if Resting */}
             {state.isResting && (
               <div
-                className="animated-fade"
+                className={`animated-fade ${state.restRemainingSeconds <= 5 && state.restRemainingSeconds > 0 ? 'timer-critical-pulse' : ''}`}
                 style={{
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.08))',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  background: state.restRemainingSeconds <= 5 && state.restRemainingSeconds > 0
+                    ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(185, 28, 28, 0.15))'
+                    : 'linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.08))',
+                  border: state.restRemainingSeconds <= 5 && state.restRemainingSeconds > 0
+                    ? '1px solid rgba(239, 68, 68, 0.7)'
+                    : '1px solid rgba(245, 158, 11, 0.4)',
                   borderRadius: '16px',
                   padding: '14px 18px',
                   display: 'flex',
@@ -902,6 +906,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                   flexWrap: 'wrap',
                   gap: '12px',
                   boxShadow: '0 8px 24px rgba(245, 158, 11, 0.15)',
+                  transition: 'all 0.3s ease',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
