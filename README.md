@@ -149,6 +149,6 @@ npm run dev
 
 ---
 
-## 📄 الترخيص | License
+## 🔒 الحقوق والملكية | Copyright
 
-هذا المشروع مطور ومحمي تحت رخصة **MIT License**. جميع الحقوق محفوظة لـ **BeastMode AI Ecosystem © 2026**.
+جميع الحقوق محفوظة لـ **BeastMode AI Ecosystem © 2026**. All Rights Reserved.
