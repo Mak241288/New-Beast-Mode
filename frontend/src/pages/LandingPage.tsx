@@ -115,6 +115,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [sloganIndex, setSloganIndex] = useState(0);
   const [sloganFade, setSloganFade] = useState(true);
 
+  // Steps & Pillars Carousels State
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  const [isStepsAutoPlay, setIsStepsAutoPlay] = useState(true);
+
+  const [activePillarIndex, setActivePillarIndex] = useState(0);
+  const [isPillarsAutoPlay, setIsPillarsAutoPlay] = useState(true);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setSloganFade(false);
@@ -125,6 +132,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }, 2800);
     return () => clearInterval(timer);
   }, [lang]);
+
+  useEffect(() => {
+    if (!isStepsAutoPlay) return;
+    const interval = setInterval(() => {
+      setActiveStepIndex((prev) => (prev + 1) % 3);
+    }, 4200);
+    return () => clearInterval(interval);
+  }, [isStepsAutoPlay]);
+
+  useEffect(() => {
+    if (!isPillarsAutoPlay) return;
+    const interval = setInterval(() => {
+      setActivePillarIndex((prev) => (prev + 1) % 10);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [isPillarsAutoPlay]);
 
   // Mini-Calculator 1: Quick TDEE & Macro State
   const [tdeeWeight, setTdeeWeight] = useState<number>(75);
@@ -401,27 +424,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* HERO SECTION WITH LUXURY KINETIC TYPOGRAPHY */}
       <section
         style={{
-          padding: '80px 20px 40px',
+          padding: '70px 20px 40px',
           maxWidth: '1200px',
           margin: '0 auto',
           textAlign: 'center',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '22px',
+          gap: '20px',
           position: 'relative',
           borderRadius: '32px',
-          backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(0, 210, 255, 0.12), rgba(6, 8, 20, 0.96)), url("/assets/beastmode_hero_bg.jpg")',
+          backgroundImage: 'linear-gradient(180deg, rgba(6, 10, 24, 0.94) 0%, rgba(4, 7, 18, 0.98) 100%), url("/assets/beastmode_hero_bg.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          boxShadow: '0 20px 80px rgba(0, 0, 0, 0.6)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: '0 20px 80px rgba(0, 0, 0, 0.8)',
+          border: '1px solid rgba(0, 210, 255, 0.2)',
           marginTop: '15px'
         }}
       >
         
         {/* Elite Badge */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 18px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', fontSize: '13px', color: 'var(--primary)', fontWeight: 'bold', boxShadow: '0 0 25px rgba(16, 185, 129, 0.15)', backdropFilter: 'blur(8px)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.16)', border: '1px solid rgba(16, 185, 129, 0.45)', fontSize: '13px', color: '#fff', fontWeight: 'bold', boxShadow: '0 0 25px rgba(16, 185, 129, 0.2)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
           <Crown size={16} color="#f59e0b" />
           <span>{isEn ? 'The All-in-One AI Fitness & Bodybuilding Ecosystem' : 'المنظومة الرياضية الشاملة للياقة البدنية، التغذية، وأساطير كمال الأجسام'}</span>
         </div>
@@ -441,12 +464,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               transition: 'all 0.26s ease-in-out',
               opacity: sloganFade ? 1 : 0,
               transform: sloganFade ? 'translateY(0)' : 'translateY(8px)',
-              background: 'rgba(0, 0, 0, 0.4)',
+              background: 'rgba(0, 0, 0, 0.65)',
               padding: '6px 20px',
               borderRadius: '20px',
-              border: '1px solid rgba(0, 210, 255, 0.25)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 0 20px rgba(0, 210, 255, 0.15)'
+              border: '1px solid rgba(0, 210, 255, 0.35)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: '0 0 25px rgba(0, 210, 255, 0.2)'
             }}
           >
             <span
@@ -465,14 +489,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Hero Description */}
-        <p style={{ fontSize: 'clamp(15px, 1.8vw, 17.5px)', color: '#cbd5e1', maxWidth: '880px', lineHeight: 1.7, margin: 0, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
-          {isEn
-            ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, visualize Olympic barbell plates & 1RM, and run seamless offline gym sessions with zero latency.'
-            : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، حاكِ صفائح البار والـ 1RM، وتدرب أوفلاين في الجيم بلا انقطاع.'}
-        </p>
+        <div style={{ background: 'rgba(15, 23, 42, 0.65)', padding: '14px 24px', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', maxWidth: '900px' }}>
+          <p style={{ fontSize: 'clamp(14px, 1.8vw, 16.5px)', color: '#e2e8f0', lineHeight: 1.7, margin: 0 }}>
+            {isEn
+              ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, visualize Olympic barbell plates & 1RM, and run seamless offline gym sessions with zero latency.'
+              : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، حاكِ صفائح البار والـ 1RM، وتدرب أوفلاين في الجيم بلا انقطاع.'}
+          </p>
+        </div>
 
         {/* Hero Action Buttons */}
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '6px' }}>
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
           <button
             onClick={onGetStarted}
             className="glow-btn"
@@ -485,7 +511,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onLogin}
             className="secondary-btn"
-            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700', backdropFilter: 'blur(8px)' }}
+            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
           >
             {isEn ? 'Existing Athlete Sign In 🔑' : 'دخول الرياضيين المشتركين 🔑'}
           </button>
@@ -493,7 +519,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={() => onNavigateToLegal('about')}
             className="secondary-btn"
-            style={{ padding: '16px 22px', fontSize: '15px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '16px 22px', fontSize: '15px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
           >
             <Info size={16} />
             <span>{isEn ? 'About Platform' : 'عن المنصة ℹ️'}</span>
@@ -510,9 +536,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
+                border: '1px solid rgba(0, 210, 255, 0.4)',
                 color: 'var(--primary)',
-                background: 'rgba(16, 185, 129, 0.08)',
+                background: 'rgba(0, 210, 255, 0.12)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
               }}
             >
               <Download size={16} />
@@ -521,31 +549,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           )}
         </div>
 
-        {/* Trust Badges Strip */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '18px', marginTop: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <ShieldCheck size={16} color="var(--primary)" />
+        {/* Trust Badges Strip (Crystal-Clear Capsule Chips) */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', marginTop: '6px', fontSize: '12.5px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(0, 210, 255, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <ShieldCheck size={15} color="var(--primary)" />
             {isEn ? '100% Private & OWASP Certified' : '100% خصوصية وأمان معتمد'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Zap size={16} color="#f59e0b" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <Zap size={15} color="#f59e0b" />
             {isEn ? 'Zero Ads & Instant Access' : 'بدون إعلانات تجارية'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <WifiOff size={16} color="var(--secondary)" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(6, 182, 212, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <WifiOff size={15} color="var(--secondary)" />
             {isEn ? 'Works 100% Offline (PWA)' : 'يعمل أوفلاين في الجيم بدون نت'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Sparkles size={16} color="#ec4899" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(236, 72, 153, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+            <Sparkles size={15} color="#ec4899" />
             {isEn ? '100% Free Community Edition' : 'مجاني بالكامل للمجتمع الرياضي'}
           </span>
         </div>
 
         {/* Interactive App Mockup Showcase */}
-        <div className="glass-panel" style={{ width: '100%', maxWidth: '1080px', marginTop: '30px', padding: '24px', borderRadius: '24px', border: '1px solid rgba(16, 185, 129, 0.3)', boxShadow: '0 20px 50px rgba(0,0,0,0.4)', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.04), rgba(15, 23, 42, 0.6))' }}>
+        <div className="glass-panel" style={{ width: '100%', maxWidth: '1080px', marginTop: '20px', padding: '22px', borderRadius: '24px', border: '1px solid rgba(0, 210, 255, 0.35)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', background: 'linear-gradient(180deg, rgba(13, 19, 36, 0.85), rgba(8, 12, 24, 0.95))' }}>
           
           {/* Tab Switcher */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '16px' }}>
             {[
               { id: 'player', labelEn: '⏱️ Workout Player & Timer', labelAr: '⏱️ مشغل الحصة ومؤقت الراحة' },
               { id: 'scanner', labelEn: '🤖 AI Physique Scanner', labelAr: '🤖 ماسح التحول بالذكاء الاصطناعي' },
@@ -563,8 +591,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             ))}
           </div>
 
-          {/* Active Preview Content */}
-          <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          {/* Active Preview Content with STABLE MIN-HEIGHT (Zero container jumps) */}
+          <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             
             {activePreviewTab === 'player' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
@@ -920,176 +948,424 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       </section>
 
-      {/* HOW IT WORKS (3-STEP PIPELINE) */}
+      {/* HOW IT WORKS (3-STEP PIPELINE INTERACTIVE CAROUSEL) */}
       <section style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: '900', margin: 0 }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', margin: 0, color: '#fff' }}>
             {isEn ? 'How BeastMode Powers Your Complete Transformation' : 'كيف يقودك BeastMode نحو أعلى مستويات القوة واللياقة؟'}
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px', maxWidth: '750px', margin: '8px auto 0' }}>
             {isEn ? 'A seamless 3-step scientific cycle designed for progressive overload, nutrition mastery, and full recovery.' : 'منظومة تدريبية وتغذوية متكاملة من 3 خطوات تضمن تطور عضلاتك واستشفائك بلا توقف.'}
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-          {steps.map((step, idx) => (
-            <div key={idx} className="glass-panel" style={{ padding: '30px', display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontSize: '28px', fontWeight: '900', color: idx === 0 ? 'var(--primary)' : idx === 1 ? 'var(--secondary)' : '#f59e0b', opacity: 0.8 }}>
-                {step.num}
+        {/* Step Selector Pills */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+          {steps.map((step, idx) => {
+            const isActive = activeStepIndex === idx;
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => {
+                  setActiveStepIndex(idx);
+                  setIsStepsAutoPlay(false);
+                }}
+                style={{
+                  padding: '14px 12px',
+                  borderRadius: '14px',
+                  border: isActive ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
+                  background: isActive ? 'rgba(0, 210, 255, 0.15)' : 'rgba(15, 23, 42, 0.6)',
+                  color: isActive ? '#fff' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.25s ease',
+                  boxShadow: isActive ? '0 0 25px rgba(0, 210, 255, 0.2)' : 'none',
+                }}
+              >
+                <span style={{ fontSize: '18px', fontWeight: '900', color: isActive ? 'var(--primary)' : 'var(--text-muted)' }}>
+                  {step.num}
+                </span>
+                <span style={{ fontSize: '13px', fontWeight: '700' }}>
+                  {step.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active Step Showcase Card */}
+        <div
+          className="glass-panel"
+          onMouseEnter={() => setIsStepsAutoPlay(false)}
+          onMouseLeave={() => setIsStepsAutoPlay(true)}
+          style={{
+            padding: '36px 30px',
+            borderRadius: '24px',
+            border: '1px solid rgba(0, 210, 255, 0.35)',
+            background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.95), rgba(6, 10, 22, 0.98))',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            position: 'relative',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 210, 255, 0.1)',
+            minHeight: '180px',
+            justifyContent: 'center',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(0, 210, 255, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '900' }}>
+                {steps[activeStepIndex].num}
               </div>
-              <h3 style={{ fontSize: '17px', fontWeight: '800', margin: 0 }}>{step.title}</h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                {step.desc}
-              </p>
+              <div>
+                <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  {isEn ? `STEP ${activeStepIndex + 1} OF 3` : `الخطوة ${activeStepIndex + 1} من 3`}
+                </span>
+                <h3 style={{ fontSize: '20px', fontWeight: '900', margin: '2px 0 0', color: '#fff' }}>
+                  {steps[activeStepIndex].title}
+                </h3>
+              </div>
             </div>
-          ))}
+
+            {/* Step Carousel Navigation Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveStepIndex((prev) => (prev === 0 ? steps.length - 1 : prev - 1));
+                  setIsStepsAutoPlay(false);
+                }}
+                className="secondary-btn"
+                style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                title={isEn ? 'Previous Step' : 'الخطوة السابقة'}
+              >
+                {isEn ? '◀' : '▶'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveStepIndex((prev) => (prev + 1) % steps.length);
+                  setIsStepsAutoPlay(false);
+                }}
+                className="secondary-btn"
+                style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                title={isEn ? 'Next Step' : 'الخطوة التالية'}
+              >
+                {isEn ? '▶' : '◀'}
+              </button>
+            </div>
+          </div>
+
+          <p style={{ fontSize: '15px', color: '#cbd5e1', lineHeight: 1.75, margin: 0 }}>
+            {steps[activeStepIndex].desc}
+          </p>
+
+          {/* Dots Indicator */}
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '6px' }}>
+            {steps.map((_, dotIdx) => (
+              <span
+                key={dotIdx}
+                onClick={() => {
+                  setActiveStepIndex(dotIdx);
+                  setIsStepsAutoPlay(false);
+                }}
+                style={{
+                  width: activeStepIndex === dotIdx ? '28px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  background: activeStepIndex === dotIdx ? 'var(--primary)' : 'rgba(255,255,255,0.2)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              />
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* CORE CAPABILITIES GRID */}
+      {/* CORE CAPABILITIES (10 ELITE PILLARS INTERACTIVE LAYERED CAROUSEL) */}
       <section style={{ padding: '60px 20px', maxWidth: '1150px', margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: '900', margin: 0 }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 16px', borderRadius: '20px', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.35)', color: '#c084fc', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '10px' }}>
+            <Sparkles size={14} />
+            <span>{isEn ? 'Complete Ecosystem' : 'المنظومة الاحترافية الشاملة'}</span>
+          </div>
+          <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', margin: 0, color: '#fff' }}>
             {isEn ? '10 Elite Pillars Engineered For Total Athletic Dominance' : '10 ركائز احترافية صُنعت خصيصاً لتحقيق أقصى بناء بدني واستشفاء'}
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px', maxWidth: '800px', margin: '8px auto 0' }}>
             {isEn ? 'Everything you need: workouts, nutrition, AI physique scanning, recovery, offline gym access, and Google integration.' : 'كل ما يحتاجه الرياضي العصري: الجداول، الماكروز، فحص التحول بالذكاء الاصطناعي، تتبع النوم والماء، والعمل بدون إنترنت.'}
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-          
-          {/* Card 1: Smart Nutrition & Macro Coach */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.3)', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Utensils size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Smart Nutrition & Macro Coach' : 'مدرب التغذية والماكروز وتدوير السعرات'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Scientific BMR & TDEE calculation (Mifflin-St Jeor) with Workout vs Rest Day macro cycling (+6% cals & carbs on lift days, -6% cals on recovery days), meal timing, and clean foods reference.'
-                : 'حساب علمي للسعرات والـ TDEE مع تدوير الماكروز (أيام التمرين كربوهيدرات وسعرات أعلى لشحن العضلات، وأيام الراحة دهون صحية للاستشفاء) ودليل الأغذية النظيفة.'}
-            </p>
-          </div>
-
-          {/* Card 2: AI Physique Scanner & Transformation Gallery */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(236, 72, 153, 0.3)', background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05), transparent)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Brain size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'AI Physique Scanner & Progress Gallery' : 'ماسح التحول والتناسق العضلي بالذكاء الاصطناعي'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Automated biomechanical scan of your transformation photos: estimates body fat %, scores muscle definition (1-100), evaluates V-taper symmetry, and suggests targeted hypertrophy adjustments.'
-                : 'فحص بيوميكانيكي لصور تطورك البدني: تقدير نسبة الدهون، حساب مؤشر البروز العضلي (من 100)، تقييم تناسق الظهر والخصر، واقتراح العضلات المستهدفة للجدول القادم.'}
-            </p>
-          </div>
-
-          {/* Card 3: Barbell Plate & 1RM Calculator */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(245, 158, 11, 0.3)', background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), transparent)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Percent size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Olympic Barbell Plate & 1RM Simulator' : 'محاكي صفائح البار وحاسبة الـ 1RM'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Visual Olympic barbell plate loader (20kg/15kg bar with colored 25/20/15/10/5/2.5/1.25kg plates) plus 1RM Epley/Brzycki calculation and full percentage working set tables.'
-                : 'محاكي بصري ملون لصفائح البار الأولمبي وحساب الأوزان الدقيقة لكل جهة، مع حاسبة أقصى تكرار (1RM) وجدول النسب المئوية لجولات التضخيم والقوة.'}
-            </p>
-          </div>
-
-          {/* Card 4: Recovery Tracker & Gamification Badges */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(6, 182, 212, 0.3)', background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.05), transparent)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Droplets size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Recovery, Hydration & Streak Badges' : 'مركز الاستشفاء وشرب الماء وأوسمة الإنجاز'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? '1-tap water logger, sleep hours and quality tracking for MPS recovery, and motivational unlockable badges for consistency streaks (3, 7, 14, 30 days).'
-                : 'عداد سريع لشرب الماء بنقرة زر، متتبع ساعات وجودة النوم لتعزيز هرمون النمو، وشارات وأوسمة تحفيزية متصلة بأيام الالتزام والاستمرارية.'}
-            </p>
-          </div>
-
-          {/* Card 5: Legendary Pro Plans */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Crown size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Curated Legendary & Pro Splits' : 'مكتبة خطط الأساطير والمدربين المعتمدين'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Directly apply certified workout routines: Arnold Schwarzenegger Golden Blueprint, Jeff Nippard Science PPL, Dorian Yates HIT, and muscle focus routines.'
-                : 'طبّق برامج أساطير كمال الأجسام بضغطة زر: جدول آرنولد شوارزنيجر الذهبي، نظام جيف نيبارد العلمي PPL، كثافة دوريان ييتس، وبرامج التركيز العضلي.'}
-            </p>
-          </div>
-
-          {/* Card 6: Multi-Plan Management Hub */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Layers size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Multi-Plan Management Hub' : 'إدارة وتصميم الجداول المتعددة'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Create and keep multiple routines (Gym, Home, Travel) with 1 primary active routine. Duplicate, rename, edit, and switch active plans effortlessly.'
-                : 'احتفظ بعدة جداول في حسابك (جدول النادي، المنزل، السفر) مع تعيين جدول أساسي نشط. يمكنك نسخ الجداول وتعديلها والتبديل بينها فورياً.'}
-            </p>
-          </div>
-
-          {/* Card 7: Intelligent Equipment & Bench Adaptation */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Zap size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Intelligent Equipment & Bench Adaptation' : 'التكييف الذكي للأدوات ومقعد التمرين'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'No workout bench? The AI automatically converts chest routines to Floor Dumbbell Press, Floor Flyes, and push-up progressions without requiring a bench.'
-                : 'لا تملك كرسي تدريب (بنش)؟ يقوم النظام تلقائياً بتكييف تمارين الصدر لتعتمد على الضغط الأرضي (Floor Press) والوزن الحر بأمان تام.'}
-            </p>
-          </div>
-
-          {/* Card 8: Interactive Anatomy & 4,100+ Exercises */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Activity size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? '4,100+ Exercises & 3D Muscle Anatomy' : 'موسوعة +4,100 تمرين وخريطة التشريح'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Click any muscle zone to discover targeted exercises with biomechanical cues, common mistakes, and 3-tier reliable animated demonstrations.'
-                : 'انقر على أي عضلة في الجسم لتكتشف أفضل التمارين التي تستهدفها بدقة مع نصائح التكنيك الصحيح وشروحات الفيديو والرسوم الحركية.'}
-            </p>
-          </div>
-
-          {/* Card 9: Session Player, Audio Packs & Offline PWA */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <WifiOff size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'PWA Gym Offline Mode & Audio Packs' : 'وضع الجيم بدون نت وباقات الأصوات'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Zero-latency live workout player with boxing bell & whistle rest timer sound packs, volume controls, and offline PWA caching for gym basements.'
-                : 'مشغل حصة تفاعلي بدون تأخير، باقات أصوات مؤقت الراحة (جرس ملاكمة وصافرة مدرب)، وتخزين مؤقت كامل للعمل في الجيم بدون اتصال بالإنترنت.'}
-            </p>
-          </div>
-
-          {/* Card 10: Seamless Google Auth & OWASP Security */}
-          <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Lock size={24} />
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>{isEn ? 'Google Account Sync & OWASP Shield' : 'ربط Google السلس وحصن أمان OWASP'}</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-              {isEn
-                ? 'Instant 1-click Google account linking with zero data loss, email OTP password recovery, and enterprise database protection.'
-                : 'ربط الحساب بحساب Google بضغطة زر مع الحفاظ على كافة البيانات، استعادة الحساب برموز OTP، وحماية أمنية مشددة وفق معايير OWASP.'}
-            </p>
-          </div>
-
+        {/* 10 Category Chips / Selector Bar */}
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', justifyContent: 'flex-start', scrollbarWidth: 'none' }}>
+          {[
+            { en: '🥗 Nutrition & Macros', ar: '🥗 مدرب الماكروز' },
+            { en: '🧠 AI Physique Scan', ar: '🧠 ماسح التحول' },
+            { en: '🏋️ Barbell & 1RM', ar: '🏋️ صفائح البار والـ 1RM' },
+            { en: '💧 Recovery & Sleep', ar: '💧 الاستشفاء وشرب الماء' },
+            { en: '👑 Legendary Plans', ar: '👑 جداول الأساطير' },
+            { en: '📑 Multi-Plan Hub', ar: '📑 الجداول المتعددة' },
+            { en: '⚡ Smart Adaptation', ar: '⚡ تكييف الأدوات' },
+            { en: '🎬 4,100+ Exercises', ar: '🎬 موسوعة +4,100 تمرين' },
+            { en: '⏱️ Offline PWA Player', ar: '⏱️ مشغل الجيم أوفلاين' },
+            { en: '🔒 Google & Security', ar: '🔒 ربط Google والأمان' },
+          ].map((pill, pIdx) => {
+            const isPillActive = activePillarIndex === pIdx;
+            return (
+              <button
+                key={pIdx}
+                type="button"
+                onClick={() => {
+                  setActivePillarIndex(pIdx);
+                  setIsPillarsAutoPlay(false);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  border: isPillActive ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
+                  background: isPillActive ? 'rgba(0, 210, 255, 0.18)' : 'rgba(15, 23, 42, 0.65)',
+                  color: isPillActive ? '#fff' : 'var(--text-secondary)',
+                  fontSize: '12.5px',
+                  fontWeight: isPillActive ? '800' : '600',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  flexShrink: 0,
+                }}
+              >
+                {isEn ? pill.en : pill.ar}
+              </button>
+            );
+          })}
         </div>
+
+        {/* Active 10-Pillars Featured Glass Card */}
+        {(() => {
+          const PILLARS_LIST = [
+            {
+              icon: <Utensils size={28} />,
+              color: '#10b981',
+              titleEn: 'Smart Nutrition & Macro Coach',
+              titleAr: 'مدرب التغذية والماكروز وتدوير السعرات',
+              badgeEn: 'Scientific TDEE & Macro Cycling',
+              badgeAr: 'حساب علمي للسعرات وتدوير الكارب',
+              descEn: 'Scientific BMR & TDEE calculation (Mifflin-St Jeor) with Workout vs Rest Day macro cycling (+6% cals & carbs on lift days, -6% on recovery days), meal timing, and clean foods reference.',
+              descAr: 'حساب علمي للسعرات والـ TDEE مع تدوير الماكروز (أيام التمرين كربوهيدرات وسعرات أعلى لشحن العضلات، وأيام الراحة دهون صحية للاستشفاء) ودليل الأغذية النظيفة.',
+              stats: '⚡ +6% Lift Days | -6% Rest Days'
+            },
+            {
+              icon: <Brain size={28} />,
+              color: '#ec4899',
+              titleEn: 'AI Physique Scanner & Progress Gallery',
+              titleAr: 'ماسح التحول والتناسق العضلي بالذكاء الاصطناعي',
+              badgeEn: 'Biomechanical Symmetry & Body Fat %',
+              badgeAr: 'فحص بيوميكانيكي للتناسق والدهون',
+              descEn: 'Automated biomechanical scan of your transformation photos: estimates body fat %, scores muscle definition (1-100), evaluates V-taper symmetry, and suggests targeted hypertrophy adjustments.',
+              descAr: 'فحص بيوميكانيكي لصور تطورك البدني: تقدير نسبة الدهون، حساب مؤشر البروز العضلي (من 100)، تقييم تناسق الظهر والخصر، واقتراح العضلات المستهدفة للجدول القادم.',
+              stats: '🏆 88/100 Definition Score • 92% V-Taper'
+            },
+            {
+              icon: <Percent size={28} />,
+              color: '#f59e0b',
+              titleEn: 'Olympic Barbell Plate & 1RM Simulator',
+              titleAr: 'محاكي صفائح البار وحاسبة الـ 1RM',
+              badgeEn: 'Visual Plate Loader & 1RM Percentages',
+              badgeAr: 'تحميل بصري للأطباق وحساب القوة القصوى',
+              descEn: 'Visual Olympic barbell plate loader (20kg/15kg bar with colored 25/20/15/10/5/2.5/1.25kg plates) plus 1RM Epley/Brzycki calculation and full percentage working set tables.',
+              descAr: 'محاكي بصري ملون لصفائح البار الأولمبي وحساب الأوزان الدقيقة لكل جهة، مع حاسبة أقصى تكرار (1RM) وجدول النسب المئوية لجولات التضخيم والقوة.',
+              stats: '🏋️ 20kg Olympic Bar • 25/20/15/10/5/2.5/1.25kg'
+            },
+            {
+              icon: <Droplets size={28} />,
+              color: 'var(--secondary)',
+              titleEn: 'Recovery, Hydration & Streak Badges',
+              titleAr: 'مركز الاستشفاء وشرب الماء وأوسمة الإنجاز',
+              badgeEn: 'Hydration Tracking & Sleep Quality',
+              badgeAr: 'تتبع النوم والماء لتعزيز هرمون النمو',
+              descEn: '1-tap water logger, sleep hours and quality tracking for MPS recovery, and motivational unlockable badges for consistency streaks (3, 7, 14, 30 days).',
+              descAr: 'عداد سريع لشرب الماء بنقرة زر، متتبع ساعات وجودة النوم لتعزيز هرمون النمو، وشارات وأوسمة تحفيزية متصلة بأيام الالتزام والاستمرارية.',
+              stats: '💧 3.5L Target • 🛌 8h Sleep Matrix'
+            },
+            {
+              icon: <Crown size={28} />,
+              color: '#f59e0b',
+              titleEn: 'Curated Legendary & Pro Splits',
+              titleAr: 'مكتبة خطط الأساطير والمدربين المعتمدين',
+              badgeEn: 'Arnold Blueprint, Science PPL, Dorian Yates',
+              badgeAr: 'جداول آرنولد شوارزنيجر ودوريان ييتس وجيف نيبارد',
+              descEn: 'Directly apply certified workout routines: Arnold Schwarzenegger Golden Blueprint, Jeff Nippard Science PPL, Dorian Yates HIT, and muscle focus routines.',
+              descAr: 'طبّق برامج أساطير كمال الأجسام بضغطة زر: جدول آرنولد شوارزنيجر الذهبي، نظام جيف نيبارد العلمي PPL، كثافة دوريان ييتس، وبرامج التركيز العضلي.',
+              stats: '👑 1-Click Pro Preset Activation'
+            },
+            {
+              icon: <Layers size={28} />,
+              color: 'var(--secondary)',
+              titleEn: 'Multi-Plan Management Hub',
+              titleAr: 'إدارة وتصميم الجداول المتعددة',
+              badgeEn: 'Gym, Home, Travel & Custom Splits',
+              badgeAr: 'جداول متعددة للنادي والمنزل والسفر',
+              descEn: 'Create and keep multiple routines (Gym, Home, Travel) with 1 primary active routine. Duplicate, rename, edit, and switch active plans effortlessly.',
+              descAr: 'احتفظ بعدة جداول في حسابك (جدول النادي، المنزل، السفر) مع تعيين جدول أساسي نشط. يمكنك نسخ الجداول وتعديلها والتبديل بينها فورياً.',
+              stats: '📂 Instant Switch & Cloud Sync'
+            },
+            {
+              icon: <Zap size={28} />,
+              color: 'var(--primary)',
+              titleEn: 'Intelligent Equipment & Bench Adaptation',
+              titleAr: 'التكييف الذكي للأدوات ومقعد التمرين',
+              badgeEn: 'Dynamic Substitute for Missing Equipment',
+              badgeAr: 'تحويل التمارين بدون الحاجة لبنش أو أجهزة',
+              descEn: 'No workout bench? The AI automatically converts chest routines to Floor Dumbbell Press, Floor Flyes, and push-up progressions without requiring a bench.',
+              descAr: 'لا تملك كرسي تدريب (بنش)؟ يقوم النظام تلقائياً بتكييف تمارين الصدر لتعتمد على الضغط الأرضي (Floor Press) والوزن الحر بأمان تام.',
+              stats: '⚡ Zero Equipment Deadlocks'
+            },
+            {
+              icon: <Activity size={28} />,
+              color: '#8b5cf6',
+              titleEn: '4,100+ Exercises & 3D Muscle Anatomy',
+              titleAr: 'موسوعة +4,100 تمرين وخريطة التشريح',
+              badgeEn: 'Verified HD Motion & Muscle Zones',
+              badgeAr: 'حركات دقيقة بدقة HD وتشريح عضلي',
+              descEn: 'Click any muscle zone to discover targeted exercises with biomechanical cues, common mistakes, and 3-tier reliable animated demonstrations.',
+              descAr: 'انقر على أي عضلة في الجسم لتكتشف أفضل التمارين التي تستهدفها بدقة مع نصائح التكنيك الصحيح وشروحات الفيديو والرسوم الحركية.',
+              stats: '🎬 +4,100 Precision HD Exercises'
+            },
+            {
+              icon: <WifiOff size={28} />,
+              color: 'var(--primary)',
+              titleEn: 'PWA Gym Offline Mode & Audio Packs',
+              titleAr: 'وضع الجيم بدون نت وباقات الأصوات',
+              badgeEn: 'Boxing Bell, Whistle & Zero Latency',
+              badgeAr: 'جرس ملاكمة وصافرة وتخزين كامل أوفلاين',
+              descEn: 'Zero-latency live workout player with boxing bell & whistle rest timer sound packs, volume controls, and offline PWA caching for gym basements.',
+              descAr: 'مشغل حصة تفاعلي بدون تأخير، باقات أصوات مؤقت الراحة (جرس ملاكمة وصافرة مدرب)، وتخزين مؤقت كامل للعمل في الجيم بدون اتصال بالإنترنت.',
+              stats: '🔔 Boxing Bell & Referee Whistle Audio'
+            },
+            {
+              icon: <Lock size={28} />,
+              color: 'var(--secondary)',
+              titleEn: 'Google Account Sync & OWASP Shield',
+              titleAr: 'ربط Google السلس وحصن أمان OWASP',
+              badgeEn: 'Enterprise Data Security & Cloud Backup',
+              badgeAr: 'حفظ سحابي فوري وحماية البيانات',
+              descEn: 'Instant 1-click Google account linking with zero data loss, email OTP password recovery, and enterprise database protection.',
+              descAr: 'ربط الحساب بحساب Google بضغطة زر مع الحفاظ على كافة البيانات، استعادة الحساب برموز OTP، وحماية أمنية مشددة وفق معايير OWASP.',
+              stats: '🛡️ 100% Private Cloud Backup'
+            }
+          ];
+
+          const currentPillar = PILLARS_LIST[activePillarIndex];
+
+          return (
+            <div
+              className="glass-panel"
+              onMouseEnter={() => setIsPillarsAutoPlay(false)}
+              onMouseLeave={() => setIsPillarsAutoPlay(true)}
+              style={{
+                marginTop: '16px',
+                padding: '36px 30px',
+                borderRadius: '24px',
+                border: '1px solid rgba(0, 210, 255, 0.35)',
+                background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.96), rgba(4, 7, 18, 0.99))',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '18px',
+                position: 'relative',
+                boxShadow: '0 25px 70px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 210, 255, 0.12)',
+                minHeight: '220px',
+                justifyContent: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ width: '54px', height: '54px', borderRadius: '16px', background: 'rgba(255, 255, 255, 0.05)', border: `1px solid ${currentPillar.color}`, color: currentPillar.color, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${currentPillar.color}33` }}>
+                    {currentPillar.icon}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: '12px', background: `${currentPillar.color}22`, border: `1px solid ${currentPillar.color}55`, color: currentPillar.color, fontSize: '11px', fontWeight: 'bold' }}>
+                        {isEn ? currentPillar.badgeEn : currentPillar.badgeAr}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {activePillarIndex + 1} / 10
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '22px', fontWeight: '900', margin: '4px 0 0', color: '#fff' }}>
+                      {isEn ? currentPillar.titleEn : currentPillar.titleAr}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Pillar Navigation Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActivePillarIndex((prev) => (prev === 0 ? PILLARS_LIST.length - 1 : prev - 1));
+                      setIsPillarsAutoPlay(false);
+                    }}
+                    className="secondary-btn"
+                    style={{ width: '38px', height: '38px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                    title={isEn ? 'Previous Pillar' : 'الركيزة السابقة'}
+                  >
+                    {isEn ? '◀' : '▶'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActivePillarIndex((prev) => (prev + 1) % PILLARS_LIST.length);
+                      setIsPillarsAutoPlay(false);
+                    }}
+                    className="secondary-btn"
+                    style={{ width: '38px', height: '38px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                    title={isEn ? 'Next Pillar' : 'الركيزة التالية'}
+                  >
+                    {isEn ? '▶' : '◀'}
+                  </button>
+                </div>
+              </div>
+
+              <p style={{ fontSize: '15px', color: '#cbd5e1', lineHeight: 1.8, margin: 0 }}>
+                {isEn ? currentPillar.descEn : currentPillar.descAr}
+              </p>
+
+              {/* Stats Chip & Indicators */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 'bold', color: currentPillar.color, background: `${currentPillar.color}15`, padding: '4px 12px', borderRadius: '8px', border: `1px solid ${currentPillar.color}33` }}>
+                  {currentPillar.stats}
+                </span>
+
+                {/* 10 Page Dots */}
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {PILLARS_LIST.map((_, pDotIdx) => (
+                    <span
+                      key={pDotIdx}
+                      onClick={() => {
+                        setActivePillarIndex(pDotIdx);
+                        setIsPillarsAutoPlay(false);
+                      }}
+                      style={{
+                        width: activePillarIndex === pDotIdx ? '20px' : '6px',
+                        height: '6px',
+                        borderRadius: '3px',
+                        background: activePillarIndex === pDotIdx ? currentPillar.color : 'rgba(255,255,255,0.2)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </section>
 
       {/* FAQ SECTION */}
