@@ -341,6 +341,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                   fontSize: '12px',
                   borderRadius: '20px',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 {group.label}
@@ -360,6 +361,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                   fontSize: '12px',
                   borderRadius: '20px',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 {eq.label}
@@ -379,6 +381,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                   fontSize: '12px',
                   borderRadius: '20px',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 {diff.label}

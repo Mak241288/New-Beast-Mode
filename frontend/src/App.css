@@ -283,6 +283,10 @@ html[dir="ltr"] .main-content {
   .mobile-nav {
     display: flex;
   }
+
+  .floating-workout-bar {
+    bottom: calc(75px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 @media (max-width: 576px) {

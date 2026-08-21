@@ -323,6 +323,10 @@ export const PresetPlansModal: React.FC<PresetPlansModalProps> = ({
                               fontSize: '12px',
                               borderRadius: '8px',
                               whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                              maxWidth: '200px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
                               cursor: 'pointer',
                               border: previewDayIdx === d.dayIndex ? 'none' : '1px solid var(--border-color)',
                             }}

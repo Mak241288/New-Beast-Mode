@@ -39,10 +39,9 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
 
   return (
     <div
-      className="animated-fade"
+      className="floating-workout-bar animated-fade"
       style={{
         position: 'fixed',
-        bottom: '24px',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 9999,
