@@ -43,6 +43,10 @@ function App() {
       if (validViews.includes(hash)) {
         return hash;
       }
+      const saved = localStorage.getItem('beast_last_view');
+      if (saved && validViews.includes(saved)) {
+        return saved;
+      }
     } catch {
       // fallback
     }
@@ -71,6 +75,7 @@ function App() {
   const navigateTo = (view: string) => {
     setCurrentView(view);
     try {
+      localStorage.setItem('beast_last_view', view);
       window.history.pushState({ view }, '', `#${view}`);
     } catch {
       // Ignore
@@ -108,13 +113,14 @@ function App() {
             cacheStore.set('user_profile', profile);
           }
 
-          // Sync cloud data across devices
+          // Sync cloud data across devices silently
           await api.syncUserDataFromCloud();
 
-          // Clean OAuth access token fragment from URL for clean routing
+          // Clean OAuth access token fragment from URL if present
           if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-            window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
-            setCurrentView('dashboard');
+            const savedView = localStorage.getItem('beast_last_view') || 'dashboard';
+            window.history.replaceState({ view: savedView }, document.title, window.location.pathname + `#${savedView}`);
+            setCurrentView(savedView);
           }
         }
       } catch (err) {
@@ -160,13 +166,29 @@ function App() {
         // Sync cloud data across devices
         await api.syncUserDataFromCloud();
 
+        // Only redirect to dashboard if the user was on the login or landing page
         if (event === 'SIGNED_IN') {
-          setCurrentView('dashboard');
+          setCurrentView((prev) => {
+            const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about', 'onboarding'];
+            if (validViews.includes(prev) && prev !== 'landing' && prev !== 'login') {
+              return prev;
+            }
+            const hash = (window.location.hash || '').replace('#', '');
+            if (validViews.includes(hash)) {
+              return hash;
+            }
+            const saved = localStorage.getItem('beast_last_view');
+            if (saved && validViews.includes(saved)) {
+              return saved;
+            }
+            return 'dashboard';
+          });
         }
       } else if (event === 'SIGNED_OUT') {
         setToken(null);
         try {
           localStorage.removeItem('token');
+          localStorage.removeItem('beast_last_view');
         } catch {
           // Ignore
         }
@@ -179,7 +201,18 @@ function App() {
       if (event.state && event.state.view) {
         setCurrentView(event.state.view);
       } else {
-        setCurrentView(token ? 'dashboard' : 'landing');
+        const hash = (window.location.hash || '').replace('#', '');
+        const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about', 'onboarding'];
+        if (validViews.includes(hash)) {
+          setCurrentView(hash);
+        } else {
+          const saved = localStorage.getItem('beast_last_view');
+          if (saved && validViews.includes(saved)) {
+            setCurrentView(saved);
+          } else {
+            setCurrentView(token ? 'dashboard' : 'landing');
+          }
+        }
       }
     };
 
@@ -230,9 +263,14 @@ function App() {
         setCurrentView('onboarding');
       } else {
         const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about'];
-        if (!validViews.includes(currentView)) {
-          setCurrentView('dashboard');
-        }
+        setCurrentView((prev) => {
+          if (validViews.includes(prev)) return prev;
+          const hash = (window.location.hash || '').replace('#', '');
+          if (validViews.includes(hash)) return hash;
+          const saved = localStorage.getItem('beast_last_view');
+          if (saved && validViews.includes(saved)) return saved;
+          return 'dashboard';
+        });
       }
     } catch (err: any) {
       console.warn('[App] checkStatus warning:', err);
@@ -241,9 +279,14 @@ function App() {
       } else {
         // Fallback gracefully without blocking the user
         const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about'];
-        if (!validViews.includes(currentView)) {
-          setCurrentView('dashboard');
-        }
+        setCurrentView((prev) => {
+          if (validViews.includes(prev)) return prev;
+          const hash = (window.location.hash || '').replace('#', '');
+          if (validViews.includes(hash)) return hash;
+          const saved = localStorage.getItem('beast_last_view');
+          if (saved && validViews.includes(saved)) return saved;
+          return 'dashboard';
+        });
       }
     } finally {
       setLoading(false);
