@@ -4,6 +4,7 @@
   <a href="https://new-beast-mode-git-master-ma-k1.vercel.app/" target="_blank">
     <img src="https://img.shields.io/badge/Live_Demo-Vercel_App-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live App" />
   </a>
+  <img src="https://img.shields.io/badge/Theme-⚡_Cyber_Volt_%26_Carbon-CCFF00?style=for-the-badge&logoColor=black" alt="Cyber Volt" />
   <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
@@ -33,24 +34,42 @@
 
 ## 🌟 نبذة عن المشروع | Overview
 
-**BeastMode AI** هو نظام متكامل ومتقدم للياقة البدنية، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق. يجمع التطبيق بين تجربة مستخدم عصرية بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تحتوي على أكثر من **4,298 تمرين مفصل** بالعربية والإنجليزية مع صور تشريحية وفيديوهات تعليمية.
+**BeastMode AI** هو نظام رياضي بيئي متكامل وفائق التطور للياقة البدنية، وبناء الأجسام، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق. يتميز بهوية بصرية حصرية **(⚡ Cyber-Volt & Matte Carbon)** بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تضم **+4,100 تمرين موثق بدقة HD** بالعربية والإنجليزية.
 
-> **BeastMode AI** is a cutting-edge, bilingual (AR/EN) AI-powered fitness and nutrition ecosystem. Featuring dynamic hyper-personalized training plans, interactive muscle anatomy maps, a global workout player with audio timers, and enterprise-grade security.
+> **BeastMode AI** is a cutting-edge, bilingual (AR/EN) AI-powered fitness and nutrition ecosystem. Featuring signature **Cyber-Volt** aesthetics, dynamic hyper-personalized training plans, interactive 3D muscle anatomy maps, a zero-latency global workout player with audio timers, visual routine cards export, and enterprise-grade security.
 
 ---
 
-## ✨ أبرز الميزات والقدرات | Key Features
+## ✨ أبرز الميزات والقدرات المحدثة | Key Features
 
 | الميزة | الوصف التقني |
 | :--- | :--- |
-| 🤖 **توليد الجداول الذكية (AI Workout Generation)** | توليد برامج تدريبية متكاملة ومخصصة بناءً على مستوى اللاعب، الأدوات المتاحة، والأهداف الرياضية عبر Groq و Gemini AI. |
-| 🗺️ **خريطة العضلات التفاعلية (Interactive Body Map)** | خريطة تشريحية تفاعلية ثنائية الوجه (أمامي / خلفي) تتيح استعراض التمارين المستهدفة لكل عضلة بنقرة واحدة. |
-| 📚 **مكتبة تمارين ضخمة (4,298+ Exercises)** | قاعدة بيانات شاملة للتمارين مدعمة بالتوجيهات الصوتية، صور التشريح، روابط MuscleWiki، وشروحات YouTube التكنيكية. |
-| ⏱️ **مشغل التمارين العام (Global Workout Player)** | مشغل عائم يتيح تسجيل الجولات والأوزان، وتشغيل مؤقت الراحة الصوتي، وتتبع التكرارات في الوقت الفعلي. |
-| 🔄 **استيراد الجداول النصية الذكي (Smart Bulk Parser)** | محلل نصوص مدعوم بالذكاء الاصطناعي يقوم بتحويل أي جدول تدريبي مكتوب كنص عادي إلى برنامج رقمي منظم فوراً. |
-| 📱 **تطبيق ويب تقدمي متطور (PWA)** | يعمل دون اتصال بالإنترنت (Offline Mode)، يدعم التثبيت على الهاتف كأنه تطبيق Native، مع كاش تحديث ذكي NetworkFirst. |
-| 🔐 **توثيق أمان متعدد الوسائط (Google & OTP Auth)** | تسجيل سلس بحساب Google مع ربط الحسابات التلقائي، وتأكيد بالبريد الإلكتروني، وتوليد رموز تحقق (OTP) لاستعادة الحساب. |
-| 📊 **تحليلات الأداء وPR Tracker** | تتبع الأرقام القياسية الشخصية، وتطور الوزن ونسبة الدهون، وخريطة حرارية للالتزام الأسبوعي والشهري. |
+| ⚡ **هوية Cyber-Volt ومبدّل الثيمات (Theme Engine)** | هوية رياضية نخبوية (الأصفر الكهربائي والأسود الكربوني) مع مبدّل ألوان فوري يتيح التبديل بين (⚡ Cyber Volt, 🔥 Crimson Beast, 👑 Imperial Gold, 💎 Aurora Cyan). |
+| 📷 **تصدير البطاقة التدريبية السينمائية (Visual Routine Card)** | توليد وتصدير بطاقات داكنة عالية الدقة للجداول اليومية والأسبوعية للطباعة، الحفظ في ألبوم الصور كـ PDF، أو المشاركة كصورة ستوري وواتساب. |
+| 🤸‍♂️ **مؤقت الإحماء الحركي الذكي (3-Min Dynamic Warmup)** | بروتوكول إحماء حركي مخصص لعضلات اليوم (3 دقائق) لتليين المفاصل وتجهيز الجهاز العصبي وتفادي الإصابات مع مؤقت وجرس ملاكمة. |
+| 🗺️ **المجسم التشريحي التفاعلي المتزامن (Live Anatomy Sync)** | إضاءة العضلات المستهدفة اليوم في الداشبورد تلقائياً على مجسم ثلاثي الأبعاد مع توجيهات التكنيك والشروحات التشريحية بنقرة واحدة. |
+| ⚡ **وضع "أنا مستعجل" (Express 30-Min Workout Mode)** | تكثيف الحصة التدريبية لـ 30 دقيقة بالتركيز على الحركات المركبة (Compound Lifts) مع تقليص الراحة لـ 45-60 ثانية للأيام المزدحمة. |
+| 📸 **مقارنة التطور بشريط السحب (Before/After Split Slider)** | أداة مقارنة تفاعلية بالسحب للمقارنة بين صور بداية المشوار والصورة الحالية لفحص تفاصيل التناسق العضلي ونسبة الدهون. |
+| 🔄 **الاستبدال الذكي للتمارين (Smart 1-Click Swap)** | زر استبدال فوري داخل الجدول يتيح اختيار تمارين بديلة لنفس العضلة مع بحث ضبابي فوري عبر +4,100 تمرين. |
+| 🤖 **توليد الجداول بالذكاء الاصطناعي (AI Workout Generation)** | توليد خطط مخصصة بناءً على مستوى اللاعب، الأدوات المتاحة، وموقع التمرين (جيم / منزل) عبر Groq LLaMA 3.3 و Gemini AI. |
+| 🥗 **مدرب الماكروز وتدوير السعرات (Smart Nutrition & TDEE)** | حساب دقيق للـ BMR و TDEE بمعادلة Mifflin-St Jeor مع تدوير الماكروز (+6% أيام التمرين، -6% أيام الراحة) وتتبع الماء والنوم. |
+| 🏋️ **محاكي صفائح البار والـ 1RM (Barbell Plate Loader)** | محاكي بصري ملون لصفائح البار الأولمبي وحساب الأوزان الدقيقة لكل جهة مع حاسبة القوة القصوى 1RM وجداول النسب المئوية. |
+| ⏱️ **مشغل التمارين التفاعلي (Global Workout Player)** | مشغل عائم بدون تأخير مع باقات أصوات مؤقت الراحة (جرس ملاكمة وصافرة حكم)، نبض توهج لآخر 5 ثوانٍ، وتخزين أوفلاين. |
+| 📱 **تطبيق ويب تقدمي متطور (Offline PWA)** | يعمل 100% بدون إنترنت داخل صالات الجيم السفلية، يدعم التثبيت المباشر على الهاتف مع كاش ذكي فائق السرعة. |
+| 🔐 **حماية بيانات وتوثيق متقدم (OWASP & Google OAuth)** | تسجيل دخول سريع بحساب Google بضغطة زر، تأكيد بالبريد الإلكتروني، واستعادة الحساب برموز OTP مع تشفير وحماية OWASP كاملة. |
+
+---
+
+## 🎨 النظام البصري والهوية الرياضية | Signature Design System
+
+```text
+🎨 Primary Identity: ⚡ Cyber-Volt (#CCFF00) on Matte Obsidian Carbon (#08090D)
+✨ Micro-Interactions:
+   ├── Glass Shimmer Sweep (تأثير اللمعة الزجاجية على الأزرار)
+   ├── Ambient Breathing Glow (نبض النيون المحيطي للبطاقات النشطة)
+   ├── Critical Timer Ripple (نبض المؤقت الدائري لآخر 5 ثوانٍ)
+   └── Top Scroll Progress Bar (شريط تقدم الصفحة النيون في قمة الشاشة)
+```
 
 ---
 
@@ -61,7 +80,7 @@ graph TD
     A[Frontend: React 19 + Vite + TypeScript + PWA] -->|HTTPS / REST API| B[Backend: Node.js + Express + TypeScript]
     A -->|Direct Cloud Sync & Auth| C[(Supabase Cloud PostgreSQL)]
     B -->|User Auth & Sync| C
-    B -->|High-Performance Cache| D[(Local SQLite exercises.db)]
+    B -->|High-Performance Database| D[(Local SQLite exercises.db - 4,100+ HD)]
     B -->|User Data & Active Routines| E[(Prisma dev.db)]
     B -->|AI Generation & Swaps| F[Groq LLaMA 3.3 70B API]
     B -->|AI Reasoning & Nutrition| G[Google Gemini 2.0 API]
@@ -86,64 +105,45 @@ graph TD
 
 ```text
 New BeastMode/
-├── frontend/                   # واجهة المستخدم (React 19 + Vite + TypeScript)
+├── frontend/                   # واجهة المستخدم (React 19 + Vite + TypeScript + PWA)
 │   ├── src/
-│   │   ├── components/         # المكونات التفاعلية (BodyMap, MuscleWiki, GlobalPlayer)
-│   │   ├── pages/              # الصفحات الرئيسية (Dashboard, MyPlan, ExerciseLibrary, Stats, Profile)
+│   │   ├── components/         # المكونات (RoutineCardExport, DynamicWarmup, BodyMap, MuscleWiki, GlobalPlayer)
+│   │   ├── pages/              # الصفحات (Dashboard, MyPlan, ExerciseLibrary, Stats, Profile, LandingPage)
+│   │   ├── context/            # إدارة الحالة (WorkoutSessionContext)
 │   │   ├── services/           # خدمات الاتصال بالـ API و Supabase
-│   │   └── utils/              # الترجمة (i18n)، التحقق، ومحرك البحث
+│   │   ├── styles/             # نظام التصميم (design-system.css)
+│   │   └── utils/              # الترجمة (i18n)، التحقق، محرك الصوت، والبحث الضبابي
 │   └── public/                 # أيقونات PWA و Service Worker
 │
 ├── backend/                    # السيرفر الخلفي (Express + TypeScript + Prisma)
 │   ├── prisma/                 # مخطط قواعد البيانات وعلاقات الجداول
 │   ├── src/
 │   │   ├── controllers/        # معالجات التوثيق، التمارين، والذكاء الاصطناعي
-│   │   ├── middleware/         # حماية JWT ومحددات معدل الطلبات (Rate Limiters)
-│   │   ├── routes/             # مسارات REST API
-│   │   ├── services/           # تكامل Groq و Gemini AI وقواعد البيانات
-│   │   └── scripts/            # سكريبتات النسخ الاحتياطي ومزامنة التمارين
+│   │   ├── middleware/         # جدار الحماية، Rate Limiting، وفحص التوكنات
+│   │   ├── routes/             # مسارات الـ API المحمية
+│   │   └── services/           # تكامل Groq AI و Gemini AI
+│   └── .env.example            # نموذج المتغيرات البيئية
 │
-└── workout_generator_python/   # محرك بايثون وقاعدة بيانات التمارين (4,298 تمرين)
-    ├── database/               # exercises.db
-    └── src/                    # سكريبتات البحث، التوليد، والفهرسة
+└── workout_generator_python/   # محرك التمارين الذكي
+    ├── database/               # exercises.db (+4,100 تمرين مفصل)
+    └── src/                    # سكربتات التوليد والفهرسة السريعة
 ```
 
 ---
 
-## 🚀 البدء السريع والتشغيل المحلي | Quick Start
+## 🚀 التشغيل المحلي والتطوير | Local Setup
 
-### المتطلبات الأساسية (Prerequisites):
-- **Node.js**: v18+ (يُفضل v22 LTS)
-- **Python**: 3.10+
-- **npm** أو **pnpm**
-
----
-
-### 1️⃣ استنساخ المستودع (Clone Repository):
 ```bash
+# 1. استنساخ المستودع
 git clone https://github.com/Mak241288/New-Beast-Mode.git
-cd New-Beast-Mode
-```
+cd "New BeastMode"
 
----
-
-### 2️⃣ إعداد وتشغيل السيرفر الخلفي (Backend Setup):
-```bash
+# 2. تشغيل السيرفر الخلفي (Backend)
 cd backend
 npm install
-
-# إعداد ملف البيئة (.env)
-cp .env.example .env
-
-# تهيئة وتوليد قاعدة البيانات
-npx prisma migrate dev
 npm run dev
-```
 
----
-
-### 3️⃣ إعداد وتشغيل الواجهة الأمامية (Frontend Setup):
-```bash
+# 3. تشغيل الواجهة الأمامية (Frontend)
 cd ../frontend
 npm install
 npm run dev
@@ -151,48 +151,6 @@ npm run dev
 
 ---
 
-### ⚡ روابط التشغيل والإنتاج | Access URLs:
+## 📄 الترخيص | License
 
-- 🚀 **الرابط المباشر على السحابة (Live Production App):**  
-  👉 **[https://new-beast-mode-git-master-ma-k1.vercel.app/](https://new-beast-mode-git-master-ma-k1.vercel.app/)**
-- 💻 **الواجهة المحلية (Local Development):** `http://localhost:5173`
-- ⚙️ **خادم الـ API المحلي (Local Backend API):** `http://localhost:5000`
-
----
-
-## 🔑 متغيرات البيئة الأساسية | Environment Variables
-
-| المتغير | الوصف | الفائدة |
-| :--- | :--- | :--- |
-| `PORT` | منفذ السيرفر الخلفي (الافتراضي `5000`) | خادم التطبيق |
-| `DATABASE_URL` | مسار قاعدة بيانات Prisma (`file:./dev.db`) | تخزين بيانات المستخدمين |
-| `JWT_SECRET` | مفتاح تشفير التوكن والـ Cookies | أمان الجلسات |
-| `GROQ_API_KEY` | مفتاح واجهة Groq AI (LLaMA 3.3 70B) | توليد الخطط الفورية |
-| `GEMINI_API_KEY` | مفتاح Google Gemini AI | التحليل الغذائي والتمارين |
-| `SUPABASE_URL` | رابط مشروع Supabase السحابي | المزامنة والتخزين السحابي |
-| `SUPABASE_ANON_KEY` | المفتاح المجهول لـ Supabase | مصادقة العملاء |
-
----
-
-## 🧪 التحقق والاختبارات | Verification & Build
-
-للتأكد من سلامة الكود وخلوه من أي أخطاء برمجية أو نوعية (TypeScript Zero-Error Check):
-
-```bash
-# فحص وبناء الواجهة الأمامية
-cd frontend && npm run build
-
-# فحص وبناء السيرفر الخلفي
-cd ../backend && npm run build
-```
-
----
-
-## 📜 الترخيص | License
-
-هذا المشروع مرخص تحت رخصة **MIT License**. يحق لك استخدامه وتطويره بحرية.
-
-<p align="center">
-  صُنع بشغف وإتقان لتمكين الرياضيين حول العالم 🦍🔥<br />
-  <b>Crafted with ❤️ for Beasts and Fitness Champions Worldwide.</b>
-</p>
+هذا المشروع مطور ومحمي تحت رخصة **MIT License**. جميع الحقوق محفوظة لـ **BeastMode AI Ecosystem © 2026**.
