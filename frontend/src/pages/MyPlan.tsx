@@ -2481,6 +2481,12 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   const isActive = dayNum === manualActiveDayIdx || (manualActiveDayIdx === undefined && idx === 0);
                   const count = day.exercises ? day.exercises.length : 0;
                   const dayName = getDayName(dayNum);
+                  const cleanFocus = day.isRestDay
+                    ? (lang === 'en' ? 'Rest' : 'راحة')
+                    : (day.focusArea
+                        ? (day.focusArea.split('،')[0]?.split(',')[0]?.split('&')[0]?.trim() || (lang === 'en' ? 'Workout' : 'تمرين'))
+                        : (lang === 'en' ? 'Workout' : 'تمرين'));
+
                   return (
                     <button
                       key={dayNum}
@@ -2490,43 +2496,58 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         setManualRowSuggestions(null);
                       }}
                       style={{
-                        padding: '12px 18px',
+                        padding: '10px 14px',
                         borderRadius: '12px',
-                        fontSize: '13.5px',
+                        fontSize: '13px',
                         fontWeight: '800',
                         cursor: 'pointer',
                         border: isActive ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                        background: isActive ? 'linear-gradient(135deg, var(--primary), #00a8ff)' : 'rgba(255,255,255,0.05)',
-                        color: isActive ? '#050710' : (day.isRestDay ? 'var(--text-muted)' : 'var(--text-primary)'),
-                        whiteSpace: 'nowrap',
+                        background: isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'rgba(255,255,255,0.05)',
+                        color: isActive ? 'var(--primary-contrast, #050710)' : (day.isRestDay ? 'var(--text-muted)' : 'var(--text-primary)'),
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '4px',
-                        minWidth: '120px',
-                        transition: 'all 0.25s ease',
-                        boxShadow: isActive ? '0 6px 20px var(--primary-glow)' : 'none',
-                        transform: isActive ? 'scale(1.03)' : 'scale(1)',
+                        minWidth: '130px',
+                        maxWidth: '170px',
+                        flex: '0 0 auto',
+                        overflow: 'hidden',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isActive ? '0 4px 16px var(--primary-glow)' : 'none',
+                        transform: isActive ? 'scale(1.02)' : 'scale(1)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{lang === 'en' ? `Day ${dayNum}` : `اليوم ${dayNum}`}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%' }}>
+                        <span style={{ fontWeight: '900' }}>{lang === 'en' ? `Day ${dayNum}` : `اليوم ${dayNum}`}</span>
                         {day.isRestDay ? (
-                          <span style={{ fontSize: '13px' }}>💤</span>
+                          <span style={{ fontSize: '12px' }}>💤</span>
                         ) : (
                           <span style={{
-                            background: isActive ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.12)',
-                            padding: '2px 7px',
-                            borderRadius: '10px',
-                            fontSize: '11px',
-                            fontWeight: '700'
+                            background: isActive ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.12)',
+                            color: isActive ? 'inherit' : 'var(--primary)',
+                            padding: '1px 6px',
+                            borderRadius: '8px',
+                            fontSize: '10.5px',
+                            fontWeight: '800',
+                            whiteSpace: 'nowrap',
                           }}>
                             {count} {lang === 'en' ? 'ex' : 'تمارين'}
                           </span>
                         )}
                       </div>
-                      <span style={{ fontSize: '11px', opacity: isActive ? 0.95 : 0.7 }}>
-                        {dayName} • {day.isRestDay ? (lang === 'en' ? 'Rest' : 'راحة') : (day.focusArea?.split('،')[0] || (lang === 'en' ? 'Workout' : 'تمرين'))}
+                      <span style={{
+                        fontSize: '11px',
+                        opacity: isActive ? 0.95 : 0.7,
+                        width: '100%',
+                        maxWidth: '145px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        display: 'block',
+                        textAlign: 'center',
+                      }}>
+                        {dayName} • {cleanFocus}
                       </span>
                     </button>
                   );
