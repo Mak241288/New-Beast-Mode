@@ -5,18 +5,15 @@
     <img src="https://img.shields.io/badge/Live_Demo-Vercel_App-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live App" />
   </a>
   <img src="https://img.shields.io/badge/Theme-⚡_Cyber_Volt_%26_Carbon-CCFF00?style=for-the-badge&logoColor=black" alt="Cyber Volt" />
+  <img src="https://img.shields.io/badge/UI/UX-Pro_Max_Suite-00F0FF?style=for-the-badge" alt="UI/UX Pro Max" />
   <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Node.js-22.0-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js" />
-  <img src="https://img.shields.io/badge/Express-4.19-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express" />
-  <img src="https://img.shields.io/badge/Prisma-5.11-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
   <img src="https://img.shields.io/badge/SQLite-3.0-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
   <img src="https://img.shields.io/badge/Groq-LLaMA_3.3_70B-F55036?style=for-the-badge" alt="Groq" />
   <img src="https://img.shields.io/badge/Gemini_AI-2.0-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini" />
-  <img src="https://img.shields.io/badge/Aikido-Security_Hardened-00D2FF?style=for-the-badge" alt="Security Hardened" />
-  <img src="https://img.shields.io/badge/PWA-Ready-FF6F00?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA" />
+  <img src="https://img.shields.io/badge/PWA-Offline_Ready-FF6F00?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
 ---
@@ -34,42 +31,55 @@
 
 ## 🌟 نبذة عن المشروع | Overview
 
-**BeastMode AI** هو نظام رياضي بيئي متكامل وفائق التطور للياقة البدنية، وبناء الأجسام، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق. يتميز بهوية بصرية حصرية **(⚡ Cyber-Volt & Matte Carbon)** بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تضم **+4,100 تمرين موثق بدقة HD** بالعربية والإنجليزية.
+**BeastMode AI** هو نظام رياضي بيئي متكامل وفائق التطور للياقة البدنية، وبناء الأجسام، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق. يتميز بهوية بصرية حصرية **(⚡ Cyber-Volt & Matte Carbon)** بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تضم **+4,100 تمرين موثق بدقة HD** بالعربية والإنجليزية مع حزمة ميزات **UI/UX Pro Max** العالمية.
 
 > **BeastMode AI** is a cutting-edge, bilingual (AR/EN) AI-powered fitness and nutrition ecosystem. Featuring signature **Cyber-Volt** aesthetics, dynamic hyper-personalized training plans, interactive 3D muscle anatomy maps, a zero-latency global workout player with audio timers, visual routine cards export, and enterprise-grade security.
 
 ---
 
-## ✨ أبرز الميزات والقدرات المحدثة | Key Features
+## 🚀 أحدث ترقيات حزمة UI/UX Pro Max | UI/UX Pro Max 14-Feature Suite
 
 | الميزة | الوصف التقني |
 | :--- | :--- |
-| ⚡ **هوية Cyber-Volt ومبدّل الثيمات (Theme Engine)** | هوية رياضية نخبوية (الأصفر الكهربائي والأسود الكربوني) مع مبدّل ألوان فوري يتيح التبديل بين (⚡ Cyber Volt, 🔥 Crimson Beast, 👑 Imperial Gold, 💎 Aurora Cyan). |
-| 📷 **تصدير البطاقة التدريبية السينمائية (Visual Routine Card)** | توليد وتصدير بطاقات داكنة عالية الدقة للجداول اليومية والأسبوعية للطباعة، الحفظ في ألبوم الصور كـ PDF، أو المشاركة كصورة ستوري وواتساب. |
-| 🤸‍♂️ **مؤقت الإحماء الحركي الذكي (3-Min Dynamic Warmup)** | بروتوكول إحماء حركي مخصص لعضلات اليوم (3 دقائق) لتليين المفاصل وتجهيز الجهاز العصبي وتفادي الإصابات مع مؤقت وجرس ملاكمة. |
-| 🗺️ **المجسم التشريحي التفاعلي المتزامن (Live Anatomy Sync)** | إضاءة العضلات المستهدفة اليوم في الداشبورد تلقائياً على مجسم ثلاثي الأبعاد مع توجيهات التكنيك والشروحات التشريحية بنقرة واحدة. |
-| ⚡ **وضع "أنا مستعجل" (Express 30-Min Workout Mode)** | تكثيف الحصة التدريبية لـ 30 دقيقة بالتركيز على الحركات المركبة (Compound Lifts) مع تقليص الراحة لـ 45-60 ثانية للأيام المزدحمة. |
-| 📸 **مقارنة التطور بشريط السحب (Before/After Split Slider)** | أداة مقارنة تفاعلية بالسحب للمقارنة بين صور بداية المشوار والصورة الحالية لفحص تفاصيل التناسق العضلي ونسبة الدهون. |
-| 🔄 **الاستبدال الذكي للتمارين (Smart 1-Click Swap)** | زر استبدال فوري داخل الجدول يتيح اختيار تمارين بديلة لنفس العضلة مع بحث ضبابي فوري عبر +4,100 تمرين. |
-| 🤖 **توليد الجداول بالذكاء الاصطناعي (AI Workout Generation)** | توليد خطط مخصصة بناءً على مستوى اللاعب، الأدوات المتاحة، وموقع التمرين (جيم / منزل) عبر Groq LLaMA 3.3 و Gemini AI. |
-| 🥗 **مدرب الماكروز وتدوير السعرات (Smart Nutrition & TDEE)** | حساب دقيق للـ BMR و TDEE بمعادلة Mifflin-St Jeor مع تدوير الماكروز (+6% أيام التمرين، -6% أيام الراحة) وتتبع الماء والنوم. |
-| 🏋️ **محاكي صفائح البار والـ 1RM (Barbell Plate Loader)** | محاكي بصري ملون لصفائح البار الأولمبي وحساب الأوزان الدقيقة لكل جهة مع حاسبة القوة القصوى 1RM وجداول النسب المئوية. |
-| ⏱️ **مشغل التمارين التفاعلي (Global Workout Player)** | مشغل عائم بدون تأخير مع باقات أصوات مؤقت الراحة (جرس ملاكمة وصافرة حكم)، نبض توهج لآخر 5 ثوانٍ، وتخزين أوفلاين. |
-| 📱 **تطبيق ويب تقدمي متطور (Offline PWA)** | يعمل 100% بدون إنترنت داخل صالات الجيم السفلية، يدعم التثبيت المباشر على الهاتف مع كاش ذكي فائق السرعة. |
-| 🔐 **حماية بيانات وتوثيق متقدم (OWASP & Google OAuth)** | تسجيل دخول سريع بحساب Google بضغطة زر، تأكيد بالبريد الإلكتروني، واستعادة الحساب برموز OTP مع تشفير وحماية OWASP كاملة. |
+| ⏱️ **مؤقت الراحة الدائري النيون (Circular Rest Ring)** | حلقة عد تنازلي تفاعلية بـ SVG متحرك مع تحول لوني ذكي (نيون ➔ أصفر ➔ نبض أحمر في آخر 5 ثوانٍ). |
+| 🔊 **التنبيهات الصوتية الإجرائية (Web Audio Synthesizer)** | نظام توليد نغمات رقمية خفيفة بدون أي ملفات خارجية (عد تنازلي 3.. 2.. 1 وموسيقى نصر احتفالية مع زر كتم الصوت). |
+| 🎉 **احتفالية إنهاء التمرين (Confetti HUD & Volume Summary)** | نافذة احتفالية تفاعلية بجزيئات كونفيتي ملونة تلخص إجمالي الوزن المرفوع بالكيلوغرام، السعرات المحروقة، ومدة التمرين. |
+| 🔀 **درج الاستبدال الذكي للأجهزة المشغولة (Smart Swap Drawer)** | نافذة سفلية تقدم 3 بدائل فورية لنفس العضلة عند انشغال أجهزة الجيم مع الحفاظ على تسلسل الجولات والأوزان. |
+| 📊 **أشرطة الكثافة العضلية ومصفوفة الاستشفاء (Volume Bullet Bars)** | قياس جولات كل عضلة أسبوعياً مقارنة بالنطاق البنائي المثالي (10-20 جولة) مع تلوين حالة الاستشفاء (🟢 جاهزة \| 🟡 استشفاء \| 🔴 مجهدة). |
+| 📱 **لوحة المفاتيح الرقمية للهواتف (Smart Numeric Keypads)** | استخدام `inputmode="decimal"` لفتح لوحة الأرقام الكبيرة والواضحة فوراً عند تسجيل الأوزان والتكرارات على الهواتف. |
+| 💧 **شريط الإجراءات السريعة العائم (Floating Speed-Dial)** | زر عائم بنقرة واحدة لتسجيل الماء (+250ml) 💧، مؤقت راحة فوري ⏱️، وتسجيل الوزن ⚖️. |
+| 🦴 **شاشات التحميل الشبحية الزجاجية (Skeleton Shimmer)** | بطاقات زجاجية ببريق ناعم متحرك تمنع وميض النصوص أو تقطيع الشاشات أثناء تحميل البيانات (`Zero Layout Shift`). |
+| ✍️ **الطباعة والخطوط الرياضية (Barlow Condensed + Cairo)** | دمج خط `Barlow Condensed` للأرقام والأوزان والـ PR مع خط `Cairo` العربي للعناوين الرياضية. |
+| 🎨 **استوديو الثيمات والشكليات البصرية (Visual Theme Studio)** | تبديل لحظي بنقرة واحدة بين 4 هويات رياضية عالمية (⚡ Cyber Volt, 🔥 Crimson Iron, 👑 Imperial Gold, 💎 Cyber Frost). |
+| 🖨️ **محرك الطباعة الورقية فائق الوضوح (Crisp Print Engine)** | فتح وتوسيع كافة أيام الأسبوع تلقائياً عند الطباعة مع تنسيق عالي التباين وجداول واضحة بالأبيض والأسود. |
 
 ---
 
-## 🎨 النظام البصري والهوية الرياضية | Signature Design System
+## 🎨 استوديو الهويات الرياضية الأربعة | 4 Curated Visual Themes
 
 ```text
-🎨 Primary Identity: ⚡ Cyber-Volt (#CCFF00) on Matte Obsidian Carbon (#08090D)
-✨ Micro-Interactions:
-   ├── Glass Shimmer Sweep (تأثير اللمعة الزجاجية على الأزرار)
-   ├── Ambient Breathing Glow (نبض النيون المحيطي للبطاقات النشطة)
-   ├── Critical Timer Ripple (نبض المؤقت الدائري لآخر 5 ثوانٍ)
-   └── Top Scroll Progress Bar (شريط تقدم الصفحة النيون في قمة الشاشة)
+1. ⚡ Cyber-Volt & Carbon (Nike Pro Edition)     : #CCFF00 (طاقة نيون قصوى + تركيز حاد + تباين فائق)
+2. 🔥 Crimson Iron & Fire (Heavy Iron Edition)   : #FF1744 (قوة غاشمة + رفع أثقال + حماس كمال أجسام)
+3. 👑 Imperial Gold & Onyx (Mr. Olympia Luxury)   : #F59E0B (فخامة وبطولة ملكية + تجربة VIP مذهبة)
+4. 💎 Cyber Frost & Cyan (Sci-Fi Bio-Hacking)    : #00D2FF (بيانات بيومترية + ذكاء اصطناعي واستشفاء)
 ```
+
+---
+
+## ✨ القدرات الأساسية الإضافية | Core Platform Features
+
+| الميزة | الوصف التقني |
+| :--- | :--- |
+| 📷 **تصدير البطاقة التدريبية السينمائية (Visual Routine Card)** | توليد وتصدير بطاقات داكنة عالية الدقة للجداول اليومية والأسبوعية للطباعة، الحفظ كـ PDF، أو المشاركة كصورة ستوري وواتساب. |
+| 🤸‍♂️ **مؤقت الإحماء الحركي الذكي (3-Min Dynamic Warmup)** | بروتوكول إحماء حركي مخصص لعضلات اليوم (3 دقائق) لتليين المفاصل وتجهيز الجهاز العصبي وتفادي الإصابات. |
+| 🗺️ **المجسم التشريحي التفاعلي المتزامن (Live Anatomy Sync)** | إضاءة العضلات المستهدفة اليوم في الداشبورد تلقائياً على مجسم ثلاثي الأبعاد مع توجيهات التكنيك والشروحات التشريحية. |
+| ⚡ **وضع "أنا مستعجل" (Express 30-Min Workout Mode)** | تكثيف الحصة التدريبية لـ 30 دقيقة بالتركيز على الحركات المركبة (Compound Lifts) مع تقليص الراحة. |
+| 📸 **مقارنة التطور بشريط السحب (Before/After Split Slider)** | أداة مقارنة تفاعلية بالسحب للمقارنة بين صور بداية المشوار والصورة الحالية لفحص تفاصيل التناسق العضلي ونسبة الدهون. |
+| 🤖 **توليد الجداول بالذكاء الاصطناعي (AI Workout Generation)** | توليد خطط مخصصة بناءً على مستوى اللاعب، الأدوات المتاحة، وموقع التمرين (جيم / منزل) عبر Groq LLaMA 3.3 و Gemini AI. |
+| 🥗 **مدرب الماكروز وتدوير السعرات (Smart Nutrition & TDEE)** | حساب دقيق للـ BMR و TDEE بمعادلة Mifflin-St Jeor مع تدوير الماكروز وتتبع الماء والنوم. |
+| 🏋️ **محاكي صفائح البار والـ 1RM (Barbell Plate Loader)** | محاكي بصري ملون لصفائح البار الأولمبي وحساب الأوزان الدقيقة لكل جهة مع حاسبة القوة القصوى 1RM. |
+| 📱 **تطبيق ويب تقدمي متطور (Offline PWA)** | يعمل 100% بدون إنترنت داخل صالات الجيم السفلية، يدعم التثبيت المباشر على الهاتف مع كاش ذكي فائق السرعة. |
+| 🔐 **حماية بيانات وتوثيق متقدم (OWASP & Google OAuth)** | تسجيل دخول سريع بحساب Google بضغطة زر، تأكيد بالبريد الإلكتروني، واستعادة الحساب برموز OTP مع تشفير OWASP كامل. |
 
 ---
 
@@ -89,30 +99,18 @@ graph TD
 
 ---
 
-## 🛡️ المعايير الأمنية والتحصين | Enterprise Security Hardening
-
-تم تدقيق النظام واجتياز اختبارات الأمان السكونية والديناميكية (**Aikido Security & OWASP Top 10 Standards**):
-
-- 🛡️ **منع حقن الأوامر (OS Command Injection):** استبدال استدعاءات `exec` بـ `execFile` وتمرير المعاملات كمصفوفات عناصر منفصلة.
-- 🛡️ **منع حقن الاستعلامات (SQL & NoSQL Injection):** استخدام المعاملات المجهزة (Parameterized Queries) والتحقق الصارم من النصوص الأصلية (`primitive types`).
-- 🛡️ **منع اختراق المسارات (Path Traversal Prevention):** تعقيم كافة مسارات قراءة وكتابة الملفات عبر `path.basename` وحصرها داخل المجلدات المصرح بها.
-- 🛡️ **منع تزوير الطلبات (SSRF Protection):** تقييد اتصالات الـ Service Worker على النطاقات الموثوقة وقائمة بيضاء معتمدة للأصول الخارجية.
-- 🛡️ **منع الهجمات الموجهة (DOM XSS Protection):** تطهير وفحص كافة الروابط الخارجية وقصرها على بروتوكول `https:` والنطاقات المعتمدة فقط.
-
----
-
 ## 📁 هيكل مجلدات المشروع | Directory Structure
 
 ```text
 New BeastMode/
 ├── frontend/                   # واجهة المستخدم (React 19 + Vite + TypeScript + PWA)
 │   ├── src/
-│   │   ├── components/         # المكونات (RoutineCardExport, DynamicWarmup, BodyMap, MuscleWiki, GlobalPlayer)
+│   │   ├── components/         # المكونات (CircularRestTimer, ConfettiHUD, SmartSwap, FloatingSpeedDial, SkeletonLoader)
 │   │   ├── pages/              # الصفحات (Dashboard, MyPlan, ExerciseLibrary, Stats, Profile, LandingPage)
 │   │   ├── context/            # إدارة الحالة (WorkoutSessionContext)
 │   │   ├── services/           # خدمات الاتصال بالـ API و Supabase
 │   │   ├── styles/             # نظام التصميم (design-system.css)
-│   │   └── utils/              # الترجمة (i18n)، التحقق، محرك الصوت، والبحث الضبابي
+│   │   └── utils/              # الترجمة (i18n)، التحقق، محرك الصوت audioCues، والبحث الضبابي
 │   └── public/                 # أيقونات PWA و Service Worker
 │
 ├── backend/                    # السيرفر الخلفي (Express + TypeScript + Prisma)
