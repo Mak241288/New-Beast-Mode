@@ -1329,6 +1329,60 @@ export const api = {
     return plan;
   },
 
+  updatePlanFully: async (planId: number | string, updatedData: any, activate: boolean = false): Promise<any> => {
+    const days = updatedData.dayWorkouts || updatedData.days || [];
+    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
+    const activePlan: any = cacheStore.get('active_plan');
+    const isTargetActive = activate || (activePlan && (String(activePlan.id) === String(planId) || activePlan.title === updatedData.title));
+
+    const existingPlan = history.find((p: any) => String(p.id) === String(planId) || (p.title && p.title === updatedData.title));
+
+    const mergedPlan = {
+      ...(existingPlan || {}),
+      ...updatedData,
+      id: planId,
+      dayWorkouts: days,
+      days: days,
+      active: isTargetActive,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (isTargetActive) {
+      cacheStore.set('active_plan', mergedPlan);
+    }
+
+    const updatedHistory = history.some((p: any) => String(p.id) === String(planId) || p.title === mergedPlan.title)
+      ? history.map((p: any) => {
+          if (String(p.id) === String(planId) || p.title === mergedPlan.title) {
+            return mergedPlan;
+          }
+          return isTargetActive ? { ...p, active: false } : p;
+        })
+      : [mergedPlan, ...history.map((p: any) => isTargetActive ? { ...p, active: false } : p)];
+
+    cacheStore.set('plan_history', updatedHistory);
+    await pushUserDataToCloud(true);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
+
+    const user = await getCurrentUser();
+    if (user?.email) {
+      try {
+        await supabase.from('WorkoutPlan').update({
+          title: mergedPlan.title,
+          updatedAt: new Date().toISOString(),
+          active: isTargetActive,
+        }).eq('id', planId);
+      } catch (err) {
+        console.warn('[Supabase updatePlanFully Exception]:', err);
+      }
+    }
+
+    return mergedPlan;
+  },
+
   getPlanHistory: async (): Promise<any[]> => {
     const user = await getCurrentUser();
 

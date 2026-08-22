@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar, Search } from 'lucide-react';
+import { Edit2, Edit3, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar, Search } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
@@ -121,6 +121,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [pickerMuscle, setPickerMuscle] = useState<string>('ALL');
   const [pickerEquipment, setPickerEquipment] = useState<string>('ALL');
   const [pickerQuery, setPickerQuery] = useState<string>('');
+
+  // Inline Live Edit Mode States (Direct Sheet Editing)
+  const [isInlineEditing, setIsInlineEditing] = useState<boolean>(false);
+  const [inlineSavedToast, setInlineSavedToast] = useState<boolean>(false);
 
   // Smart Warmup & Cooldown Routines mapped to Focus Area
   const getSmartWarmupRoutine = (focus: string = '', title: string = '') => {
@@ -317,6 +321,88 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
       alert(isEn ? '✅ Workout plan copied to clipboard formatted for WhatsApp!' : '✅ تم نسخ الخطة كرسالة واتساب منسقة بنجاح!');
+    }
+  };
+
+  const handleInlineUpdateExercise = async (dayIndex: number, exIndex: number, field: string, value: any) => {
+    if (!activePlan) return;
+    const updatedDays = [...(activePlan.dayWorkouts || activePlan.days || [])];
+    const day = updatedDays.find((d: any) => d.dayIndex === dayIndex);
+    if (!day || !day.exercises || !day.exercises[exIndex]) return;
+    day.exercises[exIndex] = {
+      ...day.exercises[exIndex],
+      [field]: value,
+    };
+    const updatedPlan = {
+      ...activePlan,
+      dayWorkouts: updatedDays,
+      days: updatedDays,
+    };
+    setActivePlan(updatedPlan);
+    cacheStore.set('active_plan', updatedPlan);
+    setInlineSavedToast(true);
+    setTimeout(() => setInlineSavedToast(false), 1500);
+    try {
+      await api.updatePlanFully(activePlan.id, updatedPlan, true);
+    } catch (err) {
+      console.warn('Inline update error:', err);
+    }
+  };
+
+  const handleInlineDeleteExercise = async (dayIndex: number, exIndex: number) => {
+    if (!activePlan) return;
+    const updatedDays = [...(activePlan.dayWorkouts || activePlan.days || [])];
+    const day = updatedDays.find((d: any) => d.dayIndex === dayIndex);
+    if (!day || !day.exercises) return;
+    day.exercises.splice(exIndex, 1);
+    const updatedPlan = {
+      ...activePlan,
+      dayWorkouts: updatedDays,
+      days: updatedDays,
+    };
+    setActivePlan(updatedPlan);
+    cacheStore.set('active_plan', updatedPlan);
+    setInlineSavedToast(true);
+    setTimeout(() => setInlineSavedToast(false), 1500);
+    try {
+      await api.updatePlanFully(activePlan.id, updatedPlan, true);
+    } catch (err) {
+      console.warn('Inline delete error:', err);
+    }
+  };
+
+  const handleInlineAddExercise = async (dayIndex: number, exerciseItem: any) => {
+    if (!activePlan) return;
+    const updatedDays = [...(activePlan.dayWorkouts || activePlan.days || [])];
+    const day = updatedDays.find((d: any) => d.dayIndex === dayIndex);
+    if (!day) return;
+    const newEx = {
+      id: Date.now(),
+      name: lang === 'en' ? (exerciseItem.name_en || exerciseItem.name) : (exerciseItem.name_ar || exerciseItem.name_en || exerciseItem.name),
+      targetMuscle: exerciseItem.muscle_en || exerciseItem.targetMuscle || 'Chest',
+      category: exerciseItem.category || 'MAIN',
+      sets: 3,
+      reps: '10-12',
+      weight: exerciseItem.equipment_en || exerciseItem.equipment || 'Dumbbells',
+      restSeconds: 60,
+      exerciseTips: exerciseItem.instructions_ar || exerciseItem.instructions_en || '',
+      imageUrl: exerciseItem.image_url || exerciseItem.imageUrl || '',
+      videoUrl: exerciseItem.video_url || exerciseItem.videoUrl || '',
+    };
+    day.exercises = [...(day.exercises || []), newEx];
+    const updatedPlan = {
+      ...activePlan,
+      dayWorkouts: updatedDays,
+      days: updatedDays,
+    };
+    setActivePlan(updatedPlan);
+    cacheStore.set('active_plan', updatedPlan);
+    setInlineSavedToast(true);
+    setTimeout(() => setInlineSavedToast(false), 1500);
+    try {
+      await api.updatePlanFully(activePlan.id, updatedPlan, true);
+    } catch (err) {
+      console.warn('Inline add error:', err);
     }
   };
 
@@ -1593,11 +1679,38 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                           {/* Day Quick Routine Protocol Toolbar */}
                           <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', padding: '10px 14px', background: 'var(--bg-card-hover)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                              <span>⚡</span>
-                              <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang === 'en' ? 'Day Protocols:' : 'بروتوكولات اليوم المخصصة:'}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                <span>⚡</span>
+                                <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang === 'en' ? 'Day Protocols:' : 'بروتوكولات اليوم:'}</span>
+                              </div>
+                              {inlineSavedToast && (
+                                <span className="animated-fade" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', padding: '2px 8px', fontSize: '11px', fontWeight: 'bold' }}>
+                                  ✓ {lang === 'en' ? 'Auto-Saved' : 'تم الحفظ تلقائياً'}
+                                </span>
+                              )}
                             </div>
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                              <button
+                                onClick={() => setIsInlineEditing(!isInlineEditing)}
+                                className={isInlineEditing ? "glow-btn" : "secondary-btn"}
+                                style={{
+                                  padding: '5px 12px',
+                                  fontSize: '11px',
+                                  borderRadius: '8px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  borderColor: isInlineEditing ? 'var(--primary)' : 'var(--border-color)',
+                                  background: isInlineEditing ? 'rgba(0, 210, 255, 0.15)' : undefined,
+                                  fontWeight: 'bold',
+                                }}
+                                title={lang === 'en' ? 'Direct Inline Edit Mode' : 'تفعيل التعديل السريع المباشر في نفس الصفحة'}
+                              >
+                                <Edit3 size={12} />
+                                <span>{isInlineEditing ? (lang === 'en' ? 'Done Editing ✓' : 'إنهاء التعديل ✓') : (lang === 'en' ? 'Quick Edit ✏️' : 'تعديل الجدول ✏️')}</span>
+                              </button>
                               <button
                                 onClick={() => setDynamicWarmupDay(dw)}
                                 className="secondary-btn"
@@ -1633,140 +1746,314 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             </div>
                           </div>
 
-                          {dw.exercises.map((ex: any) => (
-                            <div
-                              key={ex.id}
-                              className="glass-panel animated-fade"
-                              style={{
-                                padding: '16px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '12px',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '12px',
-                                marginBottom: '10px'
-                              }}
-                            >
-                              {/* Line 1: Full Width Name & Tip */}
-                              <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', width: '100%' }}>
-                                <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-card-hover)', flexShrink: 0, border: '1px solid var(--border-color)' }}>
-                                  <ExerciseImage
-                                    src={ex.imageUrl}
-                                    alt={ex.name}
-                                    muscle={ex.targetMuscle}
-                                  />
+                          {dw.exercises.map((ex: any, exIdx: number) => {
+                            if (isInlineEditing) {
+                              return (
+                                <div
+                                  key={ex.id || exIdx}
+                                  className="glass-panel animated-fade"
+                                  style={{
+                                    padding: '16px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '12px',
+                                    border: '1px solid var(--primary)',
+                                    background: 'rgba(0, 210, 255, 0.03)',
+                                    borderRadius: '14px',
+                                    marginBottom: '10px',
+                                    position: 'relative',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                    <div style={{ flex: 1, minWidth: '220px' }}>
+                                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>
+                                        {lang === 'en' ? 'Exercise Name:' : 'اسم التمرين:'}
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={ex.name}
+                                        onChange={(e) => handleInlineUpdateExercise(dw.dayIndex, exIdx, 'name', e.target.value)}
+                                        className="input-field"
+                                        style={{ width: '100%', fontSize: '13px', padding: '8px 12px', borderRadius: '8px', fontWeight: 'bold' }}
+                                      />
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '16px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowExercisePickerModal({ dayIdx: dw.dayIndex - 1, exIdx })}
+                                        className="glow-btn"
+                                        style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        title={lang === 'en' ? 'Swap from Database' : 'استبدال من قاعدة التمارين'}
+                                      >
+                                        <ArrowLeftRight size={13} />
+                                        <span>{lang === 'en' ? 'Swap' : 'استبدال'}</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleInlineDeleteExercise(dw.dayIndex, exIdx)}
+                                        className="secondary-btn"
+                                        style={{ padding: '6px 10px', fontSize: '12px', borderRadius: '8px', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                                        title={lang === 'en' ? 'Delete Exercise' : 'حذف التمرين'}
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                                    <div>
+                                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                        🔄 {lang === 'en' ? 'Sets:' : 'الجولات:'}
+                                      </label>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleInlineUpdateExercise(dw.dayIndex, exIdx, 'sets', Math.max(1, (parseInt(String(ex.sets)) || 3) - 1))}
+                                          className="secondary-btn"
+                                          style={{ width: '32px', height: '32px', padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}
+                                        >
+                                          -
+                                        </button>
+                                        <span style={{ fontWeight: 'bold', fontSize: '14px', minWidth: '24px', textAlign: 'center', color: 'var(--primary)' }}>
+                                          {ex.sets || 3}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleInlineUpdateExercise(dw.dayIndex, exIdx, 'sets', (parseInt(String(ex.sets)) || 3) + 1)}
+                                          className="secondary-btn"
+                                          style={{ width: '32px', height: '32px', padding: 0, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                        🔢 {lang === 'en' ? 'Reps:' : 'التكرار:'}
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={ex.reps || '10-12'}
+                                        onChange={(e) => handleInlineUpdateExercise(dw.dayIndex, exIdx, 'reps', e.target.value)}
+                                        className="input-field"
+                                        style={{ width: '100%', fontSize: '12px', padding: '6px 10px', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold' }}
+                                      />
+                                    </div>
+
+                                    <div>
+                                      <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                                        ⚖️ {lang === 'en' ? 'Equipment:' : 'الأداة:'}
+                                      </label>
+                                      <select
+                                        value={ex.weight || 'Dumbbells'}
+                                        onChange={(e) => handleInlineUpdateExercise(dw.dayIndex, exIdx, 'weight', e.target.value)}
+                                        className="input-field"
+                                        style={{ width: '100%', fontSize: '12px', padding: '6px 10px', borderRadius: '8px', background: 'var(--bg-card-hover)', color: 'var(--text-primary)' }}
+                                      >
+                                        <option value="Dumbbells">دمبلز (Dumbbells)</option>
+                                        <option value="Barbell">بار (Barbell)</option>
+                                        <option value="Bodyweight">وزن الجسم (Bodyweight)</option>
+                                        <option value="Cable">كيبل (Cable)</option>
+                                        <option value="Machine">جهاز (Machine)</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', paddingTop: '2px' }}>
+                                    <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>
+                                      ⚡ {lang === 'en' ? 'Quick Reps:' : 'تكرار سريع:'}
+                                    </span>
+                                    {[
+                                      { label: '8-10', val: '8-10' },
+                                      { label: '10-12', val: '10-12' },
+                                      { label: '12-15', val: '12-15' },
+                                      { label: '4-6', val: '4-6' },
+                                      { label: '15-20', val: '15-20' },
+                                      { label: '45s', val: '45s' },
+                                    ].map((preset, pIdx) => (
+                                      <button
+                                        key={pIdx}
+                                        type="button"
+                                        onClick={() => handleInlineUpdateExercise(dw.dayIndex, exIdx, 'reps', preset.val)}
+                                        style={{
+                                          background: ex.reps === preset.val ? 'rgba(0, 210, 255, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                                          border: ex.reps === preset.val ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.08)',
+                                          color: ex.reps === preset.val ? 'var(--primary)' : 'var(--text-secondary)',
+                                          borderRadius: '10px',
+                                          padding: '2px 8px',
+                                          fontSize: '10.5px',
+                                          cursor: 'pointer',
+                                          fontWeight: 'bold',
+                                        }}
+                                      >
+                                        {preset.label}
+                                      </button>
+                                    ))}
+                                  </div>
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    <h4 style={{ fontSize: '14px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>{ex.name}</h4>
-                                    {((ex.category || '').toUpperCase() === 'WARMUP' || ex.name.includes('إحماء') || ex.name.includes('Warmup')) && (
-                                      <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '6px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
-                                        🔥 {lang === 'en' ? 'Warm-up' : 'إحماء'}
-                                      </span>
+                              );
+                            }
+
+                            return (
+                              <div
+                                key={ex.id}
+                                className="glass-panel animated-fade"
+                                style={{
+                                  padding: '16px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '12px',
+                                  border: '1px solid var(--border-color)',
+                                  borderRadius: '12px',
+                                  marginBottom: '10px'
+                                }}
+                              >
+                                {/* Line 1: Full Width Name & Tip */}
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', width: '100%' }}>
+                                  <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-card-hover)', flexShrink: 0, border: '1px solid var(--border-color)' }}>
+                                    <ExerciseImage
+                                      src={ex.imageUrl}
+                                      alt={ex.name}
+                                      muscle={ex.targetMuscle}
+                                    />
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                      <h4 style={{ fontSize: '14px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>{ex.name}</h4>
+                                      {((ex.category || '').toUpperCase() === 'WARMUP' || ex.name.includes('إحماء') || ex.name.includes('Warmup')) && (
+                                        <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '6px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
+                                          🔥 {lang === 'en' ? 'Warm-up' : 'إحماء'}
+                                        </span>
+                                      )}
+                                      {((ex.category || '').toUpperCase() === 'COOLDOWN' || ex.name.includes('استشفاء') || ex.name.includes('إطالة') || ex.name.includes('Stretch')) && (
+                                        <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '6px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
+                                          🧊 {lang === 'en' ? 'Recovery' : 'استشفاء'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    {ex.exerciseTips && (
+                                      <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px', marginBottom: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        💡 {typeof ex.exerciseTips === 'string' ? ex.exerciseTips : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || ''))}
+                                      </p>
                                     )}
-                                    {((ex.category || '').toUpperCase() === 'COOLDOWN' || ex.name.includes('استشفاء') || ex.name.includes('إطالة') || ex.name.includes('Stretch')) && (
-                                      <span style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee', border: '1px solid rgba(6, 182, 212, 0.4)', borderRadius: '6px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
-                                        🧊 {lang === 'en' ? 'Recovery' : 'استشفاء'}
+                                  </div>
+                                </div>
+
+                                {/* Line 2: Stats (Sets, Reps, Rest) & Actions (Swap on Right) */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
+                                  {/* Stats Block */}
+                                  <div style={{ display: 'flex', gap: '12px', fontSize: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
+                                      🔄 {ex.sets} {t.sets}
+                                    </span>
+                                    <span style={{ color: 'var(--text-secondary)' }}>
+                                      🔢 {ex.reps} {t.reps}
+                                    </span>
+                                    <span style={{ color: 'var(--text-secondary)' }}>
+                                      ⚖️ {ex.weight || 'Bodyweight'}
+                                    </span>
+                                    <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>
+                                      ⏱️ {lang === 'en' ? 'Rest' : 'راحة'}: {getRestTime(ex)}
+                                    </span>
+                                    {ex.targetMuscle && (
+                                      <span style={{ color: 'var(--primary)', opacity: 0.8 }}>
+                                        🎯 {ex.targetMuscle}
                                       </span>
                                     )}
                                   </div>
-                                  {ex.exerciseTips && (
-                                    <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px', marginBottom: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      💡 {typeof ex.exerciseTips === 'string' ? ex.exerciseTips : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || ''))}
-                                    </p>
-                                  )}
+
+                                  {/* Actions Group */}
+                                  <div className="no-print" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    {/* Swap Button is highly visible */}
+                                    <button
+                                      onClick={() => {
+                                        setSelectedDayIndex(dw.dayIndex);
+                                        handleFetchAlternatives(ex.id);
+                                      }}
+                                      className="glow-btn"
+                                      style={{
+                                        padding: '8px 16px',
+                                        fontSize: '13px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        fontWeight: 'bold',
+                                        borderRadius: '8px',
+                                      }}
+                                      title={lang === 'en' ? 'Swap Exercise' : 'استبدال التمرين'}
+                                    >
+                                      <ArrowLeftRight size={14} />
+                                      <span>{lang === 'en' ? 'Swap' : 'استبدال'}</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => setViewingExercise(ex)}
+                                      className="secondary-btn"
+                                      title={lang === 'en' ? 'View Details' : 'عرض تفاصيل وتوجيهات التمرين'}
+                                      style={{ padding: '6px 10px', borderRadius: '8px' }}
+                                    >
+                                      <Info size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleSmartFillActiveEx(ex)}
+                                      className="secondary-btn"
+                                      title={lang === 'en' ? 'Smart Match from Database' : 'مطابقة ذكية من قاعدة البيانات'}
+                                      style={{ padding: '6px 10px', borderRadius: '8px' }}
+                                    >
+                                      <Sparkles size={13} color="var(--primary)" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedDayIndex(dw.dayIndex);
+                                        setEditingExercise(ex);
+                                      }}
+                                      className="secondary-btn"
+                                      title={lang === 'en' ? 'Edit Details' : 'تعديل التكرارات والأوزان'}
+                                      style={{ padding: '6px 10px', borderRadius: '8px' }}
+                                    >
+                                      <Edit2 size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedDayIndex(dw.dayIndex);
+                                        handleDeleteExercise(ex.id);
+                                      }}
+                                      className="secondary-btn"
+                                      title={lang === 'en' ? 'Delete' : 'حذف التمرين'}
+                                      style={{ padding: '6px 10px', borderRadius: '8px', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.1)' }}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
+                            );
+                          })}
 
-                              {/* Line 2: Stats (Sets, Reps, Rest) & Actions (Swap on Right) */}
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
-                                {/* Stats Block */}
-                                <div style={{ display: 'flex', gap: '12px', fontSize: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                  <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
-                                    🔄 {ex.sets} {t.sets}
-                                  </span>
-                                  <span style={{ color: 'var(--text-secondary)' }}>
-                                    🔢 {ex.reps} {t.reps}
-                                  </span>
-                                  <span style={{ color: 'var(--text-secondary)' }}>
-                                    ⚖️ {ex.weight || 'Bodyweight'}
-                                  </span>
-                                  <span style={{ color: 'var(--text-secondary)', fontWeight: '500' }}>
-                                    ⏱️ {lang === 'en' ? 'Rest' : 'راحة'}: {getRestTime(ex)}
-                                  </span>
-                                  {ex.targetMuscle && (
-                                    <span style={{ color: 'var(--primary)', opacity: 0.8 }}>
-                                      🎯 {ex.targetMuscle}
-                                    </span>
-                                  )}
-                                </div>
-
-                                {/* Actions Group */}
-                                <div className="no-print" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                  {/* Swap Button is highly visible */}
-                                  <button
-                                    onClick={() => {
-                                      setSelectedDayIndex(dw.dayIndex);
-                                      handleFetchAlternatives(ex.id);
-                                    }}
-                                    className="glow-btn"
-                                    style={{
-                                      padding: '8px 16px',
-                                      fontSize: '13px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '6px',
-                                      fontWeight: 'bold',
-                                      borderRadius: '8px',
-                                    }}
-                                    title={lang === 'en' ? 'Swap Exercise' : 'استبدال التمرين'}
-                                  >
-                                    <ArrowLeftRight size={14} />
-                                    <span>{lang === 'en' ? 'Swap' : 'استبدال'}</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => setViewingExercise(ex)}
-                                    className="secondary-btn"
-                                    title={lang === 'en' ? 'View Details' : 'عرض تفاصيل وتوجيهات التمرين'}
-                                    style={{ padding: '6px 10px', borderRadius: '8px' }}
-                                  >
-                                    <Info size={13} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleSmartFillActiveEx(ex)}
-                                    className="secondary-btn"
-                                    title={lang === 'en' ? 'Smart Match from Database' : 'مطابقة ذكية من قاعدة البيانات'}
-                                    style={{ padding: '6px 10px', borderRadius: '8px' }}
-                                  >
-                                    <Sparkles size={13} color="var(--primary)" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedDayIndex(dw.dayIndex);
-                                      setEditingExercise(ex);
-                                    }}
-                                    className="secondary-btn"
-                                    title={lang === 'en' ? 'Edit Details' : 'تعديل التكرارات والأوزان'}
-                                    style={{ padding: '6px 10px', borderRadius: '8px' }}
-                                  >
-                                    <Edit2 size={13} />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setSelectedDayIndex(dw.dayIndex);
-                                      handleDeleteExercise(ex.id);
-                                    }}
-                                    className="secondary-btn"
-                                    title={lang === 'en' ? 'Delete' : 'حذف التمرين'}
-                                    style={{ padding: '6px 10px', borderRadius: '8px', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.1)' }}
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
-                              </div>
+                          {isInlineEditing && (
+                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                              <button
+                                onClick={() => setShowExercisePickerModal({ dayIdx: dw.dayIndex - 1 })}
+                                className="glow-btn"
+                                style={{
+                                  width: '100%',
+                                  padding: '12px',
+                                  borderRadius: '12px',
+                                  fontSize: '13px',
+                                  fontWeight: 'bold',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '8px',
+                                }}
+                              >
+                                <Plus size={16} />
+                                <span>{lang === 'en' ? '+ Add Exercise to this Day' : '+ إضافة تمرين جديد لهذا اليوم'}</span>
+                              </button>
                             </div>
-                          ))}
+                          )}
                         </div>
                       )}
                     </div>
@@ -4199,16 +4486,26 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   }
                   setManualSaving(true);
                   try {
-                    const saved = await api.saveStructuredPlan({
-                      id: manualEditingPlanId || undefined,
+                    const isEditingExisting = !!manualEditingPlanId;
+                    const targetId = manualEditingPlanId || Date.now();
+                    const updatedPlanData = {
+                      id: targetId,
                       title: manualTitle,
                       days: manualDays,
                       dayWorkouts: manualDays,
-                    }, lang);
+                    };
+
+                    let saved;
+                    if (isEditingExisting) {
+                      saved = await api.updatePlanFully(targetId, updatedPlanData, true);
+                    } else {
+                      saved = await api.saveStructuredPlan(updatedPlanData, lang);
+                    }
+
                     setActivePlan(saved);
                     cacheStore.set('active_plan', saved);
                     setSelectedDayIndex(1);
-                    alert(lang === 'en' ? 'Custom workout plan saved and activated! ⚡' : 'تم حفظ وتفعيل جدولك الرياضي اليدوي بنجاح! ⚡');
+                    alert(lang === 'en' ? 'Custom workout plan saved and updated! ⚡' : 'تم حفظ وتحديث جدولك الرياضي بنجاح! ⚡');
                     setShowManualBuilder(false);
                     fetchHistory();
                     fetchActivePlan();
@@ -4754,8 +5051,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         type="button"
                         onClick={() => {
                           const { dayIdx, exIdx } = showExercisePickerModal;
-                          const updated = [...manualDays];
                           const selectedExData = {
+                            id: Date.now(),
                             name: lang === 'en' ? nameEn : nameAr,
                             targetMuscle: item.muscle_en || item.targetMuscle || 'Chest',
                             weight: item.equipment_en || item.equipment || 'Dumbbells',
@@ -4766,19 +5063,33 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             exerciseTips: item.instructions_ar || item.instructions_en || '',
                           };
 
-                          if (exIdx !== undefined && updated[dayIdx]?.exercises[exIdx]) {
-                            // Update existing row
-                            updated[dayIdx].exercises[exIdx] = {
-                              ...updated[dayIdx].exercises[exIdx],
-                              ...selectedExData,
-                            };
-                          } else {
-                            // Append new exercise
-                            if (!updated[dayIdx].exercises) updated[dayIdx].exercises = [];
-                            updated[dayIdx].exercises.push(selectedExData);
+                          if (showManualBuilder) {
+                            const updated = [...manualDays];
+                            if (exIdx !== undefined && updated[dayIdx]?.exercises[exIdx]) {
+                              // Update existing row
+                              updated[dayIdx].exercises[exIdx] = {
+                                ...updated[dayIdx].exercises[exIdx],
+                                ...selectedExData,
+                              };
+                            } else {
+                              // Append new exercise
+                              if (!updated[dayIdx].exercises) updated[dayIdx].exercises = [];
+                              updated[dayIdx].exercises.push(selectedExData);
+                            }
+                            setManualDays(updated);
+                          } else if (activePlan) {
+                            const targetDayIndex = dayIdx + 1;
+                            if (exIdx !== undefined) {
+                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'name', selectedExData.name);
+                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'targetMuscle', selectedExData.targetMuscle);
+                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'weight', selectedExData.weight);
+                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'imageUrl', selectedExData.imageUrl);
+                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'exerciseTips', selectedExData.exerciseTips);
+                            } else {
+                              handleInlineAddExercise(targetDayIndex, selectedExData);
+                            }
                           }
 
-                          setManualDays(updated);
                           setShowExercisePickerModal(null);
                         }}
                         className="glow-btn"
