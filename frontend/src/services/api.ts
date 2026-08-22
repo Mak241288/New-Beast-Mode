@@ -143,11 +143,22 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
       const localProf: any = cacheStore.get('user_profile') || {};
       cacheStore.set('user_profile', { ...localProf, ...finalProfile });
     }
-    if (finalPlan && finalPlan.dayWorkouts && finalPlan.dayWorkouts.length > 0) {
-      cacheStore.set('active_plan', finalPlan);
+    if (finalPlan && ((finalPlan.dayWorkouts && finalPlan.dayWorkouts.length > 0) || (finalPlan.days && finalPlan.days.length > 0))) {
+      if (!finalPlan.dayWorkouts && finalPlan.days) {
+        finalPlan.dayWorkouts = finalPlan.days;
+      }
+      const localPlan: any = cacheStore.get('active_plan');
+      const localTime = localPlan?.updatedAt ? new Date(localPlan.updatedAt).getTime() : 0;
+      const cloudTime = finalPlan?.updatedAt ? new Date(finalPlan.updatedAt).getTime() : 0;
+      if (cloudTime > localTime || !localPlan) {
+        cacheStore.set('active_plan', finalPlan);
+      }
     }
     if (finalHistory && finalHistory.length > 0) {
-      cacheStore.set('plan_history', finalHistory);
+      const localHistory: any[] = cacheStore.get('plan_history') || [];
+      if (localHistory.length === 0 || finalHistory.length >= localHistory.length) {
+        cacheStore.set('plan_history', finalHistory);
+      }
     }
     if (finalSession && (finalSession.status === 'active' || finalSession.status === 'resting' || finalSession.status === 'paused')) {
       cacheStore.set('active_gym_session', finalSession);
@@ -698,6 +709,7 @@ export const api = {
 
   getActivePlan: async () => {
     const user = await getCurrentUser();
+    const cached: any = cacheStore.get('active_plan');
 
     // 1. Authoritative Cloud Plan from Supabase User Metadata
     let cloudActive: any = null;
@@ -718,12 +730,29 @@ export const api = {
       }
     }
 
+    // Ensure dayWorkouts compatibility on cloudActive
+    if (cloudActive) {
+      if (!cloudActive.dayWorkouts && cloudActive.days) {
+        cloudActive.dayWorkouts = cloudActive.days;
+      }
+    }
+
+    // Determine timestamp winner between cached local and cloud
+    if (cached && cached.dayWorkouts && cached.dayWorkouts.length > 0) {
+      const cachedTime = cached.updatedAt ? new Date(cached.updatedAt).getTime() : 0;
+      const cloudTime = cloudActive?.updatedAt ? new Date(cloudActive.updatedAt).getTime() : 0;
+
+      // If cached is newer or equal, local changes MUST prevail!
+      if (cachedTime >= cloudTime || !cloudActive || !cloudActive.dayWorkouts || cloudActive.dayWorkouts.length === 0) {
+        return cached;
+      }
+    }
+
     if (cloudActive && cloudActive.dayWorkouts && cloudActive.dayWorkouts.length > 0) {
       cacheStore.set('active_plan', cloudActive);
       return cloudActive;
     }
 
-    const cached: any = cacheStore.get('active_plan');
     if (cached && cached.dayWorkouts && cached.dayWorkouts.length > 0) {
       return cached;
     }
@@ -815,6 +844,12 @@ export const api = {
     };
 
     cacheStore.set('active_plan', newPlan);
+
+    // Also synchronize to plan_history
+    const history: any[] = cacheStore.get('plan_history') || [];
+    const updatedHistory = [newPlan, ...history.filter((p: any) => p.id !== newPlan.id && p.title !== newPlan.title).map((p: any) => ({ ...p, active: false }))];
+    cacheStore.set('plan_history', updatedHistory);
+
     pushUserDataToCloud();
 
     // Persist to Supabase if accessible
@@ -869,6 +904,12 @@ export const api = {
     };
 
     cacheStore.set('active_plan', generated);
+
+    // Also synchronize to plan_history
+    const history: any[] = cacheStore.get('plan_history') || [];
+    const updatedHistory = [generated, ...history.filter((p: any) => p.id !== generated.id && p.title !== generated.title).map((p: any) => ({ ...p, active: false }))];
+    cacheStore.set('plan_history', updatedHistory);
+
     pushUserDataToCloud();
     return generated;
   },
@@ -884,7 +925,18 @@ export const api = {
           }
         }
       });
+      plan.days = plan.dayWorkouts;
+      plan.updatedAt = new Date().toISOString();
       cacheStore.set('active_plan', plan);
+
+      // Keep plan_history in sync
+      const history: any[] = cacheStore.get('plan_history') || [];
+      const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+      if (hIdx >= 0) {
+        history[hIdx] = { ...history[hIdx], ...plan };
+        cacheStore.set('plan_history', history);
+      }
+
       pushUserDataToCloud();
     }
 
@@ -905,7 +957,18 @@ export const api = {
           dw.exercises = dw.exercises.filter((e: any) => e.id !== id);
         }
       });
+      plan.days = plan.dayWorkouts;
+      plan.updatedAt = new Date().toISOString();
       cacheStore.set('active_plan', plan);
+
+      // Keep plan_history in sync
+      const history: any[] = cacheStore.get('plan_history') || [];
+      const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+      if (hIdx >= 0) {
+        history[hIdx] = { ...history[hIdx], ...plan };
+        cacheStore.set('plan_history', history);
+      }
+
       pushUserDataToCloud();
     }
 
@@ -945,7 +1008,19 @@ export const api = {
           }
         }
       });
+      plan.days = plan.dayWorkouts;
+      plan.updatedAt = new Date().toISOString();
       cacheStore.set('active_plan', plan);
+
+      // Keep plan_history in sync
+      const history: any[] = cacheStore.get('plan_history') || [];
+      const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+      if (hIdx >= 0) {
+        history[hIdx] = { ...history[hIdx], ...plan };
+        cacheStore.set('plan_history', history);
+      }
+
+      pushUserDataToCloud();
     }
 
     return {
@@ -974,7 +1049,18 @@ export const api = {
       const day = plan.dayWorkouts.find((d: any) => d.id === dayId || d.dayIndex === dayId);
       if (day) {
         day.exercises = [...(day.exercises || []), newEx];
+        plan.days = plan.dayWorkouts;
+        plan.updatedAt = new Date().toISOString();
         cacheStore.set('active_plan', plan);
+
+        // Keep plan_history in sync
+        const history: any[] = cacheStore.get('plan_history') || [];
+        const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+        if (hIdx >= 0) {
+          history[hIdx] = { ...history[hIdx], ...plan };
+          cacheStore.set('plan_history', history);
+        }
+
         pushUserDataToCloud();
       }
     }
@@ -1008,7 +1094,18 @@ export const api = {
       const dayIndex = plan.dayWorkouts.findIndex((d: any) => d.id === dayId || d.dayIndex === dayId);
       if (dayIndex !== -1) {
         plan.dayWorkouts[dayIndex] = { ...plan.dayWorkouts[dayIndex], ...data };
+        plan.days = plan.dayWorkouts;
+        plan.updatedAt = new Date().toISOString();
         cacheStore.set('active_plan', plan);
+
+        // Keep plan_history in sync
+        const history: any[] = cacheStore.get('plan_history') || [];
+        const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+        if (hIdx >= 0) {
+          history[hIdx] = { ...history[hIdx], ...plan };
+          cacheStore.set('plan_history', history);
+        }
+
         pushUserDataToCloud();
       }
     }
@@ -1026,7 +1123,18 @@ export const api = {
           });
         }
       });
+      plan.days = plan.dayWorkouts;
+      plan.updatedAt = new Date().toISOString();
       cacheStore.set('active_plan', plan);
+
+      // Keep plan_history in sync
+      const history: any[] = cacheStore.get('plan_history') || [];
+      const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+      if (hIdx >= 0) {
+        history[hIdx] = { ...history[hIdx], ...plan };
+        cacheStore.set('plan_history', history);
+      }
+
       pushUserDataToCloud();
     }
 
