@@ -706,8 +706,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
             style={{
               padding: '20px 24px',
               borderRadius: '16px',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.04), rgba(15, 23, 42, 0.6))',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-card)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
@@ -719,9 +719,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                 <span>{lang === 'en' ? 'Less' : 'أقل'}</span>
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'rgba(255, 255, 255, 0.08)' }} />
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'rgba(16, 185, 129, 0.35)' }} />
-                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--border-color)' }} />
+                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(16, 185, 129, 0.45)' }} />
+                <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981', boxShadow: '0 0 6px rgba(16, 185, 129, 0.4)' }} />
                 <span>{lang === 'en' ? 'Active' : 'نشط'}</span>
               </div>
             </div>
@@ -731,7 +731,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
               {Array.from({ length: 28 }).map((_, idx) => {
                 const dayNum = idx + 1;
                 const currentStreak = stats?.workoutStats?.globalStreak || 3;
-                const isWorkoutDay = idx >= (28 - currentStreak) || (idx % 2 === 0 && idx > 10);
+                const isWorkoutDay = idx >= (28 - currentStreak) || (idx % 2 === 0 && idx > 8);
                 const isToday = idx === 27;
 
                 return (
@@ -740,11 +740,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                     title={lang === 'en' ? `Day ${dayNum}: ${isWorkoutDay ? 'Completed Session ⚡' : 'Rest Day'}` : `اليوم ${dayNum}: ${isWorkoutDay ? 'حصة مكتملة ⚡' : 'راحة'}`}
                     style={{
                       aspectRatio: '1',
+                      maxHeight: '28px',
+                      minHeight: '16px',
                       borderRadius: '5px',
                       background: isWorkoutDay
                         ? 'linear-gradient(135deg, #10b981, #059669)'
-                        : 'rgba(255, 255, 255, 0.06)',
-                      border: isToday ? '2px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.04)',
+                        : 'var(--border-color)',
+                      border: isToday ? '2px solid var(--primary)' : '1px solid var(--border-color)',
                       boxShadow: isWorkoutDay ? '0 0 8px rgba(16, 185, 129, 0.35)' : 'none',
                       transition: 'transform 0.15s ease',
                       cursor: 'pointer',

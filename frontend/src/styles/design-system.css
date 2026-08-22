@@ -98,6 +98,42 @@
   --glass-border: 1px solid #cbd5e1;
 }
 
+[data-theme='light'][data-color-theme='crimson'] {
+  --primary: #dc2626;
+  --primary-contrast: #ffffff;
+  --primary-glow: rgba(220, 38, 38, 0.22);
+  --secondary: #ea580c;
+  --secondary-glow: rgba(234, 88, 12, 0.2);
+  --border-color-glow: rgba(220, 38, 38, 0.35);
+}
+
+[data-theme='light'][data-color-theme='gold'] {
+  --primary: #d97706;
+  --primary-contrast: #ffffff;
+  --primary-glow: rgba(217, 119, 6, 0.22);
+  --secondary: #0284c7;
+  --secondary-glow: rgba(2, 132, 199, 0.2);
+  --border-color-glow: rgba(217, 119, 6, 0.35);
+}
+
+[data-theme='light'][data-color-theme='cyan'] {
+  --primary: #0284c7;
+  --primary-contrast: #ffffff;
+  --primary-glow: rgba(2, 132, 199, 0.22);
+  --secondary: #7c3aed;
+  --secondary-glow: rgba(124, 58, 237, 0.2);
+  --border-color-glow: rgba(2, 132, 199, 0.35);
+}
+
+[data-theme='light'][data-color-theme='volt'] {
+  --primary: #059669;
+  --primary-contrast: #ffffff;
+  --primary-glow: rgba(5, 150, 105, 0.22);
+  --secondary: #0284c7;
+  --secondary-glow: rgba(2, 132, 199, 0.2);
+  --border-color-glow: rgba(5, 150, 105, 0.35);
+}
+
 [data-theme='light'] .glass-card,
 [data-theme='light'] .glass-panel {
   background: #ffffff !important;
