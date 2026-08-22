@@ -951,7 +951,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   }
 
   const handleOpenManualBuilder = (planToLoad?: any) => {
-    const plan = planToLoad || activePlan;
+    const plan = planToLoad || activePlan || cacheStore.get('active_plan');
     if (plan) {
       setManualTitle(plan.title || (lang === 'en' ? 'My Custom Workout Routine' : 'جدولي التدريبي المخصص'));
       const sourceDays = (plan.dayWorkouts && plan.dayWorkouts.length > 0)
@@ -4140,9 +4140,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                     }, lang);
                     setActivePlan(saved);
                     cacheStore.set('active_plan', saved);
+                    setSelectedDayIndex(1);
                     alert(lang === 'en' ? 'Custom workout plan saved and activated! ⚡' : 'تم حفظ وتفعيل جدولك الرياضي اليدوي بنجاح! ⚡');
                     setShowManualBuilder(false);
                     fetchHistory();
+                    fetchActivePlan();
                   } catch (err: any) {
                     alert(err.message || (lang === 'en' ? 'Failed to save custom plan' : 'فشل حفظ الجدول اليدوي'));
                   } finally {
