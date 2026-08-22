@@ -2129,7 +2129,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
             {/* Header & Exercise Title */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
               <div>
-                <h3 style={{ fontSize: '17px', fontWeight: '800', margin: 0, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '17px', fontWeight: '800', margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>⚡</span>
                   <span>{lang === 'en' ? 'Quick Exercise Editor' : 'محرر التمرين السريع والذكي'}</span>
                 </h3>
@@ -2202,13 +2202,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 style={{ fontSize: '13px', padding: '10px 14px' }}
               />
               {editSuggestions.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#0e111a', border: '1px solid var(--border-color)', borderRadius: '10px', zIndex: 1200, maxHeight: '160px', overflowY: 'auto', marginTop: '4px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', zIndex: 1200, maxHeight: '160px', overflowY: 'auto', marginTop: '4px', boxShadow: '0 10px 30px rgba(0,0,0,0.4)' }}>
                   {editSuggestions.map((item) => (
                     <div
                       key={item.id}
                       onClick={() => handleSelectSuggestion(item, 'edit')}
-                      style={{ padding: '9px 12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '12px', color: '#fff' }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+                      style={{ padding: '9px 12px', cursor: 'pointer', borderBottom: '1px solid var(--border-color)', fontSize: '12px', color: 'var(--text-primary)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       {lang === 'en' ? (item.name_en || item.name_ar) : (item.name_ar || item.name_en)}
@@ -4352,14 +4352,14 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       value={normalizeEquipment(ex.weight)}
                                       onChange={(e) => updateExercise(exIdx, 'weight', e.target.value)}
                                       className="input-field"
-                                      style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
+                                      style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
                                     >
-                                      <option value="Barbell" style={{ background: '#0f172a' }}>بار حديد (Barbell)</option>
-                                      <option value="Dumbbells" style={{ background: '#0f172a' }}>دمبلز (Dumbbells)</option>
-                                      <option value="Cable" style={{ background: '#0f172a' }}>كيبل (Cable)</option>
-                                      <option value="Machine" style={{ background: '#0f172a' }}>أجهزة (Machine)</option>
-                                      <option value="Bodyweight" style={{ background: '#0f172a' }}>وزن الجسم (Bodyweight)</option>
-                                      <option value="Cardio Machine" style={{ background: '#0f172a' }}>جهاز كارديو (Cardio)</option>
+                                      <option value="Barbell" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>بار حديد (Barbell)</option>
+                                      <option value="Dumbbells" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>دمبلز (Dumbbells)</option>
+                                      <option value="Cable" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>كيبل (Cable)</option>
+                                      <option value="Machine" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>أجهزة (Machine)</option>
+                                      <option value="Bodyweight" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>وزن الجسم (Bodyweight)</option>
+                                      <option value="Cardio Machine" style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>جهاز كارديو (Cardio)</option>
                                     </select>
                                   </div>
 
@@ -4372,7 +4372,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       <button
                                         type="button"
                                         onClick={() => updateExercise(exIdx, 'sets', Math.max(1, (parseInt(String(ex.sets)) || 3) - 1))}
-                                        style={{ width: '28px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
+                                        style={{ width: '28px', height: '32px', borderRadius: '6px', background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
                                       >
                                         -
                                       </button>
@@ -4386,7 +4386,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       <button
                                         type="button"
                                         onClick={() => updateExercise(exIdx, 'sets', (parseInt(String(ex.sets)) || 3) + 1)}
-                                        style={{ width: '28px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
+                                        style={{ width: '28px', height: '32px', borderRadius: '6px', background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
                                       >
                                         +
                                       </button>
@@ -4490,7 +4490,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   ) : (
                     <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)', fontSize: '14px', background: 'rgba(255,255,255,0.01)', borderRadius: '14px', border: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '32px' }}>💤</span>
-                      <strong style={{ color: '#fff' }}>{lang === 'en' ? 'Full Rest & Recovery Day' : 'يوم راحة واستشفاء عضلي كامل'}</strong>
+                      <strong style={{ color: 'var(--text-primary)' }}>{lang === 'en' ? 'Full Rest & Recovery Day' : 'يوم راحة واستشفاء عضلي كامل'}</strong>
                       <span style={{ fontSize: '12px', color: 'var(--text-secondary)', maxWidth: '450px' }}>
                         {lang === 'en' ? 'Muscles grow during rest! Ensure adequate sleep, hydration, and nutrition.' : 'تنمو العضلات أثناء فترات الاستشفاء. احرص على شرب 3-4 لتر ماء والنوم الكافي وتناول احتياج البروتين.'}
                       </span>

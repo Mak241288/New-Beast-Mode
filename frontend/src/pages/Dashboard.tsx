@@ -450,7 +450,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       {/* Header Info Panel */}
       <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#fff', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '900', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <span>{lang === 'en' ? 'Welcome Back, Beast! ⚡' : 'مرحباً بعودتك، أيها البطل! ⚡'}</span>
             <span 
               onClick={async () => {
@@ -713,7 +713,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '18px' }}>🔥</span>
-                <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: '#fff' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
                   {lang === 'en' ? 'Monthly Workout Consistency Heatmap' : 'مصفوفة الالتزام والنشاط الرياضي الشهري'}
                 </h3>
               </div>

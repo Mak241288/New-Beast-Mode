@@ -728,7 +728,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                     name="height"
                     value={profile.height}
                     onChange={handleInputChange}
-                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
                     placeholder="--"
                   />
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>cm</span>
@@ -746,7 +746,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                     name="age"
                     value={profile.age}
                     onChange={handleInputChange}
-                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
                     placeholder="--"
                   />
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'years' : 'سنة'}</span>
@@ -764,7 +764,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                     name="currentWeight"
                     value={profile.currentWeight}
                     onChange={handleInputChange}
-                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
                     placeholder="--"
                   />
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>kg</span>
@@ -782,7 +782,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                     name="targetWeight"
                     value={profile.targetWeight}
                     onChange={handleInputChange}
-                    style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '22px', fontWeight: '800', width: '80px', padding: 0 }}
                     placeholder="--"
                   />
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>kg</span>

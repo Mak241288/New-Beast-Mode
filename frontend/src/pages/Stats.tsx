@@ -442,7 +442,7 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
                   <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 'bold', display: 'block' }}>
                     🔥 {lang === 'en' ? 'Daily Calories' : 'السعرات المستهدفة'}
                   </span>
-                  <h3 style={{ fontSize: '22px', fontWeight: '900', color: '#fff', margin: '4px 0 0 0' }}>
+                  <h3 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-primary)', margin: '4px 0 0 0' }}>
                     {nutrition.targetCalories} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>kcal</span>
                   </h3>
                 </div>
@@ -451,16 +451,16 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
                   <span style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 'bold', display: 'block' }}>
                     🥩 {lang === 'en' ? 'Daily Protein' : 'البروتين اليومي'}
                   </span>
-                  <h3 style={{ fontSize: '22px', fontWeight: '900', color: '#fff', margin: '4px 0 0 0' }}>
+                  <h3 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-primary)', margin: '4px 0 0 0' }}>
                     {nutrition.proteinGrams} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>g</span>
                   </h3>
                 </div>
 
-                <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <div style={{ padding: '14px', background: 'rgba(168, 85, 247, 0.08)', borderRadius: '12px', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
                   <span style={{ fontSize: '11px', color: '#34d399', fontWeight: 'bold', display: 'block' }}>
                     💧 {lang === 'en' ? 'Water Intake' : 'الماء اليومي'}
                   </span>
-                  <h3 style={{ fontSize: '22px', fontWeight: '900', color: '#fff', margin: '4px 0 0 0' }}>
+                  <h3 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-primary)', margin: '4px 0 0 0' }}>
                     {nutrition.waterLiters} <span style={{ fontSize: '12px', fontWeight: 'normal' }}>L</span>
                   </h3>
                 </div>
@@ -469,7 +469,7 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
                   <span style={{ fontSize: '11px', color: '#c084fc', fontWeight: 'bold', display: 'block' }}>
                     ⚡ {lang === 'en' ? 'Carbs / Fats' : 'الكارب والدهون'}
                   </span>
-                  <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#fff', margin: '4px 0 0 0' }}>
+                  <h3 style={{ fontSize: '18px', fontWeight: '900', color: 'var(--text-primary)', margin: '4px 0 0 0' }}>
                     {nutrition.carbsGrams}g / {nutrition.fatsGrams}g
                   </h3>
                 </div>

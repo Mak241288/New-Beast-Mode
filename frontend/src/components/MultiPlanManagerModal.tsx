@@ -28,14 +28,14 @@ export const MultiPlanManagerModal: React.FC<MultiPlanManagerModalProps> = ({
   onRefreshPlans,
 }) => {
   const isEn = lang === 'en';
-  const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
+  const [editingPlanId, setEditingPlanId] = useState<number | string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   if (!isOpen) return null;
 
-  const handleActivate = async (planId: number) => {
+  const handleActivate = async (planId: number | string) => {
     setActionLoading(true);
     setErrorMsg('');
     try {
@@ -54,7 +54,7 @@ export const MultiPlanManagerModal: React.FC<MultiPlanManagerModalProps> = ({
     setEditingTitle(plan.title);
   };
 
-  const handleSaveRename = async (planId: number) => {
+  const handleSaveRename = async (planId: number | string) => {
     if (!editingTitle.trim()) return;
     setActionLoading(true);
     setErrorMsg('');
@@ -69,7 +69,7 @@ export const MultiPlanManagerModal: React.FC<MultiPlanManagerModalProps> = ({
     }
   };
 
-  const handleDuplicate = async (planId: number) => {
+  const handleDuplicate = async (planId: number | string) => {
     setActionLoading(true);
     setErrorMsg('');
     try {
@@ -250,8 +250,8 @@ export const MultiPlanManagerModal: React.FC<MultiPlanManagerModalProps> = ({
         {/* PLANS LIST */}
         <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {plans.map((plan) => {
-            const isActive = plan.id === activePlanId || plan.active === true;
-            const isEditingThis = editingPlanId === plan.id;
+            const isActive = (activePlanId !== null && String(plan.id) === String(activePlanId)) || plan.active === true;
+            const isEditingThis = editingPlanId !== null && String(editingPlanId) === String(plan.id);
             const daysCount = plan.dayWorkouts ? plan.dayWorkouts.length : 7;
             const exercisesCount = plan.dayWorkouts
               ? plan.dayWorkouts.reduce((acc: number, d: any) => acc + (d.exercises ? d.exercises.length : 0), 0)
