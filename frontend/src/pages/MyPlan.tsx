@@ -4077,7 +4077,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                     cacheStore.set('active_plan', saved);
                     alert(lang === 'en' ? 'Custom workout plan saved and activated! ⚡' : 'تم حفظ وتفعيل جدولك الرياضي اليدوي بنجاح! ⚡');
                     setShowManualBuilder(false);
-                    fetchActivePlan();
                     fetchHistory();
                   } catch (err: any) {
                     alert(err.message || (lang === 'en' ? 'Failed to save custom plan' : 'فشل حفظ الجدول اليدوي'));
