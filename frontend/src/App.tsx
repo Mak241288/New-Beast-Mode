@@ -479,7 +479,7 @@ function App() {
           </div>
 
           {/* Theme & Sign Out Row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '8px' }}>
             <ThemeToggle placement="up" />
             <button
               onClick={handleLogout}
@@ -487,17 +487,21 @@ function App() {
               style={{
                 flex: 1,
                 justifyContent: 'center',
-                padding: '8px 12px',
-                fontSize: '13px',
+                padding: '8px 10px',
+                fontSize: '12.5px',
                 color: 'var(--danger)',
-                borderColor: 'rgba(239, 68, 68, 0.1)',
+                borderColor: 'rgba(239, 68, 68, 0.25)',
+                background: 'rgba(239, 68, 68, 0.06)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              <LogOut size={14} />
-              <span>{lang === 'en' ? navTitles.logout.en : navTitles.logout.ar}</span>
+              <LogOut size={14} style={{ flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap' }}>{lang === 'en' ? navTitles.logout.en : navTitles.logout.ar}</span>
             </button>
           </div>
         </div>

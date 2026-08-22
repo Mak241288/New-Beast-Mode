@@ -4,10 +4,10 @@ import { Sun, Moon, Palette } from 'lucide-react';
 export type ColorTheme = 'volt' | 'crimson' | 'gold' | 'cyan';
 
 const PALETTES: Array<{ id: ColorTheme; nameAr: string; nameEn: string; color: string; icon: string }> = [
-  { id: 'volt', nameAr: 'أصفر كهربائي (Volt)', nameEn: 'Cyber Volt', color: '#ccff00', icon: '⚡' },
-  { id: 'crimson', nameAr: 'أحمر قرمزي (Crimson)', nameEn: 'Blood & Iron', color: '#ff1744', icon: '🔥' },
-  { id: 'gold', nameAr: 'ذهب أولمبيا (Gold)', nameEn: 'Imperial Gold', color: '#f59e0b', icon: '👑' },
-  { id: 'cyan', nameAr: 'أزرق جليدي (Cyan)', nameEn: 'Aurora Cyan', color: '#00d2ff', icon: '💎' },
+  { id: 'volt', nameAr: 'أصفر كهربائي (Volt)', nameEn: 'Cyber Volt (Neon)', color: '#ccff00', icon: '⚡' },
+  { id: 'crimson', nameAr: 'أحمر قرمزي (Crimson)', nameEn: 'Crimson Iron (Fire)', color: '#ff1744', icon: '🔥' },
+  { id: 'gold', nameAr: 'ذهب أولمبيا (Gold)', nameEn: 'Imperial Gold (Onyx)', color: '#f59e0b', icon: '👑' },
+  { id: 'cyan', nameAr: 'أزرق جليدي (Cyan)', nameEn: 'Aurora Cyan (Frost)', color: '#00d2ff', icon: '💎' },
 ];
 
 export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 'auto' | 'up' | 'down' }> = ({
@@ -18,6 +18,7 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
   const [colorTheme, setColorTheme] = useState<ColorTheme>('volt');
   const [showDropdown, setShowDropdown] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
+  const [alignRight, setAlignRight] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,15 +59,27 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
     if (!showDropdown && dropdownRef.current) {
       const rect = dropdownRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      // If there's less than 240px below the element, or placement forced to 'up', open upwards!
-      if (placement === 'up' || (placement === 'auto' && spaceBelow < 240)) {
+      const spaceRight = window.innerWidth - rect.right;
+      const isRtl = document.documentElement.dir === 'rtl';
+
+      // If there's less than 260px below the element, or placement forced to 'up', open upwards!
+      if (placement === 'up' || (placement === 'auto' && spaceBelow < 260)) {
         setOpenUpwards(true);
       } else {
         setOpenUpwards(false);
       }
+
+      // If in RTL or near right screen edge (< 250px), anchor to right edge to prevent horizontal clipping
+      if (isRtl || spaceRight < 250) {
+        setAlignRight(true);
+      } else {
+        setAlignRight(false);
+      }
     }
     setShowDropdown((prev) => !prev);
   };
+
+  const isRtl = typeof document !== 'undefined' ? document.documentElement.dir === 'rtl' : true;
 
   return (
     <div ref={dropdownRef} className="theme-toggle" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -74,8 +87,8 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
       <button
         onClick={toggleTheme}
         className="secondary-btn"
-        style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        title={theme === 'dark' ? 'الوضع المضيء' : 'الوضع الداكن'}
+        style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+        title={theme === 'dark' ? (isRtl ? 'الوضع المضيء' : 'Light Mode') : (isRtl ? 'الوضع الداكن' : 'Dark Mode')}
       >
         {theme === 'dark' ? <Sun size={17} color="var(--primary)" /> : <Moon size={17} color="#059669" />}
       </button>
@@ -94,16 +107,17 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
             alignItems: 'center',
             justifyContent: 'center',
             borderColor: 'var(--primary)',
-            background: showDropdown ? 'rgba(255, 255, 255, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+            background: showDropdown ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.04)',
             boxShadow: '0 0 10px var(--primary-glow)',
+            flexShrink: 0,
           }}
-          title="تغيير ثيم وهوية الألوان الرياضية (Theme Palette)"
+          title={isRtl ? 'تغيير ثيم وهوية الألوان الرياضية (Theme Palette)' : 'Change Visual Theme Palette'}
         >
           <Palette size={16} color="var(--primary)" />
         </button>
       )}
 
-      {/* Palette Popover Menu with Smart Collision Avoidance */}
+      {/* Palette Popover Menu with Bulletproof Boundary Alignment */}
       {showDropdown && (
         <div
           className="glass-panel animated-fade"
@@ -112,10 +126,13 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
             ...(openUpwards
               ? { bottom: 'calc(100% + 10px)', top: 'auto' }
               : { top: 'calc(100% + 10px)', bottom: 'auto' }),
-            insetInlineEnd: 0,
-            minWidth: '200px',
-            maxWidth: 'calc(100vw - 32px)',
-            padding: '10px',
+            ...(alignRight
+              ? { right: 0, left: 'auto' }
+              : { left: 0, right: 'auto' }),
+            width: 'max-content',
+            minWidth: '220px',
+            maxWidth: 'calc(100vw - 24px)',
+            padding: '10px 12px',
             borderRadius: '16px',
             border: '1px solid var(--primary)',
             background: 'rgba(10, 14, 26, 0.98)',
@@ -126,11 +143,12 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
             display: 'flex',
             flexDirection: 'column',
             gap: '6px',
+            boxSizing: 'border-box',
           }}
         >
-          <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', padding: '4px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', padding: '4px 6px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
             <span>🎨</span>
-            <span>اختر هوية الألوان الرياضية</span>
+            <span>{isRtl ? 'اختر هوية الألوان الرياضية' : 'Curated Visual Themes'}</span>
           </div>
 
           {PALETTES.map((p) => {
@@ -143,7 +161,7 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
-                  padding: '8px 10px',
+                  padding: '8px 12px',
                   borderRadius: '10px',
                   border: isActive ? `1px solid ${p.color}` : '1px solid transparent',
                   background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
@@ -151,13 +169,16 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
                   cursor: 'pointer',
                   fontSize: '12px',
                   fontWeight: isActive ? '800' : '600',
-                  textAlign: 'right',
+                  textAlign: isRtl ? 'right' : 'left',
                   transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
+                  boxSizing: 'border-box',
+                  width: '100%',
                 }}
               >
                 <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: p.color, boxShadow: `0 0 8px ${p.color}`, flexShrink: 0 }} />
-                <span style={{ flex: 1 }}>{p.nameAr}</span>
-                {isActive && <span style={{ fontSize: '12px', color: p.color }}>✓</span>}
+                <span style={{ flex: 1, textAlign: isRtl ? 'right' : 'left' }}>{isRtl ? p.nameAr : p.nameEn}</span>
+                {isActive && <span style={{ fontSize: '13px', color: p.color, fontWeight: '900' }}>✓</span>}
               </button>
             );
           })}
@@ -166,3 +187,4 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
     </div>
   );
 };
+
