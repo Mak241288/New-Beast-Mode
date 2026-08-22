@@ -865,16 +865,18 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   function normalizeTimedReps(val: any): string {
     if (!val) return '45s';
     const s = String(val).trim().toLowerCase();
-    if (s.includes('20m') || s.includes('20 min') || s.includes('20 دقيقة')) return '20 mins';
-    if (s.includes('15m') || s.includes('15 min') || s.includes('15 دقيقة')) return '15 mins';
-    if (s.includes('10m') || s.includes('10 min') || s.includes('10 دقيقة')) return '10 mins';
-    if (s.includes('5m') || s.includes('5 min') || s.includes('5 دقيقة') || s.includes('5 دقائق')) return '5 mins';
-    if (s.includes('2m') || s.includes('2 min') || s.includes('2 دقيقة') || s.includes('دقيقتين') || s.includes('120')) return '2 mins';
+    
+    if (s.includes('20m') || s.includes('20 min') || s.includes('20 دقيق') || s === '20') return '20 mins';
+    if (s.includes('15m') || s.includes('15 min') || s.includes('15 دقيق') || s === '15') return '15 mins';
+    if (s.includes('10m') || s.includes('10 min') || s.includes('10 دقيق') || s === '10') return '10 mins';
+    if (s.includes('5m') || s.includes('5 min') || s.includes('5 دقيق') || s === '5') return '5 mins';
+    if (s.includes('2m') || s.includes('2 min') || s.includes('2 دقيق') || s.includes('دقيقتين') || s.includes('120') || s === '2') return '2 mins';
     if (s.includes('90') || s.includes('1.5')) return '90s';
-    if (s.includes('60') || s.includes('1m') || s.includes('1 min') || s.includes('دقيقة واحدة') || s.includes('دقيقة')) return '60s';
-    if (s.includes('45')) return '45s';
-    if (s.includes('30')) return '30s';
-    return s;
+    if (s.includes('60') || s.includes('1m') || s.includes('1 min') || s.includes('دقيقة واحدة') || s.includes('دقيق') || s === '60' || s === '1') return '60s';
+    if (s.includes('45') || s === '45s') return '45s';
+    if (s.includes('30') || s === '30s') return '30s';
+    
+    return '45s';
   }
 
   function normalizeRestSeconds(val: any): string {
@@ -3066,10 +3068,15 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
               const updateExercise = (exIdx: number, field: string, val: any) => {
                 const updated = [...manualDays];
-                updated[dayIdx].exercises[exIdx] = {
-                  ...updated[dayIdx].exercises[exIdx],
-                  [field]: val,
-                };
+                const currentEx = updated[dayIdx].exercises[exIdx];
+                const nextEx = { ...currentEx, [field]: val };
+                if (field === 'reps') {
+                  const s = String(val).toLowerCase();
+                  if (s.includes('s') || s.includes('min') || s.includes('ثانية') || s.includes('دقيق')) {
+                    nextEx.isTimed = true;
+                  }
+                }
+                updated[dayIdx].exercises[exIdx] = nextEx;
                 setManualDays(updated);
               };
 
