@@ -29,6 +29,21 @@ let syncDebounceTimer: any = null;
 let lastSyncedHash: string = '';
 let realtimeChannel: any = null;
 
+let _memoryLibraryCache: any[] | null = null;
+
+// Preload catalog immediately into RAM on startup (0ms search latency)
+if (typeof window !== 'undefined') {
+  fetch('/exercises_catalog.json')
+    .then(r => r.ok ? r.json() : [])
+    .then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        _memoryLibraryCache = data;
+        cacheStore.set('library_tree_flat', data);
+      }
+    })
+    .catch(() => {});
+}
+
 export async function pushUserDataToCloud(immediate: boolean = false): Promise<void> {
   if (!immediate) {
     if (syncDebounceTimer) {
@@ -1521,9 +1536,14 @@ export const api = {
   },
 
   getLibraryTree: async (): Promise<any[]> => {
-    // 1. Check local cache first for 0ms response
+    // 1. Check in-memory RAM cache first for 0ms response
+    if (_memoryLibraryCache && _memoryLibraryCache.length > 50) {
+      return _memoryLibraryCache;
+    }
+
     const cached = cacheStore.get<any[]>('library_tree_flat');
     if (cached && cached.length > 50) {
+      _memoryLibraryCache = cached;
       return cached;
     }
 
@@ -1536,6 +1556,7 @@ export const api = {
         const json = await res.json();
         if (Array.isArray(json) && json.length > 0) {
           allExercises = json;
+          _memoryLibraryCache = json;
         }
       }
     } catch (err) {
@@ -1581,6 +1602,7 @@ export const api = {
     }
 
     if (allExercises.length > 0) {
+      _memoryLibraryCache = allExercises;
       cacheStore.set('library_tree_flat', allExercises);
       return allExercises;
     }
@@ -1603,6 +1625,7 @@ export const api = {
       { id: 601, name_en: 'Hanging Leg Raise', name_ar: 'رفع الأرجل على العقلة للبطن', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Hanging_Leg_Raise/0.jpg' },
       { id: 602, name_en: 'Plank', name_ar: 'بلانك ثبات', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Plank/0.jpg' },
     ];
+    _memoryLibraryCache = fallbackList;
     cacheStore.set('library_tree_flat', fallbackList);
     return fallbackList;
   },
@@ -1620,17 +1643,31 @@ export const api = {
 
     const queryWords = cleanTerm.split(/\s+/).filter(Boolean);
 
-    const catalog = await api.getLibraryTree();
+    const catalog = _memoryLibraryCache || await api.getLibraryTree();
     if (!catalog || catalog.length === 0) return [];
 
     const exactMatches: any[] = [];
     const prefixMatches: any[] = [];
     const containsMatches: any[] = [];
 
-    for (let i = 0; i < catalog.length; i++) {
+    const len = catalog.length;
+    for (let i = 0; i < len; i++) {
       const ex = catalog[i];
       const nameAr = (ex.name_ar || ex.name || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\u064B-\u0652]/g, '');
       const nameEn = (ex.name_en || ex.name || '').toLowerCase();
+
+      if (nameAr === cleanTerm || nameEn === trimmed) {
+        exactMatches.push(ex);
+        if (exactMatches.length >= limit) break;
+        continue;
+      }
+
+      if (nameAr.startsWith(cleanTerm) || nameEn.startsWith(trimmed)) {
+        prefixMatches.push(ex);
+        if (exactMatches.length + prefixMatches.length >= limit * 2) break;
+        continue;
+      }
+
       const muscleAr = (ex.muscle_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
       const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
       const equipAr = (ex.equipment_ar || '').toLowerCase();
@@ -1638,11 +1675,7 @@ export const api = {
 
       const combined = `${nameAr} ${nameEn} ${muscleAr} ${muscleEn} ${equipAr} ${equipEn}`;
 
-      if (nameAr === cleanTerm || nameEn === trimmed) {
-        exactMatches.push(ex);
-      } else if (nameAr.startsWith(cleanTerm) || nameEn.startsWith(trimmed)) {
-        prefixMatches.push(ex);
-      } else if (queryWords.every(w => combined.includes(w))) {
+      if (queryWords.every(w => combined.includes(w))) {
         containsMatches.push(ex);
       }
 

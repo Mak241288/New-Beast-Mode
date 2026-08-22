@@ -3130,11 +3130,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 setManualDays(updated);
               };
 
-              const handleRowNameSearch = async (val: string, exIdx: number) => {
+              const handleRowNameSearch = (val: string, exIdx: number) => {
                 updateExercise(exIdx, 'name', val);
-                if (val.trim().length >= 1) {
-                  const matches = await api.searchExercises(val.trim(), 8);
-                  setManualRowSuggestions({ dayIdx, exIdx, list: matches });
+                const trimmed = val.trim();
+                if (trimmed.length >= 1) {
+                  api.searchExercises(trimmed, 8).then((matches) => {
+                    setManualRowSuggestions({ dayIdx, exIdx, list: matches });
+                  });
                 } else {
                   setManualRowSuggestions(null);
                 }
