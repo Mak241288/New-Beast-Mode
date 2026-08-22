@@ -893,13 +893,17 @@ export const api = {
       focusArea: dw.focusArea || '',
       isRestDay: dw.isRestDay || false,
       exercises: (dw.exercises || []).map((ex: any, eIdx: number) => ({
-        id: generateId() + dIdx * 100 + eIdx,
+        id: ex.id || (generateId() + dIdx * 100 + eIdx),
         name: ex.name,
+        category: ex.category || 'MAIN',
+        isTimed: !!ex.isTimed,
+        restSeconds: ex.restSeconds || 60,
         sets: ex.sets || 3,
         reps: ex.reps || '10-12',
         weight: ex.weight || 'Bodyweight',
         targetMuscle: ex.targetMuscle || 'General',
         imageUrl: ex.imageUrl || '',
+        videoUrl: ex.videoUrl || '',
         exerciseTips: ex.exerciseTips || '',
       })),
     }));

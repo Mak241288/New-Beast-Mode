@@ -883,14 +883,55 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               ? 'CARDIO'
               : 'MAIN';
 
+            const rawReps = String(ex.reps || '');
+            const isTimed = ex.isTimed !== undefined
+              ? !!ex.isTimed
+              : (rawReps.includes('s') || rawReps.includes('m') || rawReps.includes('sec') || rawReps.includes('ثانية') || rawReps.includes('دقيقة'));
+
+            // Normalize target muscle
+            const tm = (ex.targetMuscle || '').toLowerCase();
+            let targetMuscle = 'Chest';
+            if (tm.includes('صدر') || tm.includes('chest')) targetMuscle = 'Chest';
+            else if (tm.includes('ظهر') || tm.includes('back') || tm.includes('lat')) targetMuscle = 'Back';
+            else if (tm.includes('كتف') || tm.includes('أكتاف') || tm.includes('shoulder') || tm.includes('delt')) targetMuscle = 'Shoulders';
+            else if (tm.includes('خلفي') || tm.includes('hamstring') || tm.includes('glute')) targetMuscle = 'Hamstrings';
+            else if (tm.includes('أرجل') || tm.includes('quad') || tm.includes('leg') || tm.includes('فخذ')) targetMuscle = 'Quadriceps';
+            else if (tm.includes('باي') || tm.includes('bicep')) targetMuscle = 'Biceps';
+            else if (tm.includes('تراي') || tm.includes('tricep')) targetMuscle = 'Triceps';
+            else if (tm.includes('بطن') || tm.includes('abs') || tm.includes('core')) targetMuscle = 'Abs';
+            else if (tm.includes('سمانة') || tm.includes('calf') || tm.includes('calves')) targetMuscle = 'Calves';
+            else if (tm.includes('كارديو') || tm.includes('cardio') || tm.includes('لياقة')) targetMuscle = 'Cardio';
+            else if (tm.includes('شامل') || tm.includes('full')) targetMuscle = 'Full Body';
+            else if (ex.targetMuscle) targetMuscle = ex.targetMuscle;
+
+            // Normalize weight/equipment
+            const w = (ex.weight || '').toLowerCase();
+            let weight = 'Bodyweight';
+            if (w.includes('وزن') || w.includes('bodyweight') || w.includes('body weight')) weight = 'Bodyweight';
+            else if (w.includes('بار') || w.includes('barbell')) weight = 'Barbell';
+            else if (w.includes('دمبل') || w.includes('دامبل') || w.includes('dumbbell')) weight = 'Dumbbells';
+            else if (w.includes('كيبل') || w.includes('كابل') || w.includes('cable')) weight = 'Cable';
+            else if (w.includes('جهاز كارديو') || w.includes('cardio machine') || w.includes('treadmill')) weight = 'Cardio Machine';
+            else if (w.includes('جهاز') || w.includes('أجهزة') || w.includes('machine')) weight = 'Machine';
+            else if (ex.weight) weight = ex.weight;
+
+            // Normalize rest seconds
+            let restSeconds = ex.restSeconds ? parseInt(String(ex.restSeconds)) : 60;
+            if (!ex.restSeconds && ex.exerciseTips) {
+              const match = String(ex.exerciseTips).match(/(\d+)\s*(ثانية|ثواني|sec|s)/i);
+              if (match) restSeconds = parseInt(match[1]) || 60;
+            }
+
             return {
               id: ex.id || (Date.now() + idx * 100 + eIdx),
               name: ex.name || '',
-              targetMuscle: ex.targetMuscle || 'Chest',
+              targetMuscle,
               category: cat,
-              sets: ex.sets || 3,
-              reps: ex.reps || '10-12',
-              weight: ex.weight || 'Bodyweight',
+              isTimed,
+              sets: parseInt(String(ex.sets)) || 3,
+              reps: ex.reps || (isTimed ? '45s' : '10-12'),
+              weight,
+              restSeconds,
               exerciseTips: typeof ex.exerciseTips === 'string' ? ex.exerciseTips : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || '')),
               imageUrl: ex.imageUrl || '',
               videoUrl: ex.videoUrl || '',
