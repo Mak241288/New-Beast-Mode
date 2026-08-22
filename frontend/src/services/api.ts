@@ -1618,35 +1618,37 @@ export const api = {
       .replace(/ى/g, 'ي')
       .replace(/[\u064B-\u0652]/g, '');
 
+    const queryWords = cleanTerm.split(/\s+/).filter(Boolean);
+
     const catalog = await api.getLibraryTree();
-    
-    // Fast in-memory single pass with relevance scoring (starts-with bonus)
+    if (!catalog || catalog.length === 0) return [];
+
     const exactMatches: any[] = [];
     const prefixMatches: any[] = [];
     const containsMatches: any[] = [];
 
     for (let i = 0; i < catalog.length; i++) {
       const ex = catalog[i];
-      const rawAr = (ex.name_ar || '').toLowerCase();
-      const rawEn = (ex.name_en || '').toLowerCase();
-      const cleanAr = rawAr.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const nameAr = (ex.name_ar || ex.name || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\u064B-\u0652]/g, '');
+      const nameEn = (ex.name_en || ex.name || '').toLowerCase();
       const muscleAr = (ex.muscle_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
-      const muscleEn = (ex.muscle_en || '').toLowerCase();
+      const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
+      const equipAr = (ex.equipment_ar || '').toLowerCase();
+      const equipEn = (ex.equipment_en || ex.equipment || '').toLowerCase();
 
-      if (cleanAr === cleanTerm || rawEn === trimmed) {
+      const combined = `${nameAr} ${nameEn} ${muscleAr} ${muscleEn} ${equipAr} ${equipEn}`;
+
+      if (nameAr === cleanTerm || nameEn === trimmed) {
         exactMatches.push(ex);
-      } else if (cleanAr.startsWith(cleanTerm) || rawEn.startsWith(trimmed)) {
+      } else if (nameAr.startsWith(cleanTerm) || nameEn.startsWith(trimmed)) {
         prefixMatches.push(ex);
-      } else if (
-        cleanAr.includes(cleanTerm) ||
-        rawEn.includes(trimmed) ||
-        muscleAr.includes(cleanTerm) ||
-        muscleEn.includes(trimmed)
-      ) {
+      } else if (queryWords.every(w => combined.includes(w))) {
         containsMatches.push(ex);
       }
 
-      if (exactMatches.length + prefixMatches.length >= limit) break;
+      if (exactMatches.length + prefixMatches.length + containsMatches.length >= limit * 2) {
+        break;
+      }
     }
 
     return [...exactMatches, ...prefixMatches, ...containsMatches].slice(0, limit);

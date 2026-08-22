@@ -1551,42 +1551,42 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
                         {/* 3 Scientific Badges */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', fontSize: '11.5px' }}>
-                          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>🧠</span>
                             <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'CNS Load:' : 'إجهاد الجهاز العصبي:'}</span>
                             <strong style={{ color: cort.color }}>{cort.cnsLoad}</strong>
                           </div>
-                          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>⏳</span>
                             <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Recovery Time:' : 'وقت الاستشفاء:'}</span>
-                            <strong style={{ color: '#fff' }}>{cort.recoveryTime}</strong>
+                            <strong style={{ color: 'var(--text-primary)' }}>{cort.recoveryTime}</strong>
                           </div>
-                          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border-color)', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>💊</span>
                             <span style={{ color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Anti-Catabolic:' : 'مكملات الكبح:'}</span>
-                            <strong style={{ color: '#22d3ee' }}>{cort.supplements}</strong>
+                            <strong style={{ color: '#0ea5e9' }}>{cort.supplements}</strong>
                           </div>
                         </div>
 
                         {/* Recommendation Note */}
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '8px', borderLeft: `3px solid ${cort.color}`, lineHeight: 1.5 }}>
-                          💡 <strong>{lang === 'en' ? 'BeastMode Hormonal Protocol:' : 'بروتوكول التحكم الهرموني:'}</strong> {cort.recommendation}
+                        <div style={{ fontSize: '12px', color: 'var(--text-primary)', background: 'var(--bg-card-hover)', padding: '8px 12px', borderRadius: '8px', borderLeft: `3px solid ${cort.color}`, lineHeight: 1.5 }}>
+                          💡 <strong style={{ color: 'var(--text-primary)' }}>{lang === 'en' ? 'BeastMode Hormonal Protocol:' : 'بروتوكول التحكم الهرموني:'}</strong> {cort.recommendation}
                         </div>
                       </div>
 
                       {dw.isRestDay ? (
                         <div style={{ textAlign: 'center', padding: '20px 10px', maxWidth: '500px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                           <span style={{ fontSize: '36px' }}>🧘‍♂️</span>
-                          <h4 style={{ fontWeight: 'bold', margin: 0 }}>{t.restDayTitle}</h4>
+                          <h4 style={{ fontWeight: 'bold', margin: 0, color: 'var(--text-primary)' }}>{t.restDayTitle}</h4>
                           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.6', margin: 0 }}>{t.restDayDesc}</p>
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                           {/* Day Quick Routine Protocol Toolbar */}
-                          <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', padding: '10px 14px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', padding: '10px 14px', background: 'var(--bg-card-hover)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                               <span>⚡</span>
-                              <span style={{ fontWeight: 'bold' }}>{lang === 'en' ? 'Day Protocols:' : 'بروتوكولات اليوم المخصصة:'}</span>
+                              <span style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang === 'en' ? 'Day Protocols:' : 'بروتوكولات اليوم المخصصة:'}</span>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                               <button
@@ -1640,7 +1640,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             >
                               {/* Line 1: Full Width Name & Tip */}
                               <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', width: '100%' }}>
-                                <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: '#0e111a', flexShrink: 0 }}>
+                                <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg-card-hover)', flexShrink: 0, border: '1px solid var(--border-color)' }}>
                                   <ExerciseImage
                                     src={ex.imageUrl}
                                     alt={ex.name}
@@ -1649,7 +1649,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    <h4 style={{ fontSize: '14px', fontWeight: '800', margin: 0, color: '#fff' }}>{ex.name}</h4>
+                                    <h4 style={{ fontSize: '14px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>{ex.name}</h4>
                                     {((ex.category || '').toUpperCase() === 'WARMUP' || ex.name.includes('إحماء') || ex.name.includes('Warmup')) && (
                                       <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '6px', padding: '1px 6px', fontSize: '10px', fontWeight: 'bold' }}>
                                         🔥 {lang === 'en' ? 'Warm-up' : 'إحماء'}
@@ -1708,9 +1708,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       alignItems: 'center',
                                       gap: '6px',
                                       fontWeight: 'bold',
-                                      border: '1px solid var(--primary)',
-                                      background: 'var(--primary-glow)',
-                                      color: '#fff',
                                       borderRadius: '8px',
                                     }}
                                     title={lang === 'en' ? 'Swap Exercise' : 'استبدال التمرين'}
