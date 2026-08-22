@@ -862,6 +862,49 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     }
   };
 
+  const handleOpenManualBuilder = (planToLoad?: any) => {
+    const plan = planToLoad || activePlan;
+    if (plan) {
+      setManualTitle(plan.title || (lang === 'en' ? 'My Custom Workout Routine' : 'جدولي التدريبي المخصص'));
+      const sourceDays = (plan.dayWorkouts && plan.dayWorkouts.length > 0)
+        ? plan.dayWorkouts
+        : ((plan.days && plan.days.length > 0) ? plan.days : []);
+      if (sourceDays.length > 0) {
+        setManualDays(sourceDays.map((d: any, idx: number) => ({
+          dayIndex: d.dayIndex || idx + 1,
+          title: d.title || (lang === 'en' ? `Day ${idx + 1}` : `اليوم ${idx + 1}`),
+          focusArea: d.focusArea || '',
+          isRestDay: !!d.isRestDay,
+          exercises: (d.exercises || []).map((ex: any, eIdx: number) => ({
+            id: ex.id || (Date.now() + idx * 100 + eIdx),
+            name: ex.name || '',
+            targetMuscle: ex.targetMuscle || 'Chest',
+            category: ex.category || 'IRON',
+            sets: ex.sets || 3,
+            reps: ex.reps || '10-12',
+            weight: ex.weight || 'Bodyweight',
+            exerciseTips: typeof ex.exerciseTips === 'string' ? ex.exerciseTips : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || '')),
+            imageUrl: ex.imageUrl || '',
+            videoUrl: ex.videoUrl || '',
+          }))
+        })));
+      }
+    } else {
+      setManualTitle(lang === 'en' ? 'New Custom Workout Routine' : 'جدولي التدريبي الجديد');
+      setManualDays([
+        { dayIndex: 1, title: lang === 'en' ? 'Push (Chest & Triceps)' : 'دفع (صدر وترايسبس وأكتاف)', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [] },
+        { dayIndex: 2, title: lang === 'en' ? 'Pull (Back & Biceps)' : 'سحب (ظهر وبايسبس)', focusArea: lang === 'en' ? 'Back, Biceps' : 'ظهر، بايسبس', isRestDay: false, exercises: [] },
+        { dayIndex: 3, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
+        { dayIndex: 4, title: lang === 'en' ? 'Legs & Core' : 'أرجل وبطن', focusArea: lang === 'en' ? 'Legs, Abs' : 'أرجل، بطن', isRestDay: false, exercises: [] },
+        { dayIndex: 5, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
+        { dayIndex: 6, title: lang === 'en' ? 'Full Body Blast' : 'تمرين شامل لكامل الجسم', focusArea: lang === 'en' ? 'Full Body' : 'كامل الجسم', isRestDay: false, exercises: [] },
+        { dayIndex: 7, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
+      ]);
+    }
+    setManualActiveDayIdx(1);
+    setShowManualBuilder(true);
+  };
+
   const handleSelectPresetPlan = async (plan: PresetPlan, openManualBuilder?: boolean) => {
     const structuredPlan = {
       title: lang === 'en' ? plan.title_en : plan.title_ar,
@@ -886,7 +929,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
     if (openManualBuilder) {
       setManualTitle(structuredPlan.title);
-      setManualDays(plan.days.map((d) => ({
+      setManualDays(structuredPlan.days.map((d) => ({
         dayIndex: d.dayIndex,
         title: d.title,
         focusArea: d.focusArea,
@@ -894,11 +937,16 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         exercises: d.exercises.map((ex) => ({
           name: ex.name,
           targetMuscle: ex.targetMuscle,
+          category: ex.category || 'IRON',
           sets: ex.sets || 3,
           reps: ex.reps || '10-12',
           weight: ex.weight || 'Bodyweight',
+          exerciseTips: ex.exerciseTips || '',
+          imageUrl: ex.imageUrl || '',
+          videoUrl: ex.videoUrl || '',
         })),
       })));
+      setManualActiveDayIdx(1);
       setShowPresetPlansModal(false);
       setShowManualBuilder(true);
       return;
@@ -1057,7 +1105,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           {/* Primary Action Buttons */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
             <button
-              onClick={() => setShowManualBuilder(true)}
+              onClick={() => handleOpenManualBuilder()}
               className="glow-btn"
               style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
@@ -3892,13 +3940,17 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   }
                   setManualSaving(true);
                   try {
-                    await api.saveStructuredPlan({
+                    const saved = await api.saveStructuredPlan({
                       title: manualTitle,
                       days: manualDays,
+                      dayWorkouts: manualDays,
                     }, lang);
+                    setActivePlan(saved);
+                    cacheStore.set('active_plan', saved);
                     alert(lang === 'en' ? 'Custom workout plan saved and activated! ⚡' : 'تم حفظ وتفعيل جدولك الرياضي اليدوي بنجاح! ⚡');
                     setShowManualBuilder(false);
                     fetchActivePlan();
+                    fetchHistory();
                   } catch (err: any) {
                     alert(err.message || (lang === 'en' ? 'Failed to save custom plan' : 'فشل حفظ الجدول اليدوي'));
                   } finally {
@@ -4131,36 +4183,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           fetchHistory();
         }}
         onOpenManualBuilderForNew={() => {
-          setManualTitle(lang === 'en' ? 'New Custom Workout Routine' : 'جدولي التدريبي الجديد');
-          setManualDays([
-            { dayIndex: 1, title: lang === 'en' ? 'Push (Chest & Triceps)' : 'دفع (صدر وترايسبس وأكتاف)', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [] },
-            { dayIndex: 2, title: lang === 'en' ? 'Pull (Back & Biceps)' : 'سحب (ظهر وبايسبس)', focusArea: lang === 'en' ? 'Back, Biceps' : 'ظهر، بايسبس', isRestDay: false, exercises: [] },
-            { dayIndex: 3, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
-            { dayIndex: 4, title: lang === 'en' ? 'Legs & Core' : 'أرجل وبطن', focusArea: lang === 'en' ? 'Legs, Abs' : 'أرجل، بطن', isRestDay: false, exercises: [] },
-            { dayIndex: 5, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
-            { dayIndex: 6, title: lang === 'en' ? 'Full Body Blast' : 'تمرين شامل لكامل الجسم', focusArea: lang === 'en' ? 'Full Body' : 'كامل الجسم', isRestDay: false, exercises: [] },
-            { dayIndex: 7, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
-          ]);
-          setShowManualBuilder(true);
+          handleOpenManualBuilder(null);
         }}
         onOpenManualBuilderForEdit={(plan) => {
-          setManualTitle(plan.title);
-          if (plan.dayWorkouts && plan.dayWorkouts.length > 0) {
-            setManualDays(plan.dayWorkouts.map((d: any) => ({
-              dayIndex: d.dayIndex,
-              title: d.title,
-              focusArea: d.focusArea || '',
-              isRestDay: d.isRestDay || false,
-              exercises: (d.exercises || []).map((ex: any) => ({
-                name: ex.name,
-                targetMuscle: ex.targetMuscle || 'Chest',
-                sets: ex.sets || 3,
-                reps: ex.reps || '10-12',
-                weight: ex.weight || 'Bodyweight',
-              }))
-            })));
-          }
-          setShowManualBuilder(true);
+          handleOpenManualBuilder(plan);
         }}
         onOpenPresetsModal={() => {
           setShowPresetPlansModal(true);
