@@ -1275,17 +1275,16 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           {/* Collapsible Unified Tools Drawer */}
           {showToolsDrawer && (
             <div
-              className="glass-panel animated-fade"
+              className="glass-panel plan-tools-toolbar animated-fade"
               style={{
                 width: '100%',
                 padding: '14px 18px',
                 borderRadius: '14px',
                 border: '1px solid var(--border-color)',
-                background: 'rgba(15, 23, 42, 0.95)',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
                 gap: '8px',
-                boxShadow: '0 12px 30px rgba(0,0,0,0.6)',
+                boxShadow: 'var(--glass-shadow)',
               }}
             >
               <button
@@ -2698,7 +2697,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           }}
         >
           <div
-            className="glass-card"
+            className="glass-card plan-architect-modal"
             style={{
               width: '100%',
               maxWidth: '1020px',
@@ -2707,12 +2706,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               overflowX: 'hidden',
               borderRadius: '24px',
               padding: '22px 20px',
-              border: '1px solid rgba(204, 255, 0, 0.35)',
-              background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.98), rgba(4, 7, 18, 0.99))',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               flexDirection: 'column',
               gap: '18px',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.85), 0 0 40px var(--primary-glow)',
+              boxShadow: 'var(--glass-shadow)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2724,7 +2722,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                     <Dumbbell size={20} />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '20px', fontWeight: '900', margin: 0, color: '#fff', letterSpacing: '-0.3px' }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: '900', margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>
                       {lang === 'en' ? 'Custom Workout Plan Architect' : 'منشئ ومصمم الجدول التدريبي المتقدم ✍️'}
                     </h2>
                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
@@ -2932,12 +2930,12 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 onChange={(e) => setManualTitle(e.target.value)}
                 placeholder={lang === 'en' ? 'E.g., Hypertrophy Push Pull Legs' : 'مثال: جدول التضخيم 5 أيام (Push Pull Legs)'}
                 className="input-field"
-                style={{ padding: '12px 14px', borderRadius: '12px', fontSize: '14px', border: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.03)' }}
+                style={{ padding: '12px 14px', borderRadius: '12px', fontSize: '14px' }}
               />
             </div>
 
             {/* Day Selector & Navigation Section */}
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ background: 'var(--bg-card)', padding: '16px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Calendar size={18} color="var(--primary)" />
@@ -3003,7 +3001,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         fontWeight: '800',
                         cursor: 'pointer',
                         border: isActive ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                        background: isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'rgba(255,255,255,0.05)',
+                        background: isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--bg-card-hover)',
                         color: isActive ? 'var(--primary-contrast, #050710)' : (day.isRestDay ? 'var(--text-muted)' : 'var(--text-primary)'),
                         display: 'flex',
                         flexDirection: 'column',
@@ -3025,8 +3023,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           <span style={{ fontSize: '12px' }}>💤</span>
                         ) : (
                           <span style={{
-                            background: isActive ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.12)',
-                            color: isActive ? 'inherit' : 'var(--primary)',
+                            background: isActive ? 'rgba(0,0,0,0.25)' : 'var(--border-color)',
+                            color: isActive ? '#fff' : 'var(--primary)',
                             padding: '1px 6px',
                             borderRadius: '8px',
                             fontSize: '10.5px',
@@ -3258,7 +3256,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               });
 
               return (
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div style={{ background: 'var(--bg-card)', padding: '20px', borderRadius: '18px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                   
                   {/* Current Active Day Header & Navigation */}
                   <div style={{
@@ -3267,10 +3265,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                     alignItems: 'center',
                     flexWrap: 'wrap',
                     gap: '12px',
-                    background: 'rgba(0, 210, 255, 0.08)',
+                    background: 'var(--bg-card-hover)',
                     padding: '12px 18px',
                     borderRadius: '14px',
-                    border: '1px solid rgba(0, 210, 255, 0.25)',
+                    border: '1px solid var(--border-color)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontSize: '20px' }}>📌</span>
@@ -3299,8 +3297,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           display: 'flex',
                           alignItems: 'center',
                           gap: '4px',
-                          borderColor: 'rgba(0, 210, 255, 0.4)',
-                          color: 'var(--primary)',
                         }}
                         title="نسخ هذا اليوم التدريبي بالكامل كـ يوم إضافي في الجدول"
                       >
@@ -3349,8 +3345,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
                   {/* Live Weekly Muscle Volume Breakdown */}
                   <div style={{
-                    background: 'rgba(15, 23, 42, 0.65)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'var(--bg-card-hover)',
+                    border: '1px solid var(--border-color)',
                     borderRadius: '14px',
                     padding: '12px 16px',
                     display: 'flex',
@@ -3412,8 +3408,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
                     return (
                       <div style={{
-                        background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.08), rgba(168, 85, 247, 0.08))',
-                        border: '1px solid rgba(0, 210, 255, 0.25)',
+                        background: 'var(--bg-card-hover)',
+                        border: '1px solid var(--border-color)',
                         borderRadius: '14px',
                         padding: '12px 16px',
                         display: 'flex',
@@ -3431,7 +3427,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                               <span key={m} style={{
                                 background: 'rgba(0, 210, 255, 0.15)',
                                 border: '1px solid rgba(0, 210, 255, 0.35)',
-                                color: '#fff',
+                                color: 'var(--text-primary)',
                                 fontSize: '11px',
                                 fontWeight: '700',
                                 padding: '2px 8px',
@@ -3507,9 +3503,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
-                          background: currentDay.isRestDay ? 'rgba(100, 116, 139, 0.2)' : undefined,
-                          color: currentDay.isRestDay ? '#94a3b8' : undefined,
-                          border: currentDay.isRestDay ? '1px solid #475569' : undefined,
                         }}
                       >
                         <span>{currentDay.isRestDay ? '💤 يوم راحة واستشفاء' : '🏋️ يوم تمرين ونشاط'}</span>
@@ -3540,8 +3533,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           else updateCurrentDay('isRestDay', false);
                         }}
                         style={{
-                          background: 'rgba(255,255,255,0.05)',
-                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'var(--bg-card-hover)',
+                          border: '1px solid var(--border-color)',
                           color: 'var(--text-primary)',
                           padding: '4px 10px',
                           borderRadius: '16px',
@@ -3569,7 +3562,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             type="button"
                             onClick={injectWarmup}
                             className="secondary-btn"
-                            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
+                            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
                             title="إضافة تمارين إحماء مخصصة لهذا اليوم"
                           >
                             <span>🔥 + {lang === 'en' ? 'Warmup' : 'إحماء'}</span>
@@ -3579,7 +3572,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             type="button"
                             onClick={injectCooldown}
                             className="secondary-btn"
-                            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'rgba(6, 182, 212, 0.4)', color: '#22d3ee' }}
+                            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
                             title="إضافة تمارين استشفاء وإطالة لهذا اليوم"
                           >
                             <span>🧊 + {lang === 'en' ? 'Recovery' : 'استشفاء'}</span>
@@ -3651,7 +3644,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                               ? 'CARDIO'
                               : 'MAIN';
 
-                            // Role badge styling
                             const roleStyles = {
                               MAIN: { label: lang === 'en' ? '🏋️ Main Lift' : '🏋️ أساسي', color: 'var(--primary)', bg: 'rgba(204, 255, 0, 0.12)', border: 'var(--primary)' },
                               WARMUP: { label: lang === 'en' ? '🔥 Warm-up' : '🔥 إحماء', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.12)', border: '#f59e0b' },
@@ -3671,23 +3663,20 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                   gap: '12px',
                                   padding: '14px 16px',
                                   borderRadius: '16px',
-                                  border: `1px solid ${roleStyles.border}35`,
-                                  background: 'rgba(15, 23, 42, 0.6)',
-                                  boxShadow: `0 4px 15px rgba(0,0,0,0.3), 0 0 10px ${roleStyles.border}10`,
+                                  border: `1px solid var(--border-color)`,
                                   transition: 'all 0.2s ease',
                                   width: '100%',
                                 }}
                               >
                                 {/* Top Bar: Index Number, Role Selector Dropdown, Timed Badge, and Actions */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    {/* Exercise Index Badge */}
                                     <span style={{
                                       width: '26px',
                                       height: '26px',
                                       borderRadius: '8px',
-                                      background: 'rgba(255,255,255,0.08)',
-                                      color: '#fff',
+                                      background: 'var(--border-color)',
+                                      color: 'var(--text-primary)',
                                       fontSize: '12px',
                                       fontWeight: '900',
                                       display: 'flex',
@@ -3697,7 +3686,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       #{exIdx + 1}
                                     </span>
 
-                                    {/* Role / Category Selector (إحماء / استشفاء / أساسي / سوبر سيت / كارديو) */}
                                     <select
                                       value={role}
                                       onChange={(e) => updateExercise(exIdx, 'category', e.target.value)}
@@ -3713,14 +3701,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                         outline: 'none',
                                       }}
                                     >
-                                      <option value="MAIN" style={{ background: '#0f172a', color: '#fff' }}>🏋️ تمرين أساسي (Main Lift)</option>
-                                      <option value="WARMUP" style={{ background: '#0f172a', color: '#f59e0b' }}>🔥 إحماء وتفعيل (Warm-up)</option>
-                                      <option value="COOLDOWN" style={{ background: '#0f172a', color: '#06b6d4' }}>🧊 استشفاء وإطالة (Recovery)</option>
-                                      <option value="SUPERSET" style={{ background: '#0f172a', color: '#ec4899' }}>⚡ سوبر سيت / دروب سيت</option>
-                                      <option value="CARDIO" style={{ background: '#0f172a', color: '#10b981' }}>⏱️ كارديو ولياقة (Cardio)</option>
+                                      <option value="MAIN">🏋️ تمرين أساسي (Main Lift)</option>
+                                      <option value="WARMUP">🔥 إحماء وتفعيل (Warm-up)</option>
+                                      <option value="COOLDOWN">🧊 استشفاء وإطالة (Recovery)</option>
+                                      <option value="SUPERSET">⚡ سوبر سيت / دروب سيت</option>
+                                      <option value="CARDIO">⏱️ كارديو ولياقة (Cardio)</option>
                                     </select>
 
-                                    {/* Timed Mode Toggle */}
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -3741,8 +3728,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                         display: 'inline-flex',
                                         alignItems: 'center',
                                         gap: '4px',
-                                        border: isTimed ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)',
-                                        background: isTimed ? 'rgba(0, 210, 255, 0.15)' : 'rgba(255,255,255,0.05)',
+                                        border: isTimed ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                                        background: isTimed ? 'rgba(0, 210, 255, 0.15)' : 'var(--bg-card-hover)',
                                         color: isTimed ? 'var(--primary)' : 'var(--text-secondary)',
                                       }}
                                       title={isTimed ? 'التبديل إلى تكرار عادي' : 'التبديل إلى مؤقت زمني'}
@@ -3761,7 +3748,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                         setManualSwapQuery('');
                                       }}
                                       className="secondary-btn"
-                                      style={{ padding: '5px 8px', fontSize: '11.5px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', borderColor: 'rgba(0, 210, 255, 0.3)' }}
+                                      style={{ padding: '5px 8px', fontSize: '11.5px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)' }}
                                       title={lang === 'en' ? 'Smart Exercise Alternative Swap 🔄' : 'المبادلة الذكية للتمرين (بدائل فورية) 🔄'}
                                     >
                                       <span>🔄 {lang === 'en' ? 'Swap' : 'تبديل'}</span>
@@ -3772,7 +3759,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       onClick={() => duplicateExercise(exIdx)}
                                       className="secondary-btn"
                                       style={{ padding: '5px 8px', fontSize: '11.5px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '3px' }}
-                                      title={lang === 'en' ? 'Duplicate exercise' : 'تكرار هذا التمرين'}
+                                      title="تكرار التمرين"
                                     >
                                       <Copy size={12} />
                                     </button>
@@ -3782,10 +3769,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       disabled={exIdx === 0}
                                       onClick={() => moveExerciseUp(exIdx)}
                                       className="secondary-btn"
-                                      style={{ padding: '5px 8px', fontSize: '11px', borderRadius: '8px', opacity: exIdx === 0 ? 0.3 : 1 }}
-                                      title={lang === 'en' ? 'Move Up' : 'تحريك للأعلى'}
+                                      style={{ padding: '5px 6px', fontSize: '11.5px', borderRadius: '8px', opacity: exIdx === 0 ? 0.3 : 1 }}
+                                      title="تقديم التمرين لأعلى"
                                     >
-                                      ▲
+                                      <ChevronUp size={12} />
                                     </button>
 
                                     <button
@@ -3793,90 +3780,84 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       disabled={exIdx >= currentDay.exercises.length - 1}
                                       onClick={() => moveExerciseDown(exIdx)}
                                       className="secondary-btn"
-                                      style={{ padding: '5px 8px', fontSize: '11px', borderRadius: '8px', opacity: exIdx >= currentDay.exercises.length - 1 ? 0.3 : 1 }}
-                                      title={lang === 'en' ? 'Move Down' : 'تحريك للأسفل'}
+                                      style={{ padding: '5px 6px', fontSize: '11.5px', borderRadius: '8px', opacity: exIdx >= currentDay.exercises.length - 1 ? 0.3 : 1 }}
+                                      title="تأخير التمرين لأسفل"
                                     >
-                                      ▼
+                                      <ChevronDown size={12} />
                                     </button>
 
                                     <button
                                       type="button"
                                       onClick={() => removeExercise(exIdx)}
-                                      style={{
-                                        background: 'rgba(239, 68, 68, 0.15)',
-                                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                                        color: '#ef4444',
-                                        borderRadius: '8px',
-                                        padding: '5px 8px',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                      }}
-                                      title={lang === 'en' ? 'Delete exercise' : 'حذف هذا التمرين'}
+                                      className="secondary-btn"
+                                      style={{ padding: '5px 7px', fontSize: '11.5px', borderRadius: '8px', color: '#ef4444' }}
+                                      title="حذف التمرين"
                                     >
-                                      <Trash2 size={13} />
+                                      <Trash2 size={12} />
                                     </button>
                                   </div>
                                 </div>
 
-                                {/* Row 1: Exercise Search Name Input with Live Autocomplete */}
+                                {/* Exercise Name Input with Autocomplete */}
                                 <div style={{ position: 'relative', width: '100%' }}>
-                                  <input
-                                    type="text"
-                                    placeholder={lang === 'en' ? 'Search 4,100+ exercises with autocomplete...' : '🔍 ابحث بين 4,100+ تمرين (بنش، سحب، سكوات، بلانك...)'}
-                                    value={ex.name}
-                                    onChange={(e) => handleRowNameSearch(e.target.value, exIdx)}
-                                    onFocus={() => {
-                                      if (ex.name.trim().length > 1) {
-                                        handleRowNameSearch(ex.name, exIdx);
-                                      }
-                                    }}
-                                    className="input-field"
-                                    style={{ padding: '10px 14px', fontSize: '13.5px', width: '100%', borderRadius: '10px', fontWeight: 'bold' }}
-                                  />
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input
+                                      type="text"
+                                      value={ex.name}
+                                      onChange={(e) => handleRowNameSearch(e.target.value, exIdx)}
+                                      onFocus={() => ex.name && handleRowNameSearch(ex.name, exIdx)}
+                                      placeholder={lang === 'en' ? 'Search 4,100+ exercises (e.g. Bench Press, Squat...)' : 'ابحث في +4,100 تمرين (مثال: بنش برس، سكوات، بايسبس...)'}
+                                      className="input-field"
+                                      style={{
+                                        fontSize: '13.5px',
+                                        fontWeight: '700',
+                                        padding: '10px 14px',
+                                        borderRadius: '10px',
+                                        width: '100%',
+                                      }}
+                                    />
+                                  </div>
 
-                                  {/* Floating Dropdown Autocomplete */}
+                                  {/* Dropdown Suggestions */}
                                   {isSugActive && manualRowSuggestions.list.length > 0 && (
                                     <div
+                                      className="glass-card"
                                       style={{
                                         position: 'absolute',
-                                        top: '100%',
-                                        right: 0,
+                                        top: 'calc(100% + 4px)',
                                         left: 0,
-                                        marginTop: '4px',
-                                        background: 'rgba(15, 23, 42, 0.98)',
-                                        backdropFilter: 'blur(16px)',
-                                        border: '1px solid var(--primary)',
-                                        borderRadius: '12px',
-                                        boxShadow: '0 15px 35px rgba(0,0,0,0.8), 0 0 20px rgba(0, 210, 255, 0.2)',
-                                        zIndex: 1200,
-                                        overflow: 'hidden',
+                                        right: 0,
+                                        zIndex: 1000,
                                         maxHeight: '260px',
                                         overflowY: 'auto',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--primary)',
+                                        background: 'var(--bg-card)',
+                                        boxShadow: '0 12px 35px rgba(0,0,0,0.85)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
                                       }}
                                     >
-                                      {manualRowSuggestions.list.map((sug, sIdx) => {
-                                        const isCardioOrHold = (sug.muscle_en || '').toLowerCase().includes('cardio') || (sug.name_en || '').toLowerCase().includes('plank') || (sug.name_en || '').toLowerCase().includes('hold') || (sug.name_en || '').toLowerCase().includes('run');
+                                      {manualRowSuggestions.list.map((sug) => {
+                                        const isCardioOrHold = (sug.name_en && (sug.name_en.toLowerCase().includes('plank') || sug.name_en.toLowerCase().includes('run') || sug.name_en.toLowerCase().includes('treadmill') || sug.name_en.toLowerCase().includes('rower') || sug.name_en.toLowerCase().includes('jump') || sug.name_en.toLowerCase().includes('hold')));
                                         return (
                                           <div
-                                            key={sIdx}
+                                            key={sug.id || sug.name_en}
                                             onClick={() => selectRowSuggestion(sug, exIdx)}
                                             style={{
-                                              padding: '10px 12px',
+                                              padding: '10px 14px',
                                               cursor: 'pointer',
-                                              borderBottom: sIdx === manualRowSuggestions.list.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                                              borderBottom: '1px solid var(--border-color)',
                                               display: 'flex',
                                               alignItems: 'center',
                                               justifyContent: 'space-between',
-                                              gap: '8px',
                                               transition: 'background 0.15s',
                                             }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 210, 255, 0.12)'}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-card-hover)'}
                                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                           >
                                             <div>
-                                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
+                                              <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                                                 {lang === 'ar' ? (sug.name_ar || sug.name_en) : (sug.name_en || sug.name_ar)}
                                               </div>
                                               {sug.name_en && (
@@ -3895,7 +3876,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                                 {sug.muscle_ar || sug.muscle_en || 'عضلات'}
                                               </span>
                                               {sug.equipment_en && (
-                                                <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-secondary)', padding: '2px 6px', borderRadius: '6px' }}>
+                                                <span style={{ fontSize: '10px', background: 'var(--bg-card-hover)', color: 'var(--text-secondary)', padding: '2px 6px', borderRadius: '6px' }}>
                                                   {sug.equipment_en}
                                                 </span>
                                               )}
@@ -3924,19 +3905,19 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       value={normalizeTargetMuscle(ex.targetMuscle)}
                                       onChange={(e) => updateExercise(exIdx, 'targetMuscle', e.target.value)}
                                       className="input-field"
-                                      style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
+                                      style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px' }}
                                     >
-                                      <option value="Chest" style={{ background: '#0f172a' }}>الصدر (Chest)</option>
-                                      <option value="Back" style={{ background: '#0f172a' }}>الظهر (Back / Lats)</option>
-                                      <option value="Shoulders" style={{ background: '#0f172a' }}>الأكتاف (Shoulders)</option>
-                                      <option value="Quadriceps" style={{ background: '#0f172a' }}>الأرجل الأمامية (Quads)</option>
-                                      <option value="Hamstrings" style={{ background: '#0f172a' }}>الأرجل الخلفية (Hamstrings)</option>
-                                      <option value="Biceps" style={{ background: '#0f172a' }}>البايسبس (Biceps)</option>
-                                      <option value="Triceps" style={{ background: '#0f172a' }}>الترايسبس (Triceps)</option>
-                                      <option value="Abs" style={{ background: '#0f172a' }}>عضلات البطن والكور (Abs)</option>
-                                      <option value="Calves" style={{ background: '#0f172a' }}>السمانة (Calves)</option>
-                                      <option value="Cardio" style={{ background: '#0f172a' }}>كارديو ولياقة (Cardio)</option>
-                                      <option value="Full Body" style={{ background: '#0f172a' }}>كامل الجسم (Full Body)</option>
+                                      <option value="Chest">الصدر (Chest)</option>
+                                      <option value="Back">الظهر (Back / Lats)</option>
+                                      <option value="Shoulders">الأكتاف (Shoulders)</option>
+                                      <option value="Quadriceps">الأرجل الأمامية (Quads)</option>
+                                      <option value="Hamstrings">الأرجل الخلفية (Hamstrings)</option>
+                                      <option value="Biceps">البايسبس (Biceps)</option>
+                                      <option value="Triceps">الترايسبس (Triceps)</option>
+                                      <option value="Abs">عضلات البطن والكور (Abs)</option>
+                                      <option value="Calves">السمانة (Calves)</option>
+                                      <option value="Cardio">كارديو ولياقة (Cardio)</option>
+                                      <option value="Full Body">كامل الجسم (Full Body)</option>
                                     </select>
                                   </div>
 
