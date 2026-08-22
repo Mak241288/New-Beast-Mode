@@ -1371,6 +1371,99 @@ export const api = {
     return mergedPlan;
   },
 
+  renamePlan: async (planId: number | string, newTitle: string): Promise<any> => {
+    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
+    const activePlan: any = cacheStore.get('active_plan');
+    const isTargetActive = activePlan && (String(activePlan.id) === String(planId) || activePlan.title === newTitle);
+
+    const updatedHistory = history.map((p: any) => {
+      if (String(p.id) === String(planId)) {
+        return { ...p, title: newTitle, updatedAt: new Date().toISOString() };
+      }
+      return p;
+    });
+    cacheStore.set('plan_history', updatedHistory);
+
+    if (isTargetActive) {
+      const updatedActive = { ...activePlan, title: newTitle, updatedAt: new Date().toISOString() };
+      cacheStore.set('active_plan', updatedActive);
+    }
+
+    await pushUserDataToCloud(true);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
+
+    const user = await getCurrentUser();
+    if (user?.email) {
+      try {
+        await supabase.from('WorkoutPlan').update({ title: newTitle, updatedAt: new Date().toISOString() }).eq('id', planId);
+      } catch (err) {
+        console.warn('[Supabase renamePlan Exception]:', err);
+      }
+    }
+
+    return { success: true, title: newTitle };
+  },
+
+  duplicatePlan: async (planId: number | string): Promise<any> => {
+    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
+    const target = history.find((p: any) => String(p.id) === String(planId));
+    if (!target) throw new Error('Plan not found');
+
+    const newId = Date.now();
+    const duplicatedPlan = {
+      ...target,
+      id: newId,
+      title: `${target.title} (نسخة)`,
+      active: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const updatedHistory = [duplicatedPlan, ...history];
+    cacheStore.set('plan_history', updatedHistory);
+    await pushUserDataToCloud(true);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
+
+    return duplicatedPlan;
+  },
+
+  deletePlan: async (planId: number | string): Promise<any> => {
+    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
+    const activePlan: any = cacheStore.get('active_plan');
+    const isTargetActive = activePlan && String(activePlan.id) === String(planId);
+
+    const updatedHistory = history.filter((p: any) => String(p.id) !== String(planId));
+    cacheStore.set('plan_history', updatedHistory);
+
+    if (isTargetActive && updatedHistory.length > 0) {
+      const nextActive = { ...updatedHistory[0], active: true };
+      updatedHistory[0] = nextActive;
+      cacheStore.set('active_plan', nextActive);
+      cacheStore.set('plan_history', updatedHistory);
+    }
+
+    await pushUserDataToCloud(true);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
+
+    const user = await getCurrentUser();
+    if (user?.email) {
+      try {
+        await supabase.from('WorkoutPlan').delete().eq('id', planId);
+      } catch (err) {
+        console.warn('[Supabase deletePlan Exception]:', err);
+      }
+    }
+
+    return { success: true };
+  },
+
   getPlanHistory: async (): Promise<any[]> => {
     const user = await getCurrentUser();
 
@@ -1477,115 +1570,6 @@ export const api = {
       return activated;
     }
     return { success: true };
-  },
-
-  renamePlan: async (id: number | string, title: string) => {
-    const history: any[] = (await api.getPlanHistory()) || [];
-    const updatedHistory = history.map((p: any) => {
-      if (String(p.id) === String(id) || p.id === id) {
-        return { ...p, title, updatedAt: new Date().toISOString() };
-      }
-      return p;
-    });
-    cacheStore.set('plan_history', updatedHistory);
-
-    const plan: any = cacheStore.get('active_plan');
-    if (plan && (String(plan.id) === String(id) || plan.id === id || !id)) {
-      plan.title = title;
-      cacheStore.set('active_plan', plan);
-    }
-    await pushUserDataToCloud();
-
-    const user = await getCurrentUser();
-    if (user?.email) {
-      try {
-        await supabase.from('WorkoutPlan').update({ title }).eq('id', id);
-      } catch {
-        // non-fatal
-      }
-    }
-
-    return { success: true, id, title };
-  },
-
-  duplicatePlan: async (id: number | string) => {
-    const history: any[] = (await api.getPlanHistory()) || [];
-    const target = history.find((p: any) => String(p.id) === String(id) || p.id === id) || cacheStore.get('active_plan');
-
-    if (target) {
-      const duplicated = {
-        ...JSON.parse(JSON.stringify(target)),
-        id: generateId(),
-        title: `${target.title} (نسخة مكررة)`,
-        active: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const updatedHistory = [duplicated, ...history];
-      cacheStore.set('plan_history', updatedHistory);
-      await pushUserDataToCloud();
-
-      const user = await getCurrentUser();
-      if (user?.email) {
-        try {
-          await supabase.from('WorkoutPlan').insert({
-            title: duplicated.title,
-            active: false,
-            durationWeeks: duplicated.durationWeeks || 4,
-            startDate: new Date().toISOString(),
-            weeklyTips: duplicated.weeklyTips || '',
-          });
-        } catch {
-          // non-fatal
-        }
-      }
-
-      return duplicated;
-    }
-    return { success: true, id };
-  },
-
-  deletePlan: async (id: number | string) => {
-    const history: any[] = (await api.getPlanHistory()) || [];
-    
-    if (history.length <= 1) {
-      throw new Error('لا يمكن حذف الجدول التدريبي الوحيد. يجب الاحتفاظ بجدول واحد على الأقل.');
-    }
-
-    const targetPlan = history.find((p: any) => String(p.id) === String(id) || p.id === id);
-    const updatedHistory = history.filter((p: any) => String(p.id) !== String(id) && p.id !== id);
-    cacheStore.set('plan_history', updatedHistory);
-
-    const activePlan: any = cacheStore.get('active_plan');
-    if (activePlan && (String(activePlan.id) === String(id) || activePlan.id === id || (targetPlan && activePlan.title === targetPlan.title))) {
-      // Promote the first remaining plan to active
-      if (updatedHistory.length > 0) {
-        const newActive = { ...updatedHistory[0], active: true };
-        updatedHistory[0] = newActive;
-        cacheStore.set('plan_history', updatedHistory);
-        cacheStore.set('active_plan', newActive);
-      } else {
-        cacheStore.remove('active_plan');
-      }
-    }
-
-    // Immediately push the updated plan history to cloud!
-    await pushUserDataToCloud();
-
-    const user = await getCurrentUser();
-    if (user?.email) {
-      try {
-        await supabase.from('WorkoutPlan').delete().eq('id', id);
-        if (targetPlan?.title) {
-          await supabase.from('WorkoutPlan').delete().eq('title', targetPlan.title);
-        }
-      } catch (err) {
-        console.warn('[Supabase deletePlan Exception]:', err);
-      }
-    }
-
-    return { success: true, id, message: 'تم حذف الجدول بنجاح' };
   },
 
   getLibraryTree: async (): Promise<any[]> => {

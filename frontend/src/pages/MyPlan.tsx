@@ -1131,8 +1131,28 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   };
 
   const handleSelectPresetPlan = async (plan: PresetPlan, openManualBuilder?: boolean) => {
+    const planId = Date.now();
     const structuredPlan = {
+      id: planId,
       title: lang === 'en' ? plan.title_en : plan.title_ar,
+      active: true,
+      dayWorkouts: plan.days.map((d) => ({
+        dayIndex: d.dayIndex,
+        title: d.title,
+        focusArea: d.focusArea,
+        isRestDay: d.isRestDay,
+        exercises: d.exercises.map((ex) => ({
+          name: ex.name,
+          targetMuscle: ex.targetMuscle,
+          category: ex.category || 'IRON',
+          sets: ex.sets || 3,
+          reps: ex.reps || '10-12',
+          weight: ex.weight || 'Bodyweight',
+          exerciseTips: ex.exerciseTips || '',
+          imageUrl: ex.imageUrl || null,
+          videoUrl: ex.videoUrl || null,
+        })),
+      })),
       days: plan.days.map((d) => ({
         dayIndex: d.dayIndex,
         title: d.title,
@@ -1153,6 +1173,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     };
 
     if (openManualBuilder) {
+      setManualEditingPlanId(planId);
       setManualTitle(structuredPlan.title);
       setManualDays(structuredPlan.days.map((d) => ({
         dayIndex: d.dayIndex,
@@ -1184,6 +1205,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       cacheStore.set('active_plan', saved);
       setShowPresetPlansModal(false);
       setSelectedDayIndex(1);
+      await fetchHistory();
+      await fetchActivePlan();
       alert(
         lang === 'en'
           ? `🎉 Successfully activated: "${plan.title_en}"!`
@@ -3203,10 +3226,20 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         setShowTemplatesModal(false);
                       }}
                       className="secondary-btn"
-                      style={{ padding: '10px 12px', borderRadius: '10px', textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '4px' }}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        textAlign: lang === 'en' ? 'left' : 'right',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                      }}
                     >
-                      <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '12px' }}>{lang === 'en' ? tpl.titleEn : tpl.titleAr}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{tpl.desc}</span>
+                      <span style={{ fontWeight: '800', color: 'var(--text-primary)', fontSize: '13px' }}>{lang === 'en' ? tpl.titleEn : tpl.titleAr}</span>
+                      <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: '1.4' }}>{tpl.desc}</span>
                     </button>
                   ))}
                 </div>

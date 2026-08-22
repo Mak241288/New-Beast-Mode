@@ -81,58 +81,58 @@
   --bg-card: #ffffff;
   --bg-card-hover: #f8fafc;
   --bg-input: #ffffff;
-  --border-color: #e2e8f0;
-  --border-color-glow: rgba(16, 185, 129, 0.3);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --border-color: #cbd5e1;
+  --border-color-glow: rgba(5, 150, 105, 0.4);
+  --text-primary: #090d16;
+  --text-secondary: #334155;
   --text-muted: #64748b;
 
-  --primary: #10b981;
+  --primary: #059669; /* Rich high-contrast emerald */
   --primary-contrast: #ffffff;
-  --primary-glow: rgba(16, 185, 129, 0.18);
-  --secondary: #0ea5e9;
-  --secondary-glow: rgba(14, 165, 233, 0.18);
+  --primary-glow: rgba(5, 150, 105, 0.22);
+  --secondary: #0284c7; /* Vibrant Oceanic Blue */
+  --secondary-glow: rgba(2, 132, 199, 0.2);
   
   --glass-blur: blur(12px);
-  --glass-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --glass-border: 1px solid #e2e8f0;
+  --glass-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --glass-border: 1px solid #cbd5e1;
 }
 
 [data-theme='light'] .glass-card,
 [data-theme='light'] .glass-panel {
   background: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
-  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  color: #090d16 !important;
 }
 
 [data-theme='light'] .modal-overlay {
-  background: rgba(15, 23, 42, 0.45) !important;
+  background: rgba(15, 23, 42, 0.6) !important;
   backdrop-filter: blur(10px) !important;
 }
 
 [data-theme='light'] .secondary-btn {
-  background: #f8fafc !important;
-  color: #1e293b !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
   border-color: #cbd5e1 !important;
 }
 
 [data-theme='light'] .secondary-btn:hover {
   background: #f1f5f9 !important;
   border-color: var(--primary) !important;
-  color: #0f172a !important;
+  color: #059669 !important;
 }
 
 [data-theme='light'] .input-field {
   background: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  color: #090d16 !important;
+  border-color: #94a3b8 !important;
 }
 
 [data-theme='light'] .plan-tools-toolbar {
   background: #ffffff !important;
   border-color: #cbd5e1 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
 }
 
 [data-theme='light'] .plan-architect-modal {
