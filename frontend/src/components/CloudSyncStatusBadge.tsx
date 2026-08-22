@@ -126,19 +126,6 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
       setSyncState('offline');
     };
 
-    // 3. Silent Tab focus / Phone Unlock visibility listeners (10-minute throttle)
-    let lastFocusSync = Date.now();
-    const handleFocusOrVisible = () => {
-      if (document.visibilityState === 'visible' || document.hasFocus()) {
-        const now = Date.now();
-        // Throttle sync to at most once per 10 minutes (600,000 ms)
-        if (now - lastFocusSync > 10 * 60 * 1000) {
-          lastFocusSync = now;
-          triggerSmartSync(false);
-        }
-      }
-    };
-
     const handleLocalSyncEvent = () => {
       setLastSyncedTimestamp(Date.now());
       setSyncState('synced');
@@ -146,16 +133,12 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    window.addEventListener('focus', handleFocusOrVisible);
-    document.addEventListener('visibilitychange', handleFocusOrVisible);
     window.addEventListener('beast_cloud_synced', handleLocalSyncEvent);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('focus', handleFocusOrVisible);
-      document.removeEventListener('visibilitychange', handleFocusOrVisible);
       window.removeEventListener('beast_cloud_synced', handleLocalSyncEvent);
     };
   }, [lastSyncedTimestamp, isEn]);
