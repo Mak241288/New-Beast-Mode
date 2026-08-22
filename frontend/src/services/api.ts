@@ -812,13 +812,7 @@ export const api = {
 
     // Determine timestamp winner between cached local and cloud
     if (cached && ((cached.dayWorkouts && cached.dayWorkouts.length > 0) || (cached.days && cached.days.length > 0))) {
-      const cachedTime = cached.updatedAt ? new Date(cached.updatedAt).getTime() : Date.now();
-      const cloudTime = cloudActive?.updatedAt ? new Date(cloudActive.updatedAt).getTime() : 0;
-
-      // Local cached edits ALWAYS take precedence unless cloud is strictly newer (e.g. edited from another device)
-      if (cachedTime >= cloudTime || !cloudActive || (!cloudActive.dayWorkouts && !cloudActive.days)) {
-        return cached;
-      }
+      return cached;
     }
 
     if (cloudActive && cloudActive.dayWorkouts && cloudActive.dayWorkouts.length > 0) {
@@ -1288,7 +1282,7 @@ export const api = {
     const history: any[] = cacheStore.get('plan_history') || [];
     const updatedHistory = [plan, ...history.filter((p: any) => p.id !== plan.id && p.title !== plan.title).map((p: any) => ({ ...p, active: false }))];
     cacheStore.set('plan_history', updatedHistory);
-    pushUserDataToCloud();
+    await pushUserDataToCloud(true);
 
     const user = await getCurrentUser();
     if (user?.email) {
