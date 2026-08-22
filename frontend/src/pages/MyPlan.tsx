@@ -862,6 +862,60 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     }
   };
 
+  function normalizeTimedReps(val: any): string {
+    if (!val) return '45s';
+    const s = String(val).trim().toLowerCase();
+    if (s.includes('20m') || s.includes('20 min') || s.includes('20 دقيقة')) return '20 mins';
+    if (s.includes('15m') || s.includes('15 min') || s.includes('15 دقيقة')) return '15 mins';
+    if (s.includes('10m') || s.includes('10 min') || s.includes('10 دقيقة')) return '10 mins';
+    if (s.includes('5m') || s.includes('5 min') || s.includes('5 دقيقة') || s.includes('5 دقائق')) return '5 mins';
+    if (s.includes('2m') || s.includes('2 min') || s.includes('2 دقيقة') || s.includes('دقيقتين') || s.includes('120')) return '2 mins';
+    if (s.includes('90') || s.includes('1.5')) return '90s';
+    if (s.includes('60') || s.includes('1m') || s.includes('1 min') || s.includes('دقيقة واحدة') || s.includes('دقيقة')) return '60s';
+    if (s.includes('45')) return '45s';
+    if (s.includes('30')) return '30s';
+    return s;
+  }
+
+  function normalizeRestSeconds(val: any): string {
+    const num = parseInt(String(val)) || 60;
+    if (num <= 35) return '30';
+    if (num <= 50) return '45';
+    if (num <= 75) return '60';
+    if (num <= 105) return '90';
+    if (num <= 150) return '120';
+    return '180';
+  }
+
+  function normalizeEquipment(val: any): string {
+    if (!val) return 'Dumbbells';
+    const s = String(val).toLowerCase();
+    if (s.includes('وزن') || s.includes('bodyweight') || s.includes('body weight')) return 'Bodyweight';
+    if (s.includes('بار') || s.includes('barbell')) return 'Barbell';
+    if (s.includes('دمبل') || s.includes('دامبل') || s.includes('dumbbell')) return 'Dumbbells';
+    if (s.includes('كيبل') || s.includes('كابل') || s.includes('cable')) return 'Cable';
+    if (s.includes('جهاز كارديو') || s.includes('cardio machine') || s.includes('treadmill') || s.includes('bike')) return 'Cardio Machine';
+    if (s.includes('جهاز') || s.includes('أجهزة') || s.includes('machine')) return 'Machine';
+    return val;
+  }
+
+  function normalizeTargetMuscle(val: any): string {
+    if (!val) return 'Chest';
+    const s = String(val).toLowerCase();
+    if (s.includes('صدر') || s.includes('chest')) return 'Chest';
+    if (s.includes('ظهر') || s.includes('back') || s.includes('lat')) return 'Back';
+    if (s.includes('كتف') || s.includes('أكتاف') || s.includes('shoulder') || s.includes('delt')) return 'Shoulders';
+    if (s.includes('خلفي') || s.includes('hamstring') || s.includes('glute')) return 'Hamstrings';
+    if (s.includes('أرجل') || s.includes('quad') || s.includes('leg') || s.includes('فخذ')) return 'Quadriceps';
+    if (s.includes('باي') || s.includes('bicep')) return 'Biceps';
+    if (s.includes('تراي') || s.includes('tricep')) return 'Triceps';
+    if (s.includes('بطن') || s.includes('abs') || s.includes('core')) return 'Abs';
+    if (s.includes('سمانة') || s.includes('calf') || s.includes('calves')) return 'Calves';
+    if (s.includes('كارديو') || s.includes('cardio') || s.includes('لياقة')) return 'Cardio';
+    if (s.includes('شامل') || s.includes('full')) return 'Full Body';
+    return val;
+  }
+
   const handleOpenManualBuilder = (planToLoad?: any) => {
     const plan = planToLoad || activePlan;
     if (plan) {
@@ -3812,7 +3866,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       🎯 {lang === 'en' ? 'Muscle Target:' : 'العضلة المستهدفة:'}
                                     </label>
                                     <select
-                                      value={ex.targetMuscle}
+                                      value={normalizeTargetMuscle(ex.targetMuscle)}
                                       onChange={(e) => updateExercise(exIdx, 'targetMuscle', e.target.value)}
                                       className="input-field"
                                       style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
@@ -3837,7 +3891,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       🏋️ {lang === 'en' ? 'Equipment:' : 'الأداة المستخدمة:'}
                                     </label>
                                     <select
-                                      value={ex.weight || 'Dumbbells'}
+                                      value={normalizeEquipment(ex.weight)}
                                       onChange={(e) => updateExercise(exIdx, 'weight', e.target.value)}
                                       className="input-field"
                                       style={{ padding: '8px 10px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: '#fff' }}
@@ -3888,7 +3942,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                     </label>
                                     {isTimed ? (
                                       <select
-                                        value={ex.reps}
+                                        value={normalizeTimedReps(ex.reps)}
                                         onChange={(e) => updateExercise(exIdx, 'reps', e.target.value)}
                                         className="input-field"
                                         style={{ padding: '7px 6px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(0, 210, 255, 0.08)', color: 'var(--primary)', fontWeight: 'bold' }}
@@ -3921,7 +3975,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                       💤 {lang === 'en' ? 'Rest Time:' : 'راحة الجولة:'}
                                     </label>
                                     <select
-                                      value={(ex as any).restSeconds || 60}
+                                      value={normalizeRestSeconds((ex as any).restSeconds)}
                                       onChange={(e) => updateExercise(exIdx, 'restSeconds', parseInt(e.target.value) || 60)}
                                       className="input-field"
                                       style={{ padding: '7px 8px', fontSize: '12px', width: '100%', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-primary)' }}
