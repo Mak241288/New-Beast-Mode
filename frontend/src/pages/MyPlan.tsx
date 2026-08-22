@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar, Search } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
@@ -114,6 +114,12 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   // Manual Architect Smart Swap Modal State
   const [manualSwapTarget, setManualSwapTarget] = useState<{ dayIdx: number; exIdx: number; exercise: any } | null>(null);
   const [manualSwapQuery, setManualSwapQuery] = useState<string>('');
+
+  // Interactive Visual Exercise Picker State
+  const [showExercisePickerModal, setShowExercisePickerModal] = useState<{ dayIdx: number; exIdx?: number } | null>(null);
+  const [pickerMuscle, setPickerMuscle] = useState<string>('ALL');
+  const [pickerEquipment, setPickerEquipment] = useState<string>('ALL');
+  const [pickerQuery, setPickerQuery] = useState<string>('');
 
   // Smart Warmup & Cooldown Routines mapped to Focus Area
   const getSmartWarmupRoutine = (focus: string = '', title: string = '') => {
@@ -3601,6 +3607,22 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
                           <button
                             type="button"
+                            onClick={() => {
+                              setPickerMuscle('ALL');
+                              setPickerEquipment('ALL');
+                              setPickerQuery('');
+                              setShowExercisePickerModal({ dayIdx });
+                            }}
+                            className="glow-btn"
+                            style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}
+                            title="فتح مكتبة التمارين التفاعلية المصورة لاختيار التمارين بسهولة"
+                          >
+                            <Search size={13} />
+                            <span>{lang === 'en' ? 'Visual Picker (+4,100) ⚡' : 'تصفح واختيار من المكتبة (+4,100) ⚡'}</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={addExercise}
                             className="glow-btn"
                             style={{ padding: '6px 14px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -3610,6 +3632,83 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           </button>
                         </div>
                       </div>
+
+                      {/* Quick 1-Click Recommended Exercises based on Day Focus */}
+                      {(() => {
+                        const f = (currentDay.focusArea || currentDay.title || '').toLowerCase();
+                        let recs = [
+                          { name_ar: 'بنش برس مستوي بالبار', name_en: 'Barbell Bench Press', muscle: 'Chest', equipment: 'Barbell' },
+                          { name_ar: 'تفتيح صدر بالدمبلز', name_en: 'Dumbbell Flyes', muscle: 'Chest', equipment: 'Dumbbells' },
+                          { name_ar: 'سحب ظهر عالي (لاتس)', name_en: 'Lat Pulldown', muscle: 'Back', equipment: 'Cable' },
+                          { name_ar: 'سكوات بالبار', name_en: 'Barbell Squat', muscle: 'Quadriceps', equipment: 'Barbell' },
+                          { name_ar: 'بايسبس كيرل دمبلز', name_en: 'Dumbbell Bicep Curl', muscle: 'Biceps', equipment: 'Dumbbells' },
+                          { name_ar: 'ترايسبس حبل بالكيبل', name_en: 'Tricep Rope Pushdown', muscle: 'Triceps', equipment: 'Cable' },
+                        ];
+
+                        if (f.includes('chest') || f.includes('صدر') || f.includes('push') || f.includes('دفع')) {
+                          recs = [
+                            { name_ar: 'بنش برس مستوي بالبار', name_en: 'Barbell Bench Press', muscle: 'Chest', equipment: 'Barbell' },
+                            { name_ar: 'بنش مائل بالدمبلز', name_en: 'Incline Dumbbell Press', muscle: 'Chest', equipment: 'Dumbbells' },
+                            { name_ar: 'تفتيح وتجميع بالكيبل', name_en: 'Cable Chest Fly', muscle: 'Chest', equipment: 'Cable' },
+                            { name_ar: 'ترايسبس بالكيبل لأسفل', name_en: 'Tricep Pushdown', muscle: 'Triceps', equipment: 'Cable' },
+                            { name_ar: 'ضغط متوازي للصدر (ديبس)', name_en: 'Chest Dips', muscle: 'Chest', equipment: 'Bodyweight' },
+                          ];
+                        } else if (f.includes('back') || f.includes('ظهر') || f.includes('pull') || f.includes('سحب')) {
+                          recs = [
+                            { name_ar: 'سحب عالي للظهر (لاتس)', name_en: 'Lat Pulldown', muscle: 'Back', equipment: 'Cable' },
+                            { name_ar: 'تجديف بالبار منحني (رو)', name_en: 'Bent-Over Barbell Row', muscle: 'Back', equipment: 'Barbell' },
+                            { name_ar: 'سحب أرضي بالكيبل (سيتد رو)', name_en: 'Seated Cable Row', muscle: 'Back', equipment: 'Cable' },
+                            { name_ar: 'بايسبس كيرل بالدمبلز', name_en: 'Dumbbell Curl', muscle: 'Biceps', equipment: 'Dumbbells' },
+                            { name_ar: 'سحب فيس بول للكتف الخلفي', name_en: 'Face Pulls', muscle: 'Shoulders', equipment: 'Cable' },
+                          ];
+                        } else if (f.includes('leg') || f.includes('أرجل') || f.includes('سفلي')) {
+                          recs = [
+                            { name_ar: 'سكوات خلفي بالبار', name_en: 'Barbell Back Squat', muscle: 'Quadriceps', equipment: 'Barbell' },
+                            { name_ar: 'دفع أرجل بجهاز المكبس', name_en: 'Leg Press', muscle: 'Quadriceps', equipment: 'Machine' },
+                            { name_ar: 'ديدليفت روماني (أرجل خلفية)', name_en: 'Romanian Deadlift', muscle: 'Hamstrings', equipment: 'Barbell' },
+                            { name_ar: 'فرد أرجل أمامي بالجهاز', name_en: 'Leg Extension', muscle: 'Quadriceps', equipment: 'Machine' },
+                            { name_ar: 'رفع السمانة واقفاً', name_en: 'Standing Calf Raise', muscle: 'Calves', equipment: 'Machine' },
+                          ];
+                        } else if (f.includes('shoulder') || f.includes('كتف') || f.includes('أكتاف') || f.includes('ذراع')) {
+                          recs = [
+                            { name_ar: 'ضغط أكتاف بالدمبلز جالس', name_en: 'Dumbbell Shoulder Press', muscle: 'Shoulders', equipment: 'Dumbbells' },
+                            { name_ar: 'رفرفة كتف جانبي بالدمبلز', name_en: 'Lateral Raise', muscle: 'Shoulders', equipment: 'Dumbbells' },
+                            { name_ar: 'بايسبس هامر كيرل بالدمبلز', name_en: 'Hammer Curls', muscle: 'Biceps', equipment: 'Dumbbells' },
+                            { name_ar: 'ترايسبس بالبار المتعرج (سكال كراشر)', name_en: 'Skullcrushers', muscle: 'Triceps', equipment: 'Barbell' },
+                          ];
+                        }
+
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', background: 'var(--bg-card-hover)', padding: '8px 12px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              💡 {lang === 'en' ? 'Quick 1-Click Add:' : 'إضافة سريعة بنقرة واحدة 💡:'}
+                            </span>
+                            {recs.map((rec, rIdx) => (
+                              <button
+                                key={rIdx}
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...manualDays];
+                                  updated[dayIdx].exercises.push({
+                                    name: lang === 'en' ? rec.name_en : rec.name_ar,
+                                    targetMuscle: rec.muscle,
+                                    weight: rec.equipment,
+                                    sets: 3,
+                                    reps: '10-12',
+                                    restSeconds: 60,
+                                  });
+                                  setManualDays(updated);
+                                }}
+                                className="secondary-btn"
+                                style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '8px' }}
+                                title={lang === 'en' ? `Click to add ${rec.name_en} to this day` : `انقر لإضافة ${rec.name_ar} لهذا اليوم فوراً`}
+                              >
+                                <span>+ {lang === 'en' ? rec.name_en : rec.name_ar}</span>
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
 
                       {currentDay.exercises.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '35px 20px', color: 'var(--text-muted)', fontSize: '13px', border: '1px dashed var(--border-color)', borderRadius: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
@@ -4387,6 +4486,316 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           focusArea={dynamicWarmupDay.focusArea || ''}
           onClose={() => setDynamicWarmupDay(null)}
         />
+      )}
+
+      {/* Interactive Visual Exercise Picker Modal (+4,100 Exercises) */}
+      {showExercisePickerModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(5, 7, 16, 0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1400,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => setShowExercisePickerModal(null)}
+        >
+          <div
+            className="glass-card plan-architect-modal"
+            style={{
+              width: '100%',
+              maxWidth: '860px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: '24px',
+              padding: '22px',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              boxShadow: 'var(--glass-shadow)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 210, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                  <Dumbbell size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '17px', fontWeight: '900', margin: 0, color: 'var(--text-primary)' }}>
+                    {lang === 'en' ? 'Visual Exercise Picker (+4,100 Exercises)' : 'المكتبة التفاعلية لاختيار التمارين المصورة (+4,100 تمرين) 🏋️'}
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+                    {lang === 'en' ? 'Filter by muscle or equipment, search in real-time, and add to your day with 1-click.' : 'فلترة حسب العضلة أو الأداة، بحث فوري فائق السرعة، وإضافة للجدول بنقرة واحدة.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowExercisePickerModal(null)}
+                className="secondary-btn"
+                style={{ width: '34px', height: '34px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Muscle Category Chips */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
+              {[
+                { key: 'ALL', label: lang === 'en' ? '🌐 All' : '🌐 جميع العضلات' },
+                { key: 'Chest', label: lang === 'en' ? '🏋️ Chest' : '🏋️ الصدر' },
+                { key: 'Back', label: lang === 'en' ? '🦍 Back' : '🦍 الظهر' },
+                { key: 'Shoulders', label: lang === 'en' ? '🦾 Shoulders' : '🦾 الأكتاف' },
+                { key: 'Quadriceps', label: lang === 'en' ? '🦵 Quads' : '🦵 الأرجل' },
+                { key: 'Hamstrings', label: lang === 'en' ? '🦵 Hamstrings' : '🦵 الفخذ الخلفي' },
+                { key: 'Biceps', label: lang === 'en' ? '💪 Biceps' : '💪 البايسبس' },
+                { key: 'Triceps', label: lang === 'en' ? '⚡ Triceps' : '⚡ الترايسبس' },
+                { key: 'Abs', label: lang === 'en' ? '🔥 Abs & Core' : '🔥 عضلات البطن' },
+                { key: 'Calves', label: lang === 'en' ? '🦶 Calves' : '🦶 السمانة' },
+                { key: 'Cardio', label: lang === 'en' ? '⏱️ Cardio' : '⏱️ كارديو' },
+              ].map((tab) => {
+                const isActive = pickerMuscle === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setPickerMuscle(tab.key)}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      border: isActive ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                      background: isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--bg-card-hover)',
+                      color: isActive ? 'var(--primary-contrast, #050710)' : 'var(--text-primary)',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Equipment Filter Chips & Search Bar */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ flex: '1 1 240px', position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder={lang === 'en' ? 'Search by exercise name, muscle, equipment...' : '🔍 اكتب اسم التمرين، العضلة، الأداة...'}
+                  value={pickerQuery}
+                  onChange={(e) => setPickerQuery(e.target.value)}
+                  className="input-field"
+                  style={{ padding: '11px 16px', fontSize: '13.5px', borderRadius: '12px', width: '100%' }}
+                  autoFocus
+                />
+              </div>
+
+              {/* Equipment Filter Pills */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {[
+                  { key: 'ALL', label: 'الكل' },
+                  { key: 'Dumbbells', label: 'دمبلز' },
+                  { key: 'Barbell', label: 'بار' },
+                  { key: 'Cable', label: 'كيبل' },
+                  { key: 'Machine', label: 'أجهزة' },
+                  { key: 'Bodyweight', label: 'وزن الجسم' },
+                ].map((eq) => {
+                  const isActive = pickerEquipment === eq.key;
+                  return (
+                    <button
+                      key={eq.key}
+                      type="button"
+                      onClick={() => setPickerEquipment(eq.key)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '11.5px',
+                        cursor: 'pointer',
+                        border: isActive ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                        background: isActive ? 'rgba(0, 210, 255, 0.15)' : 'var(--bg-card-hover)',
+                        color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                        fontWeight: isActive ? 'bold' : 'normal',
+                      }}
+                    >
+                      {eq.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Visual Exercise Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: '12px',
+              maxHeight: '440px',
+              overflowY: 'auto',
+              padding: '4px',
+            }}>
+              {(() => {
+                const q = pickerQuery.toLowerCase().trim()
+                  .replace(/[أإآ]/g, 'ا')
+                  .replace(/ة/g, 'ه')
+                  .replace(/ى/g, 'ي');
+                const qWords = q.split(/\s+/).filter(Boolean);
+
+                let list = libraryExercises || [];
+
+                // Filter by Muscle
+                if (pickerMuscle !== 'ALL') {
+                  const normPickerM = pickerMuscle.toLowerCase();
+                  list = list.filter(ex => {
+                    const mEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
+                    const mAr = (ex.muscle_ar || '').toLowerCase();
+                    return mEn.includes(normPickerM) || normPickerM.includes(mEn) || mAr.includes(normPickerM);
+                  });
+                }
+
+                // Filter by Equipment
+                if (pickerEquipment !== 'ALL') {
+                  const normPickerEq = pickerEquipment.toLowerCase();
+                  list = list.filter(ex => {
+                    const eqEn = (ex.equipment_en || ex.equipment || '').toLowerCase();
+                    const eqAr = (ex.equipment_ar || '').toLowerCase();
+                    return eqEn.includes(normPickerEq) || eqAr.includes(normPickerEq);
+                  });
+                }
+
+                // Filter by Query
+                if (qWords.length > 0) {
+                  list = list.filter(ex => {
+                    const nameAr = (ex.name_ar || ex.name || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+                    const nameEn = (ex.name_en || ex.name || '').toLowerCase();
+                    const muscleAr = (ex.muscle_ar || '').toLowerCase();
+                    const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
+                    const combined = `${nameAr} ${nameEn} ${muscleAr} ${muscleEn}`;
+                    return qWords.every(w => combined.includes(w));
+                  });
+                }
+
+                if (list.length === 0) {
+                  return (
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
+                      <span style={{ fontSize: '32px' }}>🔍</span>
+                      <p style={{ margin: '10px 0 0 0', fontSize: '13px' }}>
+                        {lang === 'en' ? 'No exercises match your filter. Try changing muscle or search query.' : 'لم نجد تمارين مطابقة للفلتر المحدد. جرب تغيير العضلة أو كتابة اسم آخر.'}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return list.slice(0, 40).map((item, idx) => {
+                  const nameAr = item.name_ar || item.name_en || item.name;
+                  const nameEn = item.name_en || item.name;
+                  const muscle = item.muscle_ar || item.muscle_en || item.targetMuscle || 'عضلات';
+                  const equip = item.equipment_ar || item.equipment_en || item.equipment || 'أداة';
+                  const img = item.image_url || item.gif_url || '';
+
+                  return (
+                    <div
+                      key={item.id || idx}
+                      className="glass-panel"
+                      style={{
+                        padding: '12px',
+                        borderRadius: '14px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card-hover)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '10px',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', background: 'var(--bg-card)', flexShrink: 0, border: '1px solid var(--border-color)' }}>
+                          <ExerciseImage src={img} alt={nameEn} muscle={item.muscle_en || item.targetMuscle} />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {lang === 'en' ? nameEn : nameAr}
+                          </div>
+                          {lang === 'ar' && nameEn && (
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {nameEn}
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '10px', background: 'rgba(0, 210, 255, 0.12)', color: 'var(--primary)', padding: '1px 6px', borderRadius: '6px', fontWeight: 'bold' }}>
+                              🎯 {muscle}
+                            </span>
+                            <span style={{ fontSize: '10px', background: 'var(--border-color)', color: 'var(--text-secondary)', padding: '1px 6px', borderRadius: '6px' }}>
+                              🏋️ {equip}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const { dayIdx, exIdx } = showExercisePickerModal;
+                          const updated = [...manualDays];
+                          const selectedExData = {
+                            name: lang === 'en' ? nameEn : nameAr,
+                            targetMuscle: item.muscle_en || item.targetMuscle || 'Chest',
+                            weight: item.equipment_en || item.equipment || 'Dumbbells',
+                            imageUrl: img,
+                            sets: 3,
+                            reps: '10-12',
+                            restSeconds: 60,
+                            exerciseTips: item.instructions_ar || item.instructions_en || '',
+                          };
+
+                          if (exIdx !== undefined && updated[dayIdx]?.exercises[exIdx]) {
+                            // Update existing row
+                            updated[dayIdx].exercises[exIdx] = {
+                              ...updated[dayIdx].exercises[exIdx],
+                              ...selectedExData,
+                            };
+                          } else {
+                            // Append new exercise
+                            if (!updated[dayIdx].exercises) updated[dayIdx].exercises = [];
+                            updated[dayIdx].exercises.push(selectedExData);
+                          }
+
+                          setManualDays(updated);
+                          setShowExercisePickerModal(null);
+                        }}
+                        className="glow-btn"
+                        style={{
+                          width: '100%',
+                          padding: '7px 10px',
+                          fontSize: '12px',
+                          borderRadius: '8px',
+                          justifyContent: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <span>{showExercisePickerModal.exIdx !== undefined ? (lang === 'en' ? 'Choose This Exercise ⚡' : 'استبدال بهذا التمرين ⚡') : (lang === 'en' ? '+ Add to Routine' : '+ إضافة إلى اليوم التدريبي')}</span>
+                      </button>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
