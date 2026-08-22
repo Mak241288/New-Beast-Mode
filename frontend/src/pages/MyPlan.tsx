@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar } from 'lucide-react';
+import { Edit2, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
@@ -109,6 +109,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [viewingExercise, setViewingExercise] = useState<any | null>(null);
   const [regeneratingPlan, setRegeneratingPlan] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({ 1: true });
+  const [showToolsDrawer, setShowToolsDrawer] = useState(false);
 
   // Manual Architect Smart Swap Modal State
   const [manualSwapTarget, setManualSwapTarget] = useState<{ dayIdx: number; exIdx: number; exercise: any } | null>(null);
@@ -1215,122 +1216,150 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         </div>
 
         {/* Clean Segmented Quick Tools */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', width: '100%', maxWidth: '100%' }}>
-          {/* Primary Action Buttons */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', width: '100%' }}>
+          {/* Main Action Bar */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
             <button
               onClick={() => handleOpenManualBuilder()}
               className="glow-btn"
-              style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
             >
               <Plus size={15} />
               <span>{lang === 'en' ? 'Custom Plan Architect ✍️' : 'تصميم جدول يدوي ✍️'}</span>
             </button>
+            
             <button
               onClick={() => setShowPresetPlansModal(true)}
               className="secondary-btn"
-              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#f59e0b' }}
             >
               <Crown size={15} color="#f59e0b" />
               <span>{lang === 'en' ? 'Pro Plans 👑' : 'الخطط الجاهزة 👑'}</span>
             </button>
+
             <button
-              onClick={() => {
-                fetchHistory();
-                setShowMultiPlanModal(true);
-              }}
+              onClick={() => setShowToolsDrawer(!showToolsDrawer)}
               className="secondary-btn"
-              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{
+                padding: '8px 14px',
+                fontSize: '12.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 'bold',
+                borderColor: showToolsDrawer ? 'var(--primary)' : 'var(--border-color)',
+                background: showToolsDrawer ? 'rgba(0, 210, 255, 0.1)' : 'transparent',
+                color: showToolsDrawer ? 'var(--primary)' : 'var(--text-primary)',
+              }}
             >
               <Layers size={15} color="var(--secondary)" />
-              <span>{lang === 'en' ? `My Plans (${historyList.length || 1}) 📑` : `إدارة جداولي (${historyList.length || 1}) 📑`}</span>
-            </button>
-            <button
-              onClick={() => setShowStrengthCalcModal(true)}
-              className="secondary-btn"
-              style={{ padding: '8px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Percent size={15} color="#38bdf8" />
-              <span>{lang === 'en' ? '1RM Calc 🔢' : 'حاسبة 1RM 🔢'}</span>
+              <span>{lang === 'en' ? 'Tools & Management ⚙️' : 'أدوات وإدارة الجداول ⚙️'}</span>
+              <ChevronDown size={14} style={{ transform: showToolsDrawer ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
             </button>
           </div>
 
-          {/* Secondary Utilities Strip */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-            <button
-              onClick={handleRegeneratePlan}
-              className="secondary-btn"
-              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
+          {/* Collapsible Unified Tools Drawer */}
+          {showToolsDrawer && (
+            <div
+              className="glass-panel animated-fade"
+              style={{
+                width: '100%',
+                padding: '14px 18px',
+                borderRadius: '14px',
+                border: '1px solid var(--border-color)',
+                background: 'rgba(15, 23, 42, 0.95)',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: '8px',
+                boxShadow: '0 12px 30px rgba(0,0,0,0.6)',
+              }}
             >
-              <RefreshCw size={13} />
-              <span>{lang === 'en' ? 'Regenerate' : 'إعادة توليد ⚡'}</span>
-            </button>
-            <button
-              onClick={handleUpgradePlan}
-              className="secondary-btn"
-              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
-            >
-              <Sparkles size={13} />
-              <span>{lang === 'en' ? 'AI Upgrade' : 'ترقية AI ✨'}</span>
-            </button>
-            <button
-              onClick={() => setShowImport(true)}
-              className="secondary-btn"
-              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
-            >
-              <Upload size={13} />
-              <span>{t.importBtn}</span>
-            </button>
-            <button
-              onClick={() => { setShowHistory(true); fetchHistory(); }}
-              className="secondary-btn"
-              style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
-            >
-              <History size={13} />
-              <span>{t.historyBtn}</span>
-            </button>
+              <button
+                onClick={() => { fetchHistory(); setShowMultiPlanModal(true); }}
+                className="secondary-btn"
+                style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Layers size={13} color="var(--secondary)" />
+                <span>{lang === 'en' ? `My Plans (${historyList.length || 1})` : `إدارة جداولي (${historyList.length || 1})`}</span>
+              </button>
 
-            {activePlan && (
-              <>
-                <button
-                  onClick={() => exportWorkoutPlanToCSV(activePlan, lang)}
-                  className="secondary-btn"
-                  title={lang === 'en' ? 'Export CSV' : 'تصدير إكسل'}
-                  style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
-                >
-                  <Download size={13} />
-                  <span>CSV</span>
-                </button>
-                <button
-                  onClick={handleShareToWhatsApp}
-                  className="secondary-btn"
-                  title={lang === 'en' ? 'Share plan to WhatsApp' : 'مشاركة الخطة عبر واتساب'}
-                  style={{
-                    padding: '5px 10px',
-                    fontSize: '11.5px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    borderColor: 'rgba(37, 211, 102, 0.3)',
-                    color: '#25D366',
-                    opacity: 0.9,
-                  }}
-                >
-                  <Share2 size={13} />
-                  <span>WhatsApp 📲</span>
-                </button>
-                <button
-                  onClick={handlePrintWorkoutPlan}
-                  className="secondary-btn"
-                  title={lang === 'en' ? 'Print Workout Plan' : 'طباعة الجدول الورقي'}
-                  style={{ padding: '5px 10px', fontSize: '11.5px', display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.85 }}
-                >
-                  <Printer size={13} />
-                  <span>{lang === 'en' ? 'Print' : 'طباعة 🖨️'}</span>
-                </button>
-              </>
-            )}
-          </div>
+              <button
+                onClick={() => setShowStrengthCalcModal(true)}
+                className="secondary-btn"
+                style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Percent size={13} color="#38bdf8" />
+                <span>{lang === 'en' ? '1RM Calc' : 'حاسبة 1RM 🔢'}</span>
+              </button>
+
+              <button
+                onClick={handleRegeneratePlan}
+                className="secondary-btn"
+                style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <RefreshCw size={13} />
+                <span>{lang === 'en' ? 'Regenerate' : 'إعادة توليد ⚡'}</span>
+              </button>
+
+              <button
+                onClick={handleUpgradePlan}
+                className="secondary-btn"
+                style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Sparkles size={13} color="#f59e0b" />
+                <span>{lang === 'en' ? 'AI Upgrade' : 'ترقية AI ✨'}</span>
+              </button>
+
+              <button
+                onClick={() => setShowImport(true)}
+                className="secondary-btn"
+                style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Upload size={13} />
+                <span>{t.importBtn}</span>
+              </button>
+
+              <button
+                onClick={() => { setShowHistory(true); fetchHistory(); }}
+                className="secondary-btn"
+                style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <History size={13} />
+                <span>{t.historyBtn}</span>
+              </button>
+
+              {activePlan && (
+                <>
+                  <button
+                    onClick={() => exportWorkoutPlanToCSV(activePlan, lang)}
+                    className="secondary-btn"
+                    style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Download size={13} />
+                    <span>CSV 📊</span>
+                  </button>
+
+                  <button
+                    onClick={handleShareToWhatsApp}
+                    className="secondary-btn"
+                    style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px', color: '#25D366', borderColor: 'rgba(37, 211, 102, 0.3)' }}
+                  >
+                    <Share2 size={13} />
+                    <span>WhatsApp 📲</span>
+                  </button>
+
+                  <button
+                    onClick={handlePrintWorkoutPlan}
+                    className="secondary-btn"
+                    style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Printer size={13} />
+                    <span>{lang === 'en' ? 'Print' : 'طباعة 🖨️'}</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1376,7 +1405,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   <div
                     onClick={() => toggleDayExpanded(dw.dayIndex)}
                     style={{
-                      padding: '18px 24px',
+                      padding: '16px 20px', flexWrap: 'wrap', gap: '12px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -3276,7 +3305,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           gap: '4px',
                         }}
                       >
-                        <span>{lang === 'en' ? '◀ Prev Day' : '◀ اليوم السابق'}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{lang === 'ar' ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}{lang === 'en' ? 'Prev Day' : 'اليوم السابق'}</span>
                       </button>
                       <button
                         type="button"
@@ -3294,7 +3323,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           gap: '4px',
                         }}
                       >
-                        <span>{lang === 'en' ? 'Next Day ▶' : 'اليوم التالي ▶'}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{lang === 'en' ? 'Next Day' : 'اليوم التالي'}{lang === 'ar' ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}</span>
                       </button>
                     </div>
                   </div>

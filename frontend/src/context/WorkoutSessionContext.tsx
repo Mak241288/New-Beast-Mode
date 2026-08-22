@@ -247,10 +247,19 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     const initialLogs: { [idx: number]: SetLogItem[] } = {};
     dayData.exercises.forEach((ex: any, idx: number) => {
       const totalSets = typeof ex.sets === 'number' ? ex.sets : parseInt(String(ex.sets || 3), 10) || 3;
+      let cleanReps = String(ex.reps || '10-12').trim();
+      const lowerR = cleanReps.toLowerCase();
+      if (lowerR === 'chest' || lowerR === 'back' || lowerR === 'shoulders' || lowerR === 'quadriceps' || lowerR === 'biceps' || lowerR === 'triceps' || lowerR === 'abs' || lowerR === 'glutes' || lowerR === 'hamstrings' || lowerR === 'calves' || lowerR === 'صدر' || lowerR === 'ظهر') {
+        cleanReps = ex.isTimed ? '45s' : '10-12';
+      }
+      let cleanWeight = String(ex.weight || '').trim();
+      if (!cleanWeight || cleanWeight.toLowerCase() === 'weight') {
+        cleanWeight = (ex.equipment_en?.toLowerCase().includes('body') || ex.weight?.toLowerCase()?.includes('body')) ? 'Bodyweight' : '15 kg';
+      }
       initialLogs[idx] = Array.from({ length: totalSets }, (_, sIdx) => ({
         setNumber: sIdx + 1,
-        reps: ex.reps || '10-12',
-        weight: ex.weight || (ex.equipment_en?.toLowerCase().includes('body') ? 'Bodyweight' : '15 kg'),
+        reps: cleanReps,
+        weight: cleanWeight,
         completed: false,
       }));
     });

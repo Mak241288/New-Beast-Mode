@@ -953,15 +953,15 @@ body[dir='rtl'] .routine-exercise-card:hover {
 /* Floating Action Speed Dial */
 .speed-dial-fab {
   position: fixed;
-  bottom: 95px;
+  bottom: 82px;
   z-index: 9990;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html[dir="rtl"] .speed-dial-fab {
-  left: 20px;
+  left: 16px;
 }
 
 html[dir="ltr"] .speed-dial-fab {
-  right: 20px;
+  right: 16px;
 }

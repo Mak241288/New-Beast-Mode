@@ -112,8 +112,9 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
             ...(openUpwards
               ? { bottom: 'calc(100% + 10px)', top: 'auto' }
               : { top: 'calc(100% + 10px)', bottom: 'auto' }),
-            right: 0,
-            minWidth: '220px',
+            insetInlineEnd: 0,
+            minWidth: '200px',
+            maxWidth: 'calc(100vw - 32px)',
             padding: '10px',
             borderRadius: '16px',
             border: '1px solid var(--primary)',

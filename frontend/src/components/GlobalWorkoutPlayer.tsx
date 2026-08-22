@@ -1082,21 +1082,22 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             )}
 
             {/* Sets Table */}
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', tableLayout: 'fixed' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                    <th style={{ padding: '8px', width: '45px' }}>{isAr ? 'الجولة' : 'Set'}</th>
-                    <th style={{ padding: '8px' }}>{isAr ? 'الوزن' : 'Weight'}</th>
-                    <th style={{ padding: '8px' }}>{isAr ? 'التكرار' : 'Reps'}</th>
-                    <th style={{ padding: '8px', width: '75px' }}>{isAr ? 'الجهد (RPE)' : 'RPE'}</th>
-                    <th style={{ padding: '8px', width: '65px' }}>{isAr ? 'إنجاز' : 'Done'}</th>
-                    <th style={{ padding: '8px', width: '35px' }}></th>
+                    <th style={{ padding: '8px 4px', width: '45px', textAlign: 'center' }}>{isAr ? 'الجولة' : 'Set'}</th>
+                    <th style={{ padding: '8px 4px', width: '30%', textAlign: 'center' }}>{isAr ? 'الوزن' : 'Weight'}</th>
+                    <th style={{ padding: '8px 4px', width: '30%', textAlign: 'center' }}>{isAr ? 'التكرار / المدة' : 'Reps / Time'}</th>
+                    <th style={{ padding: '8px 4px', width: '68px', textAlign: 'center' }}>{isAr ? 'RPE' : 'RPE'}</th>
+                    <th style={{ padding: '8px 4px', width: '48px', textAlign: 'center' }}>{isAr ? 'إنجاز' : 'Done'}</th>
+                    <th style={{ padding: '8px 2px', width: '32px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentLogs.map((setLog, sIdx) => {
                     const isTargetSet = sIdx === state.currentSetIndex;
+                    const displayWeight = (setLog.weight === 'Bodyweight' || setLog.weight === 'وزن الجسم') ? (isAr ? 'وزن الجسم' : 'BW') : setLog.weight;
 
                     return (
                       <tr
@@ -1109,16 +1110,17 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           transition: 'background 0.2s ease',
                         }}
                       >
-                        <td style={{ padding: '10px 6px', textAlign: 'center', fontWeight: 'bold', color: isTargetSet ? 'var(--primary)' : '#fff' }}>
+                        <td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'bold', color: isTargetSet ? 'var(--primary)' : '#fff', fontSize: '13.5px' }}>
                           {setLog.setNumber}
                         </td>
 
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '6px 3px' }}>
                           <input
                             type="text"
-                            value={setLog.weight}
+                            dir="ltr"
+                            value={displayWeight}
                             onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { weight: e.target.value })}
-                            placeholder="15 kg"
+                            placeholder={isAr ? 'وزن الجسم' : '15 kg'}
                             style={{
                               width: '100%',
                               padding: '8px 4px',
@@ -1127,14 +1129,17 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                               border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
                               borderRadius: '8px',
                               color: '#fff',
-                              fontSize: '13px',
+                              fontSize: '12.5px',
+                              fontWeight: '600',
+                              unicodeBidi: 'plaintext',
                             }}
                           />
                         </td>
 
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '6px 3px' }}>
                           <input
                             type="text"
+                            dir="ltr"
                             value={setLog.reps}
                             onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { reps: e.target.value })}
                             placeholder="10-12"
@@ -1146,12 +1151,14 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                               border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
                               borderRadius: '8px',
                               color: '#fff',
-                              fontSize: '13px',
+                              fontSize: '12.5px',
+                              fontWeight: '600',
+                              unicodeBidi: 'plaintext',
                             }}
                           />
                         </td>
 
-                        <td style={{ padding: '6px' }}>
+                        <td style={{ padding: '6px 3px' }}>
                           <select
                             value={setLog.rpe || ''}
                             onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { rpe: e.target.value ? Number(e.target.value) : undefined })}
@@ -1176,7 +1183,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           </select>
                         </td>
 
-                        <td style={{ padding: '6px', textAlign: 'center' }}>
+                        <td style={{ padding: '6px 2px', textAlign: 'center' }}>
                           <button
                             onClick={() => {
                               if (!setLog.completed) {
