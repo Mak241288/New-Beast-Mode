@@ -454,6 +454,14 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   const getRestTime = (ex: any) => {
     if (!ex) return lang === 'en' ? '90s' : '90 ثانية';
+    if (ex.restSeconds !== undefined && ex.restSeconds !== null && String(ex.restSeconds).trim() !== '') {
+      const s = parseInt(String(ex.restSeconds));
+      if (s === 0) return lang === 'en' ? 'None' : 'بدون';
+      return `${s} ${lang === 'en' ? 's' : 'ثانية'}`;
+    }
+    if (ex.rest && String(ex.rest).trim()) {
+      return String(ex.rest);
+    }
     const tips = typeof ex.exerciseTips === 'string'
       ? ex.exerciseTips
       : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || ''));
@@ -721,6 +729,29 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     e.preventDefault();
     try {
       await api.updateExercise(editingExercise.id, editingExercise);
+      
+      // Update local React state immediately so UI refreshes without race condition
+      setActivePlan((prevPlan: any) => {
+        if (!prevPlan) return prevPlan;
+        const days = (prevPlan.dayWorkouts || prevPlan.days || []).map((dw: any) => ({
+          ...dw,
+          exercises: (dw.exercises || []).map((ex: any) =>
+            (editingExercise.id !== undefined && ex.id !== undefined && String(ex.id) === String(editingExercise.id)) ||
+            (ex.name && editingExercise.name && ex.name.toLowerCase().trim() === editingExercise.name.toLowerCase().trim() && dw.dayIndex === selectedDayIndex)
+              ? { ...ex, ...editingExercise }
+              : ex
+          )
+        }));
+        const updated = {
+          ...prevPlan,
+          dayWorkouts: days,
+          days,
+          updatedAt: new Date().toISOString()
+        };
+        cacheStore.set('active_plan', updated);
+        return updated;
+      });
+
       setEditingExercise(null);
       fetchActivePlan();
     } catch (err) {
@@ -2000,7 +2031,12 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         const newTips = item.val > 0
                           ? `Rest: ${item.val}s ${cleanTips ? `| ${cleanTips}` : ''}`
                           : cleanTips;
-                        setEditingExercise({ ...editingExercise, exerciseTips: newTips });
+                        setEditingExercise({
+                          ...editingExercise,
+                          exerciseTips: newTips,
+                          restSeconds: item.val,
+                          rest: item.text,
+                        });
                       }}
                       className="secondary-btn"
                       style={{

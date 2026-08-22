@@ -991,24 +991,29 @@ export const api = {
     return generated;
   },
 
-  updateExercise: async (id: number, data: any) => {
+  updateExercise: async (id: any, data: any) => {
     const plan: any = cacheStore.get('active_plan');
-    if (plan && plan.dayWorkouts) {
-      plan.dayWorkouts.forEach((dw: any) => {
+    if (plan) {
+      const days = plan.dayWorkouts || plan.days || [];
+      days.forEach((dw: any) => {
         if (dw.exercises) {
-          const exIndex = dw.exercises.findIndex((e: any) => e.id === id);
+          const exIndex = dw.exercises.findIndex((e: any) => 
+            (e.id !== undefined && id !== undefined && String(e.id) === String(id)) ||
+            (data.name && e.name && e.name.toLowerCase().trim() === data.name.toLowerCase().trim())
+          );
           if (exIndex !== -1) {
             dw.exercises[exIndex] = { ...dw.exercises[exIndex], ...data };
           }
         }
       });
-      plan.days = plan.dayWorkouts;
+      plan.dayWorkouts = days;
+      plan.days = days;
       plan.updatedAt = new Date().toISOString();
       cacheStore.set('active_plan', plan);
 
       // Keep plan_history in sync
       const history: any[] = cacheStore.get('plan_history') || [];
-      const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+      const hIdx = history.findIndex((p: any) => (p.id && plan.id && String(p.id) === String(plan.id)) || p.title === plan.title);
       if (hIdx >= 0) {
         history[hIdx] = { ...history[hIdx], ...plan };
         cacheStore.set('plan_history', history);
@@ -1026,21 +1031,23 @@ export const api = {
     return { success: true, updatedExercise: data };
   },
 
-  deleteExercise: async (id: number) => {
+  deleteExercise: async (id: any) => {
     const plan: any = cacheStore.get('active_plan');
-    if (plan && plan.dayWorkouts) {
-      plan.dayWorkouts.forEach((dw: any) => {
+    if (plan) {
+      const days = plan.dayWorkouts || plan.days || [];
+      days.forEach((dw: any) => {
         if (dw.exercises) {
-          dw.exercises = dw.exercises.filter((e: any) => e.id !== id);
+          dw.exercises = dw.exercises.filter((e: any) => String(e.id) !== String(id));
         }
       });
-      plan.days = plan.dayWorkouts;
+      plan.dayWorkouts = days;
+      plan.days = days;
       plan.updatedAt = new Date().toISOString();
       cacheStore.set('active_plan', plan);
 
       // Keep plan_history in sync
       const history: any[] = cacheStore.get('plan_history') || [];
-      const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+      const hIdx = history.findIndex((p: any) => (p.id && plan.id && String(p.id) === String(plan.id)) || p.title === plan.title);
       if (hIdx >= 0) {
         history[hIdx] = { ...history[hIdx], ...plan };
         cacheStore.set('plan_history', history);
@@ -1109,7 +1116,7 @@ export const api = {
     };
   },
 
-  addCustomExercise: async (dayId: number, data: any) => {
+  addCustomExercise: async (dayId: any, data: any) => {
     const plan: any = cacheStore.get('active_plan');
     const newEx = {
       id: generateId(),
@@ -1118,21 +1125,26 @@ export const api = {
       reps: data.reps || '10-12',
       weight: data.weight || 'Bodyweight',
       targetMuscle: data.targetMuscle || 'Chest',
+      category: data.category || 'IRON',
+      restSeconds: data.restSeconds || 60,
       exerciseTips: data.exerciseTips || '',
       imageUrl: data.imageUrl || '',
+      videoUrl: data.videoUrl || '',
     };
 
-    if (plan && plan.dayWorkouts) {
-      const day = plan.dayWorkouts.find((d: any) => d.id === dayId || d.dayIndex === dayId);
+    if (plan) {
+      const days = plan.dayWorkouts || plan.days || [];
+      const day = days.find((d: any) => String(d.id) === String(dayId) || String(d.dayIndex) === String(dayId));
       if (day) {
         day.exercises = [...(day.exercises || []), newEx];
-        plan.days = plan.dayWorkouts;
+        plan.dayWorkouts = days;
+        plan.days = days;
         plan.updatedAt = new Date().toISOString();
         cacheStore.set('active_plan', plan);
 
         // Keep plan_history in sync
         const history: any[] = cacheStore.get('plan_history') || [];
-        const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
+        const hIdx = history.findIndex((p: any) => (p.id && plan.id && String(p.id) === String(plan.id)) || p.title === plan.title);
         if (hIdx >= 0) {
           history[hIdx] = { ...history[hIdx], ...plan };
           cacheStore.set('plan_history', history);
