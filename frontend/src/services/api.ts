@@ -235,18 +235,10 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
       if (!finalPlan.dayWorkouts && finalPlan.days) {
         finalPlan.dayWorkouts = finalPlan.days;
       }
-      const localPlan: any = cacheStore.get('active_plan');
-      const localTime = localPlan?.updatedAt ? new Date(localPlan.updatedAt).getTime() : 0;
-      const cloudTime = finalPlan?.updatedAt ? new Date(finalPlan.updatedAt).getTime() : 0;
-      if (cloudTime > localTime || !localPlan) {
-        cacheStore.set('active_plan', finalPlan);
-      }
+      cacheStore.set('active_plan', finalPlan);
     }
     if (finalHistory && finalHistory.length > 0) {
-      const localHistory: any[] = cacheStore.get('plan_history') || [];
-      if (localHistory.length === 0 || finalHistory.length >= localHistory.length) {
-        cacheStore.set('plan_history', finalHistory);
-      }
+      cacheStore.set('plan_history', finalHistory);
     }
     if (finalSession && (finalSession.status === 'active' || finalSession.status === 'resting' || finalSession.status === 'paused')) {
       cacheStore.set('active_gym_session', finalSession);
@@ -825,17 +817,13 @@ export const api = {
       }
     }
 
-    // Determine timestamp winner between cached local and cloud
-    if (cached && ((cached.dayWorkouts && cached.dayWorkouts.length > 0) || (cached.days && cached.days.length > 0))) {
-      return cached;
-    }
-
-    if (cloudActive && cloudActive.dayWorkouts && cloudActive.dayWorkouts.length > 0) {
+    // Smart Cloud SWR: Prioritize authoritative cloud plan, fallback to cache
+    if (cloudActive && ((cloudActive.dayWorkouts && cloudActive.dayWorkouts.length > 0) || (cloudActive.days && cloudActive.days.length > 0))) {
       cacheStore.set('active_plan', cloudActive);
       return cloudActive;
     }
 
-    if (cached && cached.dayWorkouts && cached.dayWorkouts.length > 0) {
+    if (cached && ((cached.dayWorkouts && cached.dayWorkouts.length > 0) || (cached.days && cached.days.length > 0))) {
       return cached;
     }
 
