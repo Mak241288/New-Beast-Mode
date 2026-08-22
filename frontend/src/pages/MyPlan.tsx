@@ -870,24 +870,41 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         ? plan.dayWorkouts
         : ((plan.days && plan.days.length > 0) ? plan.days : []);
       if (sourceDays.length > 0) {
-        setManualDays(sourceDays.map((d: any, idx: number) => ({
-          dayIndex: d.dayIndex || idx + 1,
-          title: d.title || (lang === 'en' ? `Day ${idx + 1}` : `اليوم ${idx + 1}`),
-          focusArea: d.focusArea || '',
-          isRestDay: !!d.isRestDay,
-          exercises: (d.exercises || []).map((ex: any, eIdx: number) => ({
-            id: ex.id || (Date.now() + idx * 100 + eIdx),
-            name: ex.name || '',
-            targetMuscle: ex.targetMuscle || 'Chest',
-            category: ex.category || 'IRON',
-            sets: ex.sets || 3,
-            reps: ex.reps || '10-12',
-            weight: ex.weight || 'Bodyweight',
-            exerciseTips: typeof ex.exerciseTips === 'string' ? ex.exerciseTips : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || '')),
-            imageUrl: ex.imageUrl || '',
-            videoUrl: ex.videoUrl || '',
-          }))
-        })));
+        setManualDays(sourceDays.map((d: any, idx: number) => {
+          const exercises = (d.exercises || []).map((ex: any, eIdx: number) => {
+            const rawCat = ex.category ? String(ex.category).trim().toUpperCase() : '';
+            const cat = (rawCat === 'WARMUP' || rawCat === 'WARM_UP' || rawCat === 'WARM-UP' || (rawCat === '' && ex.name && (ex.name.includes('إحماء') || ex.name.toLowerCase().includes('warmup') || ex.name.toLowerCase().includes('warm-up'))))
+              ? 'WARMUP'
+              : (rawCat === 'COOLDOWN' || rawCat === 'RECOVERY' || rawCat === 'STRETCH' || (rawCat === '' && ex.name && (ex.name.includes('استشفاء') || ex.name.includes('إطالة'))))
+              ? 'COOLDOWN'
+              : (rawCat === 'SUPERSET' || rawCat === 'DROIPSET')
+              ? 'SUPERSET'
+              : (rawCat === 'CARDIO' || rawCat === 'HIIT')
+              ? 'CARDIO'
+              : 'MAIN';
+
+            return {
+              id: ex.id || (Date.now() + idx * 100 + eIdx),
+              name: ex.name || '',
+              targetMuscle: ex.targetMuscle || 'Chest',
+              category: cat,
+              sets: ex.sets || 3,
+              reps: ex.reps || '10-12',
+              weight: ex.weight || 'Bodyweight',
+              exerciseTips: typeof ex.exerciseTips === 'string' ? ex.exerciseTips : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || '')),
+              imageUrl: ex.imageUrl || '',
+              videoUrl: ex.videoUrl || '',
+            };
+          });
+
+          return {
+            dayIndex: d.dayIndex || idx + 1,
+            title: d.title || (lang === 'en' ? `Day ${idx + 1}` : `اليوم ${idx + 1}`),
+            focusArea: d.focusArea || '',
+            isRestDay: !!d.isRestDay,
+            exercises,
+          };
+        }));
       }
     } else {
       setManualTitle(lang === 'en' ? 'New Custom Workout Routine' : 'جدولي التدريبي الجديد');
@@ -3473,7 +3490,16 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                           {currentDay.exercises.map((ex, exIdx) => {
                             const isSugActive = manualRowSuggestions && manualRowSuggestions.dayIdx === dayIdx && manualRowSuggestions.exIdx === exIdx;
                             const isTimed = (ex as any).isTimed || (typeof ex.reps === 'string' && (ex.reps.includes('s') || ex.reps.includes('m') || ex.reps.includes('sec') || ex.reps.includes('ثانية') || ex.reps.includes('دقيقة')));
-                            const role = (ex as any).category || 'MAIN';
+                            const rawCat = (ex as any).category ? String((ex as any).category).trim().toUpperCase() : '';
+                            const role = (rawCat === 'WARMUP' || rawCat === 'WARM_UP' || rawCat === 'WARM-UP' || (rawCat === '' && ex.name && (ex.name.includes('إحماء') || ex.name.toLowerCase().includes('warmup') || ex.name.toLowerCase().includes('warm-up'))))
+                              ? 'WARMUP'
+                              : (rawCat === 'COOLDOWN' || rawCat === 'RECOVERY' || rawCat === 'STRETCH' || (rawCat === '' && ex.name && (ex.name.includes('استشفاء') || ex.name.includes('إطالة'))))
+                              ? 'COOLDOWN'
+                              : (rawCat === 'SUPERSET' || rawCat === 'DROIPSET')
+                              ? 'SUPERSET'
+                              : (rawCat === 'CARDIO' || rawCat === 'HIIT')
+                              ? 'CARDIO'
+                              : 'MAIN';
 
                             // Role badge styling
                             const roleStyles = {
