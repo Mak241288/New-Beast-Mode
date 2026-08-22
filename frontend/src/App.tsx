@@ -232,6 +232,15 @@ function App() {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
 
+  // Zero-polling Realtime Cross-Device Cloud Sync
+  useEffect(() => {
+    if (!token) return;
+    const unsubscribe = api.subscribeToRealtimeSync();
+    return () => {
+      unsubscribe?.();
+    };
+  }, [token]);
+
   const [initError, setInitError] = useState<string | null>(null);
 
   const checkStatus = async () => {
