@@ -159,8 +159,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
     const handleCloudSync = () => {
       fetchDashboardData();
     };
+    const handlePlanChanged = (e: any) => {
+      if (e.detail?.activePlan) {
+        setActivePlan(e.detail.activePlan);
+      }
+    };
+    window.addEventListener('beast_plan_changed', handlePlanChanged);
     window.addEventListener('beast_cloud_synced', handleCloudSync);
-    return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
+    return () => {
+      window.removeEventListener('beast_plan_changed', handlePlanChanged);
+      window.removeEventListener('beast_cloud_synced', handleCloudSync);
+    };
   }, []);
 
   const handleSubmitCheckIn = async (e: React.FormEvent) => {

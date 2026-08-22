@@ -10,6 +10,7 @@ import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
 import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
 import { DynamicWarmupModal } from '../components/DynamicWarmupModal';
 import type { PresetPlan } from '../utils/presetWorkoutPlans';
+import { createDefault7Days } from '../services/planService';
 import { cacheStore } from '../utils/cacheStore';
 import { exportWorkoutPlanToCSV } from '../utils/exportUtils';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
@@ -450,14 +451,26 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     fetchLibraryOnce();
     if (localStorage.getItem('open_manual_builder') === 'true') {
       localStorage.removeItem('open_manual_builder');
-      setShowManualBuilder(true);
+      handleOpenManualBuilder(null);
     }
     const handleCloudSync = () => {
       fetchActivePlan();
       fetchHistory();
     };
+    const handlePlanChanged = (e: any) => {
+      if (e.detail?.activePlan) {
+        setActivePlan(e.detail.activePlan);
+      }
+      if (e.detail?.plans) {
+        setHistoryList(e.detail.plans);
+      }
+    };
+    window.addEventListener('beast_plan_changed', handlePlanChanged);
     window.addEventListener('beast_cloud_synced', handleCloudSync);
-    return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
+    return () => {
+      window.removeEventListener('beast_plan_changed', handlePlanChanged);
+      window.removeEventListener('beast_cloud_synced', handleCloudSync);
+    };
   }, []);
 
   const handleNameChange = (val: string, type: 'custom' | 'edit' | 'preview', dayIdx?: number, exIdx?: number) => {
@@ -1116,15 +1129,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       }
     } else {
       setManualTitle(lang === 'en' ? 'New Custom Workout Routine' : 'جدولي التدريبي الجديد');
-      setManualDays([
-        { dayIndex: 1, title: lang === 'en' ? 'Push (Chest & Triceps)' : 'دفع (صدر وترايسبس وأكتاف)', focusArea: lang === 'en' ? 'Chest, Triceps' : 'صدر، ترايسبس', isRestDay: false, exercises: [] },
-        { dayIndex: 2, title: lang === 'en' ? 'Pull (Back & Biceps)' : 'سحب (ظهر وبايسبس)', focusArea: lang === 'en' ? 'Back, Biceps' : 'ظهر، بايسبس', isRestDay: false, exercises: [] },
-        { dayIndex: 3, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
-        { dayIndex: 4, title: lang === 'en' ? 'Legs & Core' : 'أرجل وبطن', focusArea: lang === 'en' ? 'Legs, Abs' : 'أرجل، بطن', isRestDay: false, exercises: [] },
-        { dayIndex: 5, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
-        { dayIndex: 6, title: lang === 'en' ? 'Full Body Blast' : 'تمرين شامل لكامل الجسم', focusArea: lang === 'en' ? 'Full Body' : 'كامل الجسم', isRestDay: false, exercises: [] },
-        { dayIndex: 7, title: lang === 'en' ? 'Rest & Recovery' : 'راحة واستشفاء', focusArea: lang === 'en' ? 'Rest' : 'راحة', isRestDay: true, exercises: [] },
-      ]);
+      setManualDays(createDefault7Days(lang));
     }
     setManualActiveDayIdx(1);
     setShowManualBuilder(true);

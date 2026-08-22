@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { cacheStore } from '../utils/cacheStore';
 import { PRESET_WORKOUT_PLANS } from '../utils/presetWorkoutPlans';
 import { parseBulkWorkoutText } from '../utils/workoutParser';
+import { planService } from './planService';
 
 // Helper to get active user ID or email from Supabase Auth
 async function getCurrentUser() {
@@ -787,99 +788,11 @@ export const api = {
   // WORKOUT & PLAN API (Supabase & Local-First)
   // ==========================================
 
+  // Centralized Unified BeastPlan Engine
+  plan: planService,
+
   getActivePlan: async () => {
-    const user = await getCurrentUser();
-    const cached: any = cacheStore.get('active_plan');
-
-    // 1. Authoritative Cloud Plan from Supabase User Metadata
-    let cloudActive: any = null;
-    if (user?.user_metadata?.beast_active_plan) {
-      cloudActive = typeof user.user_metadata.beast_active_plan === 'string'
-        ? JSON.parse(user.user_metadata.beast_active_plan)
-        : user.user_metadata.beast_active_plan;
-    } else if (user?.user_metadata?.beast_sync_data) {
-      try {
-        const syncData = typeof user.user_metadata.beast_sync_data === 'string'
-          ? JSON.parse(user.user_metadata.beast_sync_data)
-          : user.user_metadata.beast_sync_data;
-        if (syncData?.activePlan) {
-          cloudActive = syncData.activePlan;
-        }
-      } catch {
-        // Non-fatal
-      }
-    }
-
-    // Ensure dayWorkouts compatibility on cloudActive
-    if (cloudActive) {
-      if (!cloudActive.dayWorkouts && cloudActive.days) {
-        cloudActive.dayWorkouts = cloudActive.days;
-      }
-    }
-
-    // Smart Cloud SWR: Prioritize authoritative cloud plan, fallback to cache
-    if (cloudActive && ((cloudActive.dayWorkouts && cloudActive.dayWorkouts.length > 0) || (cloudActive.days && cloudActive.days.length > 0))) {
-      cacheStore.set('active_plan', cloudActive);
-      return cloudActive;
-    }
-
-    if (cached && ((cached.dayWorkouts && cached.dayWorkouts.length > 0) || (cached.days && cached.days.length > 0))) {
-      return cached;
-    }
-
-    if (user?.email) {
-      try {
-        const { data: planRow } = await supabase
-          .from('WorkoutPlan')
-          .select('*, dayWorkouts:DayWorkout(*, exercises:Exercise(*))')
-          .eq('active', true)
-          .order('updatedAt', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (planRow && planRow.dayWorkouts && planRow.dayWorkouts.length > 0) {
-          cacheStore.set('active_plan', planRow);
-          return planRow;
-        }
-      } catch {
-        // Non-fatal, proceed with cached
-      }
-    }
-
-    // Default split from curated presets
-    const defaultSplit = PRESET_WORKOUT_PLANS[0];
-    if (defaultSplit) {
-      const plan = {
-        id: generateId(),
-        title: defaultSplit.title_ar || defaultSplit.title_en,
-        active: true,
-        durationWeeks: 4,
-        startDate: new Date().toISOString(),
-        weeklyTips: defaultSplit.description_ar || defaultSplit.description_en,
-        dayWorkouts: defaultSplit.days.map((dw: any, dIdx: number) => ({
-          id: generateId() + dIdx,
-          dayIndex: dw.dayIndex,
-          title: dw.title,
-          focusArea: dw.focusArea,
-          isRestDay: dw.isRestDay || false,
-          exercises: dw.exercises.map((ex: any, eIdx: number) => ({
-            id: generateId() + dIdx * 100 + eIdx,
-            name: ex.name,
-            sets: ex.sets || 3,
-            reps: ex.reps || '10-12',
-            weight: ex.weight || 'Bodyweight',
-            targetMuscle: ex.targetMuscle || 'General',
-            imageUrl: ex.imageUrl || '',
-            exerciseTips: ex.exerciseTips || '',
-          })),
-        })),
-        updatedAt: new Date().toISOString(),
-      };
-      cacheStore.set('active_plan', plan);
-      return plan;
-    }
-
-    return null;
+    return planService.getActive();
   },
 
   createManualPlan: async (options: any) => {
@@ -1268,308 +1181,32 @@ export const api = {
     return api.importBulkPlan(decodedText || fileName, lang, preview);
   },
 
-  saveStructuredPlan: async (structuredPlan: any, _lang?: string): Promise<any> => {
-    const dayWorkouts = structuredPlan.dayWorkouts || structuredPlan.days || [];
-    const planId = structuredPlan.id || generateId();
-    const plan = {
-      ...structuredPlan,
-      id: planId,
-      dayWorkouts,
-      days: dayWorkouts,
-      active: true,
-      createdAt: structuredPlan.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    cacheStore.set('active_plan', plan);
-
-    // Save or update seamlessly in plan_history
-    const history: any[] = cacheStore.get('plan_history') || [];
-    const existingIdx = history.findIndex((p: any) => String(p.id) === String(planId) || (p.title && p.title === plan.title));
-    let updatedHistory: any[];
-    if (existingIdx >= 0) {
-      updatedHistory = history.map((p, idx) => idx === existingIdx ? { ...plan, active: true } : { ...p, active: false });
-    } else {
-      updatedHistory = [{ ...plan, active: true }, ...history.map((p: any) => ({ ...p, active: false }))];
-    }
-    cacheStore.set('plan_history', updatedHistory);
-    await pushUserDataToCloud(true);
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
-    }
-
-    const user = await getCurrentUser();
-    if (user?.email) {
-      try {
-        await supabase.from('WorkoutPlan').update({ active: false }).neq('id', -1);
-        await supabase.from('WorkoutPlan').insert({
-          title: plan.title,
-          active: true,
-          durationWeeks: plan.durationWeeks || 4,
-          startDate: plan.startDate || new Date().toISOString(),
-          weeklyTips: plan.weeklyTips || '',
-        });
-      } catch (err) {
-        console.warn('[Supabase saveStructuredPlan Exception]:', err);
-      }
-    }
-
-    return plan;
+  saveStructuredPlan: async (plan: any, _lang: string = 'ar'): Promise<any> => {
+    return planService.save(plan, true);
   },
 
   updatePlanFully: async (planId: number | string, updatedData: any, activate: boolean = false): Promise<any> => {
-    const days = updatedData.dayWorkouts || updatedData.days || [];
-    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
-    const activePlan: any = cacheStore.get('active_plan');
-    const isTargetActive = activate || (activePlan && (String(activePlan.id) === String(planId) || activePlan.title === updatedData.title));
-
-    const existingPlan = history.find((p: any) => String(p.id) === String(planId) || (p.title && p.title === updatedData.title));
-
-    const mergedPlan = {
-      ...(existingPlan || {}),
-      ...updatedData,
-      id: planId,
-      dayWorkouts: days,
-      days: days,
-      active: isTargetActive,
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (isTargetActive) {
-      cacheStore.set('active_plan', mergedPlan);
-    }
-
-    const updatedHistory = history.some((p: any) => String(p.id) === String(planId) || p.title === mergedPlan.title)
-      ? history.map((p: any) => {
-          if (String(p.id) === String(planId) || p.title === mergedPlan.title) {
-            return mergedPlan;
-          }
-          return isTargetActive ? { ...p, active: false } : p;
-        })
-      : [mergedPlan, ...history.map((p: any) => isTargetActive ? { ...p, active: false } : p)];
-
-    cacheStore.set('plan_history', updatedHistory);
-    await pushUserDataToCloud(true);
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
-    }
-
-    const user = await getCurrentUser();
-    if (user?.email) {
-      try {
-        await supabase.from('WorkoutPlan').update({
-          title: mergedPlan.title,
-          updatedAt: new Date().toISOString(),
-          active: isTargetActive,
-        }).eq('id', planId);
-      } catch (err) {
-        console.warn('[Supabase updatePlanFully Exception]:', err);
-      }
-    }
-
-    return mergedPlan;
+    return planService.save({ ...updatedData, id: planId }, activate);
   },
 
   renamePlan: async (planId: number | string, newTitle: string): Promise<any> => {
-    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
-    const activePlan: any = cacheStore.get('active_plan');
-    const isTargetActive = activePlan && (String(activePlan.id) === String(planId) || activePlan.title === newTitle);
-
-    const updatedHistory = history.map((p: any) => {
-      if (String(p.id) === String(planId)) {
-        return { ...p, title: newTitle, updatedAt: new Date().toISOString() };
-      }
-      return p;
-    });
-    cacheStore.set('plan_history', updatedHistory);
-
-    if (isTargetActive) {
-      const updatedActive = { ...activePlan, title: newTitle, updatedAt: new Date().toISOString() };
-      cacheStore.set('active_plan', updatedActive);
-    }
-
-    await pushUserDataToCloud(true);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
-    }
-
-    const user = await getCurrentUser();
-    if (user?.email) {
-      try {
-        await supabase.from('WorkoutPlan').update({ title: newTitle, updatedAt: new Date().toISOString() }).eq('id', planId);
-      } catch (err) {
-        console.warn('[Supabase renamePlan Exception]:', err);
-      }
-    }
-
-    return { success: true, title: newTitle };
+    return planService.rename(planId, newTitle);
   },
 
   duplicatePlan: async (planId: number | string): Promise<any> => {
-    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
-    const target = history.find((p: any) => String(p.id) === String(planId));
-    if (!target) throw new Error('Plan not found');
-
-    const newId = Date.now();
-    const duplicatedPlan = {
-      ...target,
-      id: newId,
-      title: `${target.title} (نسخة)`,
-      active: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const updatedHistory = [duplicatedPlan, ...history];
-    cacheStore.set('plan_history', updatedHistory);
-    await pushUserDataToCloud(true);
-
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
-    }
-
-    return duplicatedPlan;
+    return planService.duplicate(planId);
   },
 
   deletePlan: async (planId: number | string): Promise<any> => {
-    const history: any[] = (cacheStore.get('plan_history') as any[]) || [];
-    const activePlan: any = cacheStore.get('active_plan');
-    const isTargetActive = activePlan && String(activePlan.id) === String(planId);
-
-    const updatedHistory = history.filter((p: any) => String(p.id) !== String(planId));
-    cacheStore.set('plan_history', updatedHistory);
-
-    if (isTargetActive && updatedHistory.length > 0) {
-      const nextActive = { ...updatedHistory[0], active: true };
-      updatedHistory[0] = nextActive;
-      cacheStore.set('active_plan', nextActive);
-      cacheStore.set('plan_history', updatedHistory);
-    }
-
-    await pushUserDataToCloud(true);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
-    }
-
-    const user = await getCurrentUser();
-    if (user?.email) {
-      try {
-        await supabase.from('WorkoutPlan').delete().eq('id', planId);
-      } catch (err) {
-        console.warn('[Supabase deletePlan Exception]:', err);
-      }
-    }
-
-    return { success: true };
+    return planService.delete(planId);
   },
 
   getPlanHistory: async (): Promise<any[]> => {
-    const user = await getCurrentUser();
-
-    // 1. Authoritative Cloud Plan History from Supabase User Metadata
-    let cloudHistory: any[] | null = null;
-    if (user?.user_metadata?.beast_plan_history) {
-      cloudHistory = typeof user.user_metadata.beast_plan_history === 'string'
-        ? JSON.parse(user.user_metadata.beast_plan_history)
-        : user.user_metadata.beast_plan_history;
-    } else if (user?.user_metadata?.beast_sync_data) {
-      try {
-        const syncData = typeof user.user_metadata.beast_sync_data === 'string'
-          ? JSON.parse(user.user_metadata.beast_sync_data)
-          : user.user_metadata.beast_sync_data;
-        if (syncData?.planHistory && Array.isArray(syncData.planHistory)) {
-          cloudHistory = syncData.planHistory;
-        }
-      } catch {
-        // Non-fatal
-      }
-    }
-
-    if (cloudHistory && cloudHistory.length > 0) {
-      cacheStore.set('plan_history', cloudHistory);
-      return cloudHistory;
-    }
-
-    let history: any[] = cacheStore.get('plan_history') || [];
-    const active: any = cacheStore.get('active_plan');
-
-    if (active) {
-      const idx = history.findIndex((p: any) => p.id === active.id || p.title === active.title);
-      if (idx >= 0) {
-        history[idx] = { ...history[idx], ...active, active: true };
-      } else {
-        history = [{ ...active, active: true }, ...history.map((p: any) => ({ ...p, active: false }))];
-      }
-    }
-
-    if (user?.email) {
-      try {
-        const { data: dbPlans } = await supabase
-          .from('WorkoutPlan')
-          .select('*, dayWorkouts:DayWorkout(*, exercises:Exercise(*))')
-          .order('updatedAt', { ascending: false });
-
-        if (dbPlans && dbPlans.length > 0) {
-          const merged = [...dbPlans];
-          history.forEach((localPlan) => {
-            if (!merged.some((dbP) => dbP.id === localPlan.id || dbP.title === localPlan.title)) {
-              merged.push(localPlan);
-            }
-          });
-          history = merged;
-        }
-      } catch (err) {
-        console.warn('[Supabase getPlanHistory Exception]:', err);
-      }
-    }
-
-    if (history.length === 0) {
-      const presets = PRESET_WORKOUT_PLANS.slice(0, 3).map((p: any, idx: number) => ({
-        id: 1000 + idx,
-        title: p.title_ar || p.title_en,
-        active: idx === 0,
-        createdAt: new Date(Date.now() - idx * 86400000 * 7).toISOString(),
-        dayWorkouts: p.days,
-        days: p.days,
-      }));
-      history = presets;
-      if (!active && history[0]) {
-        cacheStore.set('active_plan', history[0]);
-      }
-    }
-
-    cacheStore.set('plan_history', history);
-    return history;
+    return planService.getAll();
   },
 
   activateHistoricalPlan: async (id: number | string) => {
-    const history: any[] = (await api.getPlanHistory()) || [];
-    const target = history.find((p: any) => String(p.id) === String(id) || p.id === id);
-    if (target) {
-      const activated = { ...target, active: true, updatedAt: new Date().toISOString() };
-      cacheStore.set('active_plan', activated);
-
-      const updatedHistory = history.map((p: any) => ({
-        ...p,
-        active: String(p.id) === String(id) || p.id === id,
-      }));
-      cacheStore.set('plan_history', updatedHistory);
-      await pushUserDataToCloud();
-
-      const user = await getCurrentUser();
-      if (user?.email) {
-        try {
-          await supabase.from('WorkoutPlan').update({ active: false }).neq('id', -1);
-          await supabase.from('WorkoutPlan').update({ active: true }).eq('id', id);
-        } catch {
-          // non-fatal
-        }
-      }
-
-      return activated;
-    }
-    return { success: true };
+    return planService.activate(id);
   },
 
   getLibraryTree: async (): Promise<any[]> => {
