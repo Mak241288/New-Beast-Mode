@@ -217,32 +217,39 @@ export const normalizePlan = (raw: any, fallbackTitle = 'جدول تدريبي �
 // CENTRALIZED PLAN SERVICE
 // -------------------------------------------------------------
 export const planService = {
-  // 1. Get all plans (Cloud-authoritative + Memory cache fallback)
+  // 1. Get all plans (Smart Local-First + Cloud Merge)
   getAll: async (): Promise<BeastPlan[]> => {
     let plans: BeastPlan[] = [];
-    const user = await getCurrentUser();
 
-    // Check Cloud User Metadata first
+    // 1. Get cached local plans first (contains latest modifications)
+    const cachedHistory = cacheStore.get<any[]>('plan_history');
+    if (Array.isArray(cachedHistory) && cachedHistory.length > 0) {
+      plans = cachedHistory.map((p) => normalizePlan(p));
+    }
+
+    // 2. Check cloud user metadata and merge
+    const user = await getCurrentUser();
     if (user?.user_metadata?.beast_plan_history) {
       try {
         const rawHistory = typeof user.user_metadata.beast_plan_history === 'string'
           ? JSON.parse(user.user_metadata.beast_plan_history)
           : user.user_metadata.beast_plan_history;
         if (Array.isArray(rawHistory) && rawHistory.length > 0) {
-          plans = rawHistory.map((p) => normalizePlan(p));
+          const cloudPlans = rawHistory.map((p) => normalizePlan(p));
+          if (plans.length === 0) {
+            plans = cloudPlans;
+          } else {
+            cloudPlans.forEach((cp) => {
+              if (!plans.some((lp) => String(lp.id) === String(cp.id) || lp.title === cp.title)) {
+                plans.push(cp);
+              }
+            });
+          }
         }
       } catch {}
     }
 
-    // Check local cache if empty
-    if (plans.length === 0) {
-      const cachedHistory = cacheStore.get<any[]>('plan_history');
-      if (Array.isArray(cachedHistory) && cachedHistory.length > 0) {
-        plans = cachedHistory.map((p) => normalizePlan(p));
-      }
-    }
-
-    // Check active plan cache to ensure it is in history
+    // 3. Check active plan cache to ensure it is in history
     const cachedActive = cacheStore.get<any>('active_plan');
     if (cachedActive) {
       const normalizedActive = normalizePlan(cachedActive);
@@ -501,5 +508,100 @@ export const planService = {
     };
 
     return planService.save(newPlan, true);
+  },
+
+  // 9. Update a single exercise in the active plan
+  updateExercise: async (exerciseId: string | number, updatedData: any): Promise<BeastPlan> => {
+    const activePlan = await planService.getActive();
+
+    const updatedDays = activePlan.days.map((day) => {
+      const exercises = day.exercises.map((ex) => {
+        const idMatches = exerciseId !== undefined && ex.id !== undefined && String(ex.id) === String(exerciseId);
+        const nameMatches = ex.name && updatedData.name && ex.name.trim().toLowerCase() === updatedData.name.trim().toLowerCase();
+        if (idMatches || nameMatches) {
+          return {
+            ...ex,
+            ...updatedData,
+            sets: parseInt(String(updatedData.sets)) || ex.sets || 3,
+            reps: updatedData.reps || ex.reps || '10-12',
+            weight: updatedData.weight || ex.weight || 'Bodyweight',
+            restSeconds: parseInt(String(updatedData.restSeconds)) || ex.restSeconds || 60,
+            category: updatedData.category || ex.category || 'MAIN',
+            targetMuscle: updatedData.targetMuscle || ex.targetMuscle || 'Chest',
+          };
+        }
+        return ex;
+      });
+      return { ...day, exercises };
+    });
+
+    const updatedPlan = {
+      ...activePlan,
+      days: updatedDays,
+      dayWorkouts: updatedDays,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return planService.save(updatedPlan, true);
+  },
+
+  // 10. Delete a single exercise from the active plan
+  deleteExercise: async (exerciseId: string | number): Promise<BeastPlan> => {
+    const activePlan = await planService.getActive();
+
+    const updatedDays = activePlan.days.map((day) => {
+      const exercises = day.exercises.filter((ex) => String(ex.id) !== String(exerciseId));
+      return { ...day, exercises };
+    });
+
+    const updatedPlan = {
+      ...activePlan,
+      days: updatedDays,
+      dayWorkouts: updatedDays,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return planService.save(updatedPlan, true);
+  },
+
+  // 11. Add a custom exercise to a specific day in the active plan
+  addCustomExercise: async (dayIdOrIndex: string | number, exerciseData: any): Promise<BeastPlan> => {
+    const activePlan = await planService.getActive();
+    const dayIndexNum = parseInt(String(dayIdOrIndex)) || 1;
+
+    const updatedDays = activePlan.days.map((day, idx) => {
+      const match = day.dayIndex === dayIndexNum || String(day.dayIndex) === String(dayIdOrIndex) || idx + 1 === dayIndexNum;
+      if (match) {
+        const newExercise: BeastExercise = {
+          id: exerciseData.id || `ex_${day.dayIndex}_${Date.now()}`,
+          name: exerciseData.name || 'تمرين جديد',
+          targetMuscle: exerciseData.targetMuscle || 'Chest',
+          category: (exerciseData.category || 'MAIN') as BeastExercise['category'],
+          sets: parseInt(String(exerciseData.sets)) || 3,
+          reps: exerciseData.reps || '10-12',
+          weight: exerciseData.weight || 'Bodyweight',
+          restSeconds: parseInt(String(exerciseData.restSeconds)) || 60,
+          exerciseTips: exerciseData.exerciseTips || '',
+          imageUrl: exerciseData.imageUrl || null,
+          videoUrl: exerciseData.videoUrl || null,
+          isTimed: !!exerciseData.isTimed,
+        };
+        return {
+          ...day,
+          isRestDay: false,
+          exercises: [...day.exercises, newExercise],
+        };
+      }
+      return day;
+    });
+
+    const updatedPlan = {
+      ...activePlan,
+      days: updatedDays,
+      dayWorkouts: updatedDays,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return planService.save(updatedPlan, true);
   },
 };

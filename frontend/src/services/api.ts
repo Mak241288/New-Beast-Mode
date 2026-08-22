@@ -795,6 +795,18 @@ export const api = {
     return planService.getActive();
   },
 
+  updateExercise: async (exerciseId: number | string, exerciseData: any) => {
+    return planService.updateExercise(exerciseId, exerciseData);
+  },
+
+  deleteExercise: async (exerciseId: number | string) => {
+    return planService.deleteExercise(exerciseId);
+  },
+
+  addCustomExercise: async (dayIdOrIndex: number | string, exerciseData: any) => {
+    return planService.addCustomExercise(dayIdOrIndex, exerciseData);
+  },
+
   createManualPlan: async (options: any) => {
     const dayWorkouts = (options.dayWorkouts || options.days || []).map((dw: any, dIdx: number) => ({
       id: generateId() + dIdx,
@@ -901,79 +913,6 @@ export const api = {
     return generated;
   },
 
-  updateExercise: async (id: any, data: any) => {
-    const plan: any = cacheStore.get('active_plan');
-    if (plan) {
-      const days = plan.dayWorkouts || plan.days || [];
-      days.forEach((dw: any) => {
-        if (dw.exercises) {
-          const exIndex = dw.exercises.findIndex((e: any) => 
-            (e.id !== undefined && id !== undefined && String(e.id) === String(id)) ||
-            (data.name && e.name && e.name.toLowerCase().trim() === data.name.toLowerCase().trim())
-          );
-          if (exIndex !== -1) {
-            dw.exercises[exIndex] = { ...dw.exercises[exIndex], ...data };
-          }
-        }
-      });
-      plan.dayWorkouts = days;
-      plan.days = days;
-      plan.updatedAt = new Date().toISOString();
-      cacheStore.set('active_plan', plan);
-
-      // Keep plan_history in sync
-      const history: any[] = cacheStore.get('plan_history') || [];
-      const hIdx = history.findIndex((p: any) => (p.id && plan.id && String(p.id) === String(plan.id)) || p.title === plan.title);
-      if (hIdx >= 0) {
-        history[hIdx] = { ...history[hIdx], ...plan };
-        cacheStore.set('plan_history', history);
-      }
-
-      pushUserDataToCloud();
-    }
-
-    try {
-      await supabase.from('Exercise').update(data).eq('id', id);
-    } catch {
-      // Non-fatal
-    }
-
-    return { success: true, updatedExercise: data };
-  },
-
-  deleteExercise: async (id: any) => {
-    const plan: any = cacheStore.get('active_plan');
-    if (plan) {
-      const days = plan.dayWorkouts || plan.days || [];
-      days.forEach((dw: any) => {
-        if (dw.exercises) {
-          dw.exercises = dw.exercises.filter((e: any) => String(e.id) !== String(id));
-        }
-      });
-      plan.dayWorkouts = days;
-      plan.days = days;
-      plan.updatedAt = new Date().toISOString();
-      cacheStore.set('active_plan', plan);
-
-      // Keep plan_history in sync
-      const history: any[] = cacheStore.get('plan_history') || [];
-      const hIdx = history.findIndex((p: any) => (p.id && plan.id && String(p.id) === String(plan.id)) || p.title === plan.title);
-      if (hIdx >= 0) {
-        history[hIdx] = { ...history[hIdx], ...plan };
-        cacheStore.set('plan_history', history);
-      }
-
-      pushUserDataToCloud();
-    }
-
-    try {
-      await supabase.from('Exercise').delete().eq('id', id);
-    } catch {
-      // Non-fatal
-    }
-
-    return { success: true, message: 'تم حذف التمرين بنجاح' };
-  },
 
   getAlternatives: async (_id: number) => {
     return [
@@ -1024,47 +963,6 @@ export const api = {
       explanation: `تم استبدال التمرين بالبديل الأنسب: ${reason}`,
       message: 'تم استبدال التمرين بالبديل الأنسب!',
     };
-  },
-
-  addCustomExercise: async (dayId: any, data: any) => {
-    const plan: any = cacheStore.get('active_plan');
-    const newEx = {
-      id: generateId(),
-      name: data.name,
-      sets: data.sets || 3,
-      reps: data.reps || '10-12',
-      weight: data.weight || 'Bodyweight',
-      targetMuscle: data.targetMuscle || 'Chest',
-      category: data.category || 'IRON',
-      restSeconds: data.restSeconds || 60,
-      exerciseTips: data.exerciseTips || '',
-      imageUrl: data.imageUrl || '',
-      videoUrl: data.videoUrl || '',
-    };
-
-    if (plan) {
-      const days = plan.dayWorkouts || plan.days || [];
-      const day = days.find((d: any) => String(d.id) === String(dayId) || String(d.dayIndex) === String(dayId));
-      if (day) {
-        day.exercises = [...(day.exercises || []), newEx];
-        plan.dayWorkouts = days;
-        plan.days = days;
-        plan.updatedAt = new Date().toISOString();
-        cacheStore.set('active_plan', plan);
-
-        // Keep plan_history in sync
-        const history: any[] = cacheStore.get('plan_history') || [];
-        const hIdx = history.findIndex((p: any) => (p.id && plan.id && String(p.id) === String(plan.id)) || p.title === plan.title);
-        if (hIdx >= 0) {
-          history[hIdx] = { ...history[hIdx], ...plan };
-          cacheStore.set('plan_history', history);
-        }
-
-        pushUserDataToCloud();
-      }
-    }
-
-    return newEx;
   },
 
   logProgress: async (exerciseId: number, logData: any) => {
