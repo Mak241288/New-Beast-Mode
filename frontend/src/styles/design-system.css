@@ -240,12 +240,33 @@ button:active,
   font-family: var(--font-arabic);
   font-size: 13.5px;
   outline: none;
+  unicode-bidi: plaintext;
+  text-rendering: optimizeLegibility;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .input-field:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+/* Universal Bi-directional Text & Input Normalization for all browsers (Chrome, Safari, Firefox, Edge, iOS/Android) */
+input, textarea, select {
+  unicode-bidi: plaintext;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input[type="number"], .num-display, .metric-input {
+  direction: ltr !important;
+  text-align: center;
+  unicode-bidi: plaintext;
+}
+
+/* Modal viewports & floating windows safety bounds */
+.modal-overlay, .glass-panel {
+  max-width: 100vw;
+  box-sizing: border-box;
 }
 
 /* Animations */
