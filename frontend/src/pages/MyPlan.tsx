@@ -452,13 +452,17 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   };
 
   const getRestTime = (ex: any) => {
-    if (ex.exerciseTips) {
-      const match = ex.exerciseTips.match(/(?:راحة|Rest|rest)[:\s]*(\d+)\s*(?:s|ثانية|seconds|sec)?/i);
+    if (!ex) return lang === 'en' ? '90s' : '90 ثانية';
+    const tips = typeof ex.exerciseTips === 'string'
+      ? ex.exerciseTips
+      : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || ''));
+    if (tips) {
+      const match = tips.match(/(?:راحة|Rest|rest)[:\s]*(\d+)\s*(?:s|ثانية|seconds|sec)?/i);
       if (match && match[1]) {
         return `${match[1]} ${lang === 'en' ? 's' : 'ثانية'}`;
       }
     }
-    const cat = (ex.category || '').toUpperCase();
+    const cat = String(ex.category || '').toUpperCase();
     if (cat === 'WARMUP' || cat === 'COOLDOWN' || cat === 'STRETCH') return lang === 'en' ? '15s' : '15 ثانية';
     if (cat === 'HIIT' || cat === 'CARDIO') return lang === 'en' ? '30s' : '30 ثانية';
     if (cat === 'YOGA' || cat === 'PILATES') return lang === 'en' ? 'None' : 'بدون';
@@ -1454,7 +1458,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                                   </div>
                                   {ex.exerciseTips && (
                                     <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px', marginBottom: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      💡 {ex.exerciseTips}
+                                      💡 {typeof ex.exerciseTips === 'string' ? ex.exerciseTips : (typeof ex.exerciseTips === 'object' && ex.exerciseTips !== null ? JSON.stringify(ex.exerciseTips) : String(ex.exerciseTips || ''))}
                                     </p>
                                   )}
                                 </div>
@@ -1798,7 +1802,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       key={item.label}
                       type="button"
                       onClick={() => {
-                        const cleanTips = (editingExercise.exerciseTips || '').replace(/(?:راحة|Rest|rest)[:\s]*\d+\s*(?:s|ثانية|seconds|sec)?\s*[|•-]?\s*/gi, '').trim();
+                        const rawTips = typeof editingExercise.exerciseTips === 'string'
+                          ? editingExercise.exerciseTips
+                          : (typeof editingExercise.exerciseTips === 'object' && editingExercise.exerciseTips !== null ? JSON.stringify(editingExercise.exerciseTips) : String(editingExercise.exerciseTips || ''));
+                        const cleanTips = rawTips.replace(/(?:راحة|Rest|rest)[:\s]*\d+\s*(?:s|ثانية|seconds|sec)?\s*[|•-]?\s*/gi, '').trim();
                         const newTips = item.val > 0
                           ? `Rest: ${item.val}s ${cleanTips ? `| ${cleanTips}` : ''}`
                           : cleanTips;
