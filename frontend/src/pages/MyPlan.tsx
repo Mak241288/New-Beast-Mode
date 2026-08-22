@@ -354,6 +354,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   useEffect(() => {
     fetchActivePlan();
     fetchHistory();
+    fetchLibraryOnce();
     if (localStorage.getItem('open_manual_builder') === 'true') {
       localStorage.removeItem('open_manual_builder');
       setShowManualBuilder(true);
@@ -4148,7 +4149,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           }}
         >
           <div
-            className="glass-card"
+            className="glass-card plan-architect-modal"
             style={{
               width: '100%',
               maxWidth: '560px',
@@ -4156,12 +4157,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               overflowY: 'auto',
               borderRadius: '20px',
               padding: '22px',
-              border: '1px solid rgba(0, 210, 255, 0.4)',
-              background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.98), rgba(4, 7, 18, 0.99))',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               flexDirection: 'column',
               gap: '14px',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+              boxShadow: 'var(--glass-shadow)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -4170,7 +4170,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '18px' }}>🔄</span>
                 <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: '#fff' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
                     {lang === 'en' ? 'Smart Exercise Alternative Swap' : 'المبادلة الذكية لبدائل التمارين 🔄'}
                   </h3>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
@@ -4196,7 +4196,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold' }}>
                   {lang === 'en' ? 'CURRENT EXERCISE TO REPLACE:' : 'التمرين الحالي المراد استبداله:'}
                 </span>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fff', marginTop: '2px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '2px' }}>
                   {manualSwapTarget.exercise.name || (lang === 'en' ? 'Empty Slot' : 'تمرين فارغ')}
                 </div>
               </div>
@@ -4219,21 +4219,27 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
             {/* Alternatives List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }}>
               {(() => {
-                const targetM = (manualSwapTarget.exercise.targetMuscle || '').toLowerCase();
-                const q = manualSwapQuery.toLowerCase().trim();
+                const targetM = (manualSwapTarget.exercise.targetMuscle || '').toLowerCase().trim();
+                const q = manualSwapQuery.toLowerCase().trim()
+                  .replace(/[أإآ]/g, 'ا')
+                  .replace(/ة/g, 'ه')
+                  .replace(/ى/g, 'ي');
+
                 let alts = libraryExercises || [];
                 if (q) {
-                  alts = alts.filter(ex =>
-                    (ex.name_ar && ex.name_ar.toLowerCase().includes(q)) ||
-                    (ex.name_en && ex.name_en.toLowerCase().includes(q)) ||
-                    (ex.muscle_en && ex.muscle_en.toLowerCase().includes(q))
-                  );
+                  alts = alts.filter(ex => {
+                    const nameAr = (ex.name_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+                    const nameEn = (ex.name_en || ex.name || '').toLowerCase();
+                    const muscleAr = (ex.muscle_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+                    const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
+                    return nameAr.includes(q) || nameEn.includes(q) || muscleAr.includes(q) || muscleEn.includes(q);
+                  });
                 } else if (targetM) {
-                  alts = alts.filter(ex =>
-                    (ex.muscle_en && ex.muscle_en.toLowerCase().includes(targetM)) ||
-                    (ex.targetMuscle && ex.targetMuscle.toLowerCase().includes(targetM)) ||
-                    (ex.muscle_ar && ex.muscle_ar.toLowerCase().includes(targetM))
-                  );
+                  alts = alts.filter(ex => {
+                    const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
+                    const muscleAr = (ex.muscle_ar || '').toLowerCase();
+                    return muscleEn.includes(targetM) || targetM.includes(muscleEn) || muscleAr.includes(targetM);
+                  });
                 }
 
                 if (alts.length === 0) {
@@ -4244,7 +4250,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   );
                 }
 
-                return alts.slice(0, 12).map((altEx, idx) => {
+                return alts.slice(0, 15).map((altEx, idx) => {
                   const altName = lang === 'en' ? (altEx.name_en || altEx.name) : (altEx.name_ar || altEx.name_en || altEx.name);
                   const altEquip = lang === 'en' ? (altEx.equipment_en || altEx.equipment) : (altEx.equipment_ar || altEx.equipment_en || altEx.equipment);
                   const altMuscle = lang === 'en' ? (altEx.muscle_en || altEx.targetMuscle) : (altEx.muscle_ar || altEx.muscle_en || altEx.targetMuscle);
@@ -4276,14 +4282,14 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         textAlign: lang === 'en' ? 'left' : 'right',
-                        border: '1px solid rgba(0, 210, 255, 0.2)',
-                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card-hover)',
                         transition: 'all 0.15s',
                         cursor: 'pointer',
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '13px' }}>
+                        <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '13px' }}>
                           {altName}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', gap: '8px' }}>

@@ -1620,25 +1620,36 @@ export const api = {
 
     const catalog = await api.getLibraryTree();
     
-    const results = catalog.filter((ex: any) => {
-      const nameAr = (ex.name_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
-      const nameEn = (ex.name_en || '').toLowerCase();
-      const muscleAr = (ex.muscle_ar || '').toLowerCase();
+    // Fast in-memory single pass with relevance scoring (starts-with bonus)
+    const exactMatches: any[] = [];
+    const prefixMatches: any[] = [];
+    const containsMatches: any[] = [];
+
+    for (let i = 0; i < catalog.length; i++) {
+      const ex = catalog[i];
+      const rawAr = (ex.name_ar || '').toLowerCase();
+      const rawEn = (ex.name_en || '').toLowerCase();
+      const cleanAr = rawAr.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
+      const muscleAr = (ex.muscle_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
       const muscleEn = (ex.muscle_en || '').toLowerCase();
-      const equipAr = (ex.equipment_ar || '').toLowerCase();
-      const equipEn = (ex.equipment_en || '').toLowerCase();
 
-      return (
-        nameAr.includes(cleanTerm) ||
-        nameEn.includes(trimmed) ||
+      if (cleanAr === cleanTerm || rawEn === trimmed) {
+        exactMatches.push(ex);
+      } else if (cleanAr.startsWith(cleanTerm) || rawEn.startsWith(trimmed)) {
+        prefixMatches.push(ex);
+      } else if (
+        cleanAr.includes(cleanTerm) ||
+        rawEn.includes(trimmed) ||
         muscleAr.includes(cleanTerm) ||
-        muscleEn.includes(trimmed) ||
-        equipAr.includes(cleanTerm) ||
-        equipEn.includes(trimmed)
-      );
-    });
+        muscleEn.includes(trimmed)
+      ) {
+        containsMatches.push(ex);
+      }
 
-    return results.slice(0, limit);
+      if (exactMatches.length + prefixMatches.length >= limit) break;
+    }
+
+    return [...exactMatches, ...prefixMatches, ...containsMatches].slice(0, limit);
   },
 
   matchExerciseDatabase: async (name: string): Promise<any | null> => {
