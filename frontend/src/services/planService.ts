@@ -47,6 +47,14 @@ export interface BeastPlan {
   dayWorkouts: BeastDay[]; // Guaranteed identical reference
 }
 
+export function isSamePlanId(idA: any, idB: any): boolean {
+  if (idA === undefined || idA === null || idB === undefined || idB === null) return false;
+  if (String(idA) === String(idB)) return true;
+  const sA = String(idA).replace(/^plan_/, '').trim();
+  const sB = String(idB).replace(/^plan_/, '').trim();
+  return sA.length > 0 && sA === sB;
+}
+
 // -------------------------------------------------------------
 // HELPER: Generate clean fallback 7-day skeleton (Sunday to Saturday)
 // -------------------------------------------------------------
@@ -254,7 +262,7 @@ export const planService = {
     if (cachedActive) {
       const normalizedActive = normalizePlan(cachedActive);
       normalizedActive.active = true;
-      const idx = plans.findIndex((p) => String(p.id) === String(normalizedActive.id) || p.title === normalizedActive.title);
+      const idx = plans.findIndex((p) => isSamePlanId(p.id, normalizedActive.id) || p.title === normalizedActive.title);
       if (idx >= 0) {
         plans[idx] = { ...plans[idx], ...normalizedActive, active: true };
       } else {
@@ -302,7 +310,7 @@ export const planService = {
     let updatedHistory: BeastPlan[];
 
     const existingIdx = currentPlans.findIndex(
-      (p) => String(p.id) === String(normalized.id) || (p.title === normalized.title && String(p.id).startsWith('plan_'))
+      (p) => isSamePlanId(p.id, normalized.id) || (p.title === normalized.title && String(p.id).startsWith('plan_'))
     );
 
     if (existingIdx >= 0) {
@@ -360,7 +368,7 @@ export const planService = {
   // 4. Activate an existing plan by ID
   activate: async (planId: string | number): Promise<BeastPlan> => {
     const plans = await planService.getAll();
-    const target = plans.find((p) => String(p.id) === String(planId));
+    const target = plans.find((p) => isSamePlanId(p.id, planId));
     if (!target) {
       throw new Error('Plan not found');
     }
@@ -369,7 +377,7 @@ export const planService = {
     target.updatedAt = new Date().toISOString();
 
     const updatedHistory = plans.map((p) => {
-      if (String(p.id) === String(planId)) {
+      if (isSamePlanId(p.id, planId)) {
         return { ...p, active: true, updatedAt: new Date().toISOString() };
       }
       return { ...p, active: false };
@@ -401,7 +409,7 @@ export const planService = {
     let targetPlan: BeastPlan | null = null;
 
     const updatedHistory = plans.map((p) => {
-      if (String(p.id) === String(planId)) {
+      if (isSamePlanId(p.id, planId)) {
         targetPlan = { ...p, title: trimmed, updatedAt: new Date().toISOString() };
         return targetPlan;
       }
@@ -432,7 +440,7 @@ export const planService = {
   // 6. Duplicate a plan
   duplicate: async (planId: string | number): Promise<BeastPlan> => {
     const plans = await planService.getAll();
-    const source = plans.find((p) => String(p.id) === String(planId));
+    const source = plans.find((p) => isSamePlanId(p.id, planId));
     if (!source) throw new Error('Source plan not found');
 
     const newId = `plan_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
@@ -469,11 +477,11 @@ export const planService = {
       throw new Error('لا يمكن حذف الجدول الوحيد. يجب الاحتفاظ بجدول واحد على الأقل.');
     }
 
-    const wasActive = plans.some((p) => String(p.id) === String(planId) && p.active);
-    const updatedHistory = plans.filter((p) => String(p.id) !== String(planId));
+    const wasActive = plans.some((p) => isSamePlanId(p.id, planId) && p.active);
+    const updatedHistory = plans.filter((p) => !isSamePlanId(p.id, planId));
 
     let nextActive = cacheStore.get<BeastPlan>('active_plan');
-    if (wasActive || !nextActive || String(nextActive.id) === String(planId)) {
+    if (wasActive || !nextActive || isSamePlanId(nextActive.id, planId)) {
       updatedHistory[0].active = true;
       nextActive = updatedHistory[0];
       cacheStore.set('active_plan', nextActive);
