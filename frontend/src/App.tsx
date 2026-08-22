@@ -1,17 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { api } from './services/api';
 import { supabase } from './services/supabase';
-import { Login } from './pages/Login';
-import { LandingPage } from './pages/LandingPage';
-import { PrivacyPolicy } from './pages/PrivacyPolicy';
-import { TermsOfService } from './pages/TermsOfService';
-import { AboutUs } from './pages/AboutUs';
-import { Onboarding } from './pages/Onboarding';
-import { Dashboard } from './pages/Dashboard';
-import { MyPlan } from './pages/MyPlan';
-import { ExerciseLibrary } from './pages/ExerciseLibrary';
-import { Stats } from './pages/Stats';
-import { Profile } from './pages/Profile';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe } from 'lucide-react';
 import { initWorkoutReminderScheduler } from './utils/notifications';
@@ -22,6 +11,28 @@ import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 import { FloatingSpeedDial } from './components/FloatingSpeedDial';
 
 import './App.css';
+
+// Lazy-loaded Pages with Code Splitting for Ultra-Fast Initial Load
+const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })));
+const LandingPage = lazy(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
+const TermsOfService = lazy(() => import('./pages/TermsOfService').then((m) => ({ default: m.TermsOfService })));
+const AboutUs = lazy(() => import('./pages/AboutUs').then((m) => ({ default: m.AboutUs })));
+const Onboarding = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.Onboarding })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })));
+const MyPlan = lazy(() => import('./pages/MyPlan').then((m) => ({ default: m.MyPlan })));
+const ExerciseLibrary = lazy(() => import('./pages/ExerciseLibrary').then((m) => ({ default: m.ExerciseLibrary })));
+const Stats = lazy(() => import('./pages/Stats').then((m) => ({ default: m.Stats })));
+const Profile = lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })));
+
+const PageLoaderFallback = () => (
+  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
+    <div style={{ width: '48px', height: '48px', borderRadius: '50%', border: '3px solid rgba(0, 210, 255, 0.15)', borderTopColor: 'var(--primary)', animation: 'spin 0.8s linear infinite' }} />
+    <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+      BEASTMODE ⚡
+    </span>
+  </div>
+);
 
 const getInitialToken = () => {
   try {
@@ -372,43 +383,63 @@ function App() {
 
   // Unauthenticated Views (Landing, Login, Privacy, Terms, About)
   if (!token) {
-    if (currentView === 'about') {
-      return <AboutUs lang={lang} onBack={() => navigateTo('landing')} onNavigateToWorkout={() => navigateTo('login')} />;
-    }
-    if (currentView === 'privacy') {
-      return <PrivacyPolicy lang={lang} onBack={() => navigateTo('landing')} />;
-    }
-    if (currentView === 'terms') {
-      return <TermsOfService lang={lang} onBack={() => navigateTo('landing')} />;
-    }
-    if (currentView === 'login') {
-      return <Login lang={lang} onSuccess={handleLoginSuccess} onBack={() => navigateTo('landing')} onNavigateToLegal={(page) => navigateTo(page)} />;
-    }
     return (
-      <LandingPage
-        lang={lang}
-        onGetStarted={() => navigateTo('login')}
-        onLogin={() => navigateTo('login')}
-        onLanguageChange={handleLanguageChange}
-        onNavigateToLegal={(page) => navigateTo(page)}
-      />
+      <Suspense fallback={<PageLoaderFallback />}>
+        {currentView === 'about' && (
+          <AboutUs lang={lang} onBack={() => navigateTo('landing')} onNavigateToWorkout={() => navigateTo('login')} />
+        )}
+        {currentView === 'privacy' && (
+          <PrivacyPolicy lang={lang} onBack={() => navigateTo('landing')} />
+        )}
+        {currentView === 'terms' && (
+          <TermsOfService lang={lang} onBack={() => navigateTo('landing')} />
+        )}
+        {currentView === 'login' && (
+          <Login lang={lang} onSuccess={handleLoginSuccess} onBack={() => navigateTo('landing')} onNavigateToLegal={(page) => navigateTo(page)} />
+        )}
+        {currentView !== 'about' && currentView !== 'privacy' && currentView !== 'terms' && currentView !== 'login' && (
+          <LandingPage
+            lang={lang}
+            onGetStarted={() => navigateTo('login')}
+            onLogin={() => navigateTo('login')}
+            onLanguageChange={handleLanguageChange}
+            onNavigateToLegal={(page) => navigateTo(page)}
+          />
+        )}
+      </Suspense>
     );
   }
 
   // Onboarding Guard
   if (currentView === 'onboarding') {
-    return <Onboarding lang={lang} onComplete={handleOnboardingComplete} />;
+    return (
+      <Suspense fallback={<PageLoaderFallback />}>
+        <Onboarding lang={lang} onComplete={handleOnboardingComplete} />
+      </Suspense>
+    );
   }
 
   // Authenticated Legal & About Views
   if (currentView === 'about') {
-    return <AboutUs lang={lang} onBack={() => navigateTo('profile')} onNavigateToWorkout={() => navigateTo('myplan')} />;
+    return (
+      <Suspense fallback={<PageLoaderFallback />}>
+        <AboutUs lang={lang} onBack={() => navigateTo('profile')} onNavigateToWorkout={() => navigateTo('myplan')} />
+      </Suspense>
+    );
   }
   if (currentView === 'privacy') {
-    return <PrivacyPolicy lang={lang} onBack={() => navigateTo('profile')} />;
+    return (
+      <Suspense fallback={<PageLoaderFallback />}>
+        <PrivacyPolicy lang={lang} onBack={() => navigateTo('profile')} />
+      </Suspense>
+    );
   }
   if (currentView === 'terms') {
-    return <TermsOfService lang={lang} onBack={() => navigateTo('profile')} />;
+    return (
+      <Suspense fallback={<PageLoaderFallback />}>
+        <TermsOfService lang={lang} onBack={() => navigateTo('profile')} />
+      </Suspense>
+    );
   }
 
   // Translation mapping for navigation
@@ -566,25 +597,27 @@ function App() {
 
       {/* MAIN VIEWPORT */}
       <main className="main-content">
-        {currentView === 'dashboard' && (
-          <Dashboard lang={lang} onNavigate={navigateTo} />
-        )}
+        <Suspense fallback={<PageLoaderFallback />}>
+          {currentView === 'dashboard' && (
+            <Dashboard lang={lang} onNavigate={navigateTo} />
+          )}
 
-        {currentView === 'myplan' && (
-          <MyPlan lang={lang} onNavigate={navigateTo} onboardingCompleted={onboardingCompleted} />
-        )}
+          {currentView === 'myplan' && (
+            <MyPlan lang={lang} onNavigate={navigateTo} onboardingCompleted={onboardingCompleted} />
+          )}
 
-        {currentView === 'library' && (
-          <ExerciseLibrary lang={lang} />
-        )}
+          {currentView === 'library' && (
+            <ExerciseLibrary lang={lang} />
+          )}
 
-        {currentView === 'stats' && (
-          <Stats lang={lang} />
-        )}
+          {currentView === 'stats' && (
+            <Stats lang={lang} />
+          )}
 
-        {currentView === 'profile' && (
-          <Profile lang={lang} onLanguageChange={handleLanguageChange} onNavigate={navigateTo} onLogout={handleLogout} />
-        )}
+          {currentView === 'profile' && (
+            <Profile lang={lang} onLanguageChange={handleLanguageChange} onNavigate={navigateTo} onLogout={handleLogout} />
+          )}
+        </Suspense>
       </main>
 
       {/* GLOBAL WORKOUT SESSION PLAYER, MINI-BAR & SPEED DIAL */}

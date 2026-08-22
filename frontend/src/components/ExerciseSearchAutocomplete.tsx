@@ -256,7 +256,7 @@ export const ExerciseSearchAutocomplete: React.FC<ExerciseSearchAutocompleteProp
                       justifyContent: 'space-between',
                       cursor: 'pointer',
                       background: isSelected ? 'var(--primary-glow, rgba(16, 185, 129, 0.15))' : 'transparent',
-                      borderLeft: isSelected ? '3px solid var(--primary)' : '3px solid transparent',
+                      borderInlineStart: isSelected ? '3px solid var(--primary)' : '3px solid transparent',
                       transition: 'all 0.15s ease',
                     }}
                   >
@@ -331,7 +331,7 @@ export const ExerciseSearchAutocomplete: React.FC<ExerciseSearchAutocompleteProp
                       justifyContent: 'space-between',
                       cursor: 'pointer',
                       background: isSelected ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
-                      borderLeft: isSelected ? '3px solid var(--secondary, #f97316)' : '3px solid transparent',
+                      borderInlineStart: isSelected ? '3px solid var(--secondary, #f97316)' : '3px solid transparent',
                       transition: 'all 0.15s ease',
                     }}
                   >

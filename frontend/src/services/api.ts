@@ -1282,22 +1282,33 @@ export const api = {
 
   saveStructuredPlan: async (structuredPlan: any, _lang?: string): Promise<any> => {
     const dayWorkouts = structuredPlan.dayWorkouts || structuredPlan.days || [];
+    const planId = structuredPlan.id || generateId();
     const plan = {
-      id: generateId(),
       ...structuredPlan,
+      id: planId,
       dayWorkouts,
       days: dayWorkouts,
       active: true,
-      createdAt: new Date().toISOString(),
+      createdAt: structuredPlan.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     cacheStore.set('active_plan', plan);
 
-    // Save/update in plan_history
+    // Save or update seamlessly in plan_history
     const history: any[] = cacheStore.get('plan_history') || [];
-    const updatedHistory = [plan, ...history.filter((p: any) => p.id !== plan.id && p.title !== plan.title).map((p: any) => ({ ...p, active: false }))];
+    const existingIdx = history.findIndex((p: any) => String(p.id) === String(planId) || (p.title && p.title === plan.title));
+    let updatedHistory: any[];
+    if (existingIdx >= 0) {
+      updatedHistory = history.map((p, idx) => idx === existingIdx ? { ...plan, active: true } : { ...p, active: false });
+    } else {
+      updatedHistory = [{ ...plan, active: true }, ...history.map((p: any) => ({ ...p, active: false }))];
+    }
     cacheStore.set('plan_history', updatedHistory);
     await pushUserDataToCloud(true);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
 
     const user = await getCurrentUser();
     if (user?.email) {

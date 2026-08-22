@@ -569,7 +569,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
           {(() => {
             if (latestCheckIn && !latestCheckIn.applied) {
               return (
-                <div className="glass-panel animated-fade" style={{ padding: '24px', borderLeft: '5px solid var(--primary)', background: 'rgba(0, 210, 255, 0.03)' }}>
+                <div className="glass-panel animated-fade" style={{ padding: '24px', borderInlineStart: '5px solid var(--primary)', background: 'rgba(0, 210, 255, 0.03)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                     <span style={{ fontSize: '24px' }}>🤖</span>
                     <div>

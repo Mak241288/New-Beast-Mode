@@ -88,6 +88,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [fileLoading, setFileLoading] = useState(false);
   const [importPreview, setImportPreview] = useState<any | null>(null);
   const [historyList, setHistoryList] = useState<any[]>([]);
+  const [manualEditingPlanId, setManualEditingPlanId] = useState<number | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   
   // Custom states for smart match and tabbed preview
@@ -963,6 +964,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       plan = cacheStore.get('active_plan') || activePlan;
     }
 
+    setManualEditingPlanId(plan ? (plan.id || null) : null);
+
     if (plan) {
       setManualTitle(plan.title || (lang === 'en' ? 'My Custom Workout Routine' : 'جدولي التدريبي المخصص'));
       const sourceDays = (plan.dayWorkouts && plan.dayWorkouts.length > 0)
@@ -1575,7 +1578,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         </div>
 
                         {/* Recommendation Note */}
-                        <div style={{ fontSize: '12px', color: 'var(--text-primary)', background: 'var(--bg-card-hover)', padding: '8px 12px', borderRadius: '8px', borderLeft: `3px solid ${cort.color}`, lineHeight: 1.5 }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-primary)', background: 'var(--bg-card-hover)', padding: '8px 12px', borderRadius: '8px', borderInlineStart: `3px solid ${cort.color}`, lineHeight: 1.5 }}>
                           💡 <strong style={{ color: 'var(--text-primary)' }}>{lang === 'en' ? 'BeastMode Hormonal Protocol:' : 'بروتوكول التحكم الهرموني:'}</strong> {cort.recommendation}
                         </div>
                       </div>
@@ -4197,6 +4200,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                   setManualSaving(true);
                   try {
                     const saved = await api.saveStructuredPlan({
+                      id: manualEditingPlanId || undefined,
                       title: manualTitle,
                       days: manualDays,
                       dayWorkouts: manualDays,

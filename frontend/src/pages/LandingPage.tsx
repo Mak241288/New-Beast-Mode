@@ -98,17 +98,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const ROTATING_SLOGANS = {
     ar: [
       'يحلل تناسقك العضلي بالذكاء الاصطناعي 🧠',
-      'يوجهك بـ +4,100 تمرين بدقة HD 🎬',
+      'يوجهك بـ +4,298 تمرين بدقة HD وبحث فوري 🎬',
       'يحسب سعراتك وماكروزك بدقة الغرام 🥗',
+      'يسجل جولاتك ومؤقتات الراحة بنقرة واحدة ⚡',
       'يحاكي أوزان البار الأولمبي والـ 1RM 🏋️',
-      'يتتبع زيادة أحمالك واستشفاءك التلقائي ⚡'
+      'يتتبع زيادة أحمالك واستشفاءك العصبي التلقائي 🦍'
     ],
     en: [
       'AI Muscle Symmetry & Physique Analysis 🧠',
-      'Guided by 4,100+ HD Exercise Videos 🎬',
+      'Guided by 4,298+ HD Exercises & Instant Search 🎬',
       'Precision Macro & TDEE Nutrition Engine 🥗',
+      '1-Tap Set Logging & Floating Auto Rest Timers ⚡',
       'Olympic Barbell Plates & 1RM Lab 🏋️',
-      'Progressive Overload & Recovery Tracker ⚡'
+      'Progressive Overload & CNS Recovery Tracker 🦍'
     ]
   };
 
