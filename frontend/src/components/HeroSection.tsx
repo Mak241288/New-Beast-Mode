@@ -3,15 +3,18 @@ import { motion } from 'motion/react';
 import { Flame, Sparkles, ChevronRight, Trophy, Zap, Shield, Play } from 'lucide-react';
 
 interface HeroSectionProps {
+  lang?: 'ar' | 'en';
   onStartTraining?: () => void;
   onExploreExercises?: () => void;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
+  lang = 'ar',
   onStartTraining,
   onExploreExercises,
 }) => {
-  const headline = 'Unleash Your Inner Beast';
+  const isEn = lang === 'en';
+  const headline = isEn ? 'Unleash Your Inner Beast' : 'أطلق الوحش الرياضي الذي بداخلك';
   const words = headline.split(' ');
 
   // Container variants for orchestrating staggered child animations
@@ -125,7 +128,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-xs sm:text-sm font-semibold tracking-wide shadow-[0_0_15px_rgba(6,182,212,0.15)]"
           >
             <Zap className="w-4 h-4 text-cyan-400 animate-pulse" />
-            <span>AI Hypertrophy & Periodization Engine</span>
+            <span>{isEn ? 'AI Hypertrophy & Periodization Engine' : 'محرك التضخيم العضلي والتدريب الذكي'}</span>
           </motion.div>
 
           {/* Main Headline: Staggered Word by Word */}
@@ -133,7 +136,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <span className="sr-only">{headline}</span>
             <div aria-hidden="true" className="flex flex-wrap gap-x-3 sm:gap-x-4">
               {words.map((word, idx) => {
-                const isBeast = word.toLowerCase() === 'beast';
+                const isBeast = word.toLowerCase() === 'beast' || word.includes('الوحش') || word.includes('الرياضي');
                 return (
                   <motion.span
                     key={idx}
@@ -156,7 +159,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             variants={fadeUpVariants}
             className="text-base sm:text-lg text-slate-400 max-w-xl leading-relaxed font-medium"
           >
-            Master your training with 4,200+ enriched biomechanical exercises, smart RPE autoregulation, automated CNS recovery metrics, and zero-compromise precision.
+            {isEn
+              ? 'Master your training with 4,298+ enriched biomechanical exercises, smart RPE autoregulation, automated CNS recovery metrics, and zero-compromise precision.'
+              : 'أتقن تمارينك مع مكتبة تضم أكثر من 4,298 تمرين موثق، تنظيم ذكي للأحمال التدريبية، تحليل استشفاء الجهاز العصبي، ودقة تدريبية لا تقبل المساومة.'}
           </motion.p>
 
           {/* CTAs and Social Proof */}
@@ -172,7 +177,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               className="relative group px-8 py-4 rounded-xl font-bold text-sm sm:text-base text-slate-950 bg-gradient-to-r from-cyan-400 to-emerald-400 shadow-[0_0_25px_rgba(6,182,212,0.4)] flex items-center justify-center gap-2 cursor-pointer transition-shadow hover:shadow-[0_0_35px_rgba(6,182,212,0.6)]"
             >
               <Flame className="w-5 h-5 fill-current" />
-              <span>Start Training</span>
+              <span>{isEn ? 'Start Training' : 'ابدأ التمرين الآن ⚡'}</span>
               <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </motion.button>
 
@@ -184,7 +189,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               className="px-6 py-4 rounded-xl font-semibold text-sm sm:text-base text-slate-300 bg-slate-900/80 border border-slate-800 hover:border-slate-700 hover:text-white flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md transition-colors"
             >
               <Play className="w-4 h-4 text-cyan-400 fill-cyan-400/20" />
-              <span>Explore Library</span>
+              <span>{isEn ? 'Explore Library' : 'استكشف التمارين 📚'}</span>
             </motion.button>
           </motion.div>
 

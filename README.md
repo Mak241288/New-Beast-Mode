@@ -6,6 +6,7 @@
   </a>
   <img src="https://img.shields.io/badge/Theme-⚡_Cyber_Volt_%26_Carbon-CCFF00?style=for-the-badge&logoColor=black" alt="Cyber Volt" />
   <img src="https://img.shields.io/badge/UI/UX-Pro_Max_Suite-00F0FF?style=for-the-badge" alt="UI/UX Pro Max" />
+  <img src="https://img.shields.io/badge/Motion-Division_v12-FF0055?style=for-the-badge&logo=framer&logoColor=white" alt="Motion Division" />
   <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
@@ -31,16 +32,19 @@
 
 ## 🌟 نبذة عن المشروع | Overview
 
-**BeastMode AI** هو نظام رياضي بيئي متكامل وفائق التطور للياقة البدنية، وبناء الأجسام، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق. يتميز بهوية بصرية حصرية **(⚡ Cyber-Volt & Matte Carbon)** بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تضم **+4,100 تمرين موثق بدقة HD** بالعربية والإنجليزية مع حزمة ميزات **UI/UX Pro Max** العالمية.
+**BeastMode AI** هو نظام رياضي بيئي متكامل وفائق التطور للياقة البدنية، وبناء الأجسام، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق. يتميز بهوية بصرية حصرية **(⚡ Cyber-Volt & Matte Carbon)** بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك حركي حديث مدعوم بـ **Motion Division (v12)**، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تضم **+4,298 تمرين موثق بدقة HD** بالعربية والإنجليزية مع حزمة ميزات **UI/UX Pro Max** العالمية.
 
 > **BeastMode AI** is a cutting-edge, bilingual (AR/EN) AI-powered fitness and nutrition ecosystem. Featuring signature **Cyber-Volt** aesthetics, dynamic hyper-personalized training plans, interactive 3D muscle anatomy maps, a zero-latency global workout player with audio timers, visual routine cards export, and enterprise-grade security.
 
 ---
 
-## 🚀 أحدث ترقيات حزمة UI/UX Pro Max | UI/UX Pro Max 14-Feature Suite
+## 🚀 أحدث ترقيات حزمة UI/UX Pro Max & Motion Engine
 
 | الميزة | الوصف التقني |
 | :--- | :--- |
+| 🎬 **محرك الحركة الحركي (Motion Division Engine)** | تجربة بصرية فائقة الانسيابية باستخدام `motion/react` (Staggered Typography, Spring Physics Mockup, & Interactive CTAs). |
+| ✍️ **منشئ ومصمم الجداول المتقدم (Custom Plan Architect)** | محرر متطور للأيام والتمارين مع بحث فوري واقتراحات تلقائية ومزامنة سحابية لحظية (`Authoritative Local-First Cache`). |
+| 🛡️ **المحاذاة الشاملة للنصوص (Bi-directional Normalization)** | دعم متكامل للمتصفحات (Safari, Chrome, Firefox, Edge) مع عزل اتجاه النصوص المزدوجة والأرقام والأوزان (`unicode-bidi: plaintext`). |
 | ⏱️ **مؤقت الراحة الدائري النيون (Circular Rest Ring)** | حلقة عد تنازلي تفاعلية بـ SVG متحرك مع تحول لوني ذكي (نيون ➔ أصفر ➔ نبض أحمر في آخر 5 ثوانٍ). |
 | 🔊 **التنبيهات الصوتية الإجرائية (Web Audio Synthesizer)** | نظام توليد نغمات رقمية خفيفة بدون أي ملفات خارجية (عد تنازلي 3.. 2.. 1 وموسيقى نصر احتفالية مع زر كتم الصوت). |
 | 🎉 **احتفالية إنهاء التمرين (Confetti HUD & Volume Summary)** | نافذة احتفالية تفاعلية بجزيئات كونفيتي ملونة تلخص إجمالي الوزن المرفوع بالكيلوغرام، السعرات المحروقة، ومدة التمرين. |
@@ -49,10 +53,8 @@
 | 📱 **لوحة المفاتيح الرقمية للهواتف (Smart Numeric Keypads)** | استخدام `inputmode="decimal"` لفتح لوحة الأرقام الكبيرة والواضحة فوراً عند تسجيل الأوزان والتكرارات على الهواتف. |
 | 💧 **شريط الإجراءات السريعة العائم (Floating Speed-Dial)** | زر عائم بنقرة واحدة لتسجيل الماء (+250ml) 💧، مؤقت راحة فوري ⏱️، وتسجيل الوزن ⚖️. |
 | 🦴 **شاشات التحميل الشبحية الزجاجية (Skeleton Shimmer)** | بطاقات زجاجية ببريق ناعم متحرك تمنع وميض النصوص أو تقطيع الشاشات أثناء تحميل البيانات (`Zero Layout Shift`). |
-| ✍️ **الطباعة والخطوط الرياضية (Barlow Condensed + Cairo)** | دمج خط `Barlow Condensed` للأرقام والأوزان والـ PR مع خط `Cairo` العربي للعناوين الرياضية. |
 | 🎨 **استوديو الثيمات والشكليات البصرية (Visual Theme Studio)** | تبديل لحظي بنقرة واحدة بين 4 هويات رياضية عالمية (⚡ Cyber Volt, 🔥 Crimson Iron, 👑 Imperial Gold, 💎 Cyber Frost). |
 | ⚡ **محرر التمارين السريع والذكي (Pro Quick Exercise Editor)** | محرر فائق السرعة يدعم تغيير نوع التمرين (أساسي/إحماء/استشفاء)، عداد الجولات (+/-)، وضع التمارين الموقوتة، وكبسولات الراحة السريعة. |
-| 🛡️ **نظام الحماية من الخروج عن الشاشة (Smart Collision Avoidance)** | حساب ذكي لمساحات العرض يوجه النوافذ والقوائم المنسدلة للأعلى تلقائياً عند الاقتراب من حافة الشاشة أو شريط المهام. |
 | 🖨️ **محرك الطباعة الورقية فائق الوضوح (Crisp Print Engine)** | فتح وتوسيع كافة أيام الأسبوع تلقائياً عند الطباعة مع تنسيق عالي التباين وجداول واضحة بالأبيض والأسود. |
 
 ---
@@ -89,10 +91,10 @@
 
 ```mermaid
 graph TD
-    A[Frontend: React 19 + Vite + TypeScript + PWA] -->|HTTPS / REST API| B[Backend: Node.js + Express + TypeScript]
+    A[Frontend: React 19 + Vite + Motion Division + PWA] -->|HTTPS / REST API| B[Backend: Node.js + Express + TypeScript]
     A -->|Direct Cloud Sync & Auth| C[(Supabase Cloud PostgreSQL)]
     B -->|User Auth & Sync| C
-    B -->|High-Performance Database| D[(Local SQLite exercises.db - 4,100+ HD)]
+    B -->|High-Performance Database| D[(Local SQLite exercises.db - 4,298+ HD)]
     B -->|User Data & Active Routines| E[(Prisma dev.db)]
     B -->|AI Generation & Swaps| F[Groq LLaMA 3.3 70B API]
     B -->|AI Reasoning & Nutrition| G[Google Gemini 2.0 API]
@@ -101,56 +103,36 @@ graph TD
 
 ---
 
-## 📁 هيكل مجلدات المشروع | Directory Structure
+## 🚀 التشغيل المحلي والتطوير | Local Development
 
-```text
-New BeastMode/
-├── frontend/                   # واجهة المستخدم (React 19 + Vite + TypeScript + PWA)
-│   ├── src/
-│   │   ├── components/         # المكونات (CircularRestTimer, ConfettiHUD, SmartSwap, FloatingSpeedDial, SkeletonLoader)
-│   │   ├── pages/              # الصفحات (Dashboard, MyPlan, ExerciseLibrary, Stats, Profile, LandingPage)
-│   │   ├── context/            # إدارة الحالة (WorkoutSessionContext)
-│   │   ├── services/           # خدمات الاتصال بالـ API و Supabase
-│   │   ├── styles/             # نظام التصميم (design-system.css)
-│   │   └── utils/              # الترجمة (i18n)، التحقق، محرك الصوت audioCues، والبحث الضبابي
-│   └── public/                 # أيقونات PWA و Service Worker
-│
-├── backend/                    # السيرفر الخلفي (Express + TypeScript + Prisma)
-│   ├── prisma/                 # مخطط قواعد البيانات وعلاقات الجداول
-│   ├── src/
-│   │   ├── controllers/        # معالجات التوثيق، التمارين، والذكاء الاصطناعي
-│   │   ├── middleware/         # جدار الحماية، Rate Limiting، وفحص التوكنات
-│   │   ├── routes/             # مسارات الـ API المحمية
-│   │   └── services/           # تكامل Groq AI و Gemini AI
-│   └── .env.example            # نموذج المتغيرات البيئية
-│
-└── workout_generator_python/   # محرك التمارين الذكي
-    ├── database/               # exercises.db (+4,100 تمرين مفصل)
-    └── src/                    # سكربتات التوليد والفهرسة السريعة
-```
+### 1. المتطلبات | Prerequisites
+- **Node.js**: `v20.0.0` أو أحدث.
+- **npm**: `v10.0.0` أو أحدث.
 
----
-
-## 🚀 التشغيل المحلي والتطوير | Local Setup
-
+### 2. تثبيت الحزم | Installation
 ```bash
-# 1. استنساخ المستودع
-git clone https://github.com/Mak241288/New-Beast-Mode.git
-cd "New BeastMode"
-
-# 2. تشغيل السيرفر الخلفي (Backend)
-cd backend
+# تثبيت حزم الواجهة الأمامية
+cd frontend
 npm install
+
+# تثبيت حزم الواجهة الخلفية
+cd ../backend
+npm install
+```
+
+### 3. تشغيل بيئة التطوير | Run Dev Server
+```bash
+# تشغيل الفرونت إند
+cd frontend
 npm run dev
 
-# 3. تشغيل الواجهة الأمامية (Frontend)
-cd ../frontend
-npm install
+# تشغيل الباك إند
+cd ../backend
 npm run dev
 ```
 
 ---
 
-## 🔒 الحقوق والملكية | Copyright
+## 📄 الترخيص | License
 
-جميع الحقوق محفوظة لـ **BeastMode AI Ecosystem © 2026**. All Rights Reserved.
+هذا المشروع مرخص تحت رخصة **MIT License**. جميع الحقوق محفوظة © 2026 **New BeastMode AI Ecosystem**.
