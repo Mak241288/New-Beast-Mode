@@ -45,9 +45,20 @@ const getInitialToken = () => {
   }
 };
 
+function base64ToBytes(b64: string): string {
+  try {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return decodeURIComponent(Array.prototype.map.call(atob(b64), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+}
+
 function decodeMicroPlan(b64: string): any {
   try {
-    const raw = decodeURIComponent(escape(atob(b64)));
+    const raw = base64ToBytes(b64);
     if (!raw.startsWith('v4~')) return null;
     const parts = raw.split('~');
     const title = parts[1] || 'جدولي التدريبي ⚡';

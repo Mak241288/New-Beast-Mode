@@ -11,6 +11,29 @@ interface DeviceSyncModalProps {
   onSyncComplete?: () => void;
 }
 
+// Bulletproof UTF-8 to Base64 Encoder & Decoder using standard TextEncoder
+function bytesToBase64(str: string): string {
+  try {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  } catch {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+  }
+}
+
+function base64ToBytes(b64: string): string {
+  try {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return decodeURIComponent(Array.prototype.map.call(atob(b64), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+  }
+}
+
 // Ultra-Compact UTF-8 Micro-Encoder for 1-Line URL (< 200 chars) and Instant SVG QR
 function encodeMicroPlan(plan: any, profile: any, exp: number): string {
   const title = (plan?.title || 'جدولي التدريبي ⚡').replace(/[~|;/:,]/g, ' ');
@@ -29,12 +52,12 @@ function encodeMicroPlan(plan: any, profile: any, exp: number): string {
   const pName = (profile?.name || '').replace(/[~|;/:,]/g, ' ');
   const pGoal = (profile?.goal || '').replace(/[~|;/:,]/g, ' ');
   const raw = `v4~${title}~${exp}~${daysStr}~${pName}~${pGoal}`;
-  return btoa(unescape(encodeURIComponent(raw)));
+  return bytesToBase64(raw);
 }
 
 function decodeMicroPlan(b64: string): any {
   try {
-    const raw = decodeURIComponent(escape(atob(b64)));
+    const raw = base64ToBytes(b64);
     if (!raw.startsWith('v4~')) return null;
     const parts = raw.split('~');
     const title = parts[1] || 'جدولي التدريبي ⚡';
