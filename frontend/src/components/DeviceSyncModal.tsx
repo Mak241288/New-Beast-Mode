@@ -332,9 +332,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
         }
       }
 
-      if (parsed && parsed.exp && Date.now() > parsed.exp + 5 * 60 * 1000) {
-        throw new Error(isAr ? '⚠️ انتهت صلاحية هذا الرابط المؤقت (صالح لـ 10 دقائق). يرجى الضغط على زر التحديث في جهازك الآخر.' : '⚠️ Temporary sync link expired (10 mins limit). Please refresh on your other device.');
-      }
+
 
       if (!parsed || (!parsed.activePlan && !parsed.planHistory)) {
         throw new Error(isAr ? 'بيانات المزامنة غير صالحة أو فارغة' : 'Invalid or empty sync data');

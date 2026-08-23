@@ -196,11 +196,7 @@ function App() {
             } catch {}
           }
 
-          if (parsed && parsed.exp && Date.now() > parsed.exp) {
-            setSyncToast(lang === 'ar' ? '⚠️ انتهت صلاحية رابط المزامنة المؤقت (صالح لـ دقيقتين فقط).' : '⚠️ Temporary sync link expired (2 mins limit).');
-            setTimeout(() => setSyncToast(null), 5000);
-            return;
-          }
+
 
           if (parsed && (parsed.activePlan || parsed.planHistory)) {
             if (parsed.userProfile) cacheStore.set('user_profile', parsed.userProfile);
