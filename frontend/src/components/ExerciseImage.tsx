@@ -184,7 +184,30 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
     );
   }
 
-  // Tier 1: High-Performance 2-Frame Animated Display
+  const isVideo = frame0 && (frame0.endsWith('.mp4') || frame0.endsWith('.webm') || frame0.includes('/videos/'));
+
+  // Tier 1: High-Performance Animated Display (Video Loop OR 2-Frame Dynamic Crossfade)
+  if (isVideo) {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#0a0d16', ...style }}>
+        <video
+          src={frame0}
+          autoPlay
+          loop
+          muted
+          playsInline
+          onError={handleError}
+          className={className}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#0a0d16', ...style }}>
       {/* Frame 0 (Start Position) */}
