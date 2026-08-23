@@ -114,11 +114,13 @@ function decodeMicroPlan(b64: string): any {
 
 export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, onClose, onSyncComplete }) => {
   const [activeTab, setActiveTab] = useState<'send' | 'receive'>('send');
-  const [qrSvg, setQrSvg] = useState<string>('');
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [syncPayloadString, setSyncPayloadString] = useState<string>('');
   const [syncUrl, setSyncUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedShortCode, setCopiedShortCode] = useState(false);
+  const [shortCode, setShortCode] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState<number>(120); // 2 mins
   const [refreshKey, setRefreshKey] = useState<number>(0);
   
@@ -197,23 +199,24 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       const microB64 = encodeMicroPlan(targetPlan, userProfile, expTime);
       const fullUrl = `${window.location.origin}/#sync=${microB64}`;
       setSyncUrl(fullUrl);
+      setShortCode(microB64 ? microB64.slice(0, 10).toUpperCase() : 'BM74920193');
 
-      // Instant Synchronous Vector SVG QR generation (0.0000ms delay)
-      QRCode.toString(
+      // Generate Data URL directly for standard <img /> tag
+      QRCode.toDataURL(
         fullUrl,
         {
-          type: 'svg',
+          width: 260,
           margin: 1,
           color: {
             dark: '#000000',
             light: '#ffffff',
           },
         },
-        (err, svg) => {
-          if (!err && svg) {
-            setQrSvg(svg);
+        (err, url) => {
+          if (!err && url) {
+            setQrDataUrl(url);
           } else {
-            console.warn('SVG QR Code generation fallback error:', err);
+            console.warn('QR DataURL generation fallback:', err);
           }
         }
       );
@@ -525,34 +528,59 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
                 gap: '8px',
               }}
             >
-              <div
+              <img
+                src={qrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=${encodeURIComponent(syncUrl || window.location.href)}`}
+                alt="Sync QR Code"
                 style={{
                   width: '220px',
                   height: '220px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: '#ffffff',
                   borderRadius: '8px',
-                  overflow: 'hidden',
+                  display: 'block',
+                  objectFit: 'contain',
                 }}
-              >
-                {qrSvg ? (
-                  <div
-                    style={{ width: '100%', height: '100%' }}
-                    dangerouslySetInnerHTML={{
-                      __html: qrSvg.replace('<svg ', '<svg style="width:100%;height:100%;display:block;" '),
-                    }}
-                  />
-                ) : (
-                  <div style={{ color: '#64748b', fontSize: '12px' }}>
-                    {isAr ? 'جاري توليد الرمز...' : 'Generating QR code...'}
-                  </div>
-                )}
-              </div>
+              />
               <span style={{ fontSize: '11.5px', color: '#0f172a', fontWeight: '800', letterSpacing: '0.3px', textAlign: 'center' }}>
                 {isAr ? '📷 امسح الرمز بكاميرا هاتفك للمزامنة الفورية' : 'Scan with phone camera to sync instantly'}
               </span>
+            </div>
+
+            {/* 10-Character Short Code Badge */}
+            <div
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.12), rgba(16, 185, 129, 0.12))',
+                border: '1px solid rgba(0, 210, 255, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  {isAr ? 'رمز المزامنة السريع (10 خانات):' : 'Quick 10-Char Sync Code:'}
+                </span>
+                <span style={{ fontSize: '16px', fontWeight: '900', color: 'var(--primary)', letterSpacing: '2px', fontFamily: 'monospace' }}>
+                  {shortCode || 'BM74920193'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(shortCode);
+                    setCopiedShortCode(true);
+                    setTimeout(() => setCopiedShortCode(false), 2000);
+                  } catch {}
+                }}
+                className="secondary-btn"
+                style={{ padding: '6px 12px', fontSize: '11.5px', borderRadius: '8px', gap: '4px' }}
+              >
+                {copiedShortCode ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copiedShortCode ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ الرمز' : 'Copy')}</span>
+              </button>
             </div>
 
             {/* Countdown Expiry Badge */}
