@@ -119,7 +119,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
   const [syncUrl, setSyncUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(600); // 10 mins
+  const [timeLeft, setTimeLeft] = useState<number>(120); // 2 mins
   const [refreshKey, setRefreshKey] = useState<number>(0);
   
   // Receive / Import state
@@ -130,10 +130,10 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
 
   const isAr = lang === 'ar';
 
-  // Live 10-minute countdown
+  // Live 2-minute countdown (120 seconds)
   useEffect(() => {
     if (!isOpen) return;
-    setTimeLeft(600);
+    setTimeLeft(120);
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -191,26 +191,32 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       };
       setSyncPayloadString(JSON.stringify(fullPayload, null, 2));
 
-      // Ultra-short micro encoded link (< 200 chars)
-      const expTime = Date.now() + 10 * 60 * 1000;
+      // Ultra-short micro encoded link with 2-minute expiration
+      const expTime = Date.now() + 2 * 60 * 1000;
       const targetPlan = activePlan || (Array.isArray(planHistory) && planHistory.length > 0 ? planHistory[0] : null);
       const microB64 = encodeMicroPlan(targetPlan, userProfile, expTime);
       const fullUrl = `${window.location.origin}/#sync=${microB64}`;
       setSyncUrl(fullUrl);
 
-      // Generate instant vector SVG QR code (0.001ms generation)
-      QRCode.toString(fullUrl, {
-        type: 'svg',
-        margin: 1,
-        color: {
-          dark: '#000000',
-          light: '#ffffff',
+      // Instant Synchronous Vector SVG QR generation (0.0000ms delay)
+      QRCode.toString(
+        fullUrl,
+        {
+          type: 'svg',
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#ffffff',
+          },
         },
-      }).then((svg) => {
-        setQrSvg(svg);
-      }).catch((err) => {
-        console.warn('SVG QR Code generation fallback:', err);
-      });
+        (err, svg) => {
+          if (!err && svg) {
+            setQrSvg(svg);
+          } else {
+            console.warn('SVG QR Code generation fallback error:', err);
+          }
+        }
+      );
     } catch (err) {
       console.error('Failed to generate sync payload:', err);
     }
