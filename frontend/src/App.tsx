@@ -103,7 +103,46 @@ function App() {
         const hashIdx = window.location.hash.indexOf('#sync=');
         const b64 = window.location.hash.slice(hashIdx + 6);
         const decoded = decodeURIComponent(atob(b64));
-        const parsed = JSON.parse(decoded);
+        let parsed = JSON.parse(decoded);
+        if (parsed && (parsed.v === 3 || parsed.p)) {
+          const days = (parsed.p.d || []).map((d: any) => ({
+            dayIndex: d.i,
+            title: d.t,
+            isRestDay: !!d.r,
+            focusArea: d.f || '',
+            exercises: (d.e || []).map((e: any, idx: number) => ({
+              id: `ex_${d.i}_${idx + 1}`,
+              name: e.n,
+              targetMuscle: e.m || 'Chest',
+              category: 'MAIN',
+              sets: e.s || 3,
+              reps: String(e.r || '10-12'),
+              weight: e.w || '',
+              restSeconds: e.rs || 60,
+            })),
+          }));
+
+          const fullPlan = {
+            id: `plan_${Date.now()}`,
+            title: parsed.p.t || 'جدولي التدريبي ⚡',
+            active: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            days,
+            dayWorkouts: days,
+          };
+
+          parsed = {
+            activePlan: fullPlan,
+            planHistory: [fullPlan],
+            userProfile: parsed.u ? {
+              name: parsed.u.n || 'Beast Athlete',
+              email: parsed.u.e || '',
+              goal: parsed.u.g || 'hypertrophy',
+              fitnessLevel: parsed.u.l || 'intermediate',
+            } : null,
+          };
+        }
 
         if (parsed && (parsed.activePlan || parsed.planHistory)) {
           if (parsed.userProfile) cacheStore.set('user_profile', parsed.userProfile);
