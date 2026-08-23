@@ -9,6 +9,7 @@ interface ExerciseImageProps {
   className?: string;
   style?: React.CSSProperties;
   autoAnimate?: boolean;
+  showBadge?: boolean;
 }
 
 // Convert GitHub raw URLs to ultra-fast jsDelivr CDN to bypass CORS & rate limits
@@ -64,6 +65,7 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   className = '',
   style = {},
   autoAnimate = true,
+  showBadge = false,
 }) => {
   const [currentTier, setCurrentTier] = useState<1 | 2 | 3>(src ? 1 : 2);
   const [activeFrame, setActiveFrame] = useState<0 | 1>(0);
@@ -270,7 +272,7 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
       )}
 
       {/* Motion Phase Badge (START / PEAK) */}
-      {frame1 && !isGif && autoAnimate && (
+      {showBadge && frame1 && !isGif && autoAnimate && (
         <span
           style={{
             position: 'absolute',
@@ -294,7 +296,7 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
       )}
 
       {/* Real 60fps GIF Live Badge */}
-      {isGif && (
+      {showBadge && isGif && (
         <span
           style={{
             position: 'absolute',

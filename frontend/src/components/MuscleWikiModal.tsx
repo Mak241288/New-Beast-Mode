@@ -605,6 +605,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
               muscle={exercise.muscle_en || exercise.muscle_ar || exercise.targetMuscle}
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               autoAnimate={isPlayingMotion}
+              showBadge={true}
             />
 
             {/* Motion Speed & Play/Pause Controls Overlay */}
