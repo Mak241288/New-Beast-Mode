@@ -1590,19 +1590,18 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                             }}
                             className="glow-btn"
                             style={{
-                              padding: '6px 12px',
-                              fontSize: '11px',
+                              padding: '6px 14px',
+                              fontSize: '11.5px',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '4px',
-                              fontWeight: 'bold',
-                              border: '1px solid var(--primary)',
-                              background: 'var(--primary-glow)',
-                              color: '#fff',
+                              gap: '6px',
+                              fontWeight: '800',
                               borderRadius: '8px',
                             }}
                           >
-                            ⚡ {lang === 'en' ? 'Start Workout' : 'ابدأ التمرين ⚡'}
+                            <span>⚡</span>
+                            <span>{lang === 'en' ? 'Start Workout' : 'ابدأ التمرين'}</span>
+                            <span>⚡</span>
                           </button>
 
                           <button
