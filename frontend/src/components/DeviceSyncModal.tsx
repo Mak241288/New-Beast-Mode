@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { cacheStore } from '../utils/cacheStore';
 import { planService } from '../services/planService';
-import { QrCode, Smartphone, Copy, Check, Download, Upload, RefreshCw, X, ShieldCheck, ArrowRightLeft, Sparkles } from 'lucide-react';
+import { QrCode, Smartphone, Copy, Check, Download, Upload, X, ShieldCheck, ArrowRightLeft, Sparkles } from 'lucide-react';
 
 interface DeviceSyncModalProps {
   isOpen: boolean;
@@ -100,6 +100,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const isAr = lang === 'ar';
 
@@ -157,18 +158,25 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
 
       // Generate ultra-sharp, low-density QR code (scans instantly in 0.05s)
       QRCode.toDataURL(fullUrl, {
-        width: 240,
-        margin: 2,
-        errorCorrectionLevel: 'L',
+        width: 260,
+        margin: 1,
         color: {
-          dark: '#00d2ff',
-          light: '#0b1329',
+          dark: '#000000',
+          light: '#ffffff',
         },
       }).then((url) => {
         setQrDataUrl(url);
       }).catch((err) => {
         console.warn('QR Code generation fallback:', err);
       });
+
+      if (canvasRef.current) {
+        QRCode.toCanvas(canvasRef.current, fullUrl, {
+          width: 220,
+          margin: 1,
+          color: { dark: '#000000', light: '#ffffff' },
+        }).catch(() => {});
+      }
     } catch (err) {
       console.error('Failed to generate sync payload:', err);
     }
@@ -451,11 +459,11 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
             {/* QR Frame */}
             <div
               style={{
-                background: '#0b1329',
+                background: '#ffffff',
                 padding: '16px',
                 borderRadius: '20px',
-                border: '2px solid rgba(0, 210, 255, 0.4)',
-                boxShadow: '0 8px 30px rgba(0, 210, 255, 0.2)',
+                border: '3px solid var(--primary)',
+                boxShadow: '0 8px 30px rgba(0, 210, 255, 0.3)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -466,15 +474,13 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
                 <img
                   src={qrDataUrl}
                   alt="Sync QR Code"
-                  style={{ width: '230px', height: '230px', borderRadius: '12px', display: 'block' }}
+                  style={{ width: '220px', height: '220px', borderRadius: '8px', display: 'block' }}
                 />
               ) : (
-                <div style={{ width: '230px', height: '230px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                  <RefreshCw size={24} className="spin" />
-                </div>
+                <canvas ref={canvasRef} style={{ width: '220px', height: '220px', borderRadius: '8px' }} />
               )}
-              <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '700', letterSpacing: '0.5px' }}>
-                {isAr ? '📷 امسح الرمز بكاميرا هاتفك للفتح والمزامنة الفورية' : 'Scan with your phone camera to open and sync instantly'}
+              <span style={{ fontSize: '11.5px', color: '#0f172a', fontWeight: '800', letterSpacing: '0.3px', textAlign: 'center' }}>
+                {isAr ? '📷 امسح الرمز بكاميرا هاتفك للمزامنة الفورية' : 'Scan with phone camera to sync instantly'}
               </span>
             </div>
 
