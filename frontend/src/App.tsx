@@ -548,6 +548,17 @@ function App() {
             onNavigateToLegal={(page) => navigateTo(page)}
           />
         )}
+        <DeviceSyncModal
+          isOpen={showDeviceSyncModal}
+          lang={lang}
+          onClose={() => setShowDeviceSyncModal(false)}
+          onSyncComplete={() => {
+            setShowDeviceSyncModal(false);
+            setToken('beast_synced_session');
+            localStorage.setItem('token', 'beast_synced_session');
+            setCurrentView('dashboard');
+          }}
+        />
       </Suspense>
     );
   }

@@ -542,6 +542,33 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
             {isLogin ? 'لا تملك حساباً؟ أنشئ حساباً الآن' : 'لديك حساب بالفعل؟ سجل الدخول'}
           </button>
         </div>
+
+        {/* Device Sync Shortcut Button */}
+        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed rgba(0, 210, 255, 0.25)' }}>
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('beast_open_sync_modal', { detail: { tab: 'receive' } }));
+            }}
+            className="glow-btn"
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              justifyContent: 'center',
+              fontSize: '13px',
+              fontWeight: '800',
+              gap: '8px',
+              background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.18), rgba(16, 185, 129, 0.18))',
+              border: '1px solid rgba(0, 210, 255, 0.45)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <span>📲</span>
+            <span>
+              {lang === 'en' ? 'Have a Sync Code or QR from PC? Tap Here' : 'لديك كود أو رابط مزامنة من الكمبيوتر؟ اضغط هنا للدخول الفوري 📲'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* FOOTER LINKS */}

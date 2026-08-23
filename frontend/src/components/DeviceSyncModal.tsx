@@ -132,6 +132,28 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
 
   const isAr = lang === 'ar';
 
+  useEffect(() => {
+    const handleOpen = (e: any) => {
+      if (e?.detail?.tab) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('beast_open_sync_modal', handleOpen);
+    return () => window.removeEventListener('beast_open_sync_modal', handleOpen);
+  }, []);
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        setPasteInput(text.trim());
+        handleImportPayload(text.trim());
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
   // Live 2-minute countdown (120 seconds)
   useEffect(() => {
     if (!isOpen) return;
@@ -682,9 +704,30 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
               {isAr
-                ? 'الصق كود المزامنة الذي نسخته من جهازك الآخر، أو ارفع ملف النسخة الاحتياطية (.beast):'
-                : 'Paste the sync code copied from your other device or upload a backup file:'}
+                ? 'الصق كود أو رابط المزامنة الذي نسخته من جهازك الآخر، أو ارفع ملف النسخة الاحتياطية (.beast):'
+                : 'Paste the sync code or link copied from your other device or upload a backup file:'}
             </p>
+
+            {/* Quick Clipboard Paste Shortcut */}
+            <button
+              type="button"
+              onClick={handlePasteFromClipboard}
+              className="secondary-btn"
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                padding: '11px',
+                fontSize: '13px',
+                fontWeight: '700',
+                background: 'rgba(0, 210, 255, 0.1)',
+                borderColor: 'rgba(0, 210, 255, 0.35)',
+                color: 'var(--primary)',
+                gap: '8px',
+              }}
+            >
+              <span>📋</span>
+              <span>{isAr ? 'لصق الكود من الحافظة والمزامنة الفورية' : 'Paste from Clipboard & Sync Instantly'}</span>
+            </button>
 
             <textarea
               value={pasteInput}
