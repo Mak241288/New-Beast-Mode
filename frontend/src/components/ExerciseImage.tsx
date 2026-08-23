@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dumbbell } from 'lucide-react';
 
 interface ExerciseImageProps {
@@ -9,6 +9,19 @@ interface ExerciseImageProps {
   className?: string;
   style?: React.CSSProperties;
   autoAnimate?: boolean;
+}
+
+// Convert GitHub raw URLs to ultra-fast jsDelivr CDN to bypass CORS & rate limits
+function toCdnUrl(url?: string | null): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (trimmed.includes('raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/')) {
+    return trimmed.replace(
+      'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/',
+      'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/'
+    );
+  }
+  return trimmed;
 }
 
 // Guaranteed High-Availability CDN Images per Muscle Group
@@ -53,36 +66,74 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   autoAnimate = true,
 }) => {
   const [currentTier, setCurrentTier] = useState<1 | 2 | 3>(src ? 1 : 2);
-  const [imgLoaded, setImgLoaded] = useState(false);
   const [activeFrame, setActiveFrame] = useState<0 | 1>(0);
+  const [frame0Loaded, setFrame0Loaded] = useState(false);
+  const [frame1Loaded, setFrame1Loaded] = useState(false);
 
-  // Compute second frame URL if available
-  const frame0 = src || '';
-  const frame1 = step2 || (frame0.includes('/0.jpg') ? frame0.replace('/0.jpg', '/1.jpg') : null);
+  // Compute 2-Phase Frames from either 0.jpg, 1.jpg, or direct URLs
+  const { frame0, frame1 } = useMemo(() => {
+    const cSrc = toCdnUrl(src);
+    const cStep2 = toCdnUrl(step2);
 
+    if (!cSrc) {
+      return { frame0: '', frame1: null };
+    }
+
+    if (cStep2 && cStep2 !== cSrc) {
+      return { frame0: cSrc, frame1: cStep2 };
+    }
+
+    if (cSrc.includes('/0.jpg')) {
+      return {
+        frame0: cSrc,
+        frame1: cSrc.replace('/0.jpg', '/1.jpg'),
+      };
+    }
+
+    if (cSrc.includes('/1.jpg')) {
+      return {
+        frame0: cSrc.replace('/1.jpg', '/0.jpg'),
+        frame1: cSrc,
+      };
+    }
+
+    return { frame0: cSrc, frame1: null };
+  }, [src, step2]);
+
+  // Preload frame 1 for instant zero-flicker transitions
   useEffect(() => {
-    if (!autoAnimate || !frame1 || frame1 === frame0 || currentTier !== 1) return;
+    if (frame1 && currentTier === 1) {
+      const img = new Image();
+      img.src = frame1;
+      img.onload = () => setFrame1Loaded(true);
+    }
+  }, [frame1, currentTier]);
+
+  // Auto Animation Loop
+  useEffect(() => {
+    if (!autoAnimate || !frame1 || frame1 === frame0 || currentTier !== 1) {
+      setActiveFrame(0);
+      return;
+    }
 
     const interval = setInterval(() => {
       setActiveFrame((prev) => (prev === 0 ? 1 : 0));
-    }, 1300);
+    }, 1100);
 
     return () => clearInterval(interval);
   }, [autoAnimate, frame0, frame1, currentTier]);
 
   const fallbackUrl = getMuscleFallback(muscle);
-  const targetSrc = activeFrame === 1 && frame1 ? frame1 : frame0;
-  const effectiveSrc = currentTier === 1 && targetSrc ? targetSrc : fallbackUrl;
 
   const handleError = () => {
     if (currentTier === 1) {
-      setCurrentTier(2); // Switch to guaranteed CDN muscle fallback
+      setCurrentTier(2); // Fallback to verified muscle photography
     } else if (currentTier === 2) {
-      setCurrentTier(3); // Switch to offline inline SVG badge
+      setCurrentTier(3); // Fallback to offline SVG card
     }
   };
 
-  // Tier 3: Offline / zero-network CSS/SVG Glassmorphic Badge
+  // Tier 3: Offline / zero-network SVG Badge
   if (currentTier === 3) {
     return (
       <div
@@ -96,60 +147,111 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
           justifyContent: 'center',
           background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(124, 58, 237, 0.2))',
           border: '1px solid rgba(0, 210, 255, 0.25)',
-          borderRadius: '8px',
+          borderRadius: '12px',
           color: 'var(--primary)',
-          gap: '4px',
-          padding: '4px',
+          gap: '6px',
+          padding: '8px',
           ...style,
         }}
         title={alt}
       >
-        <Dumbbell size={20} />
-        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#fff', textAlign: 'center', lineHeight: 1.1 }}>
+        <Dumbbell size={24} />
+        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#fff', textAlign: 'center', lineHeight: 1.1 }}>
           {muscle || 'BeastMode'}
         </span>
       </div>
     );
   }
 
+  // Tier 2: Muscle Photography Fallback
+  if (currentTier === 2) {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', ...style }}>
+        <img
+          src={fallbackUrl}
+          alt={alt}
+          className={className}
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          onError={handleError}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Tier 1: High-Performance 2-Frame Animated Display
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', ...style }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#0a0d16', ...style }}>
+      {/* Frame 0 (Start Position) */}
       <img
-        src={effectiveSrc}
+        src={frame0}
         alt={alt}
         className={className}
         referrerPolicy="no-referrer"
         loading="lazy"
         onError={handleError}
-        onLoad={() => setImgLoaded(true)}
+        onLoad={() => setFrame0Loaded(true)}
         style={{
+          position: 'absolute',
+          inset: 0,
           width: '100%',
           height: '100%',
-          objectFit: 'cover',
-          opacity: imgLoaded ? 1 : 0.6,
+          objectFit: 'contain',
+          opacity: activeFrame === 0 || !frame1 ? (frame0Loaded ? 1 : 0.6) : 0,
           transition: 'opacity 0.25s ease-in-out',
         }}
       />
-      {frame1 && currentTier === 1 && (
+
+      {/* Frame 1 (Peak Contraction) */}
+      {frame1 && (
+        <img
+          src={frame1}
+          alt={`${alt} peak`}
+          className={className}
+          referrerPolicy="no-referrer"
+          loading="lazy"
+          onLoad={() => setFrame1Loaded(true)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            opacity: activeFrame === 1 ? (frame1Loaded ? 1 : 0.6) : 0,
+            transition: 'opacity 0.25s ease-in-out',
+          }}
+        />
+      )}
+
+      {/* Motion Phase Badge (START / PEAK) */}
+      {frame1 && autoAnimate && (
         <span
           style={{
             position: 'absolute',
-            top: '6px',
-            right: '6px',
-            background: 'rgba(0, 210, 255, 0.2)',
-            border: '1px solid rgba(0, 210, 255, 0.4)',
-            color: 'var(--primary)',
-            fontSize: '9px',
-            fontWeight: 'bold',
-            padding: '2px 6px',
+            top: '8px',
+            right: '8px',
+            background: activeFrame === 0 ? 'rgba(0, 210, 255, 0.25)' : 'rgba(16, 185, 129, 0.25)',
+            border: activeFrame === 0 ? '1px solid rgba(0, 210, 255, 0.5)' : '1px solid rgba(16, 185, 129, 0.5)',
+            color: activeFrame === 0 ? 'var(--primary)' : '#10b981',
+            fontSize: '9.5px',
+            fontWeight: '900',
+            padding: '2px 8px',
             borderRadius: '6px',
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(6px)',
             pointerEvents: 'none',
+            letterSpacing: '0.5px',
+            transition: 'all 0.2s ease',
           }}
         >
-          {activeFrame === 0 ? 'START' : 'PEAK'}
+          {activeFrame === 0 ? '1. START' : '2. PEAK 🔥'}
         </span>
       )}
     </div>
   );
 };
+
