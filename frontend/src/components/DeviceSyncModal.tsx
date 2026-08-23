@@ -11,7 +11,7 @@ interface DeviceSyncModalProps {
   onSyncComplete?: () => void;
 }
 
-// Ultra-Compact Minifier for sub-500 byte QR codes and short URLs
+// Ultra-Compact Minifier with 10-Minute Temporary Expiry (sub-500 byte QR codes & short URLs)
 function compactPayload(raw: any) {
   const plan = raw.activePlan || (raw.planHistory && raw.planHistory[0]);
   const pMin = plan ? {
@@ -34,6 +34,7 @@ function compactPayload(raw: any) {
 
   return {
     v: 3,
+    exp: Date.now() + 10 * 60 * 1000, // 10 minutes temporary validity
     p: pMin,
     u: raw.userProfile ? {
       n: raw.userProfile.name,
@@ -94,6 +95,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
   const [syncUrl, setSyncUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number>(600); // 10 mins
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   
   // Receive / Import state
   const [pasteInput, setPasteInput] = useState('');
@@ -104,7 +107,23 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
 
   const isAr = lang === 'ar';
 
-  // Generate payload whenever modal opens or tab changes to send
+  // Live 10-minute countdown
+  useEffect(() => {
+    if (!isOpen) return;
+    setTimeLeft(600);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isOpen, refreshKey]);
+
+  // Generate payload whenever modal opens, tab changes, or refreshed
   useEffect(() => {
     if (!isOpen) return;
 
@@ -180,7 +199,13 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
     } catch (err) {
       console.error('Failed to generate sync payload:', err);
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, refreshKey]);
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   const handleCopyLink = async () => {
     try {
@@ -482,6 +507,59 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
               <span style={{ fontSize: '11.5px', color: '#0f172a', fontWeight: '800', letterSpacing: '0.3px', textAlign: 'center' }}>
                 {isAr ? '📷 امسح الرمز بكاميرا هاتفك للمزامنة الفورية' : 'Scan with phone camera to sync instantly'}
               </span>
+            </div>
+
+            {/* Countdown Expiry Badge */}
+            <div
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '10px',
+                background: timeLeft > 60 ? 'rgba(0, 210, 255, 0.08)' : 'rgba(239, 68, 68, 0.1)',
+                border: `1px solid ${timeLeft > 60 ? 'rgba(0, 210, 255, 0.3)' : 'rgba(239, 68, 68, 0.4)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '12px',
+                color: timeLeft > 60 ? 'var(--text-primary)' : 'var(--danger)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}>
+                <span>⏱️</span>
+                <span>
+                  {isAr ? `صالح مؤقتاً لمدة: ${formatTime(timeLeft)} دقيقة` : `Temporary link expires in: ${formatTime(timeLeft)}`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRefreshKey((k) => k + 1)}
+                className="secondary-btn"
+                style={{ padding: '4px 8px', fontSize: '11px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                title={isAr ? 'تجديد الصلاحية 10 دقائق أخرى' : 'Refresh validity'}
+              >
+                <span>{isAr ? 'تجديد 🔄' : 'Refresh 🔄'}</span>
+              </button>
+            </div>
+
+            {/* Single-line Compact URL Preview */}
+            <div
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '10px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                fontSize: '11px',
+                color: 'var(--text-muted)',
+                fontFamily: 'monospace',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                direction: 'ltr',
+                textAlign: 'left',
+              }}
+            >
+              {syncUrl}
             </div>
 
             {/* Action Buttons */}
