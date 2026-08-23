@@ -211,9 +211,32 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
     }
   };
 
+  const handleEmailChange = (newEmail: string) => {
+    setEmail(newEmail);
+    if (!isLogin && !name.trim() && newEmail.includes('@')) {
+      const prefix = newEmail.split('@')[0];
+      const derivedName = prefix
+        .split(/[._-]/)
+        .filter(Boolean)
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(' ');
+      if (derivedName.length >= 2) {
+        setName(derivedName);
+      }
+    }
+  };
+
   const handleOpenGoogleLoginModal = () => {
-    setGoogleLoginEmail(email.trim() || 'athlete@gmail.com');
-    setGoogleLoginName(name.trim() || 'Beast Athlete');
+    const cleanMail = email.trim() || 'athlete@gmail.com';
+    const prefix = cleanMail.split('@')[0];
+    const derivedName = name.trim() || prefix
+      .split(/[._-]/)
+      .filter(Boolean)
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+      .join(' ') || 'Beast Athlete';
+
+    setGoogleLoginEmail(cleanMail);
+    setGoogleLoginName(derivedName);
     setGoogleModalError('');
     setGoogleModalSuccess('');
     setGoogleRequiresVerification(false);
@@ -384,7 +407,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                 type="email"
                 placeholder="name@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleEmailChange(e.target.value)}
                 className="input-field"
                 style={{ paddingRight: '45px', textAlign: 'left', direction: 'ltr' }}
                 required

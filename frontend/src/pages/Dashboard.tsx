@@ -632,9 +632,170 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
               );
             }
 
-            // If not due and no pending recommendations, keep dashboard clean and focused
             return null;
           })()}
+
+          {/* Today's Workout Routine Card (Hero Section) */}
+          {todayWorkout && (
+            <div className="glass-panel animated-fade" style={{ padding: '26px', border: '1px solid var(--primary)', background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.05), rgba(16, 185, 129, 0.05))', borderRadius: '18px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '20px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <span className="badge" style={{ background: 'var(--primary)', color: '#050710', fontSize: '11px', fontWeight: '900', padding: '3px 9px', borderRadius: '8px' }}>
+                      {lang === 'en' ? '🔥 TODAY\'S WORKOUT' : '🔥 تمرين اليوم'}
+                    </span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      ⏱️ {todayWorkout.isRestDay ? (lang === 'en' ? 'Recovery' : 'استشفاء') : `~${todayWorkout.exercises.length * 9} ${lang === 'en' ? 'mins' : 'دقيقة تقريبياً'}`}
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: '22px', fontWeight: '900', margin: '4px 0 0 0', color: 'var(--text-primary)' }}>
+                    {todayWorkout.title}
+                  </h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '4px 0 0 0' }}>
+                    🎯 {todayWorkout.focusArea} • {todayWorkout.isRestDay ? (lang === 'en' ? 'Rest & Recharge' : 'يوم راحة وتغذية') : `${todayWorkout.exercises.length} ${t.exercises}`}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {!todayWorkout.isRestDay && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowDynamicWarmupModal(true)}
+                        className="secondary-btn"
+                        style={{ padding: '9px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px', borderColor: '#f59e0b', color: '#f59e0b', borderRadius: '10px' }}
+                      >
+                        <span>🤸‍♂️ {lang === 'en' ? 'Warmup (3m)' : 'إحماء (3د) 🔥'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowRoutineCardModal(true)}
+                        className="secondary-btn"
+                        style={{ padding: '9px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px', borderColor: 'var(--primary)', color: 'var(--primary)', borderRadius: '10px' }}
+                      >
+                        <span>📷 {lang === 'en' ? 'Share Card' : 'بطاقة التمرين 📷'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowBodyMap(!showBodyMap)}
+                        className={showBodyMap ? 'glow-btn' : 'secondary-btn'}
+                        style={{ padding: '9px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '10px' }}
+                      >
+                        <span>🗺️ {lang === 'en' ? 'Anatomy' : 'المجسم العضلي 🗺️'}</span>
+                      </button>
+                    </>
+                  )}
+
+                  {!todayWorkout.isRestDay && (
+                    sessionState.status === 'active' || sessionState.status === 'resting' || sessionState.status === 'paused' ? (
+                      <button
+                        onClick={maximizePlayer}
+                        className="glow-btn"
+                        style={{
+                          padding: '12px 24px',
+                          fontSize: '15px',
+                          fontWeight: '800',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: 'linear-gradient(135deg, #10b981, #059669)',
+                          border: 'none',
+                          boxShadow: '0 0 25px rgba(16, 185, 129, 0.5)',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <Dumbbell size={18} />
+                        <span>{lang === 'en' ? 'Resume Workout ⛶' : 'استئناف التمرين ⛶'}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleStartWorkout}
+                        className="glow-btn shimmer-glow"
+                        style={{
+                          padding: '12px 24px',
+                          fontSize: '15px',
+                          fontWeight: '800',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          borderRadius: '12px',
+                          boxShadow: '0 0 25px rgba(0, 210, 255, 0.4)',
+                        }}
+                      >
+                        <Dumbbell size={18} />
+                        <span>{lang === 'en' ? 'Start Today\'s Workout 🚀' : 'بدء تمرين اليوم الآن 🚀'}</span>
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* Collapsible Interactive 3D Anatomy Map */}
+              {showBodyMap && (
+                <div className="animated-fade" style={{ marginBottom: '20px' }}>
+                  <InteractiveBodyMap
+                    lang={lang}
+                    selectedMuscle={selectedBodyMuscle}
+                    onSelectMuscle={(m) => setSelectedBodyMuscle(m)}
+                  />
+                </div>
+              )}
+
+              {todayWorkout.isRestDay ? (
+                <div style={{ textAlign: 'center', padding: '30px 10px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '48px' }}>🧘‍♂️</span>
+                  <h4 style={{ fontWeight: 'bold' }}>{t.restDayTitle}</h4>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '400px', lineHeight: '1.6' }}>{t.restDayDesc}</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {todayWorkout.exercises.map((ex: any) => (
+                    <div
+                      key={ex.id}
+                      onClick={() => setWikiExercise({
+                        ...ex,
+                        name_en: ex.name,
+                        name_ar: ex.name,
+                        muscle_en: ex.targetMuscle || 'Chest',
+                        instructions_ar: ex.exerciseTips || '',
+                        image_url: ex.imageUrl || null,
+                      })}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px 18px',
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '12px',
+                        fontSize: '13.5px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ color: 'var(--primary)', fontSize: '18px' }}>⚡</span>
+                        <div>
+                          <span style={{ fontWeight: '800', color: 'var(--text-primary)' }}>{ex.name}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginInlineStart: '8px' }}>
+                            ({ex.targetMuscle || 'عضلة رئيسية'})
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="badge" style={{ color: 'var(--primary)', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.2)', fontSize: '12px', fontWeight: 'bold', padding: '4px 10px', borderRadius: '8px' }}>
+                          {ex.sets} {t.sets} × {ex.reps}
+                        </span>
+                        <Info size={16} style={{ color: 'var(--text-muted)' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Top Widgets Row: Streak, Workouts, Minutes, Exercises */}
           <div className="grid-responsive-4col">
@@ -864,148 +1025,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                   <ChevronRight size={14} style={{ transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* Today's Workout Routine Card */}
-          {todayWorkout && (
-            <div className="glass-panel" style={{ padding: '24px', border: '1px solid var(--primary)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '15px', marginBottom: '20px' }}>
-                <div>
-                  <span className="badge" style={{ background: 'var(--primary-glow)', color: 'var(--primary)', border: '1px solid var(--primary)', fontSize: '10px' }}>
-                    {lang === 'en' ? 'TODAY\'S TASK' : 'مهمة اليوم الرياضية'}
-                  </span>
-                  <h3 style={{ fontSize: '18px', fontWeight: '800', marginTop: '6px' }}>{todayWorkout.title}</h3>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px' }}>
-                    🎯 {todayWorkout.focusArea} | {todayWorkout.isRestDay ? (lang === 'en' ? 'Rest Day' : 'يوم راحة') : `${todayWorkout.exercises.length} ${t.exercises}`}
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                  {!todayWorkout.isRestDay && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowDynamicWarmupModal(true)}
-                        className="secondary-btn"
-                        style={{ padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#f59e0b', color: '#f59e0b' }}
-                      >
-                        <span>🤸‍♂️ {lang === 'en' ? 'Warmup (3m)' : 'إحماء (3د) 🔥'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowRoutineCardModal(true)}
-                        className="secondary-btn"
-                        style={{ padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
-                      >
-                        <span>📷 {lang === 'en' ? 'Routine Card' : 'بطاقة التمرين 📷'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setShowBodyMap(!showBodyMap)}
-                        className={showBodyMap ? 'glow-btn' : 'secondary-btn'}
-                        style={{ padding: '8px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}
-                      >
-                        <span>🗺️ {lang === 'en' ? 'Anatomy Map' : 'مجسم التشريح 🗺️'}</span>
-                      </button>
-                    </>
-                  )}
-
-                  {!todayWorkout.isRestDay && (
-                    sessionState.status === 'active' || sessionState.status === 'resting' || sessionState.status === 'paused' ? (
-                      <button
-                        onClick={maximizePlayer}
-                        className="glow-btn"
-                        style={{
-                          padding: '10px 20px',
-                          fontSize: '14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'linear-gradient(135deg, #10b981, #059669)',
-                          border: 'none',
-                          boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)',
-                        }}
-                      >
-                        <Dumbbell size={16} />
-                        {lang === 'en' ? 'Resume Active Workout ⛶' : 'استئناف التمرين النشط ⛶'}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleStartWorkout}
-                        className="glow-btn shimmer-glow"
-                        style={{ padding: '10px 20px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <Dumbbell size={16} />
-                        {lang === 'en' ? 'Start Active Player ⚡' : 'ابدأ مشغل التمرين التفاعلي ⚡'}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Collapsible Interactive 3D Anatomy Map */}
-              {showBodyMap && (
-                <div className="animated-fade" style={{ marginBottom: '20px' }}>
-                  <InteractiveBodyMap
-                    lang={lang}
-                    selectedMuscle={selectedBodyMuscle}
-                    onSelectMuscle={(m) => setSelectedBodyMuscle(m)}
-                  />
-                </div>
-              )}
-
-              {todayWorkout.isRestDay ? (
-                <div style={{ textAlign: 'center', padding: '30px 10px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '48px' }}>🧘‍♂️</span>
-                  <h4 style={{ fontWeight: 'bold' }}>{t.restDayTitle}</h4>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '400px', lineHeight: '1.6' }}>{t.restDayDesc}</p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {todayWorkout.exercises.map((ex: any) => (
-                    <div
-                      key={ex.id}
-                      onClick={() => setWikiExercise({
-                        ...ex,
-                        name_en: ex.name,
-                        name_ar: ex.name,
-                        muscle_en: ex.targetMuscle || 'Chest',
-                        instructions_ar: ex.exerciseTips || '',
-                        image_url: ex.imageUrl || null,
-                      })}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '12px 16px',
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '12px',
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ color: 'var(--primary)' }}>●</span>
-                        <span style={{ fontWeight: 'bold' }}>{ex.name}</span>
-                        <span className="badge" style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--primary)', padding: '2px 8px' }}>
-                          💡 MuscleWiki Guide
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                          {ex.sets} {t.sets} × {ex.reps} ({ex.weight || 'Bodyweight'})
-                        </span>
-                        <Info size={16} style={{ color: 'var(--primary)' }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
