@@ -765,7 +765,7 @@ const findMatchingExerciseInDb = (name: string): Promise<any> => {
     const query = `
       SELECT name_en, name_ar, instructions_en, instructions_ar, 
              muscle_en, muscle_ar, equipment_en, equipment_ar, 
-             category, image_url
+             category, image_url, gif_url, youtube_url
       FROM exercises 
       WHERE LOWER(name_en) = LOWER(?) OR LOWER(name_ar) = LOWER(?)
       LIMIT 1
@@ -780,7 +780,7 @@ const findMatchingExerciseInDb = (name: string): Promise<any> => {
         const fuzzyQuery = `
           SELECT name_en, name_ar, instructions_en, instructions_ar, 
                  muscle_en, muscle_ar, equipment_en, equipment_ar, 
-                 category, image_url
+                 category, image_url, gif_url, youtube_url
           FROM exercises 
           WHERE LOWER(name_en) LIKE LOWER(?) OR LOWER(name_ar) LIKE LOWER(?)
           LIMIT 1
@@ -1616,7 +1616,7 @@ export const getAlternatives = async (req: AuthRequest, res: Response): Promise<
 
     // Query for alternative exercises targeting the same muscle
     const query = `
-      SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, category, image_url, instructions_ar, instructions_en
+      SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, category, image_url, gif_url, instructions_ar, instructions_en
       FROM exercises
       WHERE LOWER(muscle_en) = LOWER(?) OR LOWER(muscle_ar) = LOWER(?)
       ORDER BY rating DESC
@@ -1639,6 +1639,7 @@ export const getAlternatives = async (req: AuthRequest, res: Response): Promise<
         equipment_ar: row.equipment_ar || 'بدون أدوات',
         category: row.category || 'IRON',
         image_url: row.image_url || getMuscleImage(muscle),
+        gif_url: row.gif_url || row.image_url,
         instructions_en: row.instructions_en || '',
         instructions_ar: row.instructions_ar || '',
         video_url: `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' exercise tutorial shorts')}`

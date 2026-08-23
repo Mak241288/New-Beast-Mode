@@ -208,15 +208,34 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
     );
   }
 
+  const isGif = frame0 && frame0.includes('.gif');
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#0a0d16', ...style }}>
-      {/* Frame 0 (Start Position) */}
+      {/* Sleek Skeleton Shimmer until loaded */}
+      {!frame0Loaded && currentTier === 1 && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(0,210,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'skeletonShimmer 1.5s infinite linear',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Dumbbell size={24} style={{ opacity: 0.2, color: 'var(--primary)' }} />
+        </div>
+      )}
+
+      {/* Frame 0 / Real Animated GIF */}
       <img
         src={frame0}
         alt={alt}
         className={className}
         referrerPolicy="no-referrer"
-        loading="lazy"
         onError={handleError}
         onLoad={() => setFrame0Loaded(true)}
         style={{
@@ -225,19 +244,18 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
           width: '100%',
           height: '100%',
           objectFit: 'contain',
-          opacity: activeFrame === 0 || !frame1 ? (frame0Loaded ? 1 : 0.6) : 0,
-          transition: 'opacity 0.25s ease-in-out',
+          opacity: activeFrame === 0 || !frame1 || isGif ? 1 : 0,
+          transition: isGif ? 'none' : 'opacity 0.2s ease-in-out',
         }}
       />
 
-      {/* Frame 1 (Peak Contraction) */}
-      {frame1 && (
+      {/* Frame 1 (Peak Contraction) - Only if 2-Phase Mode */}
+      {frame1 && !isGif && (
         <img
           src={frame1}
           alt={`${alt} peak`}
           className={className}
           referrerPolicy="no-referrer"
-          loading="lazy"
           onLoad={() => setFrame1Loaded(true)}
           style={{
             position: 'absolute',
@@ -245,14 +263,14 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
             width: '100%',
             height: '100%',
             objectFit: 'contain',
-            opacity: activeFrame === 1 ? (frame1Loaded ? 1 : 0.6) : 0,
-            transition: 'opacity 0.25s ease-in-out',
+            opacity: activeFrame === 1 && frame1Loaded ? 1 : 0,
+            transition: 'opacity 0.2s ease-in-out',
           }}
         />
       )}
 
       {/* Motion Phase Badge (START / PEAK) */}
-      {frame1 && autoAnimate && (
+      {frame1 && !isGif && autoAnimate && (
         <span
           style={{
             position: 'absolute',
@@ -272,6 +290,29 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
           }}
         >
           {activeFrame === 0 ? '1. START' : '2. PEAK 🔥'}
+        </span>
+      )}
+
+      {/* Real 60fps GIF Live Badge */}
+      {isGif && (
+        <span
+          style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            background: 'rgba(139, 92, 246, 0.3)',
+            border: '1px solid rgba(139, 92, 246, 0.6)',
+            color: '#c084fc',
+            fontSize: '9px',
+            fontWeight: '900',
+            padding: '2px 6px',
+            borderRadius: '6px',
+            backdropFilter: 'blur(6px)',
+            pointerEvents: 'none',
+            letterSpacing: '0.5px',
+          }}
+        >
+          60 FPS ⚡
         </span>
       )}
     </div>
