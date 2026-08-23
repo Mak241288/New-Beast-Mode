@@ -45,6 +45,63 @@ const getInitialToken = () => {
   }
 };
 
+function decodeMicroPlan(b64: string): any {
+  try {
+    const raw = decodeURIComponent(escape(atob(b64)));
+    if (!raw.startsWith('v4~')) return null;
+    const parts = raw.split('~');
+    const title = parts[1] || 'جدولي التدريبي ⚡';
+    const exp = parseInt(parts[2], 10) || (Date.now() + 600000);
+    const daysRaw = parts[3] ? parts[3].split('/') : [];
+    const pName = parts[4] || '';
+    const pGoal = parts[5] || '';
+
+    const days = daysRaw.map((dr) => {
+      const [dIdx, dTitle, isRest, exsRaw] = dr.split(':');
+      const exercises = (exsRaw ? exsRaw.split(';') : []).filter(Boolean).map((er, idx) => {
+        const [name, sets, reps, weight, muscle] = er.split(',');
+        return {
+          id: `ex_${dIdx}_${idx + 1}`,
+          name: name || 'Exercise',
+          category: 'MAIN',
+          sets: Number(sets) || 3,
+          reps: reps || '10-12',
+          weight: weight || '',
+          targetMuscle: muscle || 'Chest',
+          restSeconds: 60,
+        };
+      });
+      return {
+        dayIndex: Number(dIdx),
+        title: dTitle || `Day ${Number(dIdx) + 1}`,
+        isRestDay: isRest === '1',
+        focusArea: exercises[0]?.targetMuscle || '',
+        exercises,
+      };
+    });
+
+    const fullPlan = {
+      id: `plan_${Date.now()}`,
+      title,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      days,
+      dayWorkouts: days,
+    };
+
+    return {
+      v: 4,
+      exp,
+      activePlan: fullPlan,
+      planHistory: [fullPlan],
+      userProfile: pName ? { name: pName, goal: pGoal } : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function App() {
   const initialToken = getInitialToken();
   const [token, setToken] = useState<string | null>(initialToken);
@@ -102,46 +159,19 @@ function App() {
       try {
         const hashIdx = window.location.hash.indexOf('#sync=');
         const b64 = window.location.hash.slice(hashIdx + 6);
-        const decoded = decodeURIComponent(atob(b64));
-        let parsed = JSON.parse(decoded);
-        if (parsed && (parsed.v === 3 || parsed.p)) {
-          const days = (parsed.p.d || []).map((d: any) => ({
-            dayIndex: d.i,
-            title: d.t,
-            isRestDay: !!d.r,
-            focusArea: d.f || '',
-            exercises: (d.e || []).map((e: any, idx: number) => ({
-              id: `ex_${d.i}_${idx + 1}`,
-              name: e.n,
-              targetMuscle: e.m || 'Chest',
-              category: 'MAIN',
-              sets: e.s || 3,
-              reps: String(e.r || '10-12'),
-              weight: e.w || '',
-              restSeconds: e.rs || 60,
-            })),
-          }));
+        
+        let parsed: any = decodeMicroPlan(b64);
+        if (!parsed) {
+          try {
+            const decoded = decodeURIComponent(atob(b64));
+            parsed = JSON.parse(decoded);
+          } catch {}
+        }
 
-          const fullPlan = {
-            id: `plan_${Date.now()}`,
-            title: parsed.p.t || 'جدولي التدريبي ⚡',
-            active: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            days,
-            dayWorkouts: days,
-          };
-
-          parsed = {
-            activePlan: fullPlan,
-            planHistory: [fullPlan],
-            userProfile: parsed.u ? {
-              name: parsed.u.n || 'Beast Athlete',
-              email: parsed.u.e || '',
-              goal: parsed.u.g || 'hypertrophy',
-              fitnessLevel: parsed.u.l || 'intermediate',
-            } : null,
-          };
+        if (parsed && parsed.exp && Date.now() > parsed.exp) {
+          setSyncToast(lang === 'ar' ? '⚠️ انتهت صلاحية رابط المزامنة المؤقت (صالح لـ 10 دقائق فقط).' : '⚠️ Temporary sync link expired (10 mins limit).');
+          setTimeout(() => setSyncToast(null), 5000);
+          return;
         }
 
         if (parsed && (parsed.activePlan || parsed.planHistory)) {

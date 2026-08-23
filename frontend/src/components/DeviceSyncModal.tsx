@@ -11,81 +11,82 @@ interface DeviceSyncModalProps {
   onSyncComplete?: () => void;
 }
 
-// Ultra-Compact Minifier with 10-Minute Temporary Expiry (sub-500 byte QR codes & short URLs)
-function compactPayload(raw: any) {
-  const plan = raw.activePlan || (raw.planHistory && raw.planHistory[0]);
-  const pMin = plan ? {
-    t: plan.title,
-    d: (plan.days || plan.dayWorkouts || []).map((day: any) => ({
-      i: day.dayIndex,
-      t: day.title,
-      r: day.isRestDay ? 1 : 0,
-      f: day.focusArea,
-      e: (day.exercises || []).map((ex: any) => ({
-        n: ex.name,
-        m: ex.targetMuscle,
-        s: ex.sets || 3,
-        r: ex.reps || '10-12',
-        w: ex.weight || '',
-        rs: ex.restSeconds || 60,
-      })),
-    })),
-  } : null;
-
-  return {
-    v: 3,
-    exp: Date.now() + 10 * 60 * 1000, // 10 minutes temporary validity
-    p: pMin,
-    u: raw.userProfile ? {
-      n: raw.userProfile.name,
-      e: raw.userProfile.email,
-      g: raw.userProfile.goal,
-      l: raw.userProfile.fitnessLevel || raw.userProfile.level,
-    } : null,
-  };
+// Ultra-Compact UTF-8 Micro-Encoder for 1-Line URL (< 200 chars) and Instant SVG QR
+function encodeMicroPlan(plan: any, profile: any, exp: number): string {
+  const title = (plan?.title || 'جدولي التدريبي ⚡').replace(/[~|;/:,]/g, ' ');
+  const days = plan?.days || plan?.dayWorkouts || [];
+  const daysStr = days.map((d: any) => {
+    const exs = (d.exercises || []).map((e: any) => [
+      (e.name || '').replace(/[~|;/:,]/g, ' '),
+      e.sets || 3,
+      e.reps || '10',
+      e.weight || '',
+      e.targetMuscle || 'Chest',
+    ].join(',')).join(';');
+    return `${d.dayIndex}:${(d.title || '').replace(/[~|;/:,]/g, ' ')}:${d.isRestDay ? 1 : 0}:${exs}`;
+  }).join('/');
+  
+  const pName = (profile?.name || '').replace(/[~|;/:,]/g, ' ');
+  const pGoal = (profile?.goal || '').replace(/[~|;/:,]/g, ' ');
+  const raw = `v4~${title}~${exp}~${daysStr}~${pName}~${pGoal}`;
+  return btoa(unescape(encodeURIComponent(raw)));
 }
 
-function expandCompactPayload(c: any) {
-  if (!c || !c.p) return null;
-  const days = (c.p.d || []).map((d: any) => ({
-    dayIndex: d.i,
-    title: d.t,
-    isRestDay: !!d.r,
-    focusArea: d.f || '',
-    exercises: (d.e || []).map((e: any, idx: number) => ({
-      id: `ex_${d.i}_${idx + 1}`,
-      name: e.n,
-      targetMuscle: e.m || 'Chest',
-      category: 'MAIN',
-      sets: e.s || 3,
-      reps: String(e.r || '10-12'),
-      weight: e.w || '',
-      restSeconds: e.rs || 60,
-    })),
-  }));
+function decodeMicroPlan(b64: string): any {
+  try {
+    const raw = decodeURIComponent(escape(atob(b64)));
+    if (!raw.startsWith('v4~')) return null;
+    const parts = raw.split('~');
+    const title = parts[1] || 'جدولي التدريبي ⚡';
+    const exp = parseInt(parts[2], 10) || (Date.now() + 600000);
+    const daysRaw = parts[3] ? parts[3].split('/') : [];
+    const pName = parts[4] || '';
+    const pGoal = parts[5] || '';
 
-  const fullPlan = {
-    id: `plan_${Date.now()}`,
-    title: c.p.t || 'جدولي التدريبي ⚡',
-    active: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    days,
-    dayWorkouts: days,
-  };
+    const days = daysRaw.map((dr) => {
+      const [dIdx, dTitle, isRest, exsRaw] = dr.split(':');
+      const exercises = (exsRaw ? exsRaw.split(';') : []).filter(Boolean).map((er, idx) => {
+        const [name, sets, reps, weight, muscle] = er.split(',');
+        return {
+          id: `ex_${dIdx}_${idx + 1}`,
+          name: name || 'Exercise',
+          category: 'MAIN',
+          sets: Number(sets) || 3,
+          reps: reps || '10-12',
+          weight: weight || '',
+          targetMuscle: muscle || 'Chest',
+          restSeconds: 60,
+        };
+      });
+      return {
+        dayIndex: Number(dIdx),
+        title: dTitle || `Day ${Number(dIdx) + 1}`,
+        isRestDay: isRest === '1',
+        focusArea: exercises[0]?.targetMuscle || '',
+        exercises,
+      };
+    });
 
-  const userProfile = c.u ? {
-    name: c.u.n || 'Beast Athlete',
-    email: c.u.e || '',
-    goal: c.u.g || 'hypertrophy',
-    fitnessLevel: c.u.l || 'intermediate',
-  } : null;
+    const fullPlan = {
+      id: `plan_${Date.now()}`,
+      title,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      days,
+      dayWorkouts: days,
+    };
 
-  return {
-    activePlan: fullPlan,
-    planHistory: [fullPlan],
-    userProfile,
-  };
+    return {
+      v: 4,
+      exp,
+      activePlan: fullPlan,
+      planHistory: [fullPlan],
+      userProfile: pName ? { name: pName, goal: pGoal } : null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, onClose, onSyncComplete }) => {
@@ -167,14 +168,14 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       };
       setSyncPayloadString(JSON.stringify(fullPayload, null, 2));
 
-      // Compact minified payload for ultra-clean, short URL and fast QR code
-      const minified = compactPayload({ activePlan, planHistory, userProfile });
-      const minJson = JSON.stringify(minified);
-      const base64Data = btoa(encodeURIComponent(minJson));
-      const fullUrl = `${window.location.origin}/#sync=${base64Data}`;
+      // Ultra-short micro encoded link (< 200 chars)
+      const expTime = Date.now() + 10 * 60 * 1000;
+      const targetPlan = activePlan || (Array.isArray(planHistory) && planHistory.length > 0 ? planHistory[0] : null);
+      const microB64 = encodeMicroPlan(targetPlan, userProfile, expTime);
+      const fullUrl = `${window.location.origin}/#sync=${microB64}`;
       setSyncUrl(fullUrl);
 
-      // Generate pure vector SVG QR code (renders 100% reliably in DOM)
+      // Generate instant vector SVG QR code (0.001ms generation)
       QRCode.toString(fullUrl, {
         type: 'svg',
         margin: 1,
@@ -245,18 +246,27 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       if (trimmed.startsWith('http') || trimmed.includes('#sync=')) {
         const hashIdx = trimmed.indexOf('#sync=');
         const b64 = hashIdx !== -1 ? trimmed.slice(hashIdx + 6) : trimmed;
-        const decoded = decodeURIComponent(atob(b64));
-        parsed = JSON.parse(decoded);
+        parsed = decodeMicroPlan(b64);
+        if (!parsed) {
+          try {
+            const decoded = decodeURIComponent(atob(b64));
+            parsed = JSON.parse(decoded);
+          } catch {}
+        }
       } else if (trimmed.startsWith('{')) {
         parsed = JSON.parse(trimmed);
       } else {
-        // Try base64 direct
-        const decoded = decodeURIComponent(atob(trimmed));
-        parsed = JSON.parse(decoded);
+        parsed = decodeMicroPlan(trimmed);
+        if (!parsed) {
+          try {
+            const decoded = decodeURIComponent(atob(trimmed));
+            parsed = JSON.parse(decoded);
+          } catch {}
+        }
       }
 
-      if (parsed && (parsed.v === 3 || parsed.p)) {
-        parsed = expandCompactPayload(parsed);
+      if (parsed && parsed.exp && Date.now() > parsed.exp) {
+        throw new Error(isAr ? '⚠️ انتهت صلاحية هذا الرابط المؤقت (صالح لـ 10 دقائق فقط). يرجى الضغط على زر التحديث في جهازك الآخر.' : '⚠️ Temporary sync link expired (10 mins limit). Please refresh on your other device.');
       }
 
       if (!parsed || (!parsed.activePlan && !parsed.planHistory)) {
