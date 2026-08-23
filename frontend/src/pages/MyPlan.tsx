@@ -3391,70 +3391,122 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               const dayIdx = safeIndex !== -1 && safeIndex < manualDays.length ? safeIndex : 0;
               const currentDay = manualDays[dayIdx] || manualDays[0];
 
-              const updateCurrentDay = (field: string, val: any) => {
-                const updated = [...manualDays];
-                updated[dayIdx] = { ...updated[dayIdx], [field]: val };
-                setManualDays(updated);
+              const updateCurrentDay = (fieldOrObj: string | Record<string, any>, val?: any) => {
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  if (typeof fieldOrObj === 'object') {
+                    updated[targetIdx] = { ...updated[targetIdx], ...fieldOrObj };
+                  } else {
+                    updated[targetIdx] = { ...updated[targetIdx], [fieldOrObj]: val };
+                  }
+                  return updated;
+                });
               };
 
               const addExercise = () => {
-                const updated = [...manualDays];
-                updated[dayIdx].exercises.push({
-                  name: '',
-                  targetMuscle: 'Chest',
-                  sets: 3,
-                  reps: '10-12',
-                  weight: 'Dumbbells',
-                  category: 'MAIN',
-                  restSeconds: 60,
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  const currentExs = updated[targetIdx].exercises || [];
+                  updated[targetIdx] = {
+                    ...updated[targetIdx],
+                    isRestDay: false,
+                    exercises: [
+                      ...currentExs,
+                      {
+                        id: `ex_${targetIdx + 1}_${Date.now()}`,
+                        name: '',
+                        targetMuscle: 'Chest',
+                        sets: 3,
+                        reps: '10-12',
+                        weight: 'Dumbbells',
+                        category: 'MAIN',
+                        restSeconds: 60,
+                      },
+                    ],
+                  };
+                  return updated;
                 });
-                setManualDays(updated);
               };
 
               const duplicateExercise = (exIdx: number) => {
-                const updated = [...manualDays];
-                const item = JSON.parse(JSON.stringify(updated[dayIdx].exercises[exIdx]));
-                updated[dayIdx].exercises.splice(exIdx + 1, 0, item);
-                setManualDays(updated);
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  const exs = [...(updated[targetIdx].exercises || [])];
+                  const item = JSON.parse(JSON.stringify(exs[exIdx]));
+                  item.id = `ex_${targetIdx + 1}_${Date.now()}`;
+                  exs.splice(exIdx + 1, 0, item);
+                  updated[targetIdx] = { ...updated[targetIdx], exercises: exs };
+                  return updated;
+                });
               };
 
               const removeExercise = (exIdx: number) => {
-                const updated = [...manualDays];
-                updated[dayIdx].exercises.splice(exIdx, 1);
-                setManualDays(updated);
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  const exs = [...(updated[targetIdx].exercises || [])];
+                  exs.splice(exIdx, 1);
+                  updated[targetIdx] = { ...updated[targetIdx], exercises: exs };
+                  return updated;
+                });
                 setManualRowSuggestions(null);
               };
 
               const moveExerciseUp = (exIdx: number) => {
                 if (exIdx === 0) return;
-                const updated = [...manualDays];
-                const item = updated[dayIdx].exercises.splice(exIdx, 1)[0];
-                updated[dayIdx].exercises.splice(exIdx - 1, 0, item);
-                setManualDays(updated);
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  const exs = [...(updated[targetIdx].exercises || [])];
+                  const item = exs.splice(exIdx, 1)[0];
+                  exs.splice(exIdx - 1, 0, item);
+                  updated[targetIdx] = { ...updated[targetIdx], exercises: exs };
+                  return updated;
+                });
                 setManualRowSuggestions(null);
               };
 
               const moveExerciseDown = (exIdx: number) => {
-                if (exIdx >= manualDays[dayIdx].exercises.length - 1) return;
-                const updated = [...manualDays];
-                const item = updated[dayIdx].exercises.splice(exIdx, 1)[0];
-                updated[dayIdx].exercises.splice(exIdx + 1, 0, item);
-                setManualDays(updated);
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  const exs = [...(updated[targetIdx].exercises || [])];
+                  if (exIdx >= exs.length - 1) return prevDays;
+                  const item = exs.splice(exIdx, 1)[0];
+                  exs.splice(exIdx + 1, 0, item);
+                  updated[targetIdx] = { ...updated[targetIdx], exercises: exs };
+                  return updated;
+                });
                 setManualRowSuggestions(null);
               };
 
               const updateExercise = (exIdx: number, field: string, val: any) => {
-                const updated = [...manualDays];
-                const currentEx = updated[dayIdx].exercises[exIdx];
-                const nextEx = { ...currentEx, [field]: val };
-                if (field === 'reps') {
-                  const s = String(val).toLowerCase();
-                  if (s.includes('s') || s.includes('min') || s.includes('ثانية') || s.includes('دقيق')) {
-                    nextEx.isTimed = true;
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  const exs = [...(updated[targetIdx].exercises || [])];
+                  const currentEx = exs[exIdx] || {};
+                  const nextEx = { ...currentEx, [field]: val };
+                  if (field === 'reps') {
+                    const s = String(val).toLowerCase();
+                    if (s.includes('s') || s.includes('min') || s.includes('ثانية') || s.includes('دقيق')) {
+                      nextEx.isTimed = true;
+                    }
                   }
-                }
-                updated[dayIdx].exercises[exIdx] = nextEx;
-                setManualDays(updated);
+                  exs[exIdx] = nextEx;
+                  updated[targetIdx] = { ...updated[targetIdx], exercises: exs };
+                  return updated;
+                });
               };
 
               const handleRowNameSearch = (val: string, exIdx: number) => {
@@ -3470,24 +3522,30 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               };
 
               const selectRowSuggestion = (sug: any, exIdx: number) => {
-                const updated = [...manualDays];
                 const cleanName = lang === 'ar' ? (sug.name_ar || sug.name_en) : (sug.name_en || sug.name_ar);
                 const muscle = sug.muscle_ar || sug.muscle_en || 'الصدر';
                 const equipment = sug.equipment_ar || sug.equipment_en || 'دمبلز';
                 const tips = sug.instructions_ar || sug.instructions_en || '';
                 const img = sug.image_url || sug.gif_url || '';
 
-                updated[dayIdx].exercises[exIdx] = {
-                  ...updated[dayIdx].exercises[exIdx],
-                  name: cleanName,
-                  targetMuscle: muscle,
-                  weight: equipment,
-                  exerciseTips: tips,
-                  imageUrl: img,
-                  sets: updated[dayIdx].exercises[exIdx].sets || 3,
-                  reps: updated[dayIdx].exercises[exIdx].reps || '10-12',
-                } as any;
-                setManualDays(updated);
+                setManualDays((prevDays) => {
+                  const updated = [...prevDays];
+                  const safeIdx = Math.max(0, updated.findIndex(d => (d.dayIndex || 1) === manualActiveDayIdx));
+                  const targetIdx = safeIdx < updated.length ? safeIdx : 0;
+                  const exs = [...(updated[targetIdx].exercises || [])];
+                  exs[exIdx] = {
+                    ...exs[exIdx],
+                    name: cleanName,
+                    targetMuscle: muscle,
+                    weight: equipment,
+                    exerciseTips: tips,
+                    imageUrl: img,
+                    sets: exs[exIdx]?.sets || 3,
+                    reps: exs[exIdx]?.reps || '10-12',
+                  } as any;
+                  updated[targetIdx] = { ...updated[targetIdx], exercises: exs };
+                  return updated;
+                });
                 setManualRowSuggestions(null);
               };
 
@@ -3827,7 +3885,17 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                       </label>
                       <button
                         type="button"
-                        onClick={() => updateCurrentDay('isRestDay', !currentDay.isRestDay)}
+                        onClick={() => {
+                          const nextRest = !currentDay.isRestDay;
+                          updateCurrentDay({
+                            isRestDay: nextRest,
+                            title: nextRest
+                              ? (lang === 'en' ? 'Rest & Recovery' : 'يوم راحة واستشفاء')
+                              : (currentDay.title.includes('راحة') || currentDay.title.includes('Rest')
+                                  ? (lang === 'en' ? `Day ${currentDay.dayIndex || dayIdx + 1} Workout` : `اليوم ${currentDay.dayIndex || dayIdx + 1}: تدريب ونشاط`)
+                                  : currentDay.title),
+                          });
+                        }}
                         className={currentDay.isRestDay ? 'secondary-btn' : 'glow-btn'}
                         style={{
                           padding: '10px 16px',
@@ -3860,10 +3928,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                         key={idx}
                         type="button"
                         onClick={() => {
-                          updateCurrentDay('title', pill.title);
-                          updateCurrentDay('focusArea', pill.focus);
-                          if (pill.rest) updateCurrentDay('isRestDay', true);
-                          else updateCurrentDay('isRestDay', false);
+                          updateCurrentDay({
+                            title: pill.title,
+                            focusArea: pill.focus,
+                            isRestDay: !!pill.rest,
+                          });
                         }}
                         style={{
                           background: 'var(--bg-card-hover)',

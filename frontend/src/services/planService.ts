@@ -170,10 +170,14 @@ export const normalizePlan = (raw: any, fallbackTitle = 'جدول تدريبي �
     const dayIndex = parseInt(String(d.dayIndex)) || (idx + 1);
     const dayTitle = d.title ? String(d.title).trim() : `اليوم ${dayIndex}`;
     const focusArea = d.focusArea ? String(d.focusArea).trim() : '';
-    const isRestDay = !!d.isRestDay || (Array.isArray(d.exercises) && d.exercises.length === 0 && dayTitle.includes('راحة'));
-
     const rawExercises = Array.isArray(d.exercises) ? d.exercises : [];
-    const exercises: BeastExercise[] = isRestDay ? [] : rawExercises.map((ex: any, exIdx: number) => {
+    
+    // Explicitly respect isRestDay without forcing true based on title string
+    const isRestDay = d.isRestDay !== undefined
+      ? !!d.isRestDay
+      : (rawExercises.length === 0 && dayTitle.includes('راحة'));
+
+    const exercises: BeastExercise[] = rawExercises.map((ex: any, exIdx: number) => {
       const exId = ex.id ? String(ex.id) : `ex_${dayIndex}_${exIdx + 1}_${Date.now()}`;
       const name = ex.name ? String(ex.name).trim() : 'تمرين مخصص';
       const targetMuscle = ex.targetMuscle ? String(ex.targetMuscle).trim() : 'Chest';
