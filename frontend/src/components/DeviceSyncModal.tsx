@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
+import { supabase } from '../services/supabase';
 import { cacheStore } from '../utils/cacheStore';
-import { planService } from '../services/planService';
-import { QrCode, Smartphone, Copy, Check, Download, Upload, X, ShieldCheck, ArrowRightLeft, Sparkles } from 'lucide-react';
+import { QrCode, Smartphone, Copy, Check, Download, Upload, X, ShieldCheck, ArrowRightLeft, KeyRound } from 'lucide-react';
 
 interface DeviceSyncModalProps {
   isOpen: boolean;
@@ -35,7 +35,7 @@ function base64ToBytes(b64: string): string {
 }
 
 // Clean Ultra-Short Plan Compressor (< 150 chars, 100% QR compatible)
-function cleanPack(plan: any, profile: any, exp: number): string {
+export function cleanPack(plan: any, profile: any, exp: number): string {
   const t = (plan?.title || 'Plan').slice(0, 30).replace(/[~|;/:,]/g, ' ');
   const days = (plan?.days || plan?.dayWorkouts || []).slice(0, 7);
   const dStr = days.map((d: any, i: number) => {
@@ -191,7 +191,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       const waterToday = localStorage.getItem('beast_water_today') || '0';
       const activeGymSession = cacheStore.get('active_gym_session') || null;
 
-      // Full payload for file download
+      // Full payload for file download and Cloud PIN Sync
       const fullPayload = {
         version: 2,
         timestamp: Date.now(),
@@ -215,15 +215,30 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       };
       setSyncPayloadString(JSON.stringify(fullPayload, null, 2));
 
-      // Ultra-short clean packed link (< 150 chars) with 2-minute expiration
-      const expTime = Date.now() + 2 * 60 * 1000;
-      const targetPlan = activePlan || (Array.isArray(planHistory) && planHistory.length > 0 ? planHistory[0] : null);
-      const microB64 = cleanPack(targetPlan, userProfile, expTime);
-      const fullUrl = `${window.location.origin}/#sync=${microB64}`;
-      setSyncUrl(fullUrl);
-      setShortCode(microB64 ? microB64.slice(0, 10).toUpperCase() : 'BM74920193');
+      // Generate a 6-Digit random PIN
+      const pinNumber = Math.floor(100000 + Math.random() * 900000).toString();
+      setShortCode(pinNumber);
 
-      // Generate Data URL directly for standard <img /> tag
+      const expTime = Date.now() + 2 * 60 * 1000;
+      const fullUrl = `${window.location.origin}/#sync=${pinNumber}`;
+      setSyncUrl(fullUrl);
+
+      // Async write to Supabase temp_sync table
+      supabase
+        .from('temp_sync')
+        .upsert(
+          {
+            code: pinNumber,
+            payload: JSON.stringify(fullPayload),
+            expiresAt: new Date(expTime).toISOString(),
+          },
+          { onConflict: 'code' }
+        )
+        .then(({ error }: any) => {
+          if (error) console.warn('[Supabase] temp_sync upsert error:', error.message);
+        });
+
+      // Generate crisp vector QR for 40-character URL
       QRCode.toDataURL(
         fullUrl,
         {
@@ -294,18 +309,31 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
     setImportStatus(null);
     try {
       let parsed: any = null;
-      const trimmed = rawString.trim();
+      let trimmed = rawString.trim();
 
       // Check if it is a base64 URL fragment
       if (trimmed.startsWith('http') || trimmed.includes('#sync=')) {
         const hashIdx = trimmed.indexOf('#sync=');
-        const b64 = hashIdx !== -1 ? trimmed.slice(hashIdx + 6) : trimmed;
-        parsed = cleanUnpack(b64);
-        if (!parsed) {
-          try {
-            const decoded = decodeURIComponent(atob(b64));
-            parsed = JSON.parse(decoded);
-          } catch {}
+        trimmed = hashIdx !== -1 ? trimmed.slice(hashIdx + 6).trim() : trimmed;
+      }
+
+      // 1. Check if 6-digit PIN in Supabase temp_sync
+      const pinRegex = /^\d{6}$/;
+      if (pinRegex.test(trimmed)) {
+        const { data } = await supabase
+          .from('temp_sync')
+          .select('payload, expiresAt')
+          .eq('code', trimmed)
+          .single();
+
+        if (data && data.payload) {
+          // Check expiration
+          if (data.expiresAt && new Date(data.expiresAt).getTime() < Date.now()) {
+            throw new Error(isAr ? 'انتهت صلاحية هذا الرمز (تجاوز دقيقتين)، يرجى توليد رمز جديد من الكمبيوتر.' : 'This PIN has expired (2-minute limit).');
+          }
+          parsed = typeof data.payload === 'string' ? JSON.parse(data.payload) : data.payload;
+        } else {
+          throw new Error(isAr ? 'لم يتم العثور على رمز المزامنة هذا أو أنه انتهى.' : 'PIN not found or expired.');
         }
       } else if (trimmed.startsWith('{')) {
         parsed = JSON.parse(trimmed);
@@ -320,7 +348,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       }
 
       if (parsed && parsed.exp && Date.now() > parsed.exp) {
-        throw new Error(isAr ? '⚠️ انتهت صلاحية هذا الرابط المؤقت (صالح لـ 10 دقائق فقط). يرجى الضغط على زر التحديث في جهازك الآخر.' : '⚠️ Temporary sync link expired (10 mins limit). Please refresh on your other device.');
+        throw new Error(isAr ? '⚠️ انتهت صلاحية هذا الرابط المؤقت (صالح لـ دقيقتين فقط). يرجى الضغط على زر التحديث في جهازك الآخر.' : '⚠️ Temporary sync link expired (2 mins limit). Please refresh on your other device.');
       }
 
       if (!parsed || (!parsed.activePlan && !parsed.planHistory)) {
@@ -346,10 +374,9 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
         }
       } else if (parsed.activePlan) {
         cacheStore.set('active_plan', parsed.activePlan);
-        cacheStore.set('plan_history', [parsed.activePlan]);
       }
 
-      // 3. Hydrate Preferences & Extras
+      // 3. Hydrate Preferences & Media
       if (parsed.transformationPhotos) {
         localStorage.setItem('transformation_photos', typeof parsed.transformationPhotos === 'string' ? parsed.transformationPhotos : JSON.stringify(parsed.transformationPhotos));
       }
@@ -366,29 +393,25 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
         } catch {}
       }
 
-      // Broadcast changes
-      const allPlans = await planService.getAll();
-      const active = allPlans.find((p) => p.active) || allPlans[0];
-      window.dispatchEvent(
-        new CustomEvent('beast_plan_changed', {
-          detail: { activePlan: active, plans: allPlans },
-        })
-      );
-      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+      // Clean up used PIN
+      if (pinRegex.test(trimmed)) {
+        supabase.from('temp_sync').delete().eq('code', trimmed).then(() => {});
+      }
 
       setImportStatus({
         type: 'success',
-        message: isAr ? '🎉 تم استيراد وتحديث جميع جداولك وبياناتك بنجاح!' : '🎉 All workout plans and athlete stats imported successfully!',
+        message: isAr ? '🎉 تم استيراد ونقل جميع الجداول والبيانات بنجاح ⚡' : 'All workouts & data synced successfully! ⚡',
       });
 
       setTimeout(() => {
-        onSyncComplete?.();
+        if (onSyncComplete) onSyncComplete();
         onClose();
-      }, 1500);
+        window.location.reload();
+      }, 1200);
     } catch (err: any) {
       setImportStatus({
         type: 'error',
-        message: err.message || (isAr ? 'فشل قراءة بيانات المزامنة، تأكد من صحة الكود' : 'Failed to import data, please check the code'),
+        message: err?.message || (isAr ? 'فشل استيراد البيانات، تأكد من صحة الرمز' : 'Failed to import data'),
       });
     } finally {
       setImporting(false);
@@ -416,75 +439,97 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
     <div
       style={{
         position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(5, 10, 20, 0.85)',
-        backdropFilter: 'blur(12px)',
-        zIndex: 9999,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.82)',
+        backdropFilter: 'blur(10px)',
+        zIndex: 99999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
+        animation: 'fadeIn 0.25s ease-out',
       }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
-        className="glass-panel"
+        className="glass-card"
         style={{
           width: '100%',
-          maxWidth: '480px',
+          maxWidth: '460px',
           maxHeight: '90vh',
           overflowY: 'auto',
           borderRadius: '24px',
-          padding: '28px 24px',
-          border: '1px solid rgba(0, 210, 255, 0.25)',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 210, 255, 0.15)',
+          padding: '24px',
+          position: 'relative',
+          background: 'var(--bg-card)',
+          border: '1px solid rgba(0, 210, 255, 0.3)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '20px',
-          direction: isAr ? 'rtl' : 'ltr',
-          textAlign: isAr ? 'right' : 'left',
-          animation: 'fadeIn 0.25s ease-out',
+          gap: '16px',
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '14px',
-                background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.2), rgba(16, 185, 129, 0.2))',
-                border: '1px solid rgba(0, 210, 255, 0.4)',
+                width: '42px',
+                height: '42px',
+                borderRadius: '12px',
+                background: 'rgba(0, 210, 255, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'var(--primary)',
               }}
             >
-              <Smartphone size={24} />
+              <Smartphone size={22} />
             </div>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: '900', margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>{isAr ? 'مزامنة ونقل الجداول' : 'Device Sync Hub'}</span>
-                <Sparkles size={16} color="var(--primary)" />
-              </h2>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                {isAr ? 'انقل جداولك وبياناتك بين الكمبيوتر والهاتف بلمسة واحدة' : 'Seamlessly transfer your workout plans between devices'}
-              </p>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                {isAr ? 'مزامنة ونقل الجداول ✨' : 'Device Sync & Transfer ✨'}
+              </h3>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {isAr ? 'انقل جداولك وبياناتك بين الكمبيوتر والهاتف بلمسة واحدة' : 'Sync your plan & logs across devices'}
+              </span>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="secondary-btn"
-            style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+            }}
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Tab Toggle */}
-        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        {/* Tab Switcher */}
+        <div
+          style={{
+            display: 'flex',
+            background: 'rgba(255, 255, 255, 0.04)',
+            padding: '4px',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+          }}
+        >
           <button
             type="button"
             onClick={() => setActiveTab('send')}
@@ -506,7 +551,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
             }}
           >
             <QrCode size={16} />
-            <span>{isAr ? 'إرسال للهاتف (QR)' : 'Send to Phone (QR)'}</span>
+            <span>{isAr ? 'إرسال للهاتف (QR / PIN)' : 'Send to Phone (QR / PIN)'}</span>
           </button>
           <button
             type="button"
@@ -566,26 +611,30 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
               </span>
             </div>
 
-            {/* 10-Character Short Code Badge */}
+            {/* 6-Digit PIN Badge */}
             <div
               style={{
                 width: '100%',
-                padding: '10px 14px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.12), rgba(16, 185, 129, 0.12))',
-                border: '1px solid rgba(0, 210, 255, 0.35)',
+                padding: '12px 16px',
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(16, 185, 129, 0.15))',
+                border: '2px solid rgba(0, 210, 255, 0.45)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: '8px',
+                gap: '12px',
+                boxShadow: '0 8px 25px rgba(0, 210, 255, 0.15)',
               }}
             >
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                  {isAr ? 'رمز المزامنة السريع (10 خانات):' : 'Quick 10-Char Sync Code:'}
-                </span>
-                <span style={{ fontSize: '16px', fontWeight: '900', color: 'var(--primary)', letterSpacing: '2px', fontFamily: 'monospace' }}>
-                  {shortCode || 'BM74920193'}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <KeyRound size={15} color="var(--primary)" />
+                  <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: '700' }}>
+                    {isAr ? 'رمز المزامنة السريع (6 أرقام):' : 'Quick 6-Digit PIN:'}
+                  </span>
+                </div>
+                <span style={{ fontSize: '26px', fontWeight: '900', color: 'var(--primary)', letterSpacing: '8px', fontFamily: 'monospace', paddingRight: isAr ? '4px' : '0' }}>
+                  {shortCode || '849201'}
                 </span>
               </div>
               <button
@@ -597,11 +646,11 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
                     setTimeout(() => setCopiedShortCode(false), 2000);
                   } catch {}
                 }}
-                className="secondary-btn"
-                style={{ padding: '6px 12px', fontSize: '11.5px', borderRadius: '8px', gap: '4px' }}
+                className="glow-btn"
+                style={{ padding: '8px 16px', fontSize: '12.5px', borderRadius: '10px', gap: '6px' }}
               >
-                {copiedShortCode ? <Check size={14} /> : <Copy size={14} />}
-                <span>{copiedShortCode ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ الرمز' : 'Copy')}</span>
+                {copiedShortCode ? <Check size={16} /> : <Copy size={16} />}
+                <span>{copiedShortCode ? (isAr ? 'تم النسخ!' : 'Copied!') : (isAr ? 'نسخ الرمز' : 'Copy PIN')}</span>
               </button>
             </div>
 

@@ -170,67 +170,89 @@ function App() {
   useEffect(() => {
     // 0. Check incoming peer-to-peer sync link (#sync=...)
     if (typeof window !== 'undefined' && window.location.hash.includes('#sync=')) {
-      try {
-        const hashIdx = window.location.hash.indexOf('#sync=');
-        const b64 = window.location.hash.slice(hashIdx + 6);
-        
-        let parsed: any = cleanUnpack(b64);
-        if (!parsed) {
-          try {
-            const decoded = decodeURIComponent(atob(b64));
-            parsed = JSON.parse(decoded);
-          } catch {}
-        }
+      const executeHashSync = async () => {
+        try {
+          const hashIdx = window.location.hash.indexOf('#sync=');
+          let b64 = window.location.hash.slice(hashIdx + 6).trim();
+          
+          let parsed: any = null;
 
-        if (parsed && parsed.exp && Date.now() > parsed.exp) {
-          setSyncToast(lang === 'ar' ? '⚠️ انتهت صلاحية رابط المزامنة المؤقت (صالح لـ 10 دقائق فقط).' : '⚠️ Temporary sync link expired (10 mins limit).');
-          setTimeout(() => setSyncToast(null), 5000);
-          return;
-        }
+          // Check if 6-digit PIN in Supabase temp_sync
+          if (/^\d{6}$/.test(b64)) {
+            const { data } = await supabase
+              .from('temp_sync')
+              .select('payload, expiresAt')
+              .eq('code', b64)
+              .single();
 
-        if (parsed && (parsed.activePlan || parsed.planHistory)) {
-          if (parsed.userProfile) cacheStore.set('user_profile', parsed.userProfile);
-          if (parsed.userStats) cacheStore.set('user_stats', parsed.userStats);
-          if (parsed.userRecovery) cacheStore.set('user_recovery', parsed.userRecovery);
-          if (parsed.allRecoveryLogs) cacheStore.set('all_recovery_logs', parsed.allRecoveryLogs);
-          if (parsed.weightLogs) cacheStore.set('weight_logs', parsed.weightLogs);
-          if (parsed.workoutLogs) cacheStore.set('workout_logs', parsed.workoutLogs);
-          if (parsed.customExercises) cacheStore.set('custom_exercises', parsed.customExercises);
-
-          if (Array.isArray(parsed.planHistory) && parsed.planHistory.length > 0) {
-            cacheStore.set('plan_history', parsed.planHistory);
-            cacheStore.set('active_plan', parsed.activePlan || parsed.planHistory[0]);
-          } else if (parsed.activePlan) {
-            cacheStore.set('active_plan', parsed.activePlan);
-            cacheStore.set('plan_history', [parsed.activePlan]);
+            if (data && data.payload) {
+              parsed = typeof data.payload === 'string' ? JSON.parse(data.payload) : data.payload;
+              supabase.from('temp_sync').delete().eq('code', b64).then(() => {});
+            }
           }
 
-          if (parsed.transformationPhotos) {
-            localStorage.setItem('transformation_photos', typeof parsed.transformationPhotos === 'string' ? parsed.transformationPhotos : JSON.stringify(parsed.transformationPhotos));
+          if (!parsed) {
+            parsed = cleanUnpack(b64);
           }
-          if (parsed.preferences) {
-            if (parsed.preferences.timerSoundPack) localStorage.setItem('bm_timer_sound_pack', parsed.preferences.timerSoundPack);
-            if (parsed.preferences.timerVolume) localStorage.setItem('bm_timer_volume', parsed.preferences.timerVolume);
-            if (parsed.preferences.colorTheme) localStorage.setItem('color_theme', parsed.preferences.colorTheme);
-            if (parsed.preferences.waterToday) localStorage.setItem('beast_water_today', parsed.preferences.waterToday);
-          }
-          if (parsed.activeGymSession) {
-            cacheStore.set('active_gym_session', parsed.activeGymSession);
+          if (!parsed) {
             try {
-              localStorage.setItem('beastmode_active_gym_session', JSON.stringify(parsed.activeGymSession));
+              const decoded = decodeURIComponent(atob(b64));
+              parsed = JSON.parse(decoded);
             } catch {}
           }
 
-          localStorage.setItem('token', 'beast_synced_session');
-          setToken('beast_synced_session');
-          window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
-          setCurrentView('dashboard');
-          setSyncToast(lang === 'ar' ? '🎉 تم استلام جدولك وبياناتك ومزامنتها بنجاح!' : '🎉 Workout plan & athlete data synced successfully!');
-          setTimeout(() => setSyncToast(null), 5000);
+          if (parsed && parsed.exp && Date.now() > parsed.exp) {
+            setSyncToast(lang === 'ar' ? '⚠️ انتهت صلاحية رابط المزامنة المؤقت (صالح لـ دقيقتين فقط).' : '⚠️ Temporary sync link expired (2 mins limit).');
+            setTimeout(() => setSyncToast(null), 5000);
+            return;
+          }
+
+          if (parsed && (parsed.activePlan || parsed.planHistory)) {
+            if (parsed.userProfile) cacheStore.set('user_profile', parsed.userProfile);
+            if (parsed.userStats) cacheStore.set('user_stats', parsed.userStats);
+            if (parsed.userRecovery) cacheStore.set('user_recovery', parsed.userRecovery);
+            if (parsed.allRecoveryLogs) cacheStore.set('all_recovery_logs', parsed.allRecoveryLogs);
+            if (parsed.weightLogs) cacheStore.set('weight_logs', parsed.weightLogs);
+            if (parsed.workoutLogs) cacheStore.set('workout_logs', parsed.workoutLogs);
+            if (parsed.customExercises) cacheStore.set('custom_exercises', parsed.customExercises);
+
+            if (Array.isArray(parsed.planHistory) && parsed.planHistory.length > 0) {
+              cacheStore.set('plan_history', parsed.planHistory);
+              cacheStore.set('active_plan', parsed.activePlan || parsed.planHistory[0]);
+            } else if (parsed.activePlan) {
+              cacheStore.set('active_plan', parsed.activePlan);
+              cacheStore.set('plan_history', [parsed.activePlan]);
+            }
+
+            if (parsed.transformationPhotos) {
+              localStorage.setItem('transformation_photos', typeof parsed.transformationPhotos === 'string' ? parsed.transformationPhotos : JSON.stringify(parsed.transformationPhotos));
+            }
+            if (parsed.preferences) {
+              if (parsed.preferences.timerSoundPack) localStorage.setItem('bm_timer_sound_pack', parsed.preferences.timerSoundPack);
+              if (parsed.preferences.timerVolume) localStorage.setItem('bm_timer_volume', parsed.preferences.timerVolume);
+              if (parsed.preferences.colorTheme) localStorage.setItem('color_theme', parsed.preferences.colorTheme);
+              if (parsed.preferences.waterToday) localStorage.setItem('beast_water_today', parsed.preferences.waterToday);
+            }
+            if (parsed.activeGymSession) {
+              cacheStore.set('active_gym_session', parsed.activeGymSession);
+              try {
+                localStorage.setItem('beastmode_active_gym_session', JSON.stringify(parsed.activeGymSession));
+              } catch {}
+            }
+
+            localStorage.setItem('token', 'beast_synced_session');
+            setToken('beast_synced_session');
+            window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
+            setCurrentView('dashboard');
+            setSyncToast(lang === 'ar' ? '🎉 تم استلام جدولك وبياناتك ومزامنتها بنجاح!' : '🎉 Workout plan & athlete data synced successfully!');
+            setTimeout(() => setSyncToast(null), 5000);
+          }
+        } catch (err) {
+          console.error('Failed to parse incoming sync link:', err);
         }
-      } catch (err) {
-        console.error('Failed to parse incoming sync link:', err);
-      }
+      };
+
+      executeHashSync();
     }
 
     const handleOpenSyncListener = () => setShowDeviceSyncModal(true);
