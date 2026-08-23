@@ -2,10 +2,11 @@ import { useState, useEffect, Suspense, lazy } from 'react';
 import { api } from './services/api';
 import { supabase } from './services/supabase';
 import { ThemeToggle } from './components/ThemeToggle';
-import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe } from 'lucide-react';
+import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe, Smartphone } from 'lucide-react';
 import { initWorkoutReminderScheduler } from './utils/notifications';
 import { cacheStore } from './utils/cacheStore';
 import { CloudSyncStatusBadge } from './components/CloudSyncStatusBadge';
+import { DeviceSyncModal } from './components/DeviceSyncModal';
 import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
 import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 import { FloatingSpeedDial } from './components/FloatingSpeedDial';
@@ -72,6 +73,8 @@ function App() {
     }
   });
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
+  const [showDeviceSyncModal, setShowDeviceSyncModal] = useState<boolean>(false);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
 
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
@@ -94,6 +97,43 @@ function App() {
   };
 
   useEffect(() => {
+    // 0. Check incoming peer-to-peer sync link (#sync=...)
+    if (typeof window !== 'undefined' && window.location.hash.includes('#sync=')) {
+      try {
+        const hashIdx = window.location.hash.indexOf('#sync=');
+        const b64 = window.location.hash.slice(hashIdx + 6);
+        const decoded = decodeURIComponent(atob(b64));
+        const parsed = JSON.parse(decoded);
+
+        if (parsed && (parsed.activePlan || parsed.planHistory)) {
+          if (parsed.userProfile) cacheStore.set('user_profile', parsed.userProfile);
+          if (parsed.userStats) cacheStore.set('user_stats', parsed.userStats);
+          if (parsed.userRecovery) cacheStore.set('user_recovery', parsed.userRecovery);
+          if (parsed.allRecoveryLogs) cacheStore.set('all_recovery_logs', parsed.allRecoveryLogs);
+
+          if (Array.isArray(parsed.planHistory) && parsed.planHistory.length > 0) {
+            cacheStore.set('plan_history', parsed.planHistory);
+            cacheStore.set('active_plan', parsed.activePlan || parsed.planHistory[0]);
+          } else if (parsed.activePlan) {
+            cacheStore.set('active_plan', parsed.activePlan);
+            cacheStore.set('plan_history', [parsed.activePlan]);
+          }
+
+          localStorage.setItem('token', 'beast_synced_session');
+          setToken('beast_synced_session');
+          window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
+          setCurrentView('dashboard');
+          setSyncToast(lang === 'ar' ? '🎉 تم استلام جدولك وبياناتك ومزامنتها بنجاح!' : '🎉 Workout plan & athlete data synced successfully!');
+          setTimeout(() => setSyncToast(null), 5000);
+        }
+      } catch (err) {
+        console.error('Failed to parse incoming sync link:', err);
+      }
+    }
+
+    const handleOpenSyncListener = () => setShowDeviceSyncModal(true);
+    window.addEventListener('beast_open_sync_modal', handleOpenSyncListener);
+
     // 1. Check initial active session (handles OAuth redirect callback hash/query)
     const initSession = async () => {
       try {
@@ -483,6 +523,27 @@ function App() {
         </div>
 
         <div className="sidebar-footer">
+          {/* Quick QR Device Sync Button */}
+          <button
+            onClick={() => setShowDeviceSyncModal(true)}
+            className="glow-btn"
+            style={{
+              width: '100%',
+              padding: '9px 12px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              justifyContent: 'center',
+              gap: '6px',
+              marginBottom: '10px',
+              background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.2), rgba(16, 185, 129, 0.2))',
+              border: '1px solid rgba(0, 210, 255, 0.4)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <Smartphone size={15} color="var(--primary)" />
+            <span>{lang === 'en' ? 'Sync Devices (QR)' : 'مزامنة الهاتف (QR) 📲'}</span>
+          </button>
+
           {/* Cloud Sync & Language Row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
             <CloudSyncStatusBadge lang={lang} />
@@ -547,6 +608,26 @@ function App() {
           BEASTMODE
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Quick QR Device Sync Button for Mobile */}
+          <button
+            onClick={() => setShowDeviceSyncModal(true)}
+            title={lang === 'en' ? 'Sync Devices' : 'مزامنة الأجهزة'}
+            className="secondary-btn"
+            style={{
+              padding: '5px 8px',
+              fontSize: '11px',
+              borderRadius: '8px',
+              color: 'var(--primary)',
+              borderColor: 'rgba(0, 210, 255, 0.4)',
+              background: 'rgba(0, 210, 255, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <Smartphone size={13} />
+            <span style={{ fontSize: '10.5px' }}>{lang === 'en' ? 'Sync' : 'مزامنة'}</span>
+          </button>
           {/* Smart Cloud Sync Status Badge */}
           <CloudSyncStatusBadge lang={lang} />
           {/* Mini Language Switcher */}
@@ -595,6 +676,31 @@ function App() {
         ))}
       </nav>
 
+      {/* SYNC TOAST BANNER */}
+      {syncToast && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10000,
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))',
+            color: '#fff',
+            padding: '12px 24px',
+            borderRadius: '16px',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.4)',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            backdropFilter: 'blur(8px)',
+            animation: 'fadeIn 0.3s ease-out',
+            textAlign: 'center',
+          }}
+        >
+          {syncToast}
+        </div>
+      )}
+
       {/* MAIN VIEWPORT */}
       <main className="main-content">
         <Suspense fallback={<PageLoaderFallback />}>
@@ -624,6 +730,17 @@ function App() {
       <GlobalWorkoutPlayer lang={lang} />
       <FloatingWorkoutBar lang={lang} />
       <FloatingSpeedDial lang={lang} />
+
+      {/* DEVICE SYNC MODAL */}
+      <DeviceSyncModal
+        isOpen={showDeviceSyncModal}
+        lang={lang}
+        onClose={() => setShowDeviceSyncModal(false)}
+        onSyncComplete={() => {
+          setSyncToast(lang === 'ar' ? '🎉 تم تحديث بياناتك وجداولك بنجاح!' : '🎉 Data synced successfully!');
+          setTimeout(() => setSyncToast(null), 4000);
+        }}
+      />
     </div>
   );
 }
