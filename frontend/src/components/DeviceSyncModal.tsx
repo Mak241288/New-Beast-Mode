@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { supabase } from '../services/supabase';
+import { cloudSyncService } from '../services/cloudSyncService';
 import { cacheStore } from '../utils/cacheStore';
 import { QrCode, Smartphone, Copy, Check, Download, Upload, X, ShieldCheck, ArrowRightLeft, KeyRound } from 'lucide-react';
 
@@ -225,24 +225,10 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       const fullUrl = `${window.location.origin}/#sync=${pinNumber}`;
       setSyncUrl(fullUrl);
 
-      // Async write to Supabase temp_sync table
-      supabase
-        .from('temp_sync')
-        .upsert(
-          {
-            code: pinNumber,
-            payload: JSON.stringify(fullPayload),
-            expiresAt: new Date(expTime).toISOString(),
-          },
-          { onConflict: 'code' }
-        )
-        .then(({ error }: any) => {
-          if (error) {
-            console.warn('[Supabase] temp_sync upsert error:', error.message);
-          } else {
-            setPinReady(true);
-          }
-        });
+      // Async write to Supabase temp_sync via direct high-performance REST
+      cloudSyncService.uploadPin(pinNumber, fullPayload, expTime).then((ok) => {
+        setPinReady(ok);
+      });
 
       // Generate crisp vector QR for 40-character URL
       QRCode.toDataURL(
@@ -317,8 +303,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       let parsed: any = null;
       let trimmed = rawString.trim();
 
-      // Check if it is a base64 URL fragment
-      if (trimmed.startsWith('http') || trimmed.includes('#sync=')) {
+      // Check if it is a URL with hash
+      if (trimmed.includes('#sync=')) {
         const hashIdx = trimmed.indexOf('#sync=');
         trimmed = hashIdx !== -1 ? trimmed.slice(hashIdx + 6).trim() : trimmed;
       }
@@ -326,21 +312,14 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       // 1. Check if 6-digit PIN in Supabase temp_sync
       const pinRegex = /^\d{6}$/;
       if (pinRegex.test(trimmed)) {
-        const { data } = await supabase
-          .from('temp_sync')
-          .select('payload, expiresAt')
-          .eq('code', trimmed)
-          .single();
-
-        if (data && data.payload) {
-          // Check expiration
-          if (data.expiresAt && new Date(data.expiresAt).getTime() < Date.now()) {
-            throw new Error(isAr ? 'انتهت صلاحية هذا الرمز (تجاوز دقيقتين)، يرجى توليد رمز جديد من الكمبيوتر.' : 'This PIN has expired (2-minute limit).');
-          }
-          parsed = typeof data.payload === 'string' ? JSON.parse(data.payload) : data.payload;
-        } else {
+        const res = await cloudSyncService.fetchPin(trimmed);
+        if (res.expired) {
+          throw new Error(isAr ? 'انتهت صلاحية هذا الرمز (تجاوز دقيقتين)، يرجى توليد رمز جديد من الكمبيوتر.' : 'This PIN has expired (2-minute limit).');
+        }
+        if (!res.success || !res.data) {
           throw new Error(isAr ? 'لم يتم العثور على رمز المزامنة هذا أو أنه انتهى.' : 'PIN not found or expired.');
         }
+        parsed = res.data;
       } else if (trimmed.startsWith('{')) {
         parsed = JSON.parse(trimmed);
       } else {
@@ -399,10 +378,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
         } catch {}
       }
 
-      // Clean up used PIN
-      if (pinRegex.test(trimmed)) {
-        supabase.from('temp_sync').delete().eq('code', trimmed).then(() => {});
-      }
+
 
       setImportStatus({
         type: 'success',

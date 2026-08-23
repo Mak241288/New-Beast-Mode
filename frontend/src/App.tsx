@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { api } from './services/api';
 import { supabase } from './services/supabase';
+import { cloudSyncService } from './services/cloudSyncService';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe, Smartphone } from 'lucide-react';
 import { initWorkoutReminderScheduler } from './utils/notifications';
@@ -179,15 +180,9 @@ function App() {
 
           // Check if 6-digit PIN in Supabase temp_sync
           if (/^\d{6}$/.test(b64)) {
-            const { data } = await supabase
-              .from('temp_sync')
-              .select('payload, expiresAt')
-              .eq('code', b64)
-              .single();
-
-            if (data && data.payload) {
-              parsed = typeof data.payload === 'string' ? JSON.parse(data.payload) : data.payload;
-              supabase.from('temp_sync').delete().eq('code', b64).then(() => {});
+            const res = await cloudSyncService.fetchPin(b64);
+            if (res.success && res.data) {
+              parsed = res.data;
             }
           }
 
