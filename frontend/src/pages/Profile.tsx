@@ -429,37 +429,41 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     setGoogleFeedbackMsg('');
     setGoogleFeedbackType('');
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: window.location.origin + '/#profile',
-          },
-        });
-        if (error) throw error;
-        return;
+      const emailToLink = profile.email || profile.googleEmail;
+      if (!emailToLink) {
+        throw new Error(lang === 'en' ? 'Please set your email address first.' : 'يرجى إدخال بريدك الإلكتروني أولاً في بيانات الحساب.');
       }
 
-      const { error } = await supabase.auth.linkIdentity({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/#profile',
-        },
+      await api.linkGoogleAccount({ googleEmail: emailToLink.trim().toLowerCase() });
+
+      setProfile((prev: any) => {
+        const updated = {
+          ...prev,
+          isGoogleLinked: true,
+          googleEmail: emailToLink.trim().toLowerCase(),
+          googleId: `google_${emailToLink.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '_')}`,
+        };
+        cacheStore.set('user_profile', updated);
+        return updated;
       });
 
-      if (error) {
-        throw error;
-      }
+      const successTxt = lang === 'en' ? 'Google Account linked & verified successfully! ✅' : 'تم ربط وتوثيق حساب Google بنجاح! ✅';
+      setGoogleFeedbackType('SUCCESS');
+      setGoogleFeedbackMsg(successTxt);
+      setSuccessMsg(successTxt);
+      setTimeout(() => {
+        setSuccessMsg('');
+      }, 5000);
     } catch (err: any) {
       console.error('[Link Google Error]:', err);
       setGoogleFeedbackType('ERROR');
       setGoogleFeedbackMsg(
         err.message ||
         (lang === 'en'
-          ? 'Failed to initiate Google account linking. Please try again.'
-          : 'فشل بدء ربط حساب Google. يرجى المحاولة مرة أخرى.')
+          ? 'Failed to link Google account. Please try again.'
+          : 'فشل ربط حساب Google. يرجى المحاولة مرة أخرى.')
       );
+    } finally {
       setLinkingGoogle(false);
     }
   };
