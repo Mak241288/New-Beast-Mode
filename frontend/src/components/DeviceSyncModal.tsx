@@ -121,6 +121,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedShortCode, setCopiedShortCode] = useState(false);
   const [shortCode, setShortCode] = useState<string>('');
+  const [pinReady, setPinReady] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(120); // 2 mins
   const [refreshKey, setRefreshKey] = useState<number>(0);
   
@@ -215,6 +216,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       };
       setSyncPayloadString(JSON.stringify(fullPayload, null, 2));
 
+      setPinReady(false);
       // Generate a 6-Digit random PIN
       const pinNumber = Math.floor(100000 + Math.random() * 900000).toString();
       setShortCode(pinNumber);
@@ -235,7 +237,11 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
           { onConflict: 'code' }
         )
         .then(({ error }: any) => {
-          if (error) console.warn('[Supabase] temp_sync upsert error:', error.message);
+          if (error) {
+            console.warn('[Supabase] temp_sync upsert error:', error.message);
+          } else {
+            setPinReady(true);
+          }
         });
 
       // Generate crisp vector QR for 40-character URL
@@ -615,10 +621,12 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
             <div
               style={{
                 width: '100%',
-                padding: '12px 16px',
+                padding: '14px 16px',
                 borderRadius: '16px',
-                background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(16, 185, 129, 0.15))',
-                border: '2px solid rgba(0, 210, 255, 0.45)',
+                background: pinReady
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(0, 210, 255, 0.15))'
+                  : 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(0, 210, 255, 0.1))',
+                border: `2px solid ${pinReady ? 'rgba(16, 185, 129, 0.5)' : 'rgba(245, 158, 11, 0.4)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -628,12 +636,15 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <KeyRound size={15} color="var(--primary)" />
+                  <KeyRound size={15} color={pinReady ? '#10b981' : '#f59e0b'} />
                   <span style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: '700' }}>
                     {isAr ? 'رمز المزامنة السريع (6 أرقام):' : 'Quick 6-Digit PIN:'}
                   </span>
+                  <span style={{ fontSize: '11px', color: pinReady ? '#10b981' : '#f59e0b', fontWeight: '800' }}>
+                    {pinReady ? (isAr ? '🟢 متصل' : '🟢 Ready') : (isAr ? '🟡 جاري التجهيز...' : '🟡 Preparing...')}
+                  </span>
                 </div>
-                <span style={{ fontSize: '26px', fontWeight: '900', color: 'var(--primary)', letterSpacing: '8px', fontFamily: 'monospace', paddingRight: isAr ? '4px' : '0' }}>
+                <span style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)', letterSpacing: '8px', fontFamily: 'monospace', paddingRight: isAr ? '4px' : '0' }}>
                   {shortCode || '849201'}
                 </span>
               </div>
