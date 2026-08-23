@@ -553,17 +553,19 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             onClick={prevExercise}
             disabled={state.activeExerciseIndex === 0}
             className="secondary-btn"
-            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex === 0 ? 0.4 : 1 }}
+            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex === 0 ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            {isAr ? '← التمرين السابق' : '← Previous Ex'}
+            {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            <span>{isAr ? 'التمرين السابق' : 'Previous Ex'}</span>
           </button>
           <button
             onClick={nextExercise}
             disabled={state.activeExerciseIndex >= exercises.length - 1}
             className="secondary-btn"
-            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex >= exercises.length - 1 ? 0.4 : 1 }}
+            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex >= exercises.length - 1 ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
-            {isAr ? 'التالي →' : 'Next Ex →'}
+            <span>{isAr ? 'التالي' : 'Next Ex'}</span>
+            {isAr ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
           </button>
         </div>
       </div>
@@ -1297,9 +1299,9 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               onClick={prevExercise}
               disabled={state.activeExerciseIndex === 0}
               className="secondary-btn"
-              style={{ padding: '10px 16px', fontSize: '13px', borderRadius: '12px', opacity: state.activeExerciseIndex === 0 ? 0.5 : 1 }}
+              style={{ padding: '10px 16px', fontSize: '13px', borderRadius: '12px', opacity: state.activeExerciseIndex === 0 ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <ChevronLeft size={16} />
+              {isAr ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               <span>{isAr ? 'السابق' : 'Previous'}</span>
             </button>
 
@@ -1307,10 +1309,10 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               onClick={nextExercise}
               disabled={state.activeExerciseIndex >= exercises.length - 1}
               className="secondary-btn"
-              style={{ padding: '10px 16px', fontSize: '13px', borderRadius: '12px', opacity: state.activeExerciseIndex >= exercises.length - 1 ? 0.5 : 1 }}
+              style={{ padding: '10px 16px', fontSize: '13px', borderRadius: '12px', opacity: state.activeExerciseIndex >= exercises.length - 1 ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <span>{isAr ? 'التالي' : 'Next'}</span>
-              <ChevronRight size={16} />
+              {isAr ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
             </button>
           </div>
 

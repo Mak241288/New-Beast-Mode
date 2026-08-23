@@ -1089,7 +1089,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                           {lang === 'en' ? 'Rest' : 'راحة'}
                         </span>
                       )}
-                      <ChevronRight size={16} style={{ opacity: 0.5 }} />
+                      <ChevronRight size={16} style={{ opacity: 0.5, transform: lang === 'ar' ? 'rotate(180deg)' : 'none' }} />
                     </div>
                   </div>
                 );

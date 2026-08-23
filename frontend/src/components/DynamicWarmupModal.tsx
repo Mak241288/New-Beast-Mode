@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Play, Pause, RotateCcw, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { X, Play, Pause, RotateCcw, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { playTimerSound } from '../utils/audioSynthesizer';
 
 interface DynamicWarmupModalProps {
@@ -328,7 +328,7 @@ export const DynamicWarmupModal: React.FC<DynamicWarmupModalProps> = ({
                 style={{ padding: '12px', borderRadius: '12px' }}
                 title={isEn ? 'Skip' : 'تخطي'}
               >
-                <ChevronRight size={18} />
+                {isEn ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
               </button>
             </div>
           </>
