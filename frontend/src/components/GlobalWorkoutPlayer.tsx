@@ -4,7 +4,6 @@ import { ExerciseImage } from './ExerciseImage';
 import { WorkoutCompletionModal } from './WorkoutCompletionModal';
 import { PostWorkoutConfettiModal } from './PostWorkoutConfettiModal';
 import { SmartExerciseSwapModal } from './SmartExerciseSwapModal';
-import { BarbellPlate1RMModal } from './BarbellPlate1RMModal';
 import { DynamicWarmupModal } from './DynamicWarmupModal';
 import { RoutineCardExportModal } from './RoutineCardExportModal';
 import { MuscleWikiModal } from './MuscleWikiModal';
@@ -23,7 +22,6 @@ import {
   Timer, 
   Clock,
   Sparkles,
-  Flame,
   Share2,
   Droplets,
   RefreshCw,
@@ -61,7 +59,6 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const isAr = lang === 'ar';
   const [saving, setSaving] = useState(false);
   const [showShareCardModal, setShowShareCardModal] = useState(false);
-  const [showWarmupModal, setShowWarmupModal] = useState(false);
   const [showDynamicWarmupModal, setShowDynamicWarmupModal] = useState(false);
   const [showRoutineCardModal, setShowRoutineCardModal] = useState(false);
   const [isExpressMode, setIsExpressMode] = useState(false);
@@ -887,28 +884,6 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                   <span>{isAr ? 'بديل سريع 🔀' : 'Quick Swap 🔀'}</span>
                 </button>
 
-                {/* 🔥 Warm-Up Sets Pyramid Button */}
-                <button
-                  type="button"
-                  onClick={() => setShowWarmupModal(true)}
-                  style={{
-                    background: 'rgba(245, 158, 11, 0.15)',
-                    border: '1px solid rgba(245, 158, 11, 0.4)',
-                    color: '#f59e0b',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <Flame size={11} />
-                  <span>{isAr ? 'الإحماء الهرمي 🔥' : 'Warm-up Sets 🔥'}</span>
-                </button>
-
                 {/* ⏱️ Isometric Hold Timer for Static Exercises */}
                 <button
                   type="button"
@@ -1335,17 +1310,6 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
           </button>
         </div>
       </div>
-
-      {/* Render Warmup Sets & Plate Modal if requested */}
-      {showWarmupModal && (
-        <BarbellPlate1RMModal
-          isOpen={showWarmupModal}
-          onClose={() => setShowWarmupModal(false)}
-          lang={lang as any}
-          initialWeight={parseFloat(String(currentLogs[0]?.weight || 60)) || 60}
-          initialReps={10}
-        />
-      )}
 
       {/* Dynamic 3-Min Mobility Warmup Modal */}
       <DynamicWarmupModal

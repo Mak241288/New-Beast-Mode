@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Percent, Droplets, Camera, Volume2 } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, Volume2 } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
-import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
 import { RecoveryTrackerModal } from '../components/RecoveryTrackerModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
 import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
@@ -35,7 +34,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [profileError, setProfileError] = useState('');
   const [wikiExercise, setWikiExercise] = useState<any | null>(null);
   const [showNutritionModal, setShowNutritionModal] = useState(false);
-  const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [showRoutineCardModal, setShowRoutineCardModal] = useState(false);
@@ -1110,16 +1108,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
                 </h3>
                 <button
                   type="button"
-                  onClick={() => setShowStrengthCalcModal(true)}
-                  className="secondary-btn"
-                  style={{ padding: '4px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: '#f59e0b', color: '#f59e0b' }}
-                  title={lang === 'en' ? 'Plate & 1RM Calculator' : 'حاسبة أوزان البار والـ 1RM'}
-                >
-                  <Percent size={12} />
-                  <span>{lang === 'en' ? 'Plates' : 'البار'}</span>
-                </button>
-                <button
-                  type="button"
                   onClick={() => setShowSoundSettings(!showSoundSettings)}
                   className="secondary-btn"
                   style={{ padding: '4px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
@@ -1462,13 +1450,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         lang={lang}
         userProfile={profile}
         onClose={() => setShowNutritionModal(false)}
-      />
-
-      {/* Barbell Plate & 1RM Calculator Modal */}
-      <BarbellPlate1RMModal
-        isOpen={showStrengthCalcModal}
-        lang={lang}
-        onClose={() => setShowStrengthCalcModal(false)}
       />
 
       {/* Recovery & Gamification Badges Hub Modal */}

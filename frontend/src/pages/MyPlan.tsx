@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Edit2, Edit3, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Percent, Share2, Calendar, Search } from 'lucide-react';
+import { Edit2, Edit3, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Share2, Calendar, Search } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
 import { PresetPlansModal } from '../components/PresetPlansModal';
 import { MultiPlanManagerModal } from '../components/MultiPlanManagerModal';
-import { BarbellPlate1RMModal } from '../components/BarbellPlate1RMModal';
 import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
 import { DynamicWarmupModal } from '../components/DynamicWarmupModal';
 import type { PresetPlan } from '../utils/presetWorkoutPlans';
@@ -36,7 +35,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
   const [showManualBuilder, setShowManualBuilder] = useState(false);
   const [showPresetPlansModal, setShowPresetPlansModal] = useState(false);
   const [showMultiPlanModal, setShowMultiPlanModal] = useState(false);
-  const [showStrengthCalcModal, setShowStrengthCalcModal] = useState(false);
   const [routineCardDay, setRoutineCardDay] = useState<any | null>(null);
   const [dynamicWarmupDay, setDynamicWarmupDay] = useState<any | null>(null);
   const [manualTitle, setManualTitle] = useState(lang === 'en' ? 'Custom Gym Routine' : 'جدولي التدريبي اليدوي');
@@ -1418,15 +1416,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
               >
                 <Layers size={13} color="var(--secondary)" />
                 <span>{lang === 'en' ? `My Plans (${historyList.length || 1})` : `إدارة جداولي (${historyList.length || 1})`}</span>
-              </button>
-
-              <button
-                onClick={() => setShowStrengthCalcModal(true)}
-                className="secondary-btn"
-                style={{ padding: '8px 10px', fontSize: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Percent size={13} color="#38bdf8" />
-                <span>{lang === 'en' ? '1RM Calc' : 'حاسبة 1RM 🔢'}</span>
               </button>
 
               <button
@@ -4864,13 +4853,6 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           fetchHistory();
           fetchActivePlan();
         }}
-      />
-
-      {/* Barbell Plate & 1RM Calculator Modal */}
-      <BarbellPlate1RMModal
-        isOpen={showStrengthCalcModal}
-        lang={lang}
-        onClose={() => setShowStrengthCalcModal(false)}
       />
 
       {/* Routine Card Export Modal */}
