@@ -189,12 +189,3 @@ model CheckIn {
   aiRecommendation  String?
   applied           Boolean  @default(false)
 }
-
-model TempSync {
-  code      String   @id
-  payload   String   // JSON string of full sync payload
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-
-  @@map("temp_sync")
-}

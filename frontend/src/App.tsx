@@ -1,13 +1,11 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { api } from './services/api';
 import { supabase } from './services/supabase';
-import { cloudSyncService } from './services/cloudSyncService';
 import { ThemeToggle } from './components/ThemeToggle';
-import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe, Smartphone } from 'lucide-react';
+import { Dumbbell, Calendar, BookOpen, TrendingUp, User, LogOut, Globe } from 'lucide-react';
 import { initWorkoutReminderScheduler } from './utils/notifications';
 import { cacheStore } from './utils/cacheStore';
 import { CloudSyncStatusBadge } from './components/CloudSyncStatusBadge';
-import { DeviceSyncModal } from './components/DeviceSyncModal';
 import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
 import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 import { FloatingSpeedDial } from './components/FloatingSpeedDial';
@@ -46,77 +44,6 @@ const getInitialToken = () => {
   }
 };
 
-function base64ToBytes(b64: string): string {
-  try {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new TextDecoder().decode(bytes);
-  } catch {
-    return decodeURIComponent(Array.prototype.map.call(atob(b64), (c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-  }
-}
-
-function cleanUnpack(b64: string): any {
-  try {
-    const raw = base64ToBytes(b64.trim());
-    if (!raw.startsWith('BM~')) return null;
-    const parts = raw.split('~');
-    const title = parts[1] || 'جدول التمرين ⚡';
-    const exp = parseInt(parts[2], 10) || (Date.now() + 120000);
-    const daysRaw = parts[3] ? parts[3].split('/') : [];
-    const pName = parts[4] || '';
-
-    const days = daysRaw.map((dr, idx) => {
-      const colonIdx = dr.indexOf(':');
-      const dIdx = colonIdx !== -1 ? Number(dr.slice(0, colonIdx)) : idx;
-      const content = colonIdx !== -1 ? dr.slice(colonIdx + 1) : dr;
-      if (content === 'R') {
-        return { dayIndex: dIdx, title: 'يوم راحة واستشفاء', isRestDay: true, exercises: [] };
-      }
-      const exercises = content.split(';').filter(Boolean).map((er, eIdx) => {
-        const [name, sets, reps] = er.split(',');
-        return {
-          id: `ex_${dIdx}_${eIdx + 1}`,
-          name: name || 'Exercise',
-          sets: Number(sets) || 3,
-          reps: reps || '10-12',
-          weight: '',
-          targetMuscle: 'Chest',
-          restSeconds: 60,
-        };
-      });
-      return {
-        dayIndex: dIdx,
-        title: `اليوم ${dIdx + 1}`,
-        isRestDay: false,
-        focusArea: exercises[0]?.targetMuscle || '',
-        exercises,
-      };
-    });
-
-    const fullPlan = {
-      id: `plan_${Date.now()}`,
-      title,
-      active: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      days,
-      dayWorkouts: days,
-    };
-
-    return {
-      v: 5,
-      exp,
-      activePlan: fullPlan,
-      planHistory: [fullPlan],
-      userProfile: pName ? { name: pName } : null,
-    };
-  } catch {
-    return null;
-  }
-}
-
 function App() {
   const initialToken = getInitialToken();
   const [token, setToken] = useState<string | null>(initialToken);
@@ -145,8 +72,6 @@ function App() {
     }
   });
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
-  const [syncToast, setSyncToast] = useState<string | null>(null);
-  const [showDeviceSyncModal, setShowDeviceSyncModal] = useState<boolean>(false);
 
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
@@ -169,86 +94,6 @@ function App() {
   };
 
   useEffect(() => {
-    // 0. Check incoming peer-to-peer sync link (#sync=...)
-    if (typeof window !== 'undefined' && window.location.hash.includes('#sync=')) {
-      const executeHashSync = async () => {
-        try {
-          const hashIdx = window.location.hash.indexOf('#sync=');
-          let b64 = window.location.hash.slice(hashIdx + 6).trim();
-          
-          let parsed: any = null;
-
-          // Check if 6-digit PIN in Supabase temp_sync
-          if (/^\d{6}$/.test(b64)) {
-            const res = await cloudSyncService.fetchPin(b64);
-            if (res.success && res.data) {
-              parsed = res.data;
-            }
-          }
-
-          if (!parsed) {
-            parsed = cleanUnpack(b64);
-          }
-          if (!parsed) {
-            try {
-              const decoded = decodeURIComponent(atob(b64));
-              parsed = JSON.parse(decoded);
-            } catch {}
-          }
-
-
-
-          if (parsed && (parsed.activePlan || parsed.planHistory)) {
-            if (parsed.userProfile) cacheStore.set('user_profile', parsed.userProfile);
-            if (parsed.userStats) cacheStore.set('user_stats', parsed.userStats);
-            if (parsed.userRecovery) cacheStore.set('user_recovery', parsed.userRecovery);
-            if (parsed.allRecoveryLogs) cacheStore.set('all_recovery_logs', parsed.allRecoveryLogs);
-            if (parsed.weightLogs) cacheStore.set('weight_logs', parsed.weightLogs);
-            if (parsed.workoutLogs) cacheStore.set('workout_logs', parsed.workoutLogs);
-            if (parsed.customExercises) cacheStore.set('custom_exercises', parsed.customExercises);
-
-            if (Array.isArray(parsed.planHistory) && parsed.planHistory.length > 0) {
-              cacheStore.set('plan_history', parsed.planHistory);
-              cacheStore.set('active_plan', parsed.activePlan || parsed.planHistory[0]);
-            } else if (parsed.activePlan) {
-              cacheStore.set('active_plan', parsed.activePlan);
-              cacheStore.set('plan_history', [parsed.activePlan]);
-            }
-
-            if (parsed.transformationPhotos) {
-              localStorage.setItem('transformation_photos', typeof parsed.transformationPhotos === 'string' ? parsed.transformationPhotos : JSON.stringify(parsed.transformationPhotos));
-            }
-            if (parsed.preferences) {
-              if (parsed.preferences.timerSoundPack) localStorage.setItem('bm_timer_sound_pack', parsed.preferences.timerSoundPack);
-              if (parsed.preferences.timerVolume) localStorage.setItem('bm_timer_volume', parsed.preferences.timerVolume);
-              if (parsed.preferences.colorTheme) localStorage.setItem('color_theme', parsed.preferences.colorTheme);
-              if (parsed.preferences.waterToday) localStorage.setItem('beast_water_today', parsed.preferences.waterToday);
-            }
-            if (parsed.activeGymSession) {
-              cacheStore.set('active_gym_session', parsed.activeGymSession);
-              try {
-                localStorage.setItem('beastmode_active_gym_session', JSON.stringify(parsed.activeGymSession));
-              } catch {}
-            }
-
-            localStorage.setItem('token', 'beast_synced_session');
-            setToken('beast_synced_session');
-            window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
-            setCurrentView('dashboard');
-            setSyncToast(lang === 'ar' ? '🎉 تم استلام جدولك وبياناتك ومزامنتها بنجاح!' : '🎉 Workout plan & athlete data synced successfully!');
-            setTimeout(() => setSyncToast(null), 5000);
-          }
-        } catch (err) {
-          console.error('Failed to parse incoming sync link:', err);
-        }
-      };
-
-      executeHashSync();
-    }
-
-    const handleOpenSyncListener = () => setShowDeviceSyncModal(true);
-    window.addEventListener('beast_open_sync_modal', handleOpenSyncListener);
-
     // 1. Check initial active session (handles OAuth redirect callback hash/query)
     const initSession = async () => {
       try {
@@ -561,17 +406,6 @@ function App() {
             onNavigateToLegal={(page) => navigateTo(page)}
           />
         )}
-        <DeviceSyncModal
-          isOpen={showDeviceSyncModal}
-          lang={lang}
-          onClose={() => setShowDeviceSyncModal(false)}
-          onSyncComplete={() => {
-            setShowDeviceSyncModal(false);
-            setToken('beast_synced_session');
-            localStorage.setItem('token', 'beast_synced_session');
-            setCurrentView('dashboard');
-          }}
-        />
       </Suspense>
     );
   }
@@ -649,27 +483,6 @@ function App() {
         </div>
 
         <div className="sidebar-footer">
-          {/* Quick QR Device Sync Button */}
-          <button
-            onClick={() => setShowDeviceSyncModal(true)}
-            className="glow-btn"
-            style={{
-              width: '100%',
-              padding: '9px 12px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              justifyContent: 'center',
-              gap: '6px',
-              marginBottom: '10px',
-              background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.2), rgba(16, 185, 129, 0.2))',
-              border: '1px solid rgba(0, 210, 255, 0.4)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <Smartphone size={15} color="var(--primary)" />
-            <span>{lang === 'en' ? 'Sync Devices (QR)' : 'مزامنة الهاتف (QR) 📲'}</span>
-          </button>
-
           {/* Cloud Sync & Language Row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
             <CloudSyncStatusBadge lang={lang} />
@@ -734,26 +547,6 @@ function App() {
           BEASTMODE
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {/* Quick QR Device Sync Button for Mobile */}
-          <button
-            onClick={() => setShowDeviceSyncModal(true)}
-            title={lang === 'en' ? 'Sync Devices' : 'مزامنة الأجهزة'}
-            className="secondary-btn"
-            style={{
-              padding: '5px 8px',
-              fontSize: '11px',
-              borderRadius: '8px',
-              color: 'var(--primary)',
-              borderColor: 'rgba(0, 210, 255, 0.4)',
-              background: 'rgba(0, 210, 255, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
-            <Smartphone size={13} />
-            <span style={{ fontSize: '10.5px' }}>{lang === 'en' ? 'Sync' : 'مزامنة'}</span>
-          </button>
           {/* Smart Cloud Sync Status Badge */}
           <CloudSyncStatusBadge lang={lang} />
           {/* Mini Language Switcher */}
@@ -802,31 +595,6 @@ function App() {
         ))}
       </nav>
 
-      {/* SYNC TOAST BANNER */}
-      {syncToast && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 10000,
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))',
-            color: '#fff',
-            padding: '12px 24px',
-            borderRadius: '16px',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.4)',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            backdropFilter: 'blur(8px)',
-            animation: 'fadeIn 0.3s ease-out',
-            textAlign: 'center',
-          }}
-        >
-          {syncToast}
-        </div>
-      )}
-
       {/* MAIN VIEWPORT */}
       <main className="main-content">
         <Suspense fallback={<PageLoaderFallback />}>
@@ -856,17 +624,6 @@ function App() {
       <GlobalWorkoutPlayer lang={lang} />
       <FloatingWorkoutBar lang={lang} />
       <FloatingSpeedDial lang={lang} />
-
-      {/* DEVICE SYNC MODAL */}
-      <DeviceSyncModal
-        isOpen={showDeviceSyncModal}
-        lang={lang}
-        onClose={() => setShowDeviceSyncModal(false)}
-        onSyncComplete={() => {
-          setSyncToast(lang === 'ar' ? '🎉 تم تحديث بياناتك وجداولك بنجاح!' : '🎉 Data synced successfully!');
-          setTimeout(() => setSyncToast(null), 4000);
-        }}
-      />
     </div>
   );
 }
