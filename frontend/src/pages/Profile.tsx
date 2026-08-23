@@ -429,6 +429,18 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     setGoogleFeedbackMsg('');
     setGoogleFeedbackType('');
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + '/#profile',
+          },
+        });
+        if (error) throw error;
+        return;
+      }
+
       const { error } = await supabase.auth.linkIdentity({
         provider: 'google',
         options: {
@@ -464,36 +476,27 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     setGoogleFeedbackType('');
 
     try {
-      // 1. Fetch fresh Supabase user to inspect identities
-      const { data: { user }, error: userErr } = await supabase.auth.getUser();
-      if (userErr || !user) {
-        throw new Error(lang === 'en' ? 'User data not found.' : 'تعذر العثور على بيانات المستخدم.');
+      // 1. Try unlinking via Supabase if active identity exists
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const gIdent = user.identities?.find((id: any) => id.provider === 'google') || googleIdentity;
+          if (gIdent) {
+            await supabase.auth.unlinkIdentity(gIdent);
+          }
+        }
+      } catch (e) {
+        console.warn('[Supabase Identity Unlink Fallback]:', e);
       }
 
-      const gIdent = user.identities?.find((id: any) => id.provider === 'google') || googleIdentity;
-      if (!gIdent) {
-        throw new Error(lang === 'en' ? 'No linked Google account found.' : 'لم يتم العثور على حساب Google مربوط.');
+      // 2. Call backend profile unlinking
+      try {
+        await api.unlinkGoogleAccount();
+      } catch {
+        // Non-fatal
       }
 
-      // 2. Safety check: ensure user has another login method
-      const hasOtherIdentities = (user.identities?.length || 0) > 1;
-      const hasEmailIdentity = user.identities?.some((id: any) => id.provider === 'email');
-
-      if (!hasOtherIdentities && !hasEmailIdentity) {
-        throw new Error(
-          lang === 'en'
-            ? 'Cannot unlink Google because you do not have another login method (such as password) set up. Please set a password first to avoid losing access to your account.'
-            : 'لا يمكنك إلغاء ربط Google لأنك لا تملك طريقة دخول بديلة (مثل كلمة مرور). يرجى تعيين كلمة مرور أولاً لتجنب فقدان الوصول إلى حسابك.'
-        );
-      }
-
-      // 3. Call supabase.auth.unlinkIdentity
-      const { error: unlinkErr } = await supabase.auth.unlinkIdentity(gIdent);
-      if (unlinkErr) {
-        throw unlinkErr;
-      }
-
-      // 4. Update UI state and cache
+      // 3. Update UI state and cache
       setGoogleIdentity(null);
       setProfile((prev: any) => {
         const updated = {
@@ -505,12 +508,6 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         cacheStore.set('user_profile', updated);
         return updated;
       });
-
-      try {
-        await api.unlinkGoogleAccount();
-      } catch {
-        // Non-fatal
-      }
 
       const successTxt = lang === 'en' ? 'Google Account unlinked successfully! ✅' : 'تم إلغاء ربط حساب Google بنجاح! ✅';
       setGoogleFeedbackType('SUCCESS');
