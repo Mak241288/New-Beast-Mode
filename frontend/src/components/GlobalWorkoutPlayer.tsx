@@ -7,6 +7,7 @@ import { SmartExerciseSwapModal } from './SmartExerciseSwapModal';
 import { BarbellPlate1RMModal } from './BarbellPlate1RMModal';
 import { DynamicWarmupModal } from './DynamicWarmupModal';
 import { RoutineCardExportModal } from './RoutineCardExportModal';
+import { MuscleWikiModal } from './MuscleWikiModal';
 import { 
   Play, 
   Pause, 
@@ -30,7 +31,8 @@ import {
   Volume2,
   VolumeX,
   TrendingUp,
-  Zap
+  Zap,
+  Activity
 } from 'lucide-react';
 
 interface GlobalWorkoutPlayerProps {
@@ -65,6 +67,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const [isExpressMode, setIsExpressMode] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showQuickSwapModal, setShowQuickSwapModal] = useState(false);
+  const [showMuscleWiki, setShowMuscleWiki] = useState(false);
   const [waterToast, setWaterToast] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -838,6 +841,28 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                   🏋️ {currentEx.equipment_ar || currentEx.equipment_en || 'وزن الجسم'}
                 </span>
                 
+                {/* 💡 MuscleWiki Pro Form & Anatomy */}
+                <button
+                  type="button"
+                  onClick={() => setShowMuscleWiki(true)}
+                  style={{
+                    background: 'rgba(0, 210, 255, 0.15)',
+                    border: '1px solid rgba(0, 210, 255, 0.4)',
+                    color: 'var(--primary)',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Activity size={11} />
+                  <span>{isAr ? 'تشريح ودليل MuscleWiki 💡' : 'MuscleWiki Anatomy 💡'}</span>
+                </button>
+
                 {/* 🔀 Quick Alternative Switcher */}
                 <button
                   type="button"
@@ -1376,6 +1401,32 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
             currentEx.name_ar = newEx.name;
           }}
           lang={lang as any}
+        />
+      )}
+
+      {/* 💡 MuscleWiki Detailed Anatomy & Technique Modal */}
+      {showMuscleWiki && (
+        <MuscleWikiModal
+          exercise={{
+            ...currentEx,
+            name: exName,
+            name_en: currentEx.name_en || currentEx.name,
+            name_ar: currentEx.name_ar || currentEx.name,
+            targetMuscle: currentEx.muscle_en || currentEx.targetMuscle,
+            muscle_en: currentEx.muscle_en || currentEx.targetMuscle,
+            muscle_ar: currentEx.muscle_ar || currentEx.targetMuscle,
+            equipment_en: currentEx.equipment_en,
+            equipment_ar: currentEx.equipment_ar,
+            gif_url: currentEx.gif_url || currentEx.image_url || currentEx.imageUrl || currentEx.videoUrl,
+            image_url: currentEx.image_url || currentEx.imageUrl,
+            instructions_ar: currentEx.instructions_ar || currentEx.description_ar,
+            instructions_en: currentEx.instructions_en || currentEx.description_en,
+            common_mistakes_ar: currentEx.common_mistakes_ar,
+            common_mistakes_en: currentEx.common_mistakes_en,
+            youtube_url: currentEx.youtube_url || currentEx.video_url || currentEx.videoUrl,
+          }}
+          lang={lang as any}
+          onClose={() => setShowMuscleWiki(false)}
         />
       )}
     </div>
