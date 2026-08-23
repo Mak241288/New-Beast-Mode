@@ -90,7 +90,7 @@ function expandCompactPayload(c: any) {
 
 export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, onClose, onSyncComplete }) => {
   const [activeTab, setActiveTab] = useState<'send' | 'receive'>('send');
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [qrSvg, setQrSvg] = useState<string>('');
   const [syncPayloadString, setSyncPayloadString] = useState<string>('');
   const [syncUrl, setSyncUrl] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState(false);
@@ -103,7 +103,6 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const isAr = lang === 'ar';
 
@@ -175,27 +174,19 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       const fullUrl = `${window.location.origin}/#sync=${base64Data}`;
       setSyncUrl(fullUrl);
 
-      // Generate ultra-sharp, low-density QR code (scans instantly in 0.05s)
-      QRCode.toDataURL(fullUrl, {
-        width: 260,
+      // Generate pure vector SVG QR code (renders 100% reliably in DOM)
+      QRCode.toString(fullUrl, {
+        type: 'svg',
         margin: 1,
         color: {
           dark: '#000000',
           light: '#ffffff',
         },
-      }).then((url) => {
-        setQrDataUrl(url);
+      }).then((svg) => {
+        setQrSvg(svg);
       }).catch((err) => {
-        console.warn('QR Code generation fallback:', err);
+        console.warn('SVG QR Code generation fallback:', err);
       });
-
-      if (canvasRef.current) {
-        QRCode.toCanvas(canvasRef.current, fullUrl, {
-          width: 220,
-          margin: 1,
-          color: { dark: '#000000', light: '#ffffff' },
-        }).catch(() => {});
-      }
     } catch (err) {
       console.error('Failed to generate sync payload:', err);
     }
@@ -495,15 +486,31 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
                 gap: '8px',
               }}
             >
-              {qrDataUrl ? (
-                <img
-                  src={qrDataUrl}
-                  alt="Sync QR Code"
-                  style={{ width: '220px', height: '220px', borderRadius: '8px', display: 'block' }}
-                />
-              ) : (
-                <canvas ref={canvasRef} style={{ width: '220px', height: '220px', borderRadius: '8px' }} />
-              )}
+              <div
+                style={{
+                  width: '220px',
+                  height: '220px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#ffffff',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                }}
+              >
+                {qrSvg ? (
+                  <div
+                    style={{ width: '100%', height: '100%' }}
+                    dangerouslySetInnerHTML={{
+                      __html: qrSvg.replace('<svg ', '<svg style="width:100%;height:100%;display:block;" '),
+                    }}
+                  />
+                ) : (
+                  <div style={{ color: '#64748b', fontSize: '12px' }}>
+                    {isAr ? 'جاري توليد الرمز...' : 'Generating QR code...'}
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: '11.5px', color: '#0f172a', fontWeight: '800', letterSpacing: '0.3px', textAlign: 'center' }}>
                 {isAr ? '📷 امسح الرمز بكاميرا هاتفك للمزامنة الفورية' : 'Scan with phone camera to sync instantly'}
               </span>
