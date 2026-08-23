@@ -51,8 +51,13 @@ export const cloudSyncService = {
       }
 
       const row = rows[0];
-      if (row.expiresAt && new Date(row.expiresAt).getTime() < Date.now()) {
-        return { success: false, expired: true };
+      // 15-minute generous window with clock skew tolerance
+      if (row.expiresAt) {
+        const expMs = new Date(row.expiresAt).getTime();
+        // Allow 5-minute buffer for any device clock differences
+        if (expMs + 5 * 60 * 1000 < Date.now()) {
+          return { success: false, expired: true };
+        }
       }
 
       const parsed = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;

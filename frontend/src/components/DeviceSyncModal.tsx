@@ -155,10 +155,10 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
     }
   };
 
-  // Live 2-minute countdown (120 seconds)
+  // Live 10-minute countdown (600 seconds)
   useEffect(() => {
     if (!isOpen) return;
-    setTimeLeft(120);
+    setTimeLeft(600);
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -221,7 +221,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       const pinNumber = Math.floor(100000 + Math.random() * 900000).toString();
       setShortCode(pinNumber);
 
-      const expTime = Date.now() + 2 * 60 * 1000;
+      const expTime = Date.now() + 10 * 60 * 1000;
       const fullUrl = `${window.location.origin}/#sync=${pinNumber}`;
       setSyncUrl(fullUrl);
 
@@ -332,8 +332,8 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
         }
       }
 
-      if (parsed && parsed.exp && Date.now() > parsed.exp) {
-        throw new Error(isAr ? '⚠️ انتهت صلاحية هذا الرابط المؤقت (صالح لـ دقيقتين فقط). يرجى الضغط على زر التحديث في جهازك الآخر.' : '⚠️ Temporary sync link expired (2 mins limit). Please refresh on your other device.');
+      if (parsed && parsed.exp && Date.now() > parsed.exp + 5 * 60 * 1000) {
+        throw new Error(isAr ? '⚠️ انتهت صلاحية هذا الرابط المؤقت (صالح لـ 10 دقائق). يرجى الضغط على زر التحديث في جهازك الآخر.' : '⚠️ Temporary sync link expired (10 mins limit). Please refresh on your other device.');
       }
 
       if (!parsed || (!parsed.activePlan && !parsed.planHistory)) {
