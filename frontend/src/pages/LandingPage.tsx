@@ -44,7 +44,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const isEn = lang === 'en';
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [activePreviewTab, setActivePreviewTab] = useState<'player' | 'scanner' | 'macros' | 'plates'>('player');
+  const [activePreviewTab, setActivePreviewTab] = useState<'player' | 'scanner' | 'macros' | 'plans'>('player');
 
   // PWA Install Prompt & Mobile Sticky Bar States
   const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
@@ -173,10 +173,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [tdeeCalculated, setTdeeCalculated] = useState<boolean>(false);
   const [tdeeResult, setTdeeResult] = useState<{ bmr: number; tdee: number; targetCals: number; protein: number; carbs: number; fats: number; trainingCals: number; restCals: number } | null>(null);
 
-  // Mini-Calculator 2: Quick 1RM & Plates State
+  // Mini-Calculator 2: Quick 1RM Strength State
   const [oneRmWeight, setOneRmWeight] = useState<number>(100);
   const [oneRmReps, setOneRmReps] = useState<number>(5);
-  const [barbellWeight, setBarbellWeight] = useState<number>(20);
 
   // Mini Muscle Explorer State
   const [selectedMuscle, setSelectedMuscle] = useState<string>('chest');
@@ -206,7 +205,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   // Compute 1RM dynamically
   const calculated1RM = Math.round(oneRmWeight * (1 + oneRmReps / 30));
-  const plateWeightPerSide = Math.max(0, (oneRmWeight - barbellWeight) / 2);
 
   // Muscle exercises data for mini explorer
   const muscleExercisesMap: Record<string, { nameEn: string; nameAr: string; tipsEn: string; tipsAr: string; level: string }> = {
@@ -597,7 +595,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               { id: 'player', labelEn: '⏱️ Workout Player & Timer', labelAr: '⏱️ مشغل الحصة ومؤقت الراحة' },
               { id: 'scanner', labelEn: '🤖 AI Physique Scanner', labelAr: '🤖 ماسح التحول بالذكاء الاصطناعي' },
               { id: 'macros', labelEn: '🥗 Smart Macro Cycling', labelAr: '🥗 تدوير السعرات والماكروز' },
-              { id: 'plates', labelEn: '🔢 Barbell Plate Simulator', labelAr: '🔢 محاكي صفائح البار والـ 1RM' },
+              { id: 'plans', labelEn: '👑 1-Click Pro Plans Hub', labelAr: '👑 مكتبة الجداول العالمية الجاهزة' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -678,16 +676,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             )}
 
-            {activePreviewTab === 'plates' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                  {isEn ? 'Target Barbell Load: 120 kg (20 kg Bar + 50 kg per side)' : 'الوزن الإجمالي على البار: 120 كغ (بار 20 كغ + 50 كغ لكل جهة)'}
+            {activePreviewTab === 'plans' && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                <div style={{ padding: '14px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b' }}>👑 {isEn ? 'Science Push Pull Legs (PPL)' : 'جدول PPL العلمي (دفع / سحب / أرجل)'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Hypertrophy & Strength Split (6 Days)' : 'توزيع الضخامة والقوة المثالي (6 أيام)'}</div>
                 </div>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <span style={{ padding: '4px 10px', background: '#dc2626', color: '#fff', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px' }}>25 kg Red</span>
-                  <span style={{ padding: '4px 10px', background: '#2563eb', color: '#fff', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px' }}>20 kg Blue</span>
-                  <span style={{ padding: '4px 10px', background: '#ffffff', color: '#000', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px' }}>5 kg White</span>
-                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 'bold' }}>= 1RM Est: 138 kg 💥</span>
+                <div style={{ padding: '14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#3b82f6' }}>⚡ {isEn ? 'Arnold Golden Split' : 'تقسيم آرنولد الذهبي الكلاسيكي'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Chest & Back / Shoulders & Arms' : 'صدر وظهر / أكتاف وذراعين (ضخامة قصوى)'}</div>
+                </div>
+                <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--primary)' }}>🏆 {isEn ? 'Upper / Lower 4-Day Power' : 'علوي / سفلي 4 أيام للمشغولين'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Maximum recovery & consistent gains' : 'أعلى استشفاء ونتائج مستمرة بدون إرهاق'}</div>
                 </div>
               </div>
             )}
@@ -802,29 +803,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             )}
           </div>
 
-          {/* Tool 2: Quick Barbell & 1RM Calculator */}
+          {/* Tool 2: Quick 1RM Strength & Overload Calculator */}
           <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
                 <Percent size={20} />
               </div>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
-                {isEn ? '1RM Strength & Barbell Simulator' : 'حاسبة الـ 1RM وصفائح البار'}
+                {isEn ? '1RM Strength & Overload Zones Calculator' : 'حاسبة القوة وتدرج الأوزان (1RM)'}
               </h3>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>{isEn ? 'Barbell Type' : 'نوع البار المستخدم'}</label>
-              <select
-                value={barbellWeight}
-                onChange={(e) => setBarbellWeight(Number(e.target.value))}
-                className="input-field"
-                style={{ width: '100%', padding: '8px 12px', fontSize: '13px', borderRadius: '8px', marginTop: '4px' }}
-              >
-                <option value={20}>{isEn ? 'Olympic Standard (20 kg)' : 'بار أولمبي قياسي (20 كغ)'}</option>
-                <option value={15}>{isEn ? 'Women / Technique Bar (15 kg)' : 'بار تكنيك / سيدات (15 كغ)'}</option>
-                <option value={10}>{isEn ? 'EZ-Curl / Short Bar (10 kg)' : 'بار متعرج EZ قصير (10 كغ)'}</option>
-              </select>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -852,19 +839,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{isEn ? 'Calculated 1-Rep Max (1RM):' : 'أقصى وزن لتكرار واحد (1RM):'}</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{isEn ? 'Estimated 1-Rep Max (1RM):' : 'أقصى وزن لتكرار واحد (1RM):'}</span>
                 <span style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b' }}>{calculated1RM} kg</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11.5px', marginTop: '4px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '6px', fontSize: '11.5px', marginTop: '4px' }}>
                 <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
                   🔥 Hypertrophy 80%: <b>{Math.round(calculated1RM * 0.8)} kg</b>
                 </div>
                 <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
                   ⚡ Strength 90%: <b>{Math.round(calculated1RM * 0.9)} kg</b>
                 </div>
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                {isEn ? `Loading on 20kg bar: ${plateWeightPerSide} kg per side` : `تحميل البار 20 كغ: يحتاج ${plateWeightPerSide} كغ لكل جهة`}
+                <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                  💪 Endurance 70%: <b>{Math.round(calculated1RM * 0.7)} kg</b>
+                </div>
               </div>
             </div>
           </div>

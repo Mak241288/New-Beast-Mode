@@ -5,7 +5,7 @@
     <img src="https://img.shields.io/badge/BeastMode_AI-Launch_Live_App-0070F3?style=for-the-badge&logo=vercel&logoColor=white" alt="BeastMode AI Live App" />
   </a>
   <img src="https://img.shields.io/badge/Theme-⚡_Cyber_Volt_%26_Carbon-CCFF00?style=for-the-badge&logoColor=black" alt="Cyber Volt" />
-  <img src="https://img.shields.io/badge/UI/UX-Pro_Max_Suite-00F0FF?style=for-the-badge" alt="UI/UX Pro Max" />
+  <img src="https://img.shields.io/badge/UI/UX-Ultra_Clean_Suite-00F0FF?style=for-the-badge" alt="UI/UX Ultra Clean" />
   <img src="https://img.shields.io/badge/Motion-Division_v12-FF0055?style=for-the-badge&logo=framer&logoColor=white" alt="Motion Division" />
   <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -32,25 +32,27 @@
 
 ## 🌟 نبذة عن المشروع | Overview
 
-**BeastMode AI** هو نظام رياضي بيئي متكامل وفائق التطور للياقة البدنية، وبناء الأجسام، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق. يتميز بهوية بصرية حصرية **(⚡ Cyber-Volt & Matte Carbon)** بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك حركي حديث مدعوم بـ **Motion Division (v12)**، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تضم **+4,298 تمرين موثق بدقة HD** بالعربية والإنجليزية مع حزمة ميزات **UI/UX Pro Max** العالمية.
+**BeastMode AI** هو نظام رياضي بيئي متكامل وفائق التطور للياقة البدنية، وبناء الأجسام، وتوليد الجداول التدريبية وتحليل الأداء الرياضي مدعوم بالذكاء الاصطناعي الفائق وبأعلى معايير البساطة وتجربة المستخدم العالمية (مستوحى من بساطة **Hevy** و **Apple Fitness**).
+
+يتميز بهوية بصرية حصرية **(⚡ Cyber-Volt & Matte Carbon)** بتصميم زجاجي فاخر (**Glassmorphism**)، ومحرك حركي حديث مدعوم بـ **Motion Division (v12)**، ومحرك ذكاء اصطناعي ثنائي (**Groq LLaMA 3.3 70B & Google Gemini AI**)، ومكتبة تمارين ضخمة تضم **+4,298 تمرين موثق بدقة HD** بالعربية والإنجليزية مع حزمة ميزات **UI/UX Ultra-Clean** المتطورة.
 
 > **BeastMode AI** is a cutting-edge, bilingual (AR/EN) AI-powered fitness and nutrition ecosystem. Featuring signature **Cyber-Volt** aesthetics, dynamic hyper-personalized training plans, interactive 3D muscle anatomy maps, a zero-latency global workout player with audio timers, visual routine cards export, and enterprise-grade security.
 
 ---
 
-## 🚀 أحدث ترقيات حزمة UI/UX Pro Max & Performance Engine
+## 🚀 أحدث ترقيات حزمة البساطة الفائقة والأمان السحابي (Ultra-Clean UX & Security)
 
 | الميزة | الوصف التقني |
 | :--- | :--- |
-| ⚡ **تسريع محرك البحث بالذاكرة (Zero-Latency In-Memory Catalog)** | تحميل مسبق فوري لقاعدة التمارين الـ 4,298 في الذاكرة لتنفيذ البحث والاستبدال في أقل من `0.5ms` بدون أي تأخير شبكي. |
-| 📦 **تقسيم الحزمة البرمجية (Code & Route Splitting)** | تطبيق `React.lazy` و `Suspense` على كافة الصفحات الرئيسية، مما خفّض حجم التحميل الأولي بأكثر من **50% (إلى 658 KB)**. |
-| 🗂️ **إدارة الجداول المتعددة والمزامنة الحية (Multi-Plan Hub & Sync)** | تبديل وتعديل ونسخ وحذف الجداول المتعددة مع الحفاظ على المعرفات والمزامنة اللحظية بين الكاش والسحابة (`beast_cloud_synced`). |
-| 🗓️ **شريط الأسبوع التفاعلي (Sunday-First 7-Day Strip)** | مخطط أسبوعي تفاعلي يبدأ من **الأحد** يحدد اليوم النشط، أيام الراحة، وحالة إنجاز التمارين بنقرة واحدة. |
-| 🎬 **محرك الحركة الحركي (Motion Division Engine)** | تجربة بصرية فائقة الانسيابية باستخدام `motion/react` (Staggered Typography, Spring Physics Mockup, & Interactive CTAs). |
-| ✍️ **منشئ ومستورد الجداول المتقدم (Custom Plan Architect & Bulk Importer)** | محرر ذكي ومستورد نصوص وإكسل يدعم قراءة الجداول الضخمة (48+ تمريناً) مع التكرارات المركبة وفترات الراحة. |
-| ⏱️ **مؤقت الراحة الدائري النيون ومسجل الجولات (Hevy-Style Live Set Logger)** | تسجيل الجولة بنقرة واحدة مع انتقال تلقائي لمؤقت الراحة العائم وتنبيه صوتي ثلاثي النغمات مولد برمجياً (`Web Audio API`). |
-| 🗺️ **مجسم التشريح التفاعلي (Interactive 3D Anatomy Map)** | خريطة تفاعلية لتحديد العضلات المستهدفة الأساسية والثانوية مع دليل MuscleWiki ونصائح الأداء السرية. |
-| 🧠 **مؤشر إجهاد الجهاز العصبي والكورتيزول (CNS Load & Cortisol Strain Rings)** | قراءة حية لمستوى الحمل العصبي وتوصيات الاستشفاء والمكملات الغذائية المضادة للهدم العضلي. |
+| 🚀 **بطاقة "تمرين اليوم" البارزة والبدء الفوري (Today's Workout Hero)** | وضع تمرين اليوم في قمة الداشبورد مع زر عريض `[ بدء تمرين اليوم الآن 🚀 ]` لإطلاق الحصة التفاعلية فوراً بنقرة واحدة. |
+| 🛡️ **نظام الأمان واستخراج الاسم الذكي (Email OTP & Smart Auth)** | استخراج الاسم المقترح تلقائياً من البريد الإلكتروني مع إمكانية التحقق برمز OTP فوري وتعيين كلمة مرور مشفرة وقوية. |
+| 🔀 **الاستبدال والتعديل السريع في الجداول (1-Click Swap & Edit)** | أزرار سريعة لكل تمرين لاستبدال الأجهزة المشغولة في ثانية واحدة وتعديل الجولات والتكرارات بزر `+` و `-`. |
+| ⏱️ **مشغل الحصة المطور ومؤقت الراحة التلقائي (Live Gym Player & Rest)** | واجهة بأرقام وأزرار كبيرة مخصصة للجيم، تسجيل الجولات بلمسة `[ ✅ ]`، وعد تنازلي تلقائي مع جرس تنبيهي. |
+| 👑 **مكتبة الخطط الجاهزة العالمية (1-Click Pro Plans Hub)** | تفعيل أشهر أنظمة التدريب الرياضية العالمية (PPL العلمي، تقسيم آرنولد، خطة 4 أيام) بضغطة زر واحدة. |
+| ⚡ **تسريع محرك البحث بالذاكرة (Zero-Latency In-Memory Catalog)** | تحميل مسبق فوري لقاعدة التمارين الـ 4,298 في الذاكرة لتنفيذ البحث والاستبدال في أقل من `0.5ms`. |
+| 📦 **تقسيم الحزمة البرمجية (Code & Route Splitting)** | تطبيق `React.lazy` و `Suspense` على كافة الصفحات، مما خفّض حجم التحميل الأولي بأكثر من **50%**. |
+| 🗺️ **مجسم التشريح التفاعلي (Interactive 3D Anatomy Map)** | خريطة تفاعلية لتحديد العضلات المستهدفة الأساسية والثانوية مع دليل MuscleWiki وتوجيهات الأداء الصحيح. |
+| 🧠 **مؤشر إجهاد الجهاز العصبي والكورتيزول (CNS Load & Cortisol Strain)** | قراءة حية لمستوى الحمل العصبي وتوصيات الاستشفاء والمكملات الغذائية المضادة للهدم العضلي. |
 | 💧 **شريط الإجراءات السريعة العائم (Floating Speed-Dial)** | زر عائم بنقرة واحدة لتسجيل الماء (+250ml) 💧، مؤقت راحة فوري ⏱️، وتسجيل الوزن ⚖️. |
 | 🎨 **استوديو الثيمات والشكليات البصرية (Visual Theme Studio)** | تبديل لحظي بنقرة واحدة بين 4 هويات رياضية عالمية (⚡ Cyber Volt, 🔥 Crimson Iron, 👑 Imperial Gold, 💎 Cyber Frost). |
 | 📱 **تطبيق ويب تقدمي متطور (Offline PWA NetworkFirst)** | يعمل 100% بدون إنترنت داخل صالات الجيم، يدعم التثبيت المباشر على الهاتف مع كاش ذكي فائق السرعة. |
@@ -79,9 +81,9 @@
 | 📸 **مقارنة التطور بشريط السحب (Before/After Split Slider)** | أداة مقارنة تفاعلية بالسحب للمقارنة بين صور بداية المشوار والصورة الحالية لفحص تفاصيل التناسق العضلي ونسبة الدهون. |
 | 🤖 **توليد الجداول بالذكاء الاصطناعي (AI Workout Generation)** | توليد خطط مخصصة بناءً على مستوى اللاعب، الأدوات المتاحة، وموقع التمرين (جيم / منزل) عبر Groq LLaMA 3.3 و Gemini AI. |
 | 🥗 **مدرب الماكروز وتدوير السعرات (Smart Nutrition & TDEE)** | حساب دقيق للـ BMR و TDEE بمعادلة Mifflin-St Jeor مع تدوير الماكروز وتتبع الماء والنوم. |
-| 🏋️ **محاكي صفائح البار والـ 1RM (Barbell Plate Loader)** | محاكي بصري ملون لصفائح البار الأولمبي وحساب الأوزان الدقيقة لكل جهة مع حاسبة القوة القصوى 1RM. |
+| 📊 **حاسبة القوة وتدرج الأحمال (1RM & Strength Zones)** | حساب دقيق لأقصى وزن لتكرار واحد مع توزيع نطاقات الضخامة (80%) والقوة (90%) والتحمل (70%). |
 | 📱 **تطبيق ويب تقدمي متطور (Offline PWA)** | يعمل 100% بدون إنترنت داخل صالات الجيم السفلية، يدعم التثبيت المباشر على الهاتف مع كاش ذكي فائق السرعة. |
-| 🔐 **حماية بيانات وتوثيق متقدم (OWASP & Google OAuth)** | تسجيل دخول سريع بحساب Google بضغطة زر، تأكيد بالبريد الإلكتروني، واستعادة الحساب برموز OTP مع تشفير OWASP كامل. |
+| 🔐 **حماية بيانات وتوثيق متقدم (OWASP & OTP Security)** | تأكيد بالبريد الإلكتروني، واستعادة الحساب برموز OTP مع تشفير OWASP كامل ومزامنة سحابية فائقة الأمان. |
 
 ---
 
