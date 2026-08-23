@@ -56,36 +56,39 @@ function base64ToBytes(b64: string): string {
   }
 }
 
-function decodeMicroPlan(b64: string): any {
+function cleanUnpack(b64: string): any {
   try {
-    const raw = base64ToBytes(b64);
-    if (!raw.startsWith('v4~')) return null;
+    const raw = base64ToBytes(b64.trim());
+    if (!raw.startsWith('BM~')) return null;
     const parts = raw.split('~');
-    const title = parts[1] || 'جدولي التدريبي ⚡';
-    const exp = parseInt(parts[2], 10) || (Date.now() + 600000);
+    const title = parts[1] || 'جدول التمرين ⚡';
+    const exp = parseInt(parts[2], 10) || (Date.now() + 120000);
     const daysRaw = parts[3] ? parts[3].split('/') : [];
     const pName = parts[4] || '';
-    const pGoal = parts[5] || '';
 
-    const days = daysRaw.map((dr) => {
-      const [dIdx, dTitle, isRest, exsRaw] = dr.split(':');
-      const exercises = (exsRaw ? exsRaw.split(';') : []).filter(Boolean).map((er, idx) => {
-        const [name, sets, reps, weight, muscle] = er.split(',');
+    const days = daysRaw.map((dr, idx) => {
+      const colonIdx = dr.indexOf(':');
+      const dIdx = colonIdx !== -1 ? Number(dr.slice(0, colonIdx)) : idx;
+      const content = colonIdx !== -1 ? dr.slice(colonIdx + 1) : dr;
+      if (content === 'R') {
+        return { dayIndex: dIdx, title: 'يوم راحة واستشفاء', isRestDay: true, exercises: [] };
+      }
+      const exercises = content.split(';').filter(Boolean).map((er, eIdx) => {
+        const [name, sets, reps] = er.split(',');
         return {
-          id: `ex_${dIdx}_${idx + 1}`,
+          id: `ex_${dIdx}_${eIdx + 1}`,
           name: name || 'Exercise',
-          category: 'MAIN',
           sets: Number(sets) || 3,
           reps: reps || '10-12',
-          weight: weight || '',
-          targetMuscle: muscle || 'Chest',
+          weight: '',
+          targetMuscle: 'Chest',
           restSeconds: 60,
         };
       });
       return {
-        dayIndex: Number(dIdx),
-        title: dTitle || `Day ${Number(dIdx) + 1}`,
-        isRestDay: isRest === '1',
+        dayIndex: dIdx,
+        title: `اليوم ${dIdx + 1}`,
+        isRestDay: false,
         focusArea: exercises[0]?.targetMuscle || '',
         exercises,
       };
@@ -102,11 +105,11 @@ function decodeMicroPlan(b64: string): any {
     };
 
     return {
-      v: 4,
+      v: 5,
       exp,
       activePlan: fullPlan,
       planHistory: [fullPlan],
-      userProfile: pName ? { name: pName, goal: pGoal } : null,
+      userProfile: pName ? { name: pName } : null,
     };
   } catch {
     return null;
@@ -141,8 +144,8 @@ function App() {
     }
   });
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
-  const [showDeviceSyncModal, setShowDeviceSyncModal] = useState<boolean>(false);
   const [syncToast, setSyncToast] = useState<string | null>(null);
+  const [showDeviceSyncModal, setShowDeviceSyncModal] = useState<boolean>(false);
 
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
@@ -171,7 +174,7 @@ function App() {
         const hashIdx = window.location.hash.indexOf('#sync=');
         const b64 = window.location.hash.slice(hashIdx + 6);
         
-        let parsed: any = decodeMicroPlan(b64);
+        let parsed: any = cleanUnpack(b64);
         if (!parsed) {
           try {
             const decoded = decodeURIComponent(atob(b64));

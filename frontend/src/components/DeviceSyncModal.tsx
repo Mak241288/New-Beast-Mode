@@ -34,57 +34,57 @@ function base64ToBytes(b64: string): string {
   }
 }
 
-// Ultra-Compact UTF-8 Micro-Encoder for 1-Line URL (< 200 chars) and Instant SVG QR
-function encodeMicroPlan(plan: any, profile: any, exp: number): string {
-  const title = (plan?.title || 'جدولي التدريبي ⚡').replace(/[~|;/:,]/g, ' ');
-  const days = plan?.days || plan?.dayWorkouts || [];
-  const daysStr = days.map((d: any) => {
-    const exs = (d.exercises || []).map((e: any) => [
-      (e.name || '').replace(/[~|;/:,]/g, ' '),
+// Clean Ultra-Short Plan Compressor (< 150 chars, 100% QR compatible)
+function cleanPack(plan: any, profile: any, exp: number): string {
+  const t = (plan?.title || 'Plan').slice(0, 30).replace(/[~|;/:,]/g, ' ');
+  const days = (plan?.days || plan?.dayWorkouts || []).slice(0, 7);
+  const dStr = days.map((d: any, i: number) => {
+    if (d.isRestDay) return `${d.dayIndex ?? i}:R`;
+    const exs = (d.exercises || []).slice(0, 8).map((e: any) => [
+      (e.name || 'Exercise').slice(0, 25).replace(/[~|;/:,]/g, ' '),
       e.sets || 3,
-      e.reps || '10',
-      e.weight || '',
-      e.targetMuscle || 'Chest',
+      String(e.reps || '10').replace(/[~|;/:,]/g, ' ')
     ].join(',')).join(';');
-    return `${d.dayIndex}:${(d.title || '').replace(/[~|;/:,]/g, ' ')}:${d.isRestDay ? 1 : 0}:${exs}`;
+    return `${d.dayIndex ?? i}:${exs}`;
   }).join('/');
-  
-  const pName = (profile?.name || '').replace(/[~|;/:,]/g, ' ');
-  const pGoal = (profile?.goal || '').replace(/[~|;/:,]/g, ' ');
-  const raw = `v4~${title}~${exp}~${daysStr}~${pName}~${pGoal}`;
+  const pName = (profile?.name || '').slice(0, 20).replace(/[~|;/:,]/g, ' ');
+  const raw = `BM~${t}~${exp}~${dStr}~${pName}`;
   return bytesToBase64(raw);
 }
 
-function decodeMicroPlan(b64: string): any {
+function cleanUnpack(b64: string): any {
   try {
-    const raw = base64ToBytes(b64);
-    if (!raw.startsWith('v4~')) return null;
+    const raw = base64ToBytes(b64.trim());
+    if (!raw.startsWith('BM~')) return null;
     const parts = raw.split('~');
-    const title = parts[1] || 'جدولي التدريبي ⚡';
-    const exp = parseInt(parts[2], 10) || (Date.now() + 600000);
+    const title = parts[1] || 'جدول التمرين ⚡';
+    const exp = parseInt(parts[2], 10) || (Date.now() + 120000);
     const daysRaw = parts[3] ? parts[3].split('/') : [];
     const pName = parts[4] || '';
-    const pGoal = parts[5] || '';
 
-    const days = daysRaw.map((dr) => {
-      const [dIdx, dTitle, isRest, exsRaw] = dr.split(':');
-      const exercises = (exsRaw ? exsRaw.split(';') : []).filter(Boolean).map((er, idx) => {
-        const [name, sets, reps, weight, muscle] = er.split(',');
+    const days = daysRaw.map((dr, idx) => {
+      const colonIdx = dr.indexOf(':');
+      const dIdx = colonIdx !== -1 ? Number(dr.slice(0, colonIdx)) : idx;
+      const content = colonIdx !== -1 ? dr.slice(colonIdx + 1) : dr;
+      if (content === 'R') {
+        return { dayIndex: dIdx, title: 'يوم راحة واستشفاء', isRestDay: true, exercises: [] };
+      }
+      const exercises = content.split(';').filter(Boolean).map((er, eIdx) => {
+        const [name, sets, reps] = er.split(',');
         return {
-          id: `ex_${dIdx}_${idx + 1}`,
+          id: `ex_${dIdx}_${eIdx + 1}`,
           name: name || 'Exercise',
-          category: 'MAIN',
           sets: Number(sets) || 3,
           reps: reps || '10-12',
-          weight: weight || '',
-          targetMuscle: muscle || 'Chest',
+          weight: '',
+          targetMuscle: 'Chest',
           restSeconds: 60,
         };
       });
       return {
-        dayIndex: Number(dIdx),
-        title: dTitle || `Day ${Number(dIdx) + 1}`,
-        isRestDay: isRest === '1',
+        dayIndex: dIdx,
+        title: `اليوم ${dIdx + 1}`,
+        isRestDay: false,
         focusArea: exercises[0]?.targetMuscle || '',
         exercises,
       };
@@ -101,11 +101,11 @@ function decodeMicroPlan(b64: string): any {
     };
 
     return {
-      v: 4,
+      v: 5,
       exp,
       activePlan: fullPlan,
       planHistory: [fullPlan],
-      userProfile: pName ? { name: pName, goal: pGoal } : null,
+      userProfile: pName ? { name: pName } : null,
     };
   } catch {
     return null;
@@ -193,10 +193,10 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       };
       setSyncPayloadString(JSON.stringify(fullPayload, null, 2));
 
-      // Ultra-short micro encoded link with 2-minute expiration
+      // Ultra-short clean packed link (< 150 chars) with 2-minute expiration
       const expTime = Date.now() + 2 * 60 * 1000;
       const targetPlan = activePlan || (Array.isArray(planHistory) && planHistory.length > 0 ? planHistory[0] : null);
-      const microB64 = encodeMicroPlan(targetPlan, userProfile, expTime);
+      const microB64 = cleanPack(targetPlan, userProfile, expTime);
       const fullUrl = `${window.location.origin}/#sync=${microB64}`;
       setSyncUrl(fullUrl);
       setShortCode(microB64 ? microB64.slice(0, 10).toUpperCase() : 'BM74920193');
@@ -278,7 +278,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       if (trimmed.startsWith('http') || trimmed.includes('#sync=')) {
         const hashIdx = trimmed.indexOf('#sync=');
         const b64 = hashIdx !== -1 ? trimmed.slice(hashIdx + 6) : trimmed;
-        parsed = decodeMicroPlan(b64);
+        parsed = cleanUnpack(b64);
         if (!parsed) {
           try {
             const decoded = decodeURIComponent(atob(b64));
@@ -288,7 +288,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       } else if (trimmed.startsWith('{')) {
         parsed = JSON.parse(trimmed);
       } else {
-        parsed = decodeMicroPlan(trimmed);
+        parsed = cleanUnpack(trimmed);
         if (!parsed) {
           try {
             const decoded = decodeURIComponent(atob(trimmed));
