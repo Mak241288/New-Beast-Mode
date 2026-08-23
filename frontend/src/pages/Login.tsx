@@ -219,26 +219,32 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
   const handleGoogleOAuthSignIn = async () => {
     setGoogleOAuthLoading(true);
     setGoogleOAuthError('');
+
+    // Safety timeout: Never hang indefinitely
+    const timeoutPromise = new Promise<{ timeout: boolean }>((resolve) =>
+      setTimeout(() => resolve({ timeout: true }), 2500)
+    );
+
     try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      const oauthPromise = supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
         },
       });
 
-      if (oauthError) {
-        throw oauthError;
+      const result: any = await Promise.race([oauthPromise, timeoutPromise]);
+
+      if (result?.timeout || result?.error) {
+        console.warn('[Google OAuth] Direct redirect unavailable, opening 1-Tap Google Modal');
+        setGoogleOAuthLoading(false);
+        handleOpenGoogleLoginModal();
+        return;
       }
     } catch (err: any) {
-      console.error('[Google OAuth Error]:', err);
-      setGoogleOAuthError(
-        err.message ||
-        (lang === 'en'
-          ? 'Failed to initiate Google sign-in. Please try again.'
-          : 'فشل بدء تسجيل الدخول باستخدام Google. يرجى المحاولة مجدداً.')
-      );
+      console.warn('[Google OAuth Exception]:', err);
       setGoogleOAuthLoading(false);
+      handleOpenGoogleLoginModal();
     }
   };
 

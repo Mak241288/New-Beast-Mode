@@ -65,9 +65,9 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
     const user = await getCurrentUser();
     if (!user) return;
 
-    const activePlan = cacheStore.get('active_plan');
+    const localActivePlan = cacheStore.get('active_plan');
     const userProfile = cacheStore.get('user_profile');
-    const planHistory = cacheStore.get('plan_history');
+    const localPlanHistory = cacheStore.get('plan_history');
     const userRecovery = cacheStore.get('user_recovery');
     const allRecoveryLogs = cacheStore.get('all_recovery_logs');
     const latestRecoveryLog = cacheStore.get('latest_recovery_log');
@@ -76,10 +76,34 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
     const timerSoundPack = localStorage.getItem('bm_timer_sound_pack') || 'BOXING_BELL';
     const timerVolume = localStorage.getItem('bm_timer_volume') || '80';
 
+    // Safe Plan Preservation: Never overwrite existing cloud plans with empty local cache
+    let cloudPlanHistory: any = null;
+    let cloudActivePlan: any = null;
+    if (user.user_metadata?.beast_plan_history) {
+      try {
+        cloudPlanHistory = typeof user.user_metadata.beast_plan_history === 'string'
+          ? JSON.parse(user.user_metadata.beast_plan_history)
+          : user.user_metadata.beast_plan_history;
+      } catch {}
+    }
+    if (user.user_metadata?.beast_active_plan) {
+      try {
+        cloudActivePlan = typeof user.user_metadata.beast_active_plan === 'string'
+          ? JSON.parse(user.user_metadata.beast_active_plan)
+          : user.user_metadata.beast_active_plan;
+      } catch {}
+    }
+
+    const finalPlanHistory = (Array.isArray(localPlanHistory) && localPlanHistory.length > 0)
+      ? localPlanHistory
+      : cloudPlanHistory;
+
+    const finalActivePlan = localActivePlan || cloudActivePlan;
+
     const payload = {
-      activePlan,
+      activePlan: finalActivePlan,
       userProfile,
-      planHistory,
+      planHistory: finalPlanHistory,
       userRecovery,
       allRecoveryLogs,
       latestRecoveryLog,
@@ -93,7 +117,7 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
     };
 
     // Dirty Checking: Skip network request entirely if data hasn't changed
-    const currentHash = JSON.stringify({ activePlan, userProfile, planHistory, userStats, activeGymSession });
+    const currentHash = JSON.stringify({ activePlan: finalActivePlan, userProfile, planHistory: finalPlanHistory, userStats, activeGymSession });
     if (currentHash === lastSyncedHash) {
       return;
     }
@@ -104,8 +128,8 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
       data: {
         name: (userProfile as any)?.name || user.user_metadata?.name,
         beast_profile: userProfile,
-        beast_active_plan: activePlan,
-        beast_plan_history: planHistory,
+        beast_active_plan: finalActivePlan,
+        beast_plan_history: finalPlanHistory,
         beast_active_session: activeGymSession,
         beast_sync_data: JSON.stringify(payload),
       },
@@ -186,12 +210,7 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
     const user = await getCurrentUser();
     if (!user) return false;
 
-    // 1. First push local updates to cloud so local changes are never lost
-    try {
-      await pushUserDataToCloud(true);
-    } catch {}
-
-    // 2. Read cloud sync data from Supabase Auth user_metadata
+    // 1. Read cloud sync data from Supabase Auth user_metadata FIRST (Never push before pulling)
     let syncData: any = null;
     let profileData: any = null;
     let planData: any = null;
@@ -238,29 +257,18 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
       cacheStore.set('user_profile', { ...localProf, ...finalProfile });
     }
 
-    // Smart Merge for Plans - Never blindly overwrite local plans
-    const localHistory: any[] = cacheStore.get('plan_history') || [];
+    // Authoritatively hydrate custom plans from cloud to device
     if (Array.isArray(finalHistory) && finalHistory.length > 0) {
-      if (localHistory.length === 0) {
-        cacheStore.set('plan_history', finalHistory);
-        if (finalPlan) {
-          cacheStore.set('active_plan', finalPlan);
-        }
+      cacheStore.set('plan_history', finalHistory);
+      if (finalPlan) {
+        cacheStore.set('active_plan', finalPlan);
       } else {
-        // Merge: keep all local plans, and append any cloud plans that do not exist locally
-        const merged = [...localHistory];
-        finalHistory.forEach((cp: any) => {
-          const cpId = String(cp.id || '').replace(/^plan_/, '');
-          const exists = merged.some((lp: any) => {
-            const lpId = String(lp.id || '').replace(/^plan_/, '');
-            return lpId === cpId || (lp.title && cp.title && lp.title === cp.title);
-          });
-          if (!exists) {
-            merged.push(cp);
-          }
-        });
-        cacheStore.set('plan_history', merged);
+        const act = finalHistory.find((p: any) => p.active) || finalHistory[0];
+        if (act) cacheStore.set('active_plan', act);
       }
+    } else if (finalPlan) {
+      cacheStore.set('active_plan', finalPlan);
+      cacheStore.set('plan_history', [finalPlan]);
     }
 
     // Refresh memory cache via planService
@@ -272,6 +280,7 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
           detail: { activePlan: active, plans: allPlans },
         })
       );
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
     }
 
     if (finalSession && (finalSession.status === 'active' || finalSession.status === 'resting' || finalSession.status === 'paused')) {
