@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { supabase } from '../services/supabase';
-import { User, ShieldAlert, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText, Zap, LogOut } from 'lucide-react';
+import { User, ShieldAlert, ShieldCheck, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText, LogOut } from 'lucide-react';
 import { PasswordRequirements } from '../components/PasswordRequirements';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
@@ -114,10 +113,6 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [securitySaving, setSecuritySaving] = useState(false);
   const [securityError, setSecurityError] = useState('');
   const [securitySuccess, setSecuritySuccess] = useState('');
-  const [linkingGoogle, setLinkingGoogle] = useState(false);
-  const [googleFeedbackMsg, setGoogleFeedbackMsg] = useState('');
-  const [googleFeedbackType, setGoogleFeedbackType] = useState<'SUCCESS' | 'ERROR' | ''>('');
-  const [googleIdentity, setGoogleIdentity] = useState<any>(null);
 
   const fetchProfile = async () => {
     if (!cacheStore.get('user_profile')) {
@@ -127,22 +122,6 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
       const data = await api.getProfile();
       if (data.birthDate) {
         data.birthDate = new Date(data.birthDate).toISOString().split('T')[0];
-      }
-
-      // Check live Supabase user & identities
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const gIdent = user.identities?.find((id: any) => id.provider === 'google');
-          setGoogleIdentity(gIdent || null);
-          if (gIdent) {
-            data.isGoogleLinked = true;
-            data.googleEmail = gIdent.identity_data?.email || user.email;
-            data.googleId = gIdent.id || gIdent.identity_id;
-          }
-        }
-      } catch (authErr) {
-        console.warn('[Profile Supabase User Check]:', authErr);
       }
 
       if (data) {
@@ -424,136 +403,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     }
   };
 
-  const handleLinkGoogle = async () => {
-    setLinkingGoogle(true);
-    setGoogleFeedbackMsg('');
-    setGoogleFeedbackType('');
-    try {
-      const emailToLink = profile.email || profile.googleEmail;
-      if (!emailToLink) {
-        throw new Error(lang === 'en' ? 'Please set your email address first.' : 'يرجى إدخال بريدك الإلكتروني أولاً في بيانات الحساب.');
-      }
 
-      await api.linkGoogleAccount({ googleEmail: emailToLink.trim().toLowerCase() });
-
-      setProfile((prev: any) => {
-        const updated = {
-          ...prev,
-          isGoogleLinked: true,
-          googleEmail: emailToLink.trim().toLowerCase(),
-          googleId: `google_${emailToLink.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '_')}`,
-        };
-        cacheStore.set('user_profile', updated);
-        return updated;
-      });
-
-      const successTxt = lang === 'en' ? 'Google Account linked & verified successfully! ✅' : 'تم ربط وتوثيق حساب Google بنجاح! ✅';
-      setGoogleFeedbackType('SUCCESS');
-      setGoogleFeedbackMsg(successTxt);
-      setSuccessMsg(successTxt);
-      setTimeout(() => {
-        setSuccessMsg('');
-      }, 5000);
-    } catch (err: any) {
-      console.error('[Link Google Error]:', err);
-      setGoogleFeedbackType('ERROR');
-      setGoogleFeedbackMsg(
-        err.message ||
-        (lang === 'en'
-          ? 'Failed to link Google account. Please try again.'
-          : 'فشل ربط حساب Google. يرجى المحاولة مرة أخرى.')
-      );
-    } finally {
-      setLinkingGoogle(false);
-    }
-  };
-
-  const handleUnlinkGoogle = async () => {
-    if (!window.confirm(
-      lang === 'en'
-        ? 'Are you sure you want to unlink your Google account?'
-        : 'هل أنت متأكد من إلغاء ربط حساب Google؟'
-    )) return;
-
-    setLinkingGoogle(true);
-    setGoogleFeedbackMsg('');
-    setGoogleFeedbackType('');
-
-    try {
-      // 1. Try unlinking via Supabase if active identity exists
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const gIdent = user.identities?.find((id: any) => id.provider === 'google') || googleIdentity;
-          if (gIdent) {
-            await supabase.auth.unlinkIdentity(gIdent);
-          }
-        }
-      } catch (e) {
-        console.warn('[Supabase Identity Unlink Fallback]:', e);
-      }
-
-      // 2. Call backend profile unlinking
-      try {
-        await api.unlinkGoogleAccount();
-      } catch {
-        // Non-fatal
-      }
-
-      // 3. Update UI state and cache
-      setGoogleIdentity(null);
-      setProfile((prev: any) => {
-        const updated = {
-          ...prev,
-          isGoogleLinked: false,
-          googleEmail: null,
-          googleId: null,
-        };
-        cacheStore.set('user_profile', updated);
-        return updated;
-      });
-
-      const successTxt = lang === 'en' ? 'Google Account unlinked successfully! ✅' : 'تم إلغاء ربط حساب Google بنجاح! ✅';
-      setGoogleFeedbackType('SUCCESS');
-      setGoogleFeedbackMsg(successTxt);
-      setSuccessMsg(successTxt);
-      setTimeout(() => {
-        setSuccessMsg('');
-      }, 5000);
-    } catch (err: any) {
-      console.error('[Unlink Google Error]:', err);
-      setGoogleFeedbackType('ERROR');
-      setGoogleFeedbackMsg(
-        err.message ||
-        (lang === 'en' ? 'Failed to unlink Google account.' : 'فشل إلغاء ربط حساب Google.')
-      );
-    } finally {
-      setLinkingGoogle(false);
-    }
-  };
-
-  const handleTestInstantGoogleLogin = async () => {
-    if (!profile.googleEmail && !profile.email) return;
-    const targetEmail = profile.googleEmail || profile.email;
-    setLinkingGoogle(true);
-    try {
-      const res = await api.googleAuth({
-        email: targetEmail,
-        name: profile.name || 'Athlete',
-        googleId: profile.googleId || `google_${targetEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
-      });
-      if (res.token) {
-        localStorage.setItem('token', res.token);
-      }
-      alert(lang === 'en'
-        ? `✅ Success! Instant 1-click Google authentication verified for ${targetEmail}. Your session is active and secure.`
-        : `✅ تم التحقق بنجاح! تسجيل الدخول الفوري بحساب Google يعمل 100% للبريد (${targetEmail}). جلستك مؤمنة ونشطة.`);
-    } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Google authentication test failed.' : 'فشل اختبار تسجيل الدخول عبر Google.'));
-    } finally {
-      setLinkingGoogle(false);
-    }
-  };
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>{lang === 'en' ? 'Loading Profile...' : 'جاري تحميل الملف الشخصي...'}</div>;
@@ -1221,144 +1071,65 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               </div>
             </div>
 
-            {/* Google Account Integration Card */}
-            <div className="glass-panel" style={{ borderTop: '1px solid var(--border-color)', padding: '18px', borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: '12px', background: (googleIdentity || profile.isGoogleLinked) ? 'rgba(16, 185, 129, 0.03)' : 'rgba(255, 255, 255, 0.02)', border: (googleIdentity || profile.isGoogleLinked) ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid var(--border-color)' }}>
+            {/* Account & Security Card (MyFitnessPal / Hevy Style) */}
+            <div className="glass-panel" style={{ borderTop: '1px solid var(--border-color)', padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                  </svg>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(0, 210, 255, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+                    <ShieldCheck size={22} />
+                  </div>
                   <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>
-                      {lang === 'en' ? 'Google Account Connection & Verification' : 'ربط وتوثيق حساب Google'}
+                    <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+                      {lang === 'en' ? 'Account Security & Cloud Sync' : 'أمان الحساب والمزامنة السحابية'}
                     </h3>
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      {lang === 'en' ? 'OAuth 2.0 Single Sign-On Security' : 'بروتوكول الأمان وتوحيد الدخول السريع'}
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                      {profile.email || 'user@example.com'}
                     </span>
                   </div>
                 </div>
 
-                {(googleIdentity || profile.isGoogleLinked) ? (
-                  <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.35)', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '8px' }}>
-                    <CheckCircle2 size={14} />
-                    <span>{lang === 'en' ? 'Linked Successfully ✅' : 'تم الربط بنجاح ✅'}</span>
-                  </span>
-                ) : (
-                  <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '11.5px', padding: '4px 10px', borderRadius: '8px' }}>
-                    {lang === 'en' ? 'Not Linked' : 'غير مرتبط بعد'}
-                  </span>
-                )}
+                <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.35)', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '10px' }}>
+                  <CheckCircle2 size={14} />
+                  <span>{lang === 'en' ? 'Cloud Connected 🟢' : 'متصل بالسحابة 🟢'}</span>
+                </span>
               </div>
 
-              {googleFeedbackMsg && (
-                <div style={{
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  fontSize: '12.5px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: googleFeedbackType === 'ERROR' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  border: googleFeedbackType === 'ERROR' ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
-                  color: googleFeedbackType === 'ERROR' ? '#ef4444' : '#10b981',
-                }}>
-                  {googleFeedbackType === 'ERROR' ? <AlertTriangle size={15} style={{ flexShrink: 0 }} /> : <CheckCircle2 size={15} style={{ flexShrink: 0 }} />}
-                  <span>{googleFeedbackMsg}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>🔒 {lang === 'en' ? 'Password & Credentials:' : 'كلمة المرور والأمان:'}</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>••••••••••••</span>
                 </div>
-              )}
-
-              {(googleIdentity || profile.isGoogleLinked) ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>📧 {lang === 'en' ? 'Linked Google Account:' : 'البريد المرتبط بحساب Google:'}</span>
-                    <strong style={{ color: '#10b981' }}>{googleIdentity?.identity_data?.email || profile.googleEmail || profile.email}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>⚡ {lang === 'en' ? 'One-Tap Sign-In Status:' : 'تسجيل الدخول السريع بنقرة واحدة:'}</span>
-                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>{lang === 'en' ? 'Active & Ready 🟢' : 'مفعّل وجاهز 🟢'}</span>
-                  </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>☁️ {lang === 'en' ? 'Auto-Sync Status:' : 'حالة الحفظ التلقائي:'}</span>
+                  <span style={{ color: '#10b981', fontWeight: 'bold' }}>{lang === 'en' ? 'All workouts backed up' : 'جميع التمارين والجداول محفوظة ومزامنة'}</span>
                 </div>
-              ) : (
-                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                  {lang === 'en'
-                    ? 'Link your BeastMode account with your Google account to enable instant 1-click login and secure identity verification with 0 data loss.'
-                    : 'اربط حسابك الحالي بـ Google لتسجيل الدخول السريع بنقرة واحدة وتأمين حسابك مع الحفاظ التام 100% على كافة الجداول وسجلاتك.'}
-                </p>
-              )}
+              </div>
 
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
-                {(googleIdentity || profile.isGoogleLinked) ? (
-                  <>
-                    <button
-                      type="button"
-                      disabled={linkingGoogle}
-                      onClick={handleUnlinkGoogle}
-                      className="secondary-btn"
-                      style={{
-                        padding: '8px 18px',
-                        fontSize: '13px',
-                        fontWeight: '700',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        borderColor: 'rgba(239, 68, 68, 0.35)',
-                        color: 'var(--danger)',
-                        background: 'rgba(239, 68, 68, 0.05)',
-                        borderRadius: '10px',
-                      }}
-                    >
-                      <Trash2 size={14} />
-                      <span>{linkingGoogle ? (lang === 'en' ? 'Unlinking...' : 'جاري إلغاء الربط...') : (lang === 'en' ? 'Unlink Google Account' : 'إلغاء ربط حساب Google')}</span>
-                    </button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSecurityMode('PASSWORD');
+                    setShowSecurityModal(true);
+                  }}
+                  className="glow-btn"
+                  style={{ padding: '9px 18px', fontSize: '12.5px', borderRadius: '10px', gap: '6px' }}
+                >
+                  <KeyRound size={15} />
+                  <span>{lang === 'en' ? 'Change Password 🔑' : 'تغيير كلمة المرور 🔑'}</span>
+                </button>
 
-                    <button
-                      type="button"
-                      disabled={linkingGoogle}
-                      onClick={handleTestInstantGoogleLogin}
-                      className="glow-btn"
-                      style={{ padding: '8px 16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      <Zap size={14} />
-                      <span>{lang === 'en' ? 'Test 1-Click Login ⚡' : 'تجربة الدخول الفوري ⚡'}</span>
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={linkingGoogle}
-                    onClick={handleLinkGoogle}
-                    className="glow-btn"
-                    style={{
-                      padding: '10px 22px',
-                      fontSize: '13.5px',
-                      fontWeight: '700',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      borderRadius: '10px',
-                    }}
-                  >
-                    {linkingGoogle ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '15px', height: '15px', border: '2px solid #fff', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                        <span>{lang === 'en' ? 'Redirecting to Google...' : 'جاري التوجيه لـ Google...'}</span>
-                      </div>
-                    ) : (
-                      <>
-                        <svg width="17" height="17" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                        </svg>
-                        <span>{lang === 'en' ? 'Link Google Account' : 'ربط حساب Google'}</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSecurityMode('OTP');
+                    setShowSecurityModal(true);
+                  }}
+                  className="secondary-btn"
+                  style={{ padding: '9px 16px', fontSize: '12.5px', borderRadius: '10px', gap: '6px' }}
+                >
+                  <span>{lang === 'en' ? 'Reset via OTP 📩' : 'إعادة تعيين عبر رمز OTP 📩'}</span>
+                </button>
               </div>
             </div>
 
