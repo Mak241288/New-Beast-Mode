@@ -38,9 +38,18 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       const userStats = cacheStore.get('user_stats') || {};
       const userRecovery = cacheStore.get('user_recovery') || {};
       const allRecoveryLogs = cacheStore.get('all_recovery_logs') || [];
+      const weightLogs = cacheStore.get('weight_logs') || [];
+      const workoutLogs = cacheStore.get('workout_logs') || [];
+      const customExercises = cacheStore.get('custom_exercises') || [];
+      const transformationPhotos = localStorage.getItem('transformation_photos') || null;
+      const timerSoundPack = localStorage.getItem('bm_timer_sound_pack') || 'BOXING_BELL';
+      const timerVolume = localStorage.getItem('bm_timer_volume') || '80';
+      const colorTheme = localStorage.getItem('color_theme') || 'volt';
+      const waterToday = localStorage.getItem('beast_water_today') || '0';
+      const activeGymSession = cacheStore.get('active_gym_session') || null;
 
       const payload = {
-        version: 1,
+        version: 2,
         timestamp: Date.now(),
         activePlan,
         planHistory,
@@ -48,6 +57,17 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
         userStats,
         userRecovery,
         allRecoveryLogs,
+        weightLogs,
+        workoutLogs,
+        customExercises,
+        transformationPhotos,
+        preferences: {
+          timerSoundPack,
+          timerVolume,
+          colorTheme,
+          waterToday,
+        },
+        activeGymSession,
       };
 
       const jsonStr = JSON.stringify(payload);
@@ -102,7 +122,7 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `BeastMode_Backup_${new Date().toISOString().split('T')[0]}.beast`;
+      a.download = `BeastMode_Complete_Backup_${new Date().toISOString().split('T')[0]}.beast`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -137,12 +157,16 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
         throw new Error(isAr ? 'بيانات المزامنة غير صالحة أو فارغة' : 'Invalid or empty sync data');
       }
 
-      // Hydrate Cache & Storage
+      // 1. Hydrate Core Athlete & Recovery Data
       if (parsed.userProfile) cacheStore.set('user_profile', parsed.userProfile);
       if (parsed.userStats) cacheStore.set('user_stats', parsed.userStats);
       if (parsed.userRecovery) cacheStore.set('user_recovery', parsed.userRecovery);
       if (parsed.allRecoveryLogs) cacheStore.set('all_recovery_logs', parsed.allRecoveryLogs);
+      if (parsed.weightLogs) cacheStore.set('weight_logs', parsed.weightLogs);
+      if (parsed.workoutLogs) cacheStore.set('workout_logs', parsed.workoutLogs);
+      if (parsed.customExercises) cacheStore.set('custom_exercises', parsed.customExercises);
 
+      // 2. Hydrate Plans
       if (Array.isArray(parsed.planHistory) && parsed.planHistory.length > 0) {
         cacheStore.set('plan_history', parsed.planHistory);
         if (parsed.activePlan) {
@@ -153,6 +177,23 @@ export const DeviceSyncModal: React.FC<DeviceSyncModalProps> = ({ isOpen, lang, 
       } else if (parsed.activePlan) {
         cacheStore.set('active_plan', parsed.activePlan);
         cacheStore.set('plan_history', [parsed.activePlan]);
+      }
+
+      // 3. Hydrate Preferences & Extras
+      if (parsed.transformationPhotos) {
+        localStorage.setItem('transformation_photos', typeof parsed.transformationPhotos === 'string' ? parsed.transformationPhotos : JSON.stringify(parsed.transformationPhotos));
+      }
+      if (parsed.preferences) {
+        if (parsed.preferences.timerSoundPack) localStorage.setItem('bm_timer_sound_pack', parsed.preferences.timerSoundPack);
+        if (parsed.preferences.timerVolume) localStorage.setItem('bm_timer_volume', parsed.preferences.timerVolume);
+        if (parsed.preferences.colorTheme) localStorage.setItem('color_theme', parsed.preferences.colorTheme);
+        if (parsed.preferences.waterToday) localStorage.setItem('beast_water_today', parsed.preferences.waterToday);
+      }
+      if (parsed.activeGymSession) {
+        cacheStore.set('active_gym_session', parsed.activeGymSession);
+        try {
+          localStorage.setItem('beastmode_active_gym_session', JSON.stringify(parsed.activeGymSession));
+        } catch {}
       }
 
       // Broadcast changes

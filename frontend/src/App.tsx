@@ -110,6 +110,9 @@ function App() {
           if (parsed.userStats) cacheStore.set('user_stats', parsed.userStats);
           if (parsed.userRecovery) cacheStore.set('user_recovery', parsed.userRecovery);
           if (parsed.allRecoveryLogs) cacheStore.set('all_recovery_logs', parsed.allRecoveryLogs);
+          if (parsed.weightLogs) cacheStore.set('weight_logs', parsed.weightLogs);
+          if (parsed.workoutLogs) cacheStore.set('workout_logs', parsed.workoutLogs);
+          if (parsed.customExercises) cacheStore.set('custom_exercises', parsed.customExercises);
 
           if (Array.isArray(parsed.planHistory) && parsed.planHistory.length > 0) {
             cacheStore.set('plan_history', parsed.planHistory);
@@ -117,6 +120,22 @@ function App() {
           } else if (parsed.activePlan) {
             cacheStore.set('active_plan', parsed.activePlan);
             cacheStore.set('plan_history', [parsed.activePlan]);
+          }
+
+          if (parsed.transformationPhotos) {
+            localStorage.setItem('transformation_photos', typeof parsed.transformationPhotos === 'string' ? parsed.transformationPhotos : JSON.stringify(parsed.transformationPhotos));
+          }
+          if (parsed.preferences) {
+            if (parsed.preferences.timerSoundPack) localStorage.setItem('bm_timer_sound_pack', parsed.preferences.timerSoundPack);
+            if (parsed.preferences.timerVolume) localStorage.setItem('bm_timer_volume', parsed.preferences.timerVolume);
+            if (parsed.preferences.colorTheme) localStorage.setItem('color_theme', parsed.preferences.colorTheme);
+            if (parsed.preferences.waterToday) localStorage.setItem('beast_water_today', parsed.preferences.waterToday);
+          }
+          if (parsed.activeGymSession) {
+            cacheStore.set('active_gym_session', parsed.activeGymSession);
+            try {
+              localStorage.setItem('beastmode_active_gym_session', JSON.stringify(parsed.activeGymSession));
+            } catch {}
           }
 
           localStorage.setItem('token', 'beast_synced_session');
