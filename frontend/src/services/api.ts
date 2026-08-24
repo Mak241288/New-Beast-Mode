@@ -75,6 +75,17 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
     const activeGymSession = cacheStore.get('active_gym_session');
     const timerSoundPack = localStorage.getItem('bm_timer_sound_pack') || 'BOXING_BELL';
     const timerVolume = localStorage.getItem('bm_timer_volume') || '80';
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    const currentColorTheme = localStorage.getItem('color_theme') || 'volt';
+    const currentLang = localStorage.getItem('lang') || 'ar';
+    const currentWater = localStorage.getItem('beast_water_today') || '0';
+    const transformationPhotosRaw = localStorage.getItem('transformation_photos');
+    let transformationPhotos: any[] = [];
+    if (transformationPhotosRaw) {
+      try {
+        transformationPhotos = JSON.parse(transformationPhotosRaw);
+      } catch {}
+    }
 
     // Safe Plan Preservation: Never overwrite existing cloud plans with empty local cache
     let cloudPlanHistory: any = null;
@@ -109,15 +120,29 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
       latestRecoveryLog,
       userStats,
       activeGymSession,
+      transformationPhotos,
       userPreferences: {
         timerSoundPack,
         timerVolume,
+        theme: currentTheme,
+        colorTheme: currentColorTheme,
+        lang: currentLang,
+        waterToday: currentWater,
       },
       lastSyncedAt: Date.now(),
     };
 
     // Dirty Checking: Skip network request entirely if data hasn't changed
-    const currentHash = JSON.stringify({ activePlan: finalActivePlan, userProfile, planHistory: finalPlanHistory, userStats, activeGymSession });
+    const currentHash = JSON.stringify({
+      activePlan: finalActivePlan,
+      userProfile,
+      planHistory: finalPlanHistory,
+      userStats,
+      activeGymSession,
+      transformationPhotos,
+      theme: currentTheme,
+      colorTheme: currentColorTheme,
+    });
     if (currentHash === lastSyncedHash) {
       return;
     }
@@ -307,12 +332,39 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
     if (syncData?.userStats) {
       cacheStore.set('user_stats', syncData.userStats);
     }
+    if (syncData?.transformationPhotos && Array.isArray(syncData.transformationPhotos)) {
+      try {
+        localStorage.setItem('transformation_photos', JSON.stringify(syncData.transformationPhotos));
+      } catch {}
+    }
     if (syncData?.userPreferences) {
-      if (syncData.userPreferences.timerSoundPack) {
-        localStorage.setItem('bm_timer_sound_pack', syncData.userPreferences.timerSoundPack);
+      const prefs = syncData.userPreferences;
+      if (prefs.timerSoundPack) {
+        localStorage.setItem('bm_timer_sound_pack', prefs.timerSoundPack);
       }
-      if (syncData.userPreferences.timerVolume) {
-        localStorage.setItem('bm_timer_volume', syncData.userPreferences.timerVolume);
+      if (prefs.timerVolume) {
+        localStorage.setItem('bm_timer_volume', prefs.timerVolume);
+      }
+      if (prefs.theme) {
+        localStorage.setItem('theme', prefs.theme);
+        if (typeof document !== 'undefined') {
+          document.documentElement.setAttribute('data-theme', prefs.theme);
+        }
+      }
+      if (prefs.colorTheme) {
+        localStorage.setItem('color_theme', prefs.colorTheme);
+        if (typeof document !== 'undefined') {
+          document.documentElement.setAttribute('data-color-theme', prefs.colorTheme);
+        }
+      }
+      if (prefs.lang) {
+        localStorage.setItem('lang', prefs.lang);
+        if (typeof document !== 'undefined') {
+          document.documentElement.dir = prefs.lang === 'ar' ? 'rtl' : 'ltr';
+        }
+      }
+      if (prefs.waterToday) {
+        localStorage.setItem('beast_water_today', prefs.waterToday);
       }
     }
 
