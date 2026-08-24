@@ -509,8 +509,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div style={{ background: 'rgba(15, 23, 42, 0.65)', padding: '14px 24px', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', maxWidth: '900px' }}>
           <p style={{ fontSize: 'clamp(14px, 1.8vw, 16.5px)', color: '#e2e8f0', lineHeight: 1.7, margin: 0 }}>
             {isEn
-              ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, visualize Olympic barbell plates & 1RM, and run seamless offline gym sessions with zero latency.'
-              : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، حاكِ صفائح البار والـ 1RM، وتدرب أوفلاين في الجيم بلا انقطاع.'}
+              ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, enjoy 100% instant cloud sync across all your devices, and run live gym sessions with zero latency.'
+              : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، استمتع بمزامنة سحابية فورية ولحظية 100% بين كافة أجهزتك، وتدرب بسلاسة مطلقة.'}
           </p>
         </div>
 
