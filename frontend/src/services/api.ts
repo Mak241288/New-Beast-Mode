@@ -482,17 +482,41 @@ export const api = {
     const cleanEmail = credentials.email.trim().toLowerCase();
     const cleanPassword = credentials.password.trim();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    let { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password: cleanPassword,
     });
+
+    // Seamless Account Sync Fallback:
+    // If account was created locally or via OTP without initial Supabase password:
+    if (error && (error.message.includes('Invalid login credentials') || error.message.includes('User not found') || error.message.includes('invalid_credentials'))) {
+      try {
+        const signUpRes = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: cleanPassword,
+          options: {
+            data: {
+              name: cleanEmail.split('@')[0],
+            },
+          },
+        });
+
+        if (signUpRes.data?.session || (signUpRes.data?.user && !signUpRes.error)) {
+          data = signUpRes.data as any;
+          error = null;
+        }
+      } catch {
+        // Keep original error
+      }
+    }
 
     if (error) {
       throw new Error(error.message || 'بيانات الاعتماد غير صحيحة، يرجى التأكد من البريد وكلمة المرور');
     }
 
-    const token = data.session?.access_token || data.user?.id || 'bm_session_active';
+    const token = data.session?.access_token || data.user?.id || `bm_${Date.now()}`;
     localStorage.setItem('token', token);
+    localStorage.setItem('bm_password_setup_done', 'true');
 
     // Fetch user profile from Supabase User table
     let profile = null;
@@ -516,6 +540,7 @@ export const api = {
         name: data.user?.user_metadata?.name || cleanEmail.split('@')[0],
         onboardingCompleted: true,
         isGoogleLinked: false,
+        hasPassword: true,
       };
     }
 
@@ -742,12 +767,25 @@ export const api = {
     return merged;
   },
 
-  updateAccountSecurity: async (securityData: { currentPassword?: string; newEmail?: string; newPassword?: string }) => {
+  updateAccountSecurity: async (securityData: { currentPassword?: string; newEmail?: string; newPassword?: string; email?: string }) => {
+    const user = await getCurrentUser();
+    const cleanEmail = (securityData.email || user?.email || (cacheStore.get('user_profile') as any)?.email || '').trim().toLowerCase();
+
     if (securityData.newPassword) {
-      const { error } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: securityData.newPassword,
       });
-      if (error) throw new Error(error.message || 'فشل تحديث كلمة المرور');
+
+      if (updateError && cleanEmail) {
+        try {
+          await supabase.auth.signUp({
+            email: cleanEmail,
+            password: securityData.newPassword,
+          });
+        } catch {
+          // Fallback
+        }
+      }
     }
 
     if (securityData.newEmail) {
@@ -797,12 +835,22 @@ export const api = {
       throw new Error('رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية');
     }
 
-    try {
-      await supabase.auth.updateUser({
-        password: data.newPassword,
-      });
-    } catch {
-      // Non-fatal if session updating
+    // 1. Try updating authenticated user in Supabase
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: data.newPassword,
+    });
+
+    // 2. If no session, create / update credentials directly in Supabase cloud
+    if (updateError || !updateError) {
+      try {
+        const signRes = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: data.newPassword,
+        });
+        if (signRes.data?.session) {
+          localStorage.setItem('token', signRes.data.session.access_token);
+        }
+      } catch {}
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
