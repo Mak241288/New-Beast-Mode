@@ -139,6 +139,7 @@ function App() {
             }
             window.history.replaceState({}, document.title, window.location.pathname + '#dashboard');
             setCurrentView('dashboard');
+            return;
           } else if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
             // Clean OAuth access token fragment from URL if present
             const savedView = localStorage.getItem('beast_last_view') || 'dashboard';
