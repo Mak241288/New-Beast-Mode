@@ -151,10 +151,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
       const res = await api.requestPasswordResetOtp(mailToSend);
       setOtpEmail(mailToSend);
       setOtpStep(2);
-      setOtpSuccessMsg(res.message || 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح!');
-      if (res.debugOtp) {
-        setOtpCode(res.debugOtp);
-      }
+      setOtpSuccessMsg(res.message || 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح! يرجى فتح البريد وإدخال الرمز.');
     } catch (err: any) {
       setOtpError(err.message || 'فشل إرسال رمز التحقق، تأكد من صحة البريد الإلكتروني المسجل');
     } finally {
@@ -258,10 +255,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
     try {
       const res = await api.requestPasswordResetOtp(cleanMail);
       setGoogleOtpSent(true);
-      setGoogleModalSuccess(res.message || 'تم إرسال رمز التحقق (OTP) إلى بريدك بنجاح!');
-      if (res.debugOtp) {
-        setGoogleVerificationOtp(res.debugOtp);
-      }
+      setGoogleModalSuccess(res.message || 'تم إرسال رمز التحقق (OTP) إلى بريدك بنجاح! يرجى فتح البريد وإدخال الرمز.');
     } catch (err: any) {
       setGoogleModalError(err.message || 'فشل إرسال رمز التحقق');
     } finally {

@@ -860,7 +860,7 @@ export const api = {
       sessionStorage.setItem(`bm_active_otp_${cleanEmail}`, generatedOtp);
     } catch {}
 
-    // Send email via Supabase Auth
+    // Send real email via Supabase Auth
     try {
       await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: redirectUrl,
@@ -871,8 +871,7 @@ export const api = {
 
     return {
       success: true,
-      message: `تم إرسال وتوليد رمز التحقق (OTP) بنجاح! رمزك هو: ${generatedOtp}`,
-      debugOtp: generatedOtp,
+      message: 'تم إرسال رمز التحقق (OTP) ورابط الأمان إلى بريدك الإلكتروني بنجاح! يرجى فتح صندوق البريد (Inbox / Spam) وإدخال الرمز.',
     };
   },
 
@@ -881,10 +880,37 @@ export const api = {
     const cleanOtp = data.otp.trim();
     const storedOtp = sessionStorage.getItem(`bm_active_otp_${cleanEmail}`);
 
-    const isOtpValid = cleanOtp && (cleanOtp === storedOtp || cleanOtp === '123456' || cleanOtp.length === 6);
+    let verified = false;
 
-    if (!isOtpValid) {
-      throw new Error('رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية');
+    if (storedOtp && cleanOtp === storedOtp) {
+      verified = true;
+      try {
+        sessionStorage.removeItem(`bm_active_otp_${cleanEmail}`);
+      } catch {}
+    }
+
+    if (!verified) {
+      const { error: verifyErr } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanOtp,
+        type: 'recovery',
+      });
+      if (!verifyErr) {
+        verified = true;
+      } else {
+        const { error: verifyErr2 } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: cleanOtp,
+          type: 'email',
+        });
+        if (!verifyErr2) {
+          verified = true;
+        }
+      }
+    }
+
+    if (!verified) {
+      throw new Error('رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية. يرجى التحقق من الرمز المرسل إلى بريدك الإلكتروني.');
     }
 
     // 1. Try updating authenticated user in Supabase

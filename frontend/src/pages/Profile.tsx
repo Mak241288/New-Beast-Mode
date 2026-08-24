@@ -343,10 +343,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     try {
       const res = await api.requestPasswordResetOtp(profile.email);
       setSecurityMode('OTP');
-      setSecuritySuccess(res.message || (lang === 'en' ? 'Verification OTP code sent to your email!' : 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح!'));
-      if (res.debugOtp) {
-        setSecurityOtpCode(res.debugOtp);
-      }
+      setSecuritySuccess(res.message || (lang === 'en' ? 'Verification OTP code sent to your email! Please check your inbox.' : 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح! يرجى فتح البريد وإدخال الرمز.'));
     } catch (err: any) {
       setSecurityError(err.message || (lang === 'en' ? 'Failed to send OTP code.' : 'فشل إرسال رمز التحقق.'));
     } finally {
