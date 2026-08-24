@@ -130,8 +130,17 @@ function App() {
           // Sync cloud data across devices silently
           await api.syncUserDataFromCloud();
 
-          // Clean OAuth access token fragment from URL if present
-          if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+          // Handle password recovery link from Supabase email
+          if (window.location.hash.includes('type=recovery')) {
+            setLoading(false);
+            setShowSetPasswordModal(true);
+            if (session?.user?.email) {
+              setUserProfileEmail(session.user.email);
+            }
+            window.history.replaceState({}, document.title, window.location.pathname + '#dashboard');
+            setCurrentView('dashboard');
+          } else if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+            // Clean OAuth access token fragment from URL if present
             const savedView = localStorage.getItem('beast_last_view') || 'dashboard';
             window.history.replaceState({ view: savedView }, document.title, window.location.pathname + `#${savedView}`);
             setCurrentView(savedView);
@@ -180,8 +189,15 @@ function App() {
         // Sync cloud data across devices
         await api.syncUserDataFromCloud();
 
-        // Only redirect to dashboard if the user was on the login or landing page
-        if (event === 'SIGNED_IN') {
+        if (event === 'PASSWORD_RECOVERY' || window.location.hash.includes('type=recovery')) {
+          setLoading(false);
+          setShowSetPasswordModal(true);
+          if (session.user?.email) {
+            setUserProfileEmail(session.user.email);
+          }
+          window.history.replaceState({}, document.title, window.location.pathname + '#dashboard');
+          setCurrentView('dashboard');
+        } else if (event === 'SIGNED_IN') {
           setCurrentView((prev) => {
             const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about', 'onboarding'];
             if (validViews.includes(prev) && prev !== 'landing' && prev !== 'login') {

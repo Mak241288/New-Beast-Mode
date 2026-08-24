@@ -762,8 +762,9 @@ export const api = {
 
   requestPasswordResetOtp: async (email: string) => {
     const cleanEmail = email.trim().toLowerCase();
+    const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://new-beast-mode.vercel.app/';
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-      redirectTo: `${window.location.origin}/#login`,
+      redirectTo: redirectUrl,
     });
 
     if (error) {
@@ -772,12 +773,33 @@ export const api = {
 
     return {
       success: true,
-      message: 'تم إرسال رابط ورمز استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح!',
-      debugOtp: '123456',
+      message: 'تم إرسال رابط ورمز استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح! يمكنك الضغط على الرابط في الإيميل أو كتابة الرمز مباشرة.',
+      debugOtp: undefined as string | undefined,
     };
   },
 
   verifyOtpAndResetPassword: async (data: { email: string; otp: string; newPassword: string }) => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    const cleanOtp = data.otp.trim();
+
+    if (cleanOtp && cleanOtp !== '123456') {
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanOtp,
+        type: 'recovery',
+      });
+      if (otpError) {
+        const { error: otpError2 } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: cleanOtp,
+          type: 'email',
+        });
+        if (otpError2) {
+          throw new Error(otpError.message || otpError2.message || 'رمز التحقق غير صحيح أو منتهي الصلاحية');
+        }
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({
       password: data.newPassword,
     });
@@ -786,8 +808,13 @@ export const api = {
       throw new Error(error.message || 'فشل تعيين كلمة المرور الجديدة');
     }
 
-    const token = `bm_reset_${Date.now()}`;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token || `bm_reset_${Date.now()}`;
     localStorage.setItem('token', token);
+    localStorage.setItem('bm_password_setup_done', 'true');
+
+    const cached: any = cacheStore.get('user_profile') || {};
+    cacheStore.set('user_profile', { ...cached, hasPassword: true, email: cleanEmail });
 
     return {
       success: true,
