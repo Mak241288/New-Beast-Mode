@@ -9,6 +9,7 @@ import { CloudSyncStatusBadge } from './components/CloudSyncStatusBadge';
 import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
 import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 import { FloatingSpeedDial } from './components/FloatingSpeedDial';
+import { SetPasswordModal } from './components/SetPasswordModal';
 
 import './App.css';
 
@@ -72,6 +73,8 @@ function App() {
     }
   });
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
+  const [showSetPasswordModal, setShowSetPasswordModal] = useState<boolean>(false);
+  const [userProfileEmail, setUserProfileEmail] = useState<string>('');
 
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
@@ -277,6 +280,21 @@ function App() {
           time: profile.reminderTime,
           lang,
         });
+      }
+
+      // Check if user is an existing / old user without a permanent password
+      const isPasswordSetupDone = localStorage.getItem('bm_password_setup_done') === 'true';
+      const isPromptDismissed = sessionStorage.getItem('bm_password_prompt_dismissed') === 'true';
+      const email = profile?.email || localStorage.getItem('bm_remember_email') || '';
+
+      if (email) {
+        setUserProfileEmail(email);
+      }
+
+      if (!isPasswordSetupDone && !isPromptDismissed && profile?.hasPassword === false && email) {
+        setTimeout(() => {
+          setShowSetPasswordModal(true);
+        }, 1500);
       }
 
       if (!isCompleted) {
@@ -624,6 +642,18 @@ function App() {
       <GlobalWorkoutPlayer lang={lang} />
       <FloatingWorkoutBar lang={lang} />
       <FloatingSpeedDial lang={lang} />
+
+      {/* ONE-TIME PASSWORD SETUP PROMPT FOR EXISTING / UNSECURED ACCOUNTS */}
+      {showSetPasswordModal && (
+        <SetPasswordModal
+          lang={lang}
+          userEmail={userProfileEmail}
+          onClose={() => setShowSetPasswordModal(false)}
+          onSuccess={() => {
+            setShowSetPasswordModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
