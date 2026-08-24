@@ -1110,54 +1110,97 @@ export const api = {
   },
 
 
-  getAlternatives: async (_id: number) => {
-    return [
-      { id: generateId(), name_ar: 'تمرين بديل بالأوزان الحرة', name_en: 'Dumbbell Free Alternative', targetMuscle: 'Chest' },
-      { id: generateId() + 1, name_ar: 'تمرين بديل بالكيبل', name_en: 'Cable Alternative', targetMuscle: 'Chest' },
-      { id: generateId() + 2, name_ar: 'تمرين بديل بوزن الجسم', name_en: 'Bodyweight Alternative', targetMuscle: 'Chest' },
-    ];
+  getAlternatives: async (id: number | string) => {
+    const plan: any = cacheStore.get('active_plan');
+    let targetMuscle = 'Chest';
+    if (plan?.dayWorkouts) {
+      for (const dw of plan.dayWorkouts) {
+        const found = dw.exercises?.find((e: any) => String(e.id) === String(id));
+        if (found) {
+          targetMuscle = found.targetMuscle || 'Chest';
+          break;
+        }
+      }
+    }
+
+    const catalog = await api.getLibraryTree();
+    const muscleClean = targetMuscle.toLowerCase();
+    const matches = catalog.filter((ex: any) => {
+      const exMuscle = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
+      return exMuscle.includes(muscleClean) || muscleClean.includes(exMuscle);
+    });
+
+    if (matches.length > 0) {
+      return matches.slice(0, 8).map((m: any) => ({
+        id: m.id || generateId(),
+        name_ar: m.name_ar || m.name,
+        name_en: m.name_en || m.name,
+        targetMuscle: m.muscle_en || m.targetMuscle || targetMuscle,
+        equipment: m.equipment_en || m.equipment || 'Dumbbells',
+        imageUrl: m.image_url || m.imageUrl || '',
+        videoUrl: m.video_url || m.videoUrl || '',
+      }));
+    }
+
+    return catalog.slice(0, 6);
   },
 
-  swapExerciseAI: async (id: number, reason: string, _lang: string) => {
+  swapExerciseAI: async (id: number | string, reason: string, lang: string = 'ar') => {
+    const isEn = lang === 'en';
     const plan: any = cacheStore.get('active_plan');
     let swapped: any = null;
 
     if (plan && plan.dayWorkouts) {
-      plan.dayWorkouts.forEach((dw: any) => {
+      for (const dw of plan.dayWorkouts) {
         if (dw.exercises) {
-          const idx = dw.exercises.findIndex((e: any) => e.id === id);
+          const idx = dw.exercises.findIndex((e: any) => String(e.id) === String(id));
           if (idx !== -1) {
             const oldEx = dw.exercises[idx];
-            swapped = {
-              ...oldEx,
-              name: `بديل ذكي (${oldEx.name})`,
-              exerciseTips: `تم التبديل بناء على طلبك: ${reason}`,
-            };
+            const targetMuscle = oldEx.targetMuscle || 'Chest';
+            const catalog = await api.getLibraryTree();
+            const muscleClean = targetMuscle.toLowerCase();
+            const altMatches = catalog.filter((ex: any) => {
+              const exMuscle = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
+              const exName = (ex.name_en || ex.name || '').toLowerCase();
+              const oldName = (oldEx.name_en || oldEx.name || '').toLowerCase();
+              return (exMuscle.includes(muscleClean) || muscleClean.includes(exMuscle)) && exName !== oldName;
+            });
+
+            const chosenAlt = altMatches.length > 0 ? altMatches[Math.floor(Math.random() * Math.min(altMatches.length, 5))] : null;
+            if (chosenAlt) {
+              swapped = {
+                ...oldEx,
+                id: chosenAlt.id || `ex_${Date.now()}`,
+                name: isEn ? (chosenAlt.name_en || chosenAlt.name) : (chosenAlt.name_ar || chosenAlt.name || chosenAlt.name_en),
+                targetMuscle: chosenAlt.muscle_en || chosenAlt.targetMuscle || targetMuscle,
+                equipment: chosenAlt.equipment_en || chosenAlt.equipment || oldEx.weight,
+                imageUrl: chosenAlt.image_url || chosenAlt.imageUrl || oldEx.imageUrl,
+                videoUrl: chosenAlt.video_url || chosenAlt.videoUrl || oldEx.videoUrl,
+                exerciseTips: chosenAlt.instructions_ar || chosenAlt.instructions_en || (isEn ? `Swapped for: ${reason}` : `تم التبديل بناء على طلبك: ${reason}`),
+              };
+            } else {
+              swapped = {
+                ...oldEx,
+                name: isEn ? `Smart Alternative (${oldEx.name})` : `بديل ذكي (${oldEx.name})`,
+                exerciseTips: isEn ? `Swapped for: ${reason}` : `تم التبديل بناء على طلبك: ${reason}`,
+              };
+            }
             dw.exercises[idx] = swapped;
+            break;
           }
         }
-      });
+      }
       plan.days = plan.dayWorkouts;
       plan.updatedAt = new Date().toISOString();
-      cacheStore.set('active_plan', plan);
-
-      // Keep plan_history in sync
-      const history: any[] = cacheStore.get('plan_history') || [];
-      const hIdx = history.findIndex((p: any) => p.id === plan.id || p.title === plan.title);
-      if (hIdx >= 0) {
-        history[hIdx] = { ...history[hIdx], ...plan };
-        cacheStore.set('plan_history', history);
-      }
-
-      pushUserDataToCloud();
+      await planService.save(plan, true);
     }
 
     return {
       success: true,
       exercise: swapped,
       newExercise: swapped,
-      explanation: `تم استبدال التمرين بالبديل الأنسب: ${reason}`,
-      message: 'تم استبدال التمرين بالبديل الأنسب!',
+      explanation: isEn ? `Replaced with optimal alternative: ${reason}` : `تم استبدال التمرين بالبديل الأنسب من قاعدة البيانات: ${reason}`,
+      message: isEn ? 'Exercise swapped successfully!' : 'تم استبدال التمرين بالبديل الأنسب!',
     };
   },
 
