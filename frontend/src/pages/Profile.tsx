@@ -128,6 +128,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [securityNewPassword, setSecurityNewPassword] = useState('');
   const [securityConfirmPassword, setSecurityConfirmPassword] = useState('');
   const [showSecCurrentPass, setShowSecCurrentPass] = useState(false);
+  const [securityOtpCooldown, setSecurityOtpCooldown] = useState(0);
   const [showSecNewPass, setShowSecNewPass] = useState(false);
   const [showSecConfirmPass, setShowSecConfirmPass] = useState(false);
   const [securityOtpCode, setSecurityOtpCode] = useState('');
@@ -164,6 +165,16 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     window.addEventListener('beast_cloud_synced', handleCloudSync);
     return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
   }, []);
+
+  useEffect(() => {
+    let interval: any = null;
+    if (securityOtpCooldown > 0) {
+      interval = setInterval(() => {
+        setSecurityOtpCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [securityOtpCooldown]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -352,6 +363,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   };
 
   const handleSendSecurityOtp = async () => {
+    if (securityOtpCooldown > 0) return;
     if (!profile.email) {
       setSecurityError(lang === 'en' ? 'No registered email found.' : 'لم يتم العثور على بريد إلكتروني مسجل.');
       return;
@@ -364,6 +376,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     try {
       const res = await api.requestPasswordResetOtp(profile.email);
       setSecurityMode('OTP');
+      setSecurityOtpCooldown(60);
       setSecuritySuccess(res.message || (lang === 'en' ? 'Verification OTP code sent to your email! Please check your inbox.' : 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح! يرجى فتح البريد وإدخال الرمز.'));
     } catch (err: any) {
       setSecurityError(err.message || (lang === 'en' ? 'Failed to send OTP code.' : 'فشل إرسال رمز التحقق.'));
@@ -1683,20 +1696,20 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               /* OTP RESET FORM */
               <form onSubmit={handleVerifySecurityOtpAndReset} style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: lang === 'en' ? 'left' : 'right' }}>
                 
-                {/* 6-digit OTP code */}
+                {/* OTP code */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <label style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--primary)' }}>
-                      🔢 {lang === 'en' ? '6-Digit OTP Verification Code:' : 'رمز التحقق (OTP) المكوّن من 6 أرقام:'}
+                      🔢 {lang === 'en' ? 'OTP Verification Code from Email:' : 'رمز التحقق (OTP) من الإيميل:'}
                     </label>
                     <button
                       type="button"
-                      disabled={securitySaving}
+                      disabled={securitySaving || securityOtpCooldown > 0}
                       onClick={handleSendSecurityOtp}
-                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ background: 'none', border: 'none', color: securityOtpCooldown > 0 ? 'var(--text-muted)' : 'var(--primary)', fontSize: '11px', cursor: securityOtpCooldown > 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                       <RefreshCw size={11} />
-                      <span>{lang === 'en' ? 'Resend Code' : 'إعادة إرسال الرمز'}</span>
+                      <span>{securityOtpCooldown > 0 ? (lang === 'en' ? `Resend in (${securityOtpCooldown}s)` : `إعادة الإرسال بعد (${securityOtpCooldown}s)`) : (lang === 'en' ? 'Resend Code' : 'إعادة إرسال الرمز')}</span>
                     </button>
                   </div>
                   <input

@@ -34,6 +34,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
+  const [otpCooldown, setOtpCooldown] = useState(0);
 
   // Google Fast Access Modal State
   const [showGoogleModal, setShowGoogleModal] = useState(false);
@@ -136,7 +137,18 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
     }
   };
 
+  useEffect(() => {
+    let interval: any = null;
+    if (otpCooldown > 0) {
+      interval = setInterval(() => {
+        setOtpCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpCooldown]);
+
   const handleSendOtp = async (targetEmail?: string) => {
+    if (otpCooldown > 0) return;
     const mailToSend = (targetEmail || otpEmail || email).trim().toLowerCase();
     if (!mailToSend || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mailToSend)) {
       setOtpError('يرجى كتابة بريد إلكتروني صحيح لاستلام رمز OTP');
@@ -151,6 +163,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
       const res = await api.requestPasswordResetOtp(mailToSend);
       setOtpEmail(mailToSend);
       setOtpStep(2);
+      setOtpCooldown(60);
       setOtpSuccessMsg(res.message || 'تم إرسال رمز التحقق إلى بريدك الإلكتروني بنجاح! يرجى فتح البريد وإدخال الرمز.');
     } catch (err: any) {
       setOtpError(err.message || 'فشل إرسال رمز التحقق، تأكد من صحة البريد الإلكتروني المسجل');
@@ -688,12 +701,12 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                     </label>
                     <button
                       type="button"
-                      disabled={otpLoading}
+                      disabled={otpLoading || otpCooldown > 0}
                       onClick={() => handleSendOtp(otpEmail)}
-                      style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '11px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ background: 'none', border: 'none', color: otpCooldown > 0 ? 'var(--text-muted)' : 'var(--primary)', fontSize: '11px', cursor: otpCooldown > 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                     >
                       <RefreshCw size={11} />
-                      <span>إعادة إرسال الرمز</span>
+                      <span>{otpCooldown > 0 ? `إعادة الإرسال بعد (${otpCooldown}s)` : 'إعادة إرسال الرمز'}</span>
                     </button>
                   </div>
                   <input
