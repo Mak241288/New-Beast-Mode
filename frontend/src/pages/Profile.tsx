@@ -88,6 +88,27 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [rapidApiKey, setRapidApiKey] = useState('');
   const [syncMessage, setSyncMessage] = useState('');
 
+  // Cross-device cloud sync state
+  const [isForceSyncing, setIsForceSyncing] = useState(false);
+  const [forceSyncSuccessMsg, setForceSyncSuccessMsg] = useState('');
+
+  const handleForceCloudSync = async () => {
+    setIsForceSyncing(true);
+    setForceSyncSuccessMsg('');
+    try {
+      await api.pushUserDataToCloud(true);
+      await api.syncUserDataFromCloud();
+      setForceSyncSuccessMsg(lang === 'en' ? 'All workout plans and stats uploaded to Cloud! Open your phone now.' : 'تم رفع ومزامنة كافة الجداول والإحصائيات سحابياً بنجاح! يمكنك فتح هاتفك الآن لرؤيتها.');
+      setTimeout(() => {
+        setForceSyncSuccessMsg('');
+      }, 5000);
+    } catch (err: any) {
+      alert(err.message || 'فشلت المزامنة السحابية');
+    } finally {
+      setIsForceSyncing(false);
+    }
+  };
+
   // Performance test state
   const [testingPerformance, setTestingPerformance] = useState(false);
   const [performanceOutput, setPerformanceOutput] = useState('');
@@ -636,6 +657,32 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>kg</span>
                 </div>
               </div>
+            </div>
+
+            {/* Cross-Device Cloud Sync Hub */}
+            <div className="glass-panel" style={{ padding: '16px', border: '1px solid rgba(0, 210, 255, 0.4)', display: 'flex', flexDirection: 'column', gap: '8px', background: 'rgba(0, 210, 255, 0.04)' }}>
+              <span style={{ fontSize: '11px', color: '#00d2ff', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
+                ☁️ {lang === 'en' ? 'Cross-Device Cloud Sync' : 'المزامنة السحابية لكافة الأجهزة'}
+              </span>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                {lang === 'en' ? 'Upload all modified plans and stats to cloud for phone access.' : 'رفع كافة الجداول والإحصائيات المعدلة للسحابة لفتحها من هاتفك فوراً.'}
+              </p>
+              {forceSyncSuccessMsg && (
+                <div style={{ fontSize: '11.5px', color: '#10b981', fontWeight: 'bold' }}>
+                  ✅ {forceSyncSuccessMsg}
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={isForceSyncing}
+                onClick={handleForceCloudSync}
+                className="glow-btn"
+                style={{ padding: '8px 12px', fontSize: '12px', justifyContent: 'center' }}
+              >
+                {isForceSyncing 
+                  ? (lang === 'en' ? 'Syncing to Cloud...' : 'جاري المزامنة مع السحابة...') 
+                  : (lang === 'en' ? 'Sync & Push To Cloud Now ☁️' : 'مزامنة ورفع للسحابة الآن ☁️')}
+              </button>
             </div>
 
             {/* Smart Nutrition Coach Shortcut */}

@@ -132,7 +132,7 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
       lastSyncedAt: Date.now(),
     };
 
-    // Dirty Checking: Skip network request entirely if data hasn't changed
+    // Dirty Checking: Skip network request only if debounce mode and data hasn't changed
     const currentHash = JSON.stringify({
       activePlan: finalActivePlan,
       userProfile,
@@ -143,7 +143,7 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
       theme: currentTheme,
       colorTheme: currentColorTheme,
     });
-    if (currentHash === lastSyncedHash) {
+    if (!immediate && currentHash === lastSyncedHash) {
       return;
     }
     lastSyncedHash = currentHash;
@@ -294,6 +294,13 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
     } else if (finalPlan) {
       cacheStore.set('active_plan', finalPlan);
       cacheStore.set('plan_history', [finalPlan]);
+    } else {
+      // If cloud has no plans yet, push local device plans to cloud immediately
+      const localP = cacheStore.get('active_plan');
+      const localH = cacheStore.get('plan_history');
+      if (localP || (Array.isArray(localH) && localH.length > 0)) {
+        await pushUserDataToCloud(true);
+      }
     }
 
     // Refresh memory cache via planService

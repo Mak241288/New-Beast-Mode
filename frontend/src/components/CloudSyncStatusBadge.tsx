@@ -50,12 +50,13 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
     }
 
     try {
+      await api.pushUserDataToCloud(true);
       await api.syncUserDataFromCloud();
       setLastSyncedTimestamp(Date.now());
       setSyncState('synced');
       window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
       if (_manual) {
-        showSyncNotification(isEn ? '⚡ Cloud data synced successfully!' : '⚡ تمت المزامنة السحابية بنجاح!');
+        showSyncNotification(isEn ? '⚡ All workout plans & stats synced to cloud!' : '⚡ تم رفع ومزامنة كافة الجداول والإحصائيات سحابياً بنجاح!');
       }
     } catch {
       if (!navigator.onLine) {
