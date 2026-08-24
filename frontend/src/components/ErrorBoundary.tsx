@@ -24,6 +24,23 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary Captured Error]:', error, errorInfo);
+
+    // Auto-Heal for Stale Deploys / Outdated Chunk Hashes during updates:
+    const errorMsg = error?.message || '';
+    const isChunkLoadFailed =
+      errorMsg.includes('Failed to fetch dynamically imported module') ||
+      errorMsg.includes('Importing a module script failed') ||
+      errorMsg.includes('Loading chunk') ||
+      errorMsg.includes('CSS_CHUNK_LOAD_FAILED');
+
+    if (isChunkLoadFailed) {
+      const lastReload = sessionStorage.getItem('bm_chunk_reload_ts');
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem('bm_chunk_reload_ts', now.toString());
+        window.location.reload();
+      }
+    }
   }
 
   private handleReload = () => {

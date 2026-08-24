@@ -364,8 +364,12 @@ function App() {
       // Ignore
     }
     localStorage.removeItem('token');
+    localStorage.removeItem('beast_last_view');
     cacheStore.clearAll();
     setToken(null);
+    try {
+      window.history.replaceState({ view: 'landing' }, document.title, window.location.pathname + '#landing');
+    } catch {}
     setCurrentView('landing');
   };
 
