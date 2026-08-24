@@ -1016,6 +1016,38 @@ export const api = {
     return planService.getActive();
   },
 
+  getPlanHistory: async () => {
+    return planService.getAll();
+  },
+
+  getAllPlans: async () => {
+    return planService.getAll();
+  },
+
+  renamePlan: async (planId: number | string, newTitle: string) => {
+    return planService.rename(planId, newTitle);
+  },
+
+  duplicatePlan: async (planId: number | string) => {
+    return planService.duplicate(planId);
+  },
+
+  deletePlan: async (planId: number | string) => {
+    return planService.delete(planId);
+  },
+
+  activateHistoricalPlan: async (planId: number | string) => {
+    return planService.activate(planId);
+  },
+
+  updatePlanFully: async (planId: number | string, planData: any, makeActive = true) => {
+    return planService.save({ ...planData, id: planId }, makeActive);
+  },
+
+  savePlan: async (planData: any, makeActive = true) => {
+    return planService.save(planData, makeActive);
+  },
+
   updateExercise: async (exerciseId: number | string, exerciseData: any) => {
     return planService.updateExercise(exerciseId, exerciseData);
   },
@@ -1029,64 +1061,7 @@ export const api = {
   },
 
   createManualPlan: async (options: any) => {
-    const dayWorkouts = (options.dayWorkouts || options.days || []).map((dw: any, dIdx: number) => ({
-      id: generateId() + dIdx,
-      dayIndex: dw.dayIndex || dIdx + 1,
-      title: dw.title,
-      focusArea: dw.focusArea || '',
-      isRestDay: dw.isRestDay || false,
-      exercises: (dw.exercises || []).map((ex: any, eIdx: number) => ({
-        id: ex.id || (generateId() + dIdx * 100 + eIdx),
-        name: ex.name,
-        category: ex.category || 'MAIN',
-        isTimed: !!ex.isTimed,
-        restSeconds: ex.restSeconds || 60,
-        sets: ex.sets || 3,
-        reps: ex.reps || '10-12',
-        weight: ex.weight || 'Bodyweight',
-        targetMuscle: ex.targetMuscle || 'General',
-        imageUrl: ex.imageUrl || '',
-        videoUrl: ex.videoUrl || '',
-        exerciseTips: ex.exerciseTips || '',
-      })),
-    }));
-
-    const newPlan = {
-      id: generateId(),
-      title: options.title || 'جدول تمارين يدوي مخصص',
-      active: true,
-      durationWeeks: options.durationWeeks || 4,
-      startDate: new Date().toISOString(),
-      weeklyTips: 'جدول مصمم يدوياً بالكامل بحسب اختياراتك.',
-      dayWorkouts,
-      days: dayWorkouts,
-      updatedAt: new Date().toISOString(),
-    };
-
-    cacheStore.set('active_plan', newPlan);
-
-    // Also synchronize to plan_history
-    const history: any[] = cacheStore.get('plan_history') || [];
-    const updatedHistory = [newPlan, ...history.filter((p: any) => p.id !== newPlan.id && p.title !== newPlan.title).map((p: any) => ({ ...p, active: false }))];
-    cacheStore.set('plan_history', updatedHistory);
-
-    pushUserDataToCloud();
-
-    // Persist to Supabase if accessible
-    try {
-      await supabase.from('WorkoutPlan').insert({
-        title: newPlan.title,
-        active: true,
-        durationWeeks: newPlan.durationWeeks,
-        startDate: newPlan.startDate,
-        weeklyTips: newPlan.weeklyTips,
-        isManual: true,
-      });
-    } catch {
-      // Non-fatal
-    }
-
-    return newPlan;
+    return planService.create(options.title || 'جدول تمارين يدوي مخصص', options.dayWorkouts || options.days);
   },
 
   generatePlan: async (options: any) => {
@@ -1302,30 +1277,6 @@ export const api = {
 
   saveStructuredPlan: async (plan: any, _lang: string = 'ar'): Promise<any> => {
     return planService.save(plan, true);
-  },
-
-  updatePlanFully: async (planId: number | string, updatedData: any, activate: boolean = false): Promise<any> => {
-    return planService.save({ ...updatedData, id: planId }, activate);
-  },
-
-  renamePlan: async (planId: number | string, newTitle: string): Promise<any> => {
-    return planService.rename(planId, newTitle);
-  },
-
-  duplicatePlan: async (planId: number | string): Promise<any> => {
-    return planService.duplicate(planId);
-  },
-
-  deletePlan: async (planId: number | string): Promise<any> => {
-    return planService.delete(planId);
-  },
-
-  getPlanHistory: async (): Promise<any[]> => {
-    return planService.getAll();
-  },
-
-  activateHistoricalPlan: async (id: number | string) => {
-    return planService.activate(id);
   },
 
   getLibraryTree: async (): Promise<any[]> => {
