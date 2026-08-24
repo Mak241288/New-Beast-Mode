@@ -101,7 +101,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       'يوجهك بـ +4,298 تمرين بدقة HD وبحث فوري 🎬',
       'يحسب سعراتك وماكروزك بدقة الغرام 🥗',
       'يسجل جولاتك ومؤقتات الراحة بنقرة واحدة ⚡',
-      'يحاكي أوزان البار الأولمبي والـ 1RM 🏋️',
+      'يوفر قوالب تمارين جاهزة بنقرة واحدة 📋',
       'يتتبع زيادة أحمالك واستشفاءك العصبي التلقائي 🦍'
     ],
     en: [
@@ -109,7 +109,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       'Guided by 4,298+ HD Exercises & Instant Search 🎬',
       'Precision Macro & TDEE Nutrition Engine 🥗',
       '1-Tap Set Logging & Floating Auto Rest Timers ⚡',
-      'Olympic Barbell Plates & 1RM Lab 🏋️',
+      '1-Click Pro Workout Plans (PPL, Arnold, Upper/Lower) 📋',
       'Progressive Overload & CNS Recovery Tracker 🦍'
     ]
   };
