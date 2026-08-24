@@ -164,8 +164,8 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
     setOtpError('');
     setOtpSuccessMsg('');
 
-    if (!otpCode.trim() || otpCode.trim().length !== 6) {
-      setOtpError('يرجى إدخال رمز التحقق المكون من 6 أرقام');
+    if (!otpCode.trim() || otpCode.trim().length < 4) {
+      setOtpError('يرجى إدخال رمز التحقق (OTP) بشكل صحيح');
       return;
     }
 
@@ -684,7 +684,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <label style={{ fontSize: '12.5px', fontWeight: 'bold', color: 'var(--primary)' }}>
-                      🔢 رمز التحقق (OTP) المكوّن من 6 أرقام:
+                      🔢 رمز التحقق (OTP) من الإيميل:
                     </label>
                     <button
                       type="button"
@@ -698,12 +698,12 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                   </div>
                   <input
                     type="text"
-                    maxLength={6}
-                    placeholder="123456"
+                    maxLength={16}
+                    placeholder="أدخل رمز التحقق"
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => setOtpCode(e.target.value.trim())}
                     className="input-field"
-                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '20px', fontWeight: '800', borderColor: 'var(--primary)' }}
+                    style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px', fontWeight: '800', borderColor: 'var(--primary)' }}
                     required
                   />
                 </div>

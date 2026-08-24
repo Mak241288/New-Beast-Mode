@@ -356,8 +356,8 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     setSecurityError('');
     setSecuritySuccess('');
 
-    if (!securityOtpCode.trim() || securityOtpCode.trim().length !== 6) {
-      setSecurityError(lang === 'en' ? 'Please enter the 6-digit OTP code.' : 'يرجى إدخال رمز التحقق المكون من 6 أرقام.');
+    if (!securityOtpCode.trim() || securityOtpCode.trim().length < 4) {
+      setSecurityError(lang === 'en' ? 'Please enter the verification OTP code.' : 'يرجى إدخال رمز التحقق بشكل صحيح.');
       return;
     }
 
@@ -1654,12 +1654,12 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                   </div>
                   <input
                     type="text"
-                    maxLength={6}
+                    maxLength={16}
                     value={securityOtpCode}
-                    onChange={(e) => setSecurityOtpCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="123456"
+                    onChange={(e) => setSecurityOtpCode(e.target.value.trim())}
+                    placeholder="رمز التحقق من الإيميل"
                     className="input-field"
-                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '20px', fontWeight: '800', borderColor: 'var(--primary)' }}
+                    style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px', fontWeight: '800', borderColor: 'var(--primary)' }}
                     required
                   />
                 </div>

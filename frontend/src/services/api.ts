@@ -890,27 +890,49 @@ export const api = {
     }
 
     if (!verified) {
-      const { error: verifyErr } = await supabase.auth.verifyOtp({
+      // 1. Try recovery OTP
+      const { data: recData, error: verifyErr } = await supabase.auth.verifyOtp({
         email: cleanEmail,
         token: cleanOtp,
         type: 'recovery',
       });
-      if (!verifyErr) {
+      if (!verifyErr && recData?.session) {
         verified = true;
       } else {
-        const { error: verifyErr2 } = await supabase.auth.verifyOtp({
+        // 2. Try email OTP
+        const { data: emData, error: verifyErr2 } = await supabase.auth.verifyOtp({
           email: cleanEmail,
           token: cleanOtp,
           type: 'email',
         });
-        if (!verifyErr2) {
+        if (!verifyErr2 && emData?.session) {
           verified = true;
+        } else {
+          // 3. Try magiclink OTP
+          const { data: magData, error: verifyErr3 } = await supabase.auth.verifyOtp({
+            email: cleanEmail,
+            token: cleanOtp,
+            type: 'magiclink',
+          });
+          if (!verifyErr3 && magData?.session) {
+            verified = true;
+          } else {
+            // 4. Try signup OTP
+            const { data: supData, error: verifyErr4 } = await supabase.auth.verifyOtp({
+              email: cleanEmail,
+              token: cleanOtp,
+              type: 'signup',
+            });
+            if (!verifyErr4 && supData?.session) {
+              verified = true;
+            }
+          }
         }
       }
     }
 
     if (!verified) {
-      throw new Error('رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية. يرجى التحقق من الرمز المرسل إلى بريدك الإلكتروني.');
+      throw new Error('رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية. يرجى التحقق من الرمز المكون من 6 إلى 8 خانات المرسل إلى بريدك الإلكتروني.');
     }
 
     // 1. Try updating authenticated user in Supabase
