@@ -19,6 +19,13 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
 });
 
+// Expose a helper to easily test Sentry from browser console
+(window as any).triggerSentryTest = () => {
+  Sentry.captureMessage('🦍 BeastMode Frontend Sentry Test: Successfully Connected!', 'info');
+  console.log('✅ Sentry test message sent to your dashboard!');
+  alert('تم إرسال حدث اختبار بنجاح إلى لوحة تحكم Sentry!');
+};
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
