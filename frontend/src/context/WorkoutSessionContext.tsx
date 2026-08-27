@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { cacheStore } from '../utils/cacheStore';
+import { audioCues } from '../utils/audioCues';
 
 export type SessionStatus = 'idle' | 'active' | 'resting' | 'paused' | 'completed';
 
@@ -129,20 +130,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
 
   // Play audio beep
   const playBeep = useCallback((freq = 880, duration = 0.15) => {
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      gain.gain.setValueAtTime(0.12, ctx.currentTime);
-      osc.start();
-      osc.stop(ctx.currentTime + duration);
-    } catch (e) {
-      console.warn('AudioContext beep failed:', e);
-    }
+    audioCues.playBeep(freq, duration);
   }, []);
 
   // Save to LocalStorage & Cloud automatically whenever relevant session state changes

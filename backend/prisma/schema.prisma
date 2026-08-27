@@ -126,6 +126,11 @@ model Exercise {
   @@index([name_en])
   @@index([name_ar])
   @@index([dayWorkoutId])
+  @@index([muscle_en, equipment_en])
+  @@index([muscle_ar, equipment_ar])
+  @@index([category, level])
+  @@index([name_en, muscle_en])
+  @@index([name_ar, muscle_ar])
 }
 
 model ExerciseLibrary {
@@ -166,6 +171,11 @@ model ExerciseLibrary {
   @@index([category])
   @@index([name_en])
   @@index([name_ar])
+  @@index([muscle_en, equipment_en])
+  @@index([muscle_ar, equipment_ar])
+  @@index([category, level])
+  @@index([name_en, muscle_en])
+  @@index([name_ar, muscle_ar])
 }
 
 model ProgressLog {

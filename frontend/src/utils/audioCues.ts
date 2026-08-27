@@ -38,6 +38,39 @@ class AudioCueEngine {
     return this.isMuted;
   }
 
+  public getContext(): AudioContext | null {
+    this.initContext();
+    return this.ctx;
+  }
+
+  /**
+   * Universal beep using the shared Singleton AudioContext
+   */
+  public playBeep(freq: number = 880, duration: number = 0.15, gainVal: number = 0.12) {
+    if (this.isMuted) return;
+    try {
+      this.initContext();
+      if (!this.ctx) return;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+      gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch {
+      // Non-fatal
+    }
+  }
+
   /**
    * Short crisp countdown tick (3.. 2.. 1..)
    */

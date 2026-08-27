@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, memo } from 'react';
 import { X, Play, Dumbbell, ShieldAlert, Youtube, Activity, Globe } from 'lucide-react';
 import { ExerciseImage } from './ExerciseImage';
+import { YouTubeEmbedPlayer } from './YouTubeEmbedPlayer';
 
 export interface ExerciseItem {
   id?: string | number;
@@ -330,7 +331,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
   onClose,
   onAddToPlan,
 }) => {
-  const [activeTab, setActiveTab] = React.useState<'steps' | 'breathing' | 'mistakes' | 'anatomy'>('steps');
+  const [activeTab, setActiveTab] = React.useState<'steps' | 'video' | 'breathing' | 'mistakes' | 'anatomy'>('steps');
   const [anatomyView, setAnatomyView] = React.useState<'front' | 'back'>('front');
   const [motionSpeed, setMotionSpeed] = React.useState<number>(1);
   const [isPlayingMotion, setIsPlayingMotion] = React.useState<boolean>(true);
@@ -463,8 +464,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
   if (!exercise) return null;
 
   const handleOpenVideo = () => {
-    const safeUrl = sanitizeSafeUrl(youtubeUrl, 'https://www.youtube.com', ['youtube.com', 'youtu.be', 'www.youtube.com', 'm.youtube.com']);
-    window.open(safeUrl, '_blank', 'noopener,noreferrer');
+    setActiveTab('video');
   };
 
   return (
@@ -703,6 +703,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '18px', overflowX: 'auto' }}>
           {[
             { id: 'steps', label: isAr ? '📋 خطوات التكنيك (Form Steps)' : '📋 Form Steps' },
+            { id: 'video', label: isAr ? '🔴 فيديو الشرح (Video)' : '🔴 Video Tutorial' },
             { id: 'breathing', label: isAr ? '🫁 إيقاع التنفس (Breathing & Tempo)' : '🫁 Breathing & Tempo' },
             { id: 'mistakes', label: isAr ? '⚠️ أخطاء شائعة وحماية المفاصل' : '⚠️ Common Mistakes' },
             { id: 'anatomy', label: isAr ? '🎯 تفصيل الأحمال العضلية' : '🎯 Muscle Loads' },
@@ -729,6 +730,18 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
             </button>
           ))}
         </div>
+
+        {/* TAB 0: YouTube Video Player with Fallback Resilience */}
+        {activeTab === 'video' && (
+          <div className="animated-fade" style={{ marginBottom: '20px' }}>
+            <YouTubeEmbedPlayer
+              videoUrl={youtubeUrl}
+              title={name}
+              lang={lang}
+              autoPlay={false}
+            />
+          </div>
+        )}
 
         {/* TAB 1: Step-by-Step Form & Execution Guide */}
         {activeTab === 'steps' && (

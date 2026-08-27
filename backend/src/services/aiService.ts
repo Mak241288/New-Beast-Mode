@@ -381,6 +381,44 @@ export const callGroq = async (prompt: string, jsonMode: boolean = false, custom
 };
 
 /**
+ * Exponential Backoff with Jitter for AI Resiliency (Handles 429 Rate Limits and 503 Overloads)
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries: number = 3,
+  baseDelayMs: number = 1000,
+  context: string = 'Gemini Request'
+): Promise<T> {
+  let attempt = 0;
+  while (attempt < retries) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      attempt++;
+      const isRateLimitOrTransient =
+        error?.status === 429 ||
+        error?.status === 503 ||
+        error?.status === 500 ||
+        error?.message?.includes('429') ||
+        error?.message?.includes('503') ||
+        error?.message?.includes('RESOURCE_EXHAUSTED') ||
+        error?.message?.includes('rate limit') ||
+        error?.message?.includes('overloaded');
+
+      if (attempt >= retries || !isRateLimitOrTransient) {
+        throw error;
+      }
+
+      const jitter = Math.random() * 400;
+      const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1) + jitter, 6000);
+      console.warn(`[${context}] Transient error (${attempt}/${retries}): ${error?.message || error}. Retrying in ${Math.round(delay)}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error(`[${context}] Max retries reached`);
+}
+
+/**
  * Executes a Gemini request with Strict Structured JSON output and automatic fallback.
  */
 export const callGeminiStructured = async <T>(
@@ -398,29 +436,31 @@ export const callGeminiStructured = async <T>(
 
   if (geminiKey) {
     try {
-      const ai = getGenAI();
-      const config: any = {
-        responseMimeType: 'application/json',
-        responseSchema: schema,
-        temperature: options?.temperature !== undefined ? options.temperature : 0.4,
-      };
+      return await withRetry(async () => {
+        const ai = getGenAI();
+        const config: any = {
+          responseMimeType: 'application/json',
+          responseSchema: schema,
+          temperature: options?.temperature !== undefined ? options.temperature : 0.4,
+        };
 
-      if (systemInstruction) {
-        config.systemInstruction = systemInstruction;
-      }
+        if (systemInstruction) {
+          config.systemInstruction = systemInstruction;
+        }
 
-      if (options?.thinkingBudget !== undefined && options.thinkingBudget > 0) {
-        config.thinkingConfig = { thinkingBudget: options.thinkingBudget };
-      }
+        if (options?.thinkingBudget !== undefined && options.thinkingBudget > 0) {
+          config.thinkingConfig = { thinkingBudget: options.thinkingBudget };
+        }
 
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config,
-      });
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config,
+        });
 
-      const responseText = response.text || '';
-      return JSON.parse(responseText) as T;
+        const responseText = response.text || '';
+        return JSON.parse(responseText) as T;
+      }, 3, 1000, 'callGeminiStructured');
     } catch (geminiError: any) {
       console.warn(`[callGeminiStructured] Gemini failed (${geminiError.message}). Falling back to Groq LLaMA...`);
     }
@@ -453,22 +493,24 @@ export const callGeminiText = async (
 
   if (geminiKey) {
     try {
-      const ai = getGenAI();
-      const config: any = {
-        temperature: options?.temperature !== undefined ? options.temperature : 0.3,
-      };
+      return await withRetry(async () => {
+        const ai = getGenAI();
+        const config: any = {
+          temperature: options?.temperature !== undefined ? options.temperature : 0.3,
+        };
 
-      if (systemInstruction) {
-        config.systemInstruction = systemInstruction;
-      }
+        if (systemInstruction) {
+          config.systemInstruction = systemInstruction;
+        }
 
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config,
-      });
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          config,
+        });
 
-      return (response.text || '').trim();
+        return (response.text || '').trim();
+      }, 3, 1000, 'callGeminiText');
     } catch (geminiError: any) {
       console.warn(`[callGeminiText] Gemini failed (${geminiError.message}). Falling back to Groq...`);
     }

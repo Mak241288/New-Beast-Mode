@@ -7,6 +7,7 @@ import { SmartExerciseSwapModal } from './SmartExerciseSwapModal';
 import { DynamicWarmupModal } from './DynamicWarmupModal';
 import { RoutineCardExportModal } from './RoutineCardExportModal';
 import { MuscleWikiModal } from './MuscleWikiModal';
+import { audioCues } from '../utils/audioCues';
 import { 
   Play, 
   Pause, 
@@ -75,30 +76,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   // Web Audio Native Synthesized Rest Bell (0 KB, 100% Offline)
   const playRestEndBell = () => {
     if (!soundEnabled) return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const now = ctx.currentTime;
-
-      const playChime = (freq: number, startTime: number, duration: number) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, startTime);
-        gain.gain.setValueAtTime(0.25, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(startTime);
-        osc.stop(startTime + duration);
-      };
-
-      playChime(880, now, 0.35);       // A5 Note
-      playChime(1174.66, now + 0.15, 0.55); // D6 Note
-    } catch {
-      // Non-fatal
-    }
+    audioCues.playRestFinishedChime();
   };
 
   // Play bell when rest finishes

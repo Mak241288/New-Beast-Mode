@@ -1,4 +1,5 @@
 // Web Audio API Synthesizer for zero-latency, zero-asset workout rest timer sounds
+import { audioCues } from './audioCues';
 
 export type SoundPack = 'BOXING_BELL' | 'CYBER_BEEP' | 'ZEN_CHIME' | 'WHISTLE';
 
@@ -7,10 +8,9 @@ export function playTimerSound(
   volumePercent: number = 80
 ): void {
   try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
+    const ctx = audioCues.getContext();
+    if (!ctx) return;
 
-    const ctx = new AudioContextClass();
     const masterGain = ctx.createGain();
     const gainVal = Math.max(0, Math.min(1, volumePercent / 100));
     masterGain.gain.setValueAtTime(gainVal, ctx.currentTime);
