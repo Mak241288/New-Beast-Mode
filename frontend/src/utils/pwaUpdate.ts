@@ -1,7 +1,9 @@
 /**
  * BeastMode PWA ServiceWorker Manager
- * Ensures reliable caching and offline performance without annoying auto-reloads.
+ * Ensures reliable caching, offline performance, and elegant user-controlled updates via skipWaiting.
  */
+
+let waitingServiceWorker: ServiceWorker | null = null;
 
 export function registerAutoUpdateServiceWorker() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
@@ -23,14 +25,22 @@ export function registerAutoUpdateServiceWorker() {
       const registration = await navigator.serviceWorker.register('/sw.js');
       console.log('[PWA] Service Worker registered with scope:', registration.scope);
 
-      // Listen for updates quietly in the background without forcing page reloads
+      // Check if a worker is already waiting
+      if (registration.waiting) {
+        waitingServiceWorker = registration.waiting;
+        window.dispatchEvent(new CustomEvent('beast_pwa_update_available'));
+      }
+
+      // Listen for updates in the background
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (!newWorker) return;
 
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('[PWA] New version ready for next clean launch.');
+            waitingServiceWorker = newWorker;
+            console.log('[PWA] New version ready! Dispatching update notification event.');
+            window.dispatchEvent(new CustomEvent('beast_pwa_update_available'));
           }
         });
       });
@@ -39,8 +49,33 @@ export function registerAutoUpdateServiceWorker() {
     }
   });
 
-  // Do NOT force window.location.reload() on controllerchange to protect active workouts & form inputs
+  // Smooth controller change handler
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('[PWA] ServiceWorker controller updated in background.');
+    console.log('[PWA] ServiceWorker controller updated.');
   });
 }
+
+/**
+ * Triggers skipWaiting on the waiting service worker and smoothly refreshes the app.
+ */
+export function triggerPwaUpdate() {
+  if (waitingServiceWorker) {
+    waitingServiceWorker.postMessage({ type: 'SKIP_WAITING' });
+    setTimeout(() => {
+      window.location.reload();
+    }, 300);
+    return;
+  }
+
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (reg?.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    });
+  }
+}
+

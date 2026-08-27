@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "db:backup": "ts-node src/scripts/backup_db.ts"
+    "db:backup": "ts-node src/scripts/backup_db.ts",
+    "backup:exercises": "ts-node src/scripts/backup_exercises.ts"
   },
   "dependencies": {
     "@google/genai": "^2.11.0",

@@ -2,15 +2,19 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { api } from '../services/api';
 import { cacheStore } from '../utils/cacheStore';
 import { audioCues } from '../utils/audioCues';
+import { wakeLockManager } from '../utils/wakeLock';
+import { generateUUID } from '../utils/offlineSync';
 
 export type SessionStatus = 'idle' | 'active' | 'resting' | 'paused' | 'completed';
 
 export interface SetLogItem {
+  clientSideId: string; // Unique UUID per set for granular cross-device concurrency
   setNumber: number;
   reps: number | string;
   weight: number | string;
   completed: boolean;
   completedAt?: string;
+  updatedAt: string; // ISO timestamp for Last-Write-Wins optimistic merge
   rpe?: number;
 }
 
@@ -26,6 +30,7 @@ export interface WorkoutSessionState {
   isPaused: boolean;
   pausedAtTimestamp: number | null;
   totalPausedDurationMs: number;
+  lastUpdatedTimestamp?: number;
   
   // Rest timer
   isResting: boolean;
@@ -92,6 +97,81 @@ const initialState: WorkoutSessionState = {
 
 const WorkoutSessionContext = createContext<WorkoutSessionContextType | null>(null);
 
+// Granular Set-Level Optimistic 3-Way Merge Function (Multi-Device Concurrency)
+export function mergeWorkoutSessions(
+  local: WorkoutSessionState,
+  remote: any
+): WorkoutSessionState {
+  if (!remote || !remote.dayData) return local;
+
+  // If local is idle/completed and remote is active, load remote
+  if (local.status === 'idle' || local.status === 'completed') {
+    return {
+      ...remote,
+      isMinimized: true,
+      isPlayerOpen: false,
+    };
+  }
+
+  // If remote is idle or completed while local is actively training, retain local active progress
+  if (remote.status === 'idle' || remote.status === 'completed') {
+    return local;
+  }
+
+  // Both local and remote are active/resting/paused: Perform granular set-level optimistic 3-way merge
+  const mergedSetLogs: { [exerciseIndex: number]: SetLogItem[] } = { ...local.setLogs };
+  const remoteSetLogs: { [exerciseIndex: number]: SetLogItem[] } = remote.setLogs || {};
+
+  const allExerciseIndices = new Set([
+    ...Object.keys(local.setLogs).map(Number),
+    ...Object.keys(remoteSetLogs).map(Number),
+  ]);
+
+  allExerciseIndices.forEach(exIdx => {
+    const localSets = local.setLogs[exIdx] || [];
+    const remoteSets = remoteSetLogs[exIdx] || [];
+
+    const mergedSets: SetLogItem[] = [];
+    const maxLen = Math.max(localSets.length, remoteSets.length);
+
+    for (let sIdx = 0; sIdx < maxLen; sIdx++) {
+      const localSet = localSets[sIdx];
+      const remoteSet = remoteSets[sIdx];
+
+      if (localSet && remoteSet) {
+        // Compare updatedAt timestamps for last-write-wins per set
+        const localTime = localSet.updatedAt ? new Date(localSet.updatedAt).getTime() : 0;
+        const remoteTime = remoteSet.updatedAt ? new Date(remoteSet.updatedAt).getTime() : 0;
+
+        if (remoteTime > localTime || (!localSet.completed && remoteSet.completed)) {
+          mergedSets.push({
+            ...remoteSet,
+            clientSideId: remoteSet.clientSideId || localSet.clientSideId || generateUUID(),
+          });
+        } else {
+          mergedSets.push(localSet);
+        }
+      } else if (localSet) {
+        mergedSets.push(localSet);
+      } else if (remoteSet) {
+        mergedSets.push(remoteSet);
+      }
+    }
+
+    mergedSetLogs[exIdx] = mergedSets;
+  });
+
+  const remoteIsNewer = (remote.lastUpdatedTimestamp || 0) > (local.lastUpdatedTimestamp || local.startTimestamp || 0);
+
+  return {
+    ...local,
+    setLogs: mergedSetLogs,
+    activeExerciseIndex: remoteIsNewer ? (remote.activeExerciseIndex ?? local.activeExerciseIndex) : local.activeExerciseIndex,
+    currentSetIndex: remoteIsNewer ? (remote.currentSetIndex ?? local.currentSetIndex) : local.currentSetIndex,
+    lastUpdatedTimestamp: Date.now(),
+  };
+}
+
 export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<WorkoutSessionState>(() => {
     try {
@@ -133,14 +213,25 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     audioCues.playBeep(freq, duration);
   }, []);
 
+  // Auto Screen Wake Lock Engine (Prevents phone/tablet screen sleep during active gym sessions)
+  useEffect(() => {
+    if (state.status === 'active' || state.status === 'resting' || state.status === 'paused') {
+      wakeLockManager.requestLock();
+    } else {
+      wakeLockManager.releaseLock();
+    }
+  }, [state.status]);
+
   // Save to LocalStorage & Cloud automatically whenever relevant session state changes
   useEffect(() => {
     if (state.status === 'active' || state.status === 'resting' || state.status === 'paused') {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        cacheStore.set('active_gym_session', state);
+        const payloadWithTime = { ...state, lastUpdatedTimestamp: Date.now() };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payloadWithTime));
+        cacheStore.set('active_gym_session', payloadWithTime);
         setHasSavedDraft(true);
         api.pushUserDataToCloud();
+        api.broadcastWorkoutSetUpdate(payloadWithTime);
       } catch {
         // Ignore quota error
       }
@@ -156,27 +247,24 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, [state.status, state.activeExerciseIndex, state.currentSetIndex, state.setLogs, state.isPaused]);
 
-  // Listen for Cross-Device Session Restore
+  // Listen for Cross-Device Session Restore & Live Realtime Concurrency
   useEffect(() => {
-    const handleCloudRestore = () => {
-      const cloudSession: any = cacheStore.get('active_gym_session');
+    const handleCloudRestore = (event?: any) => {
+      const cloudSession: any = event?.detail || cacheStore.get('active_gym_session');
       if (cloudSession && (cloudSession.status === 'active' || cloudSession.status === 'resting' || cloudSession.status === 'paused')) {
-        setState(prev => {
-          if (prev.status === 'idle' || prev.status === 'completed') {
-            return {
-              ...cloudSession,
-              isMinimized: true,
-              isPlayerOpen: false,
-            };
-          }
-          return prev;
-        });
+        setState(prev => mergeWorkoutSessions(prev, cloudSession));
         setHasSavedDraft(true);
       }
     };
 
+    // Initialize Supabase realtime channel listener
+    const unsubscribeRealtime = api.subscribeToRealtimeSync();
+
     window.addEventListener('beast_cloud_synced', handleCloudRestore);
-    return () => window.removeEventListener('beast_cloud_synced', handleCloudRestore);
+    return () => {
+      window.removeEventListener('beast_cloud_synced', handleCloudRestore);
+      unsubscribeRealtime();
+    };
   }, []);
 
   // Master Elapsed Time & Rest Timer Engine (Anchored to Timestamps)
@@ -245,10 +333,12 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         cleanWeight = (ex.equipment_en?.toLowerCase().includes('body') || ex.weight?.toLowerCase()?.includes('body')) ? 'Bodyweight' : '15 kg';
       }
       initialLogs[idx] = Array.from({ length: totalSets }, (_, sIdx) => ({
+        clientSideId: generateUUID(),
         setNumber: sIdx + 1,
         reps: cleanReps,
         weight: cleanWeight,
         completed: false,
+        updatedAt: new Date().toISOString(),
       }));
     });
 
@@ -264,6 +354,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       isPaused: false,
       pausedAtTimestamp: null,
       totalPausedDurationMs: 0,
+      lastUpdatedTimestamp: now,
       isResting: false,
       restTargetTimestamp: null,
       restTotalDuration: 60,
@@ -278,20 +369,33 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   const finishCurrentSet = useCallback((customValues?: { reps?: string | number; weight?: string | number }) => {
+    // Tactile haptic feedback on set completion
+    audioCues.triggerHaptic('setDone');
+
     setState(prev => {
       const exIdx = prev.activeExerciseIndex;
       const setIdx = prev.currentSetIndex;
       const currentLogs = prev.setLogs[exIdx] || [];
       
       const updatedSetLogs = [...currentLogs];
-      const targetSet = updatedSetLogs[setIdx] || { setNumber: setIdx + 1, reps: '10', weight: '10 kg', completed: false };
+      const targetSet = updatedSetLogs[setIdx] || {
+        clientSideId: generateUUID(),
+        setNumber: setIdx + 1,
+        reps: '10',
+        weight: '10 kg',
+        completed: false,
+        updatedAt: new Date().toISOString(),
+      };
 
+      const nowIso = new Date().toISOString();
       updatedSetLogs[setIdx] = {
         ...targetSet,
+        clientSideId: targetSet.clientSideId || generateUUID(),
         reps: customValues?.reps ?? targetSet.reps,
         weight: customValues?.weight ?? targetSet.weight,
         completed: true,
-        completedAt: new Date().toISOString(),
+        completedAt: nowIso,
+        updatedAt: nowIso,
       };
 
       const newAllLogs = {
@@ -376,7 +480,12 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     setState(prev => {
       const exerciseLogs = [...(prev.setLogs[exerciseIndex] || [])];
       if (!exerciseLogs[setIndex]) return prev;
-      exerciseLogs[setIndex] = { ...exerciseLogs[setIndex], ...updates };
+      exerciseLogs[setIndex] = {
+        ...exerciseLogs[setIndex],
+        ...updates,
+        clientSideId: exerciseLogs[setIndex].clientSideId || generateUUID(),
+        updatedAt: new Date().toISOString(),
+      };
       return {
         ...prev,
         setLogs: {
@@ -392,10 +501,12 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       const exerciseLogs = [...(prev.setLogs[exerciseIndex] || [])];
       const prevSet = exerciseLogs[exerciseLogs.length - 1];
       exerciseLogs.push({
+        clientSideId: generateUUID(),
         setNumber: exerciseLogs.length + 1,
         reps: prevSet?.reps || '10-12',
         weight: prevSet?.weight || '15 kg',
         completed: false,
+        updatedAt: new Date().toISOString(),
       });
       return {
         ...prev,
@@ -551,6 +662,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
 
   const discardSession = useCallback(() => {
     if (window.confirm('هل أنت متأكد من رغبتك في إلغاء هذا التمرين نهائياً؟ سيتم مسح مسودة التمرين الحالية.')) {
+      wakeLockManager.releaseLock();
       setState(initialState);
       try {
         localStorage.removeItem(STORAGE_KEY);
@@ -562,6 +674,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   const finishWorkoutSession = useCallback(async () => {
+    wakeLockManager.releaseLock();
     const currentState = stateRef.current;
     if (!currentState.dayData) return;
 

@@ -30,19 +30,29 @@ let syncDebounceTimer: any = null;
 let lastSyncedHash: string = '';
 let realtimeChannel: any = null;
 
+export const EXERCISES_CACHE_VERSION = 'bm_exercises_v3_2026_08';
 let _memoryLibraryCache: any[] | null = null;
 
-// Preload catalog immediately into RAM on startup (0ms search latency)
+// Preload catalog immediately into RAM on startup with version invalidation check
 if (typeof window !== 'undefined') {
-  fetch('/exercises_catalog.json')
-    .then(r => r.ok ? r.json() : [])
-    .then(data => {
-      if (Array.isArray(data) && data.length > 0) {
-        _memoryLibraryCache = data;
-        cacheStore.set('library_tree_flat', data);
-      }
-    })
-    .catch(() => {});
+  const currentVersion = cacheStore.get('library_cache_version');
+  const cachedData = cacheStore.get<any[]>('library_tree_flat');
+
+  if (currentVersion === EXERCISES_CACHE_VERSION && Array.isArray(cachedData) && cachedData.length > 50) {
+    _memoryLibraryCache = cachedData;
+  } else {
+    // Invalidate stale cache and quietly re-fetch latest catalog
+    fetch('/exercises_catalog.json')
+      .then(r => (r.ok ? r.json() : []))
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          _memoryLibraryCache = data;
+          cacheStore.set('library_tree_flat', data);
+          cacheStore.set('library_cache_version', EXERCISES_CACHE_VERSION);
+        }
+      })
+      .catch(() => {});
+  }
 }
 
 export async function pushUserDataToCloud(immediate: boolean = false): Promise<void> {
@@ -194,27 +204,46 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
   }
 }
 
-export function subscribeToUserRealtimeSync(onUpdate?: () => void): () => void {
+export function subscribeToUserRealtimeSync(onUpdate?: (data?: any) => void): () => void {
   try {
     getCurrentUser().then((user) => {
-      if (!user?.id) return;
+      const channelName = user?.id ? `beast_sync_${user.id}` : 'user-sync';
       if (realtimeChannel) {
         try {
           supabase.removeChannel(realtimeChannel);
         } catch {}
       }
 
-      realtimeChannel = supabase.channel(`beast_sync_${user.id}`, {
+      realtimeChannel = supabase.channel(channelName, {
         config: { broadcast: { self: false } },
       });
 
       realtimeChannel
-        .on('broadcast', { event: 'cloud_sync_update' }, async () => {
+        .on('broadcast', { event: 'cloud_sync_update' }, async (eventPayload: any) => {
           await syncUserDataFromCloud();
-          window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
-          onUpdate?.();
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+          }
+          onUpdate?.(eventPayload);
         })
-        .subscribe();
+        .on('broadcast', { event: 'workout_set_update' }, async (eventPayload: any) => {
+          const incomingSession = eventPayload?.payload?.session;
+          if (incomingSession) {
+            cacheStore.set('active_gym_session', incomingSession);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('beast_cloud_synced', { detail: incomingSession }));
+            }
+          }
+          onUpdate?.(eventPayload);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'UserSync' }, async (payload: any) => {
+          console.log('[Realtime UserSync] Remote database change:', payload);
+          await syncUserDataFromCloud();
+          onUpdate?.(payload);
+        })
+        .subscribe((status: string) => {
+          console.log(`[Realtime Sync Channel: ${channelName}] Status:`, status);
+        });
     });
   } catch (err) {
     console.warn('[RealtimeSync] Subscription failed:', err);
@@ -379,6 +408,29 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
   } catch (err) {
     console.warn('[CloudSync] Failed to pull from cloud:', err);
     return false;
+  }
+}
+
+/**
+ * Broadcast instantaneous live workout set changes to other active athlete screens
+ */
+export async function broadcastWorkoutSetUpdate(sessionData: any): Promise<void> {
+  try {
+    if (!realtimeChannel) {
+      subscribeToUserRealtimeSync();
+    }
+    if (realtimeChannel) {
+      await realtimeChannel.send({
+        type: 'broadcast',
+        event: 'workout_set_update',
+        payload: {
+          session: sessionData,
+          lastUpdatedTimestamp: Date.now(),
+        },
+      });
+    }
+  } catch {
+    // Non-fatal
   }
 }
 
@@ -1483,6 +1535,7 @@ export const api = {
     if (allExercises.length > 0) {
       _memoryLibraryCache = allExercises;
       cacheStore.set('library_tree_flat', allExercises);
+      cacheStore.set('library_cache_version', EXERCISES_CACHE_VERSION);
       return allExercises;
     }
 
@@ -1780,4 +1833,54 @@ export const api = {
   },
 
   subscribeToRealtimeSync: subscribeToUserRealtimeSync,
+  broadcastWorkoutSetUpdate: broadcastWorkoutSetUpdate,
+
+  // ==========================================
+  // GUEST-TO-USER ACCOUNT MIGRATION ENGINE
+  // ==========================================
+  migrateGuestDataToUser: async (authenticatedUser?: any): Promise<{ migrated: boolean; plansCount: number; historyCount: number }> => {
+    try {
+      const isGuest = localStorage.getItem('bm_is_guest') === 'true' || (cacheStore.get('user_profile') as any)?.isGuest === true;
+      if (!isGuest) {
+        return { migrated: false, plansCount: 0, historyCount: 0 };
+      }
+
+      console.log('[Guest Migration] Migrating guest workout sessions & custom plans to authenticated account...');
+
+      const guestProfile = cacheStore.get('user_profile') || {};
+      const localActivePlan = cacheStore.get('active_plan');
+      const localPlanHistory: any[] = cacheStore.get('plan_history') || [];
+
+      // Remove guest indicator
+      localStorage.removeItem('bm_is_guest');
+
+      // Update profile without destroying existing training logs/metrics
+      const newEmail = authenticatedUser?.email || (guestProfile as any)?.email;
+      const newName = authenticatedUser?.user_metadata?.full_name || authenticatedUser?.user_metadata?.name || (guestProfile as any)?.name;
+
+      const mergedProfile = {
+        ...(typeof guestProfile === 'object' ? guestProfile : {}),
+        email: newEmail && newEmail !== 'guest@beastmode.ai' ? newEmail : (guestProfile as any)?.email,
+        name: newName && newName !== 'Guest Athlete' && newName !== 'رياضي تجريبي (ضيف)' ? newName : (guestProfile as any)?.name,
+        isGuest: false,
+        onboardingCompleted: (guestProfile as any)?.onboardingCompleted ?? true,
+        updatedAt: new Date().toISOString(),
+      };
+
+      cacheStore.set('user_profile', mergedProfile);
+
+      // Trigger immediate cloud push to Supabase
+      await pushUserDataToCloud(true);
+
+      return {
+        migrated: true,
+        plansCount: localActivePlan ? 1 : 0,
+        historyCount: Array.isArray(localPlanHistory) ? localPlanHistory.length : 0,
+      };
+    } catch (err) {
+      console.warn('[Guest Migration Error]:', err);
+      return { migrated: false, plansCount: 0, historyCount: 0 };
+    }
+  },
 };
+

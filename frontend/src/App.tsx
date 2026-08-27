@@ -10,6 +10,7 @@ import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
 import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 import { FloatingSpeedDial } from './components/FloatingSpeedDial';
 import { SetPasswordModal } from './components/SetPasswordModal';
+import { triggerPwaUpdate } from './utils/pwaUpdate';
 
 import './App.css';
 
@@ -75,6 +76,14 @@ function App() {
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
   const [showSetPasswordModal, setShowSetPasswordModal] = useState<boolean>(false);
   const [userProfileEmail, setUserProfileEmail] = useState<string>('');
+  const [pwaUpdateAvailable, setPwaUpdateAvailable] = useState<boolean>(false);
+
+  // PWA Service Worker Update Listener
+  useEffect(() => {
+    const handleUpdate = () => setPwaUpdateAvailable(true);
+    window.addEventListener('beast_pwa_update_available', handleUpdate);
+    return () => window.removeEventListener('beast_pwa_update_available', handleUpdate);
+  }, []);
 
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
@@ -125,6 +134,9 @@ function App() {
               updatedAt: new Date().toISOString(),
             };
             cacheStore.set('user_profile', profile);
+
+            // Seamlessly migrate guest mode sessions and local custom plans to the user account
+            await api.migrateGuestDataToUser(session.user).catch(() => null);
           }
 
           // Sync cloud data across devices silently
@@ -180,6 +192,10 @@ function App() {
             updatedAt: new Date().toISOString(),
           };
           cacheStore.set('user_profile', profile);
+
+          // Migrate any local guest plans/workouts to authenticated user
+          await api.migrateGuestDataToUser(session.user).catch(() => null);
+
           try {
             await supabase.from('User').upsert(profile, { onConflict: 'email' });
           } catch {
@@ -669,6 +685,61 @@ function App() {
       <GlobalWorkoutPlayer lang={lang} />
       <FloatingWorkoutBar lang={lang} />
       <FloatingSpeedDial lang={lang} />
+
+      {/* PWA UPDATE NOTIFICATION BANNER */}
+      {pwaUpdateAvailable && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '80px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 99999,
+            background: 'rgba(15, 23, 42, 0.95)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid var(--primary)',
+            padding: '12px 20px',
+            borderRadius: '16px',
+            boxShadow: '0 10px 30px rgba(0, 210, 255, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            maxWidth: '90vw',
+            animation: 'fadeIn 0.3s ease',
+          }}
+        >
+          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff' }}>
+            {lang === 'en' ? '🚀 New BeastMode version available!' : '🚀 إصدار جديد من BeastMode متاح!'}
+          </div>
+          <button
+            onClick={() => triggerPwaUpdate()}
+            className="glow-btn"
+            style={{
+              padding: '6px 14px',
+              fontSize: '12px',
+              fontWeight: '900',
+              borderRadius: '8px',
+            }}
+          >
+            {lang === 'en' ? 'Update Now ⚡' : 'تحديث الآن ⚡'}
+          </button>
+          <button
+            onClick={() => setPwaUpdateAvailable(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              fontSize: '16px',
+              padding: '2px 6px',
+            }}
+            title={lang === 'en' ? 'Dismiss' : 'إغلاق'}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* ONE-TIME PASSWORD SETUP PROMPT FOR EXISTING / UNSECURED ACCOUNTS */}
       {showSetPasswordModal && (

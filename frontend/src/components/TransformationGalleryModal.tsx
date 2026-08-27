@@ -335,6 +335,7 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
                   </label>
                   <input
                     type="number"
+                    inputMode="decimal"
                     step="0.1"
                     value={newWeight}
                     onChange={(e) => setNewWeight(parseFloat(e.target.value) || currentWeight)}

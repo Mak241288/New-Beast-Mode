@@ -7,16 +7,20 @@ dist/
 build/
 out/
 
-# Database files & Backups (SQLite)
+# Database files & Backups (SQLite & JSON Snapshots)
 backend/prisma/*.db
 backend/prisma/*.db-journal
 backend/src/staging/*.db
 backend/backups/
 *.db.bak
+exercises_backup.json
+backend/exercises_backup.json
+*_backup.json
 
 # Environment files
 .env
 .env.local
+.env.*.local
 .env.development.local
 .env.test.local
 .env.production.local

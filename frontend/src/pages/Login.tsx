@@ -104,6 +104,8 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
           localStorage.setItem('bm_remember_email', cleanEmail);
           localStorage.setItem('bm_remember_me', 'true');
         }
+        // Auto-migrate local guest workout sessions and custom plans to user account
+        await api.migrateGuestDataToUser(data.user).catch(() => null);
         onSuccess(data.token);
       } else {
         const data = await api.register({ name: name.trim(), email: cleanEmail, password: cleanPassword });
@@ -128,6 +130,8 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
             localStorage.setItem('bm_remember_email', cleanEmail);
             localStorage.setItem('bm_remember_me', 'true');
           }
+          // Auto-migrate local guest workout sessions and custom plans to user account
+          await api.migrateGuestDataToUser(data.user).catch(() => null);
           onSuccess(data.token);
         }
       }

@@ -492,18 +492,22 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{isAr ? 'الوزن المرفوع' : 'Weight'}</div>
                   <input
                     type="text"
+                    inputMode="decimal"
+                    dir="ltr"
                     value={activeSet.weight}
                     onChange={(e) => updateSetLog(state.activeExerciseIndex, state.currentSetIndex, { weight: e.target.value })}
-                    style={{ width: '100%', background: 'none', border: 'none', color: '#fff', fontSize: '32px', fontWeight: '900', textAlign: 'center' }}
+                    style={{ width: '100%', background: 'none', border: 'none', color: '#fff', fontSize: '32px', fontWeight: '900', textAlign: 'center', unicodeBidi: 'plaintext' }}
                   />
                 </div>
                 <div style={{ padding: '16px', background: 'rgba(0,0,0,0.6)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.12)' }}>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{isAr ? 'التكرار المنجز' : 'Reps'}</div>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    dir="ltr"
                     value={activeSet.reps}
                     onChange={(e) => updateSetLog(state.activeExerciseIndex, state.currentSetIndex, { reps: e.target.value })}
-                    style={{ width: '100%', background: 'none', border: 'none', color: '#fff', fontSize: '32px', fontWeight: '900', textAlign: 'center' }}
+                    style={{ width: '100%', background: 'none', border: 'none', color: '#fff', fontSize: '32px', fontWeight: '900', textAlign: 'center', unicodeBidi: 'plaintext' }}
                   />
                 </div>
               </div>
@@ -1097,6 +1101,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                         <td style={{ padding: '6px 3px' }}>
                           <input
                             type="text"
+                            inputMode="decimal"
                             dir="ltr"
                             value={displayWeight}
                             onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { weight: e.target.value })}
@@ -1119,6 +1124,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                         <td style={{ padding: '6px 3px' }}>
                           <input
                             type="text"
+                            inputMode="numeric"
                             dir="ltr"
                             value={setLog.reps}
                             onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { reps: e.target.value })}

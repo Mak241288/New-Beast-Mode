@@ -11,6 +11,7 @@ import statsRoutes from './routes/statsRoutes';
 import syncRoutes from './routes/syncRoutes';
 
 import { logger, initCrashTracking } from './services/logger';
+import { prisma } from './services/db';
 
 // Load environment variables
 dotenv.config();
@@ -21,12 +22,49 @@ initCrashTracking();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Configurable Allowed Origins for Production Security
+const rawAllowed = process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '';
+const customOrigins = rawAllowed
+  .split(',')
+  .map((o) => o.trim().toLowerCase())
+  .filter(Boolean);
+
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://beastmode.app',
+  'https://beastmode-ai.vercel.app',
+];
+
 // Security Middlewares
 app.use(helmet()); // Sets various HTTP headers for security
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Allow only frontend port
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow server-to-server requests, mobile apps, or local toolings with no origin header
+      if (!origin) return callback(null, true);
+
+      const lower = origin.toLowerCase();
+      const isAllowed =
+        customOrigins.includes(lower) ||
+        defaultAllowedOrigins.includes(lower) ||
+        lower.endsWith('.vercel.app') ||
+        lower.endsWith('.beastmode.app');
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+
+      logger.warn(`[CORS Blocked]: Origin "${origin}" rejected by security policy.`);
+      return callback(new Error('CORS policy: Access from this origin is forbidden'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+);
 
 app.use(express.json({ limit: '10mb' })); // Parses incoming JSON requests
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -69,12 +107,20 @@ app.get('/', (_req, res) => {
   `);
 });
 
-// Basic Health Check Route
-app.get('/api/health', (_req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'BeastMode API Server is running smoothly',
-    timestamp: new Date().toISOString(),
+// Comprehensive Health & Pulse Check Route
+app.get('/api/health', async (_req, res) => {
+  let dbStatus = 'connected';
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (err) {
+    dbStatus = 'disconnected';
+  }
+
+  const isHealthy = dbStatus === 'connected';
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'healthy' : 'unhealthy',
+    database: dbStatus,
+    timestamp: Date.now(),
   });
 });
 
