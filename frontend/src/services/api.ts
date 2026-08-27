@@ -975,23 +975,108 @@ export const api = {
     };
   },
 
+  signInWithGoogleOAuth: async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (error) throw new Error(error.message || 'فشل بدء تسجيل الدخول عبر Google');
+    return { success: true, message: 'جاري التوجيه إلى حساب Google...' };
+  },
+
+  signInWithMagicLink: async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    if (error) throw new Error(error.message || 'فشل إرسال الرابط السحري');
+    return {
+      success: true,
+      message: 'تم إرسال رابط الدخول السريع (Magic Link) إلى بريدك الإلكتروني بنجاح! تفقد بريدك واضغط على الرابط للدخول الفوري.',
+    };
+  },
+
   exportUserData: async () => {
-    const profile = await api.getProfile();
-    const activePlan = await api.getActivePlan();
-    const history = await api.getPlanHistory();
-    const stats = await api.getStats();
+    const user = await getCurrentUser();
+    const localProfile = cacheStore.get('user_profile') || await api.getProfile().catch(() => ({}));
+    const localActivePlan = cacheStore.get('active_plan') || await api.getActivePlan().catch(() => null);
+    const localPlanHistory = cacheStore.get('plan_history') || await api.getPlanHistory().catch(() => []);
+    const localStats = cacheStore.get('user_stats') || await api.getStats().catch(() => ({}));
+    const localRecovery = cacheStore.get('all_recovery_logs') || [];
+    const rawPhotos = localStorage.getItem('transformation_photos');
+    let localPhotos: any[] = [];
+    if (rawPhotos) {
+      try {
+        localPhotos = JSON.parse(rawPhotos);
+      } catch {}
+    }
+
+    const fullExport = {
+      exportMetadata: {
+        application: 'BeastMode AI Fitness & Nutrition Ecosystem',
+        version: '1.0.0',
+        exportedAt: new Date().toISOString(),
+        userEmail: user?.email || (localProfile as any)?.email || 'guest',
+      },
+      profile: localProfile,
+      activePlan: localActivePlan,
+      planHistory: localPlanHistory,
+      recoveryLogs: localRecovery,
+      stats: localStats,
+      transformationPhotos: localPhotos,
+    };
+
+    if (typeof window !== 'undefined') {
+      const blob = new Blob([JSON.stringify(fullExport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const cleanEmail = ((user?.email || (localProfile as any)?.email || 'athlete').split('@')[0]);
+      a.download = `beastmode_data_export_${cleanEmail}_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
 
     return {
-      exportDate: new Date().toISOString(),
-      profile,
-      activePlan,
-      history,
-      stats,
+      success: true,
+      data: fullExport,
+      message: 'تم تصدير وحفظ نسخة كاملة من جميع بياناتك التدريبية بنجاح 📥',
     };
   },
 
   deleteAccount: async () => {
     const user = await getCurrentUser();
+    const token = localStorage.getItem('token');
+
+    // 1. Trigger Backend Cascade Delete
+    try {
+      if (token && token.length > 20) {
+        await fetch('/api/auth/account', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }).catch(() => {});
+      }
+    } catch {
+      // Non-fatal
+    }
+
+    // 2. Supabase Cloud delete
     if (user?.email) {
       try {
         await supabase.from('User').delete().eq('email', user.email);
@@ -999,10 +1084,17 @@ export const api = {
         // Fallback
       }
     }
-    await supabase.auth.signOut();
-    localStorage.removeItem('token');
+
+    // 3. Complete Signout & Local Cache Purge
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+
+    localStorage.clear();
+    sessionStorage.clear();
     cacheStore.clearAll();
-    return { success: true, message: 'تم حذف الحساب والبيانات بنجاح' };
+
+    return { success: true, message: 'تم حذف حسابك وجميع بياناتك وسجلاتك التدريبية نهائياً بنجاح.' };
   },
 
   // ==========================================

@@ -329,10 +329,16 @@ function App() {
       }
     } catch (err: any) {
       console.warn('[App] checkStatus warning:', err);
-      if (err.status === 401) {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+      const cachedProfile: any = cacheStore.get('user_profile');
+
+      if (err?.status === 401 && !isOffline && !cachedProfile?.isGuest) {
         handleLogout();
       } else {
-        // Fallback gracefully without blocking the user
+        // Offline resilience: Use local cache without kicking user out
+        if (cachedProfile) {
+          setOnboardingCompleted(cachedProfile.onboardingCompleted ?? true);
+        }
         const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about'];
         setCurrentView((prev) => {
           if (validViews.includes(prev)) return prev;

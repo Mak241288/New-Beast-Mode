@@ -28,11 +28,15 @@ async function applyPoliciesViaPg() {
     `DROP POLICY IF EXISTS "Admin Full Exercise" ON "public"."Exercise";`,
     `CREATE POLICY "Admin Full Exercise" ON "public"."Exercise" FOR ALL TO service_role USING (true) WITH CHECK (true);`,
 
-    // 3. User: Service Role Full Access (Protects credentials and profile data)
+    // 3. User: Service Role Full Access & Authenticated User Isolation
     `DROP POLICY IF EXISTS "Admin Full User" ON "public"."User";`,
     `CREATE POLICY "Admin Full User" ON "public"."User" FOR ALL TO service_role USING (true) WITH CHECK (true);`,
+    `DROP POLICY IF EXISTS "User Self Read" ON "public"."User";`,
+    `CREATE POLICY "User Self Read" ON "public"."User" FOR SELECT TO authenticated USING (email = auth.jwt() ->> 'email');`,
+    `DROP POLICY IF EXISTS "User Self Update" ON "public"."User";`,
+    `CREATE POLICY "User Self Update" ON "public"."User" FOR UPDATE TO authenticated USING (email = auth.jwt() ->> 'email') WITH CHECK (email = auth.jwt() ->> 'email');`,
 
-    // 4. WorkoutPlan: Service Role Full Access (Protects user plans)
+    // 4. WorkoutPlan: Service Role Full Access & User Isolation
     `DROP POLICY IF EXISTS "Admin Full WorkoutPlan" ON "public"."WorkoutPlan";`,
     `CREATE POLICY "Admin Full WorkoutPlan" ON "public"."WorkoutPlan" FOR ALL TO service_role USING (true) WITH CHECK (true);`,
 

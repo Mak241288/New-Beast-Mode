@@ -1316,6 +1316,54 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
               <KeyRound size={16} color="var(--primary)" />
               <span>{lang === 'en' ? 'Security & Passwords' : 'الأمان وتغيير كلمة المرور'}</span>
             </button>
+
+            {/* Export All Data (GDPR / Backup) */}
+            <button
+              type="button"
+              disabled={exportingData}
+              onClick={handleExportUserData}
+              className="secondary-btn"
+              style={{
+                padding: '12px 18px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                borderColor: 'rgba(0, 210, 255, 0.3)',
+                color: 'var(--primary)',
+              }}
+            >
+              <Download size={16} />
+              <span>{exportingData ? (lang === 'en' ? 'Exporting...' : 'جاري التصدير...') : (lang === 'en' ? 'Export My Data (JSON)' : 'تصدير وحفظ بياناتي 📥')}</span>
+            </button>
+
+            {/* Permanent Account Deletion */}
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteConfirmText('');
+                setShowDeleteModal(true);
+              }}
+              className="secondary-btn"
+              style={{
+                padding: '12px 18px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                borderColor: 'rgba(239, 68, 68, 0.3)',
+                color: 'var(--danger)',
+              }}
+            >
+              <Trash2 size={16} />
+              <span>{lang === 'en' ? 'Delete Account' : 'حذف الحساب نهائياً 🗑️'}</span>
+            </button>
           </div>
         </div>
 
