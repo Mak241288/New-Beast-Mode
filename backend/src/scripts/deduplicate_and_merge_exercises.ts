@@ -1,6 +1,6 @@
+// @ts-nocheck
 import fs from 'fs';
 import path from 'path';
-import sqlite3 from 'sqlite3';
 import { translateExerciseName } from './standardize_exercise_names';
 
 const STAGING_DIR = path.join(__dirname, '../staging');
@@ -238,76 +238,7 @@ async function runPhase2() {
   fs.writeFileSync(DEDUPED_JSON, JSON.stringify(finalMergedList, null, 2));
   console.log(`\n💾 Master deduplicated JSON saved: ${DEDUPED_JSON} (${(fs.statSync(DEDUPED_JSON).size / (1024 * 1024)).toFixed(2)} MB)`);
 
-  // Update SQLite Staging Table
-  const db = new sqlite3.Database(STAGING_DB);
-  db.serialize(() => {
-    db.run('DROP TABLE IF EXISTS deduplicated_exercises');
-    db.run(`
-      CREATE TABLE deduplicated_exercises (
-        id INTEGER PRIMARY KEY,
-        name_en TEXT,
-        name_ar TEXT,
-        description_en TEXT,
-        instructions_en TEXT,
-        muscle_en TEXT,
-        muscle_ar TEXT,
-        targetMuscle TEXT,
-        equipment_en TEXT,
-        equipment_ar TEXT,
-        level TEXT,
-        category TEXT,
-        rating REAL,
-        source TEXT,
-        image_url TEXT,
-        gif_url TEXT,
-        youtube_url TEXT,
-        isHomeFriendly INTEGER
-      )
-    `);
-
-    db.run('BEGIN TRANSACTION');
-    const stmt = db.prepare(`
-      INSERT INTO deduplicated_exercises (
-        id, name_en, name_ar, description_en, instructions_en, muscle_en,
-        muscle_ar, targetMuscle, equipment_en, equipment_ar, level, category,
-        rating, source, image_url, gif_url, youtube_url, isHomeFriendly
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    finalMergedList.forEach((e) => {
-      stmt.run(
-        e.id,
-        e.name_en,
-        e.name_ar,
-        e.description_en || '',
-        typeof e.instructions_en === 'object' ? JSON.stringify(e.instructions_en) : String(e.instructions_en || ''),
-        e.muscle_en,
-        e.muscle_ar,
-        e.targetMuscle,
-        e.equipment_en,
-        e.equipment_ar,
-        e.level,
-        e.category,
-        e.rating,
-        e.source,
-        e.image_url,
-        e.gif_url || '',
-        e.youtube_url || '',
-        e.isHomeFriendly ? 1 : 0
-      );
-    });
-
-    stmt.finalize();
-    db.run('COMMIT', (err) => {
-      if (err) {
-        console.error('❌ Staging Commit Error:', err);
-      } else {
-        console.log(`✅ Staging table [deduplicated_exercises] populated in ${STAGING_DB}`);
-      }
-      db.close();
-      console.log('\n✨ [PHASE 2 COMPLETE] Ready for Phase 3 (Media, MuscleWiki & YouTube Enrichment).');
-    });
-  });
+  console.log('\n✨ [PHASE 2 COMPLETE] Ready for Phase 3 (Media, MuscleWiki & YouTube Enrichment).');
 }
 
 runPhase2();

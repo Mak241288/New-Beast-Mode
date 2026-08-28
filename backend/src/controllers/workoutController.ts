@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
+import { exerciseCatalog } from '../services/exerciseCatalogService';
 import { 
   upgradeWorkoutPlanAI, 
   translateExerciseInstructionsBatch, 
@@ -8,7 +9,7 @@ import {
   suggestSwapAI,
   analyzePhysiquePhotoAI
 } from '../services/aiService';
-import { validateNumericId, sanitizeString, sanitizeInt, escapeLikeQuery } from '../utils/validation';
+import { validateNumericId, sanitizeString, sanitizeInt } from '../utils/validation';
 
 // Helper to get muscle-specific Unsplash image URLs
 const getMuscleImage = (muscle: string): string => {
@@ -748,51 +749,24 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-// Helper to match exercise name in local SQLite exercises database
-const findMatchingExerciseInDb = (name: string): Promise<any> => {
-  return new Promise((resolve) => {
-    const sqlite3 = require('sqlite3').verbose();
-    const path = require('path');
-    const dbPath = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
-    
-    const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err: any) => {
-      if (err) {
-        resolve(null);
-        return;
-      }
-    });
-
-    const query = `
-      SELECT name_en, name_ar, instructions_en, instructions_ar, 
-             muscle_en, muscle_ar, equipment_en, equipment_ar, 
-             category, image_url, gif_url, youtube_url
-      FROM exercises 
-      WHERE LOWER(name_en) = LOWER(?) OR LOWER(name_ar) = LOWER(?)
-      LIMIT 1
-    `;
-
-    db.get(query, [name.trim(), name.trim()], (_err: any, row: any) => {
-      if (row) {
-        db.close();
-        resolve(row);
-      } else {
-        // Try fuzzy match
-        const fuzzyQuery = `
-          SELECT name_en, name_ar, instructions_en, instructions_ar, 
-                 muscle_en, muscle_ar, equipment_en, equipment_ar, 
-                 category, image_url, gif_url, youtube_url
-          FROM exercises 
-          WHERE LOWER(name_en) LIKE LOWER(?) OR LOWER(name_ar) LIKE LOWER(?)
-          LIMIT 1
-        `;
-        const safeSearch = `%${escapeLikeQuery(name.trim())}%`;
-        db.get(fuzzyQuery, [safeSearch, safeSearch], (_err2: any, row2: any) => {
-          db.close();
-          resolve(row2 || null);
-        });
-      }
-    });
-  });
+// Helper to match exercise name in local exercises catalog
+const findMatchingExerciseInDb = async (name: string): Promise<any> => {
+  const match = exerciseCatalog.findMatching(name);
+  if (!match) return null;
+  return {
+    name_en: match.name_en,
+    name_ar: match.name_ar,
+    instructions_en: match.instructions_en,
+    instructions_ar: match.instructions_ar,
+    muscle_en: match.muscle_en,
+    muscle_ar: match.muscle_ar,
+    equipment_en: match.equipment_en,
+    equipment_ar: match.equipment_ar,
+    category: match.category,
+    image_url: match.image_url,
+    gif_url: match.gif_url,
+    youtube_url: match.youtube_url,
+  };
 };
 
 // @desc    Import Custom Bulk Exercise List using AI Parsing
@@ -1424,31 +1398,8 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
     return;
   }
 
-  const sqlite3 = require('sqlite3').verbose();
-  const path = require('path');
-  const dbPath = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
-  
-  const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err: any) => {
-    if (err) {
-      console.error('[LibraryTree] Database connection error:', err);
-      res.status(500).json({ error: 'فشل الاتصال بقاعدة بيانات التمارين.' });
-      return;
-    }
-  });
-
-  const query = `
-    SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, level, category, image_url, instructions_ar, instructions_en, secondary_muscles_en, secondary_muscles_ar, common_mistakes_en, common_mistakes_ar, gif_url, youtube_url, anatomy_image_url
-    FROM exercises 
-    ORDER BY muscle_en ASC, rating DESC
-  `;
-
-  db.all(query, [], (err: any, rows: any[]) => {
-    db.close();
-    if (err) {
-      console.error('[LibraryTree] Query error:', err);
-      res.status(500).json({ error: 'فشل قراءة التمارين من قاعدة البيانات.' });
-      return;
-    }
+  try {
+    const rows = exerciseCatalog.getAll();
 
     // Define Division classifications
     const divisions: { [key: string]: { name_en: string; name_ar: string; muscles: { [key: string]: any } } } = {
@@ -1508,53 +1459,50 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
 
     rows.forEach((row) => {
       const muscleEn = row.muscle_en || 'Other';
-      const muscleAr = row.muscle_ar || 'أخرى';
-      const mLower = muscleEn.toLowerCase();
+      const muscleAr = row.muscle_ar || muscleEn;
 
-      // Resolve division category
-      let divKey = "core_cardio";
-      if (['chest', 'lats', 'middle back', 'lower back', 'shoulders', 'traps', 'biceps', 'triceps', 'forearms'].includes(mLower)) {
-        divKey = "upper";
-      } else if (['quadriceps', 'hamstrings', 'glutes', 'calves'].includes(mLower)) {
-        divKey = "lower";
+      let divisionKey = "upper";
+      const mLower = muscleEn.toLowerCase();
+      if (mLower.includes('quad') || mLower.includes('hamstring') || mLower.includes('glute') || mLower.includes('calf') || mLower.includes('calves') || mLower.includes('leg') || mLower.includes('thigh')) {
+        divisionKey = "lower";
+      } else if (mLower.includes('ab') || mLower.includes('core') || mLower.includes('cardio') || mLower.includes('waist')) {
+        divisionKey = "core_cardio";
       }
 
-      const musclesGroup = divisions[divKey].muscles;
-      if (!musclesGroup[muscleEn]) {
-        musclesGroup[muscleEn] = {
+      if (!divisions[divisionKey].muscles[muscleEn]) {
+        divisions[divisionKey].muscles[muscleEn] = {
           name_en: muscleEn,
           name_ar: muscleAr,
           exercises: []
         };
       }
 
-      const secFallback = getSecondaryFallback(muscleEn);
-      const errFallback = getMistakesFallback(muscleEn);
-      const ytUrl = row.youtube_url || `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' ' + (row.equipment_en || '') + ' exercise form tutorial')}`;
+      const secFall = getSecondaryFallback(muscleEn);
+      const misFall = getMistakesFallback(muscleEn);
 
-      musclesGroup[muscleEn].exercises.push({
+      divisions[divisionKey].muscles[muscleEn].exercises.push({
         id: row.id,
         name_en: row.name_en,
         name_ar: row.name_ar || row.name_en,
         muscle_en: muscleEn,
         muscle_ar: muscleAr,
-        secondary_muscles_en: row.secondary_muscles_en || secFallback.en,
-        secondary_muscles_ar: row.secondary_muscles_ar || secFallback.ar,
-        common_mistakes_en: row.common_mistakes_en || errFallback.en,
-        common_mistakes_ar: row.common_mistakes_ar || errFallback.ar,
-        equipment_en: row.equipment_en || 'None',
-        equipment_ar: row.equipment_ar || 'بدون أدوات',
-        level: row.level || 'intermediate',
+        equipment_en: row.equipment_en || 'General',
+        equipment_ar: row.equipment_ar || 'عام',
+        level: row.level || 'Intermediate',
         category: row.category || 'IRON',
-        image_url: row.gif_url || row.image_url || null,
-        gif_url: row.gif_url || row.image_url || null,
-        anatomy_image_url: row.anatomy_image_url || null,
-        youtube_url: ytUrl,
-        video_url: ytUrl
+        image_url: row.image_url || getMuscleImage(muscleEn),
+        instructions_ar: row.instructions_ar || '',
+        instructions_en: row.instructions_en || '',
+        secondary_muscles_en: row.secondary_muscles_en || secFall.en,
+        secondary_muscles_ar: row.secondary_muscles_ar || secFall.ar,
+        common_mistakes_en: row.common_mistakes_en || misFall.en,
+        common_mistakes_ar: row.common_mistakes_ar || misFall.ar,
+        gif_url: row.gif_url || row.image_url || getMuscleImage(muscleEn),
+        youtube_url: row.youtube_url || `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' exercise form tutorial')}`,
+        anatomy_image_url: row.anatomy_image_url || ''
       });
     });
 
-    // Format to a clean frontend tree structure
     const treeData = Object.keys(divisions).map((key) => {
       const div = divisions[key];
       return {
@@ -1575,10 +1523,13 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
 
     cachedLibraryTreeData = treeData;
     res.status(200).json(treeData);
-  });
+  } catch (err: any) {
+    console.error('[LibraryTree Error]:', err);
+    res.status(500).json({ error: 'فشل قراءة شجرة التمارين' });
+  }
 };
 
-// @desc    Get Alternatives for a specific exercise target muscle from SQLite
+// @desc    Get Alternatives for a specific exercise target muscle
 // @route   GET /api/workout/exercise/:id/alternatives
 export const getAlternatives = async (req: AuthRequest, res: Response): Promise<void> => {
   const exerciseId = validateNumericId(req.params.id);
@@ -1601,52 +1552,23 @@ export const getAlternatives = async (req: AuthRequest, res: Response): Promise<
     }
 
     const muscle = targetExercise.targetMuscle || 'Chest';
+    const rows = exerciseCatalog.getAlternatives(muscle, 15);
 
-    const sqlite3 = require('sqlite3').verbose();
-    const path = require('path');
-    const dbPath = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
+    const alternatives = rows.map((row) => ({
+      id: row.id,
+      name_en: row.name_en,
+      name_ar: row.name_ar || row.name_en,
+      equipment_en: row.equipment_en || 'None',
+      equipment_ar: row.equipment_ar || 'بدون أدوات',
+      category: row.category || 'IRON',
+      image_url: row.image_url || getMuscleImage(muscle),
+      gif_url: row.gif_url || row.image_url,
+      instructions_en: row.instructions_en || '',
+      instructions_ar: row.instructions_ar || '',
+      video_url: `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' exercise tutorial shorts')}`
+    }));
 
-    const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err: any) => {
-      if (err) {
-        console.error('[Alternatives] Database connection error:', err);
-        res.status(500).json({ error: 'فشل الاتصال بقاعدة بيانات البدائل.' });
-        return;
-      }
-    });
-
-    // Query for alternative exercises targeting the same muscle
-    const query = `
-      SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, category, image_url, gif_url, instructions_ar, instructions_en
-      FROM exercises
-      WHERE LOWER(muscle_en) = LOWER(?) OR LOWER(muscle_ar) = LOWER(?)
-      ORDER BY rating DESC
-      LIMIT 15
-    `;
-
-    db.all(query, [muscle, muscle], (err: any, rows: any[]) => {
-      db.close();
-      if (err) {
-        console.error('[Alternatives] Query error:', err);
-        res.status(500).json({ error: 'فشل استعلام التمارين البديلة.' });
-        return;
-      }
-
-      const alternatives = rows.map((row) => ({
-        id: row.id,
-        name_en: row.name_en,
-        name_ar: row.name_ar || row.name_en,
-        equipment_en: row.equipment_en || 'None',
-        equipment_ar: row.equipment_ar || 'بدون أدوات',
-        category: row.category || 'IRON',
-        image_url: row.image_url || getMuscleImage(muscle),
-        gif_url: row.gif_url || row.image_url,
-        instructions_en: row.instructions_en || '',
-        instructions_ar: row.instructions_ar || '',
-        video_url: `https://www.youtube.com/results?search_query=${encodeURIComponent((row.name_en || '') + ' exercise tutorial shorts')}`
-      }));
-
-      res.status(200).json(alternatives);
-    });
+    res.status(200).json(alternatives);
   } catch (error) {
     res.status(500).json({ error: 'حدث خطأ غير متوقع أثناء البحث عن بدائل.' });
   }

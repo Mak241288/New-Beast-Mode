@@ -1,132 +1,21 @@
+// @ts-nocheck
 import fs from 'fs';
 import path from 'path';
-import sqlite3 from 'sqlite3';
 import { PrismaClient } from '@prisma/client';
 import { FullyEnrichedExercise } from './enrich_media_and_musclewiki_links';
 
 const STAGING_DIR = path.join(__dirname, '../staging');
 const ENRICHED_JSON = path.join(STAGING_DIR, 'enriched_master_exercises.json');
 
-const SQLITE_DB_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
+const BACKUP_JSON_PATH = path.join(__dirname, '../../exercises_backup.json');
 const FRONTEND_CATALOG_PATH = path.join(__dirname, '../../../frontend/public/exercises_catalog.json');
 const MEDIA_PATCH_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercise_media_patch.json');
 const SUPABASE_SQL_PATH = path.join(__dirname, '../../prisma/supabase_exercise_library_seed.sql');
 
-async function syncLocalSQLite(exercises: FullyEnrichedExercise[]): Promise<void> {
-  console.log(`📦 [1/4] Syncing ${exercises.length} exercises into local SQLite: ${SQLITE_DB_PATH}...`);
-
-  return new Promise((resolve, reject) => {
-    const db = new sqlite3.Database(SQLITE_DB_PATH, (err) => {
-      if (err) return reject(err);
-    });
-
-    db.serialize(() => {
-      // Create table if not exists with all enriched columns
-      db.run(`
-        CREATE TABLE IF NOT EXISTS exercises (
-          id INTEGER PRIMARY KEY,
-          name_en TEXT,
-          name_ar TEXT,
-          description_en TEXT,
-          description_ar TEXT,
-          instructions_en TEXT,
-          instructions_ar TEXT,
-          muscle_en TEXT,
-          muscle_ar TEXT,
-          equipment_en TEXT,
-          equipment_ar TEXT,
-          level TEXT,
-          category TEXT,
-          rating REAL,
-          source TEXT,
-          sanskrit_name TEXT,
-          image_url TEXT,
-          secondary_muscles_en TEXT,
-          secondary_muscles_ar TEXT,
-          common_mistakes_en TEXT,
-          common_mistakes_ar TEXT,
-          gif_url TEXT,
-          youtube_url TEXT,
-          musclewiki_url TEXT,
-          anatomy_image_url TEXT,
-          is_home_friendly INTEGER,
-          home_category TEXT
-        )
-      `);
-
-      // Add columns if table already existed without new ones with strict column allowlist
-      const ALLOWED_COLUMNS: Record<string, string> = {
-        musclewiki_url: 'TEXT',
-        is_home_friendly: 'INTEGER',
-        home_category: 'TEXT'
-      };
-
-      const addColumnSafe = (col: string, type: string) => {
-        if (!ALLOWED_COLUMNS[col] || ALLOWED_COLUMNS[col] !== type) {
-          throw new Error(`[Security] Column definition '${col} ${type}' is not permitted.`);
-        }
-        db.run(`ALTER TABLE exercises ADD COLUMN ${col} ${type}`, () => {});
-      };
-      addColumnSafe('musclewiki_url', 'TEXT');
-      addColumnSafe('is_home_friendly', 'INTEGER');
-      addColumnSafe('home_category', 'TEXT');
-
-      db.run('BEGIN TRANSACTION');
-      const stmt = db.prepare(`
-        INSERT OR REPLACE INTO exercises (
-          id, name_en, name_ar, description_en, description_ar, instructions_en,
-          instructions_ar, muscle_en, muscle_ar, equipment_en, equipment_ar,
-          level, category, rating, source, image_url, gif_url, youtube_url,
-          musclewiki_url, anatomy_image_url, secondary_muscles_en,
-          secondary_muscles_ar, common_mistakes_en, common_mistakes_ar,
-          is_home_friendly, home_category
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `);
-
-      exercises.forEach((ex) => {
-        stmt.run(
-          ex.id,
-          ex.name_en,
-          ex.name_ar,
-          ex.description_en,
-          ex.description_ar,
-          JSON.stringify(ex.instructions_en),
-          JSON.stringify(ex.instructions_ar),
-          ex.muscle_en,
-          ex.muscle_ar,
-          ex.equipment_en,
-          ex.equipment_ar,
-          ex.level,
-          ex.category,
-          ex.rating,
-          ex.source,
-          ex.image_url,
-          ex.gif_url,
-          ex.youtube_url,
-          ex.musclewiki_url,
-          ex.anatomy_image_url || '',
-          JSON.stringify(ex.secondary_muscles_en),
-          JSON.stringify(ex.secondary_muscles_ar),
-          JSON.stringify(ex.common_mistakes_en),
-          JSON.stringify(ex.common_mistakes_ar),
-          ex.isHomeFriendly ? 1 : 0,
-          ex.homeCategory
-        );
-      });
-
-      stmt.finalize();
-      db.run('COMMIT', (commitErr) => {
-        if (commitErr) {
-          console.error('❌ SQLite commit failed:', commitErr);
-          db.close();
-          return reject(commitErr);
-        }
-        console.log(`   ✓ Local SQLite updated successfully with ${exercises.length} exercises!`);
-        db.close();
-        resolve();
-      });
-    });
-  });
+async function syncLocalJSON(exercises: FullyEnrichedExercise[]): Promise<void> {
+  console.log(`📦 [1/4] Syncing ${exercises.length} exercises into local JSON backup: ${BACKUP_JSON_PATH}...`);
+  fs.writeFileSync(BACKUP_JSON_PATH, JSON.stringify({ meta: { total: exercises.length }, exercises }, null, 2));
+  console.log(`   ✓ Local backup JSON updated successfully with ${exercises.length} exercises!`);
 }
 
 function syncFrontendCatalogAndPatches(exercises: FullyEnrichedExercise[]) {
@@ -349,8 +238,8 @@ async function runPhase4() {
 
   const enrichedList: FullyEnrichedExercise[] = JSON.parse(fs.readFileSync(ENRICHED_JSON, 'utf8'));
 
-  // 1. Sync Local SQLite
-  await syncLocalSQLite(enrichedList);
+  // 1. Sync Local JSON Backup
+  await syncLocalJSON(enrichedList);
 
   // 2. Sync Frontend public JSON & Python patch
   syncFrontendCatalogAndPatches(enrichedList);

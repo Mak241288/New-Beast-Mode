@@ -1,9 +1,9 @@
-import sqlite3 from 'sqlite3';
+// @ts-nocheck
 import path from 'path';
 import fs from 'fs';
 
-const DB_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
 const JSON_CATALOG_PATH = path.join(__dirname, '../../../frontend/public/exercises_catalog.json');
+const BACKUP_JSON_PATH = path.join(__dirname, '../../exercises_backup.json');
 const MEDIA_PATCH_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercise_media_patch.json');
 
 interface PatternRule {
@@ -236,77 +236,57 @@ export function translateExerciseName(nameEn: string, muscleEn: string, equipEn:
 async function run() {
   console.log('🚀 [Terminology Normalizer] Starting standard Arabic Gym name standardization...');
   
-  const db = new sqlite3.Database(DB_PATH, (err) => {
-    if (err) {
-      console.error('❌ Failed to connect to SQLite:', err);
-      process.exit(1);
-    }
+  let rows: any[] = [];
+  if (fs.existsSync(BACKUP_JSON_PATH)) {
+    const raw = fs.readFileSync(BACKUP_JSON_PATH, 'utf-8');
+    const parsed = JSON.parse(raw);
+    rows = Array.isArray(parsed) ? parsed : (parsed.exercises || []);
+  } else if (fs.existsSync(JSON_CATALOG_PATH)) {
+    const raw = fs.readFileSync(JSON_CATALOG_PATH, 'utf-8');
+    const parsed = JSON.parse(raw);
+    rows = Array.isArray(parsed) ? parsed : (parsed.exercises || []);
+  }
+
+  console.log(`📊 Processing ${rows.length} exercises with comprehensive gym nomenclature...`);
+
+  const updatedRows = rows.map(row => {
+    const standardizedAr = translateExerciseName(row.name_en, row.muscle_en, row.equipment_en);
+    const standardizedMuscleAr = getMuscleArabic(row.muscle_en);
+    const rawEquip = getEquipmentSuffix(row.name_en, row.equipment_en).replace(/^بـ?|^بال/, '') || row.equipment_ar || 'أدوات الجيم';
+
+    return {
+      ...row,
+      name_ar: standardizedAr,
+      muscle_ar: standardizedMuscleAr,
+      equipment_ar: rawEquip,
+    };
   });
 
-  db.all('SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, level, category, image_url, gif_url, instructions_ar, instructions_en, secondary_muscles_en, secondary_muscles_ar, common_mistakes_en, common_mistakes_ar FROM exercises ORDER BY id ASC', [], (err, rows: any[]) => {
-    if (err) {
-      console.error('❌ Query failed:', err);
-      db.close();
-      process.exit(1);
-    }
+  // Write to exercises_catalog.json
+  fs.writeFileSync(JSON_CATALOG_PATH, JSON.stringify(updatedRows, null, 2));
+  console.log(`✅ [Frontend JSON] Saved ${updatedRows.length} standardized exercises to exercises_catalog.json!`);
 
-    console.log(`📊 Processing ${rows.length} exercises with comprehensive gym nomenclature...`);
+  // Write to backup JSON
+  fs.writeFileSync(BACKUP_JSON_PATH, JSON.stringify({ meta: { total: updatedRows.length }, exercises: updatedRows }, null, 2));
+  console.log(`✅ [Backup JSON] Saved ${updatedRows.length} standardized exercises to exercises_backup.json!`);
 
-    const updatedRows = rows.map(row => {
-      const standardizedAr = translateExerciseName(row.name_en, row.muscle_en, row.equipment_en);
-      const standardizedMuscleAr = getMuscleArabic(row.muscle_en);
-      const rawEquip = getEquipmentSuffix(row.name_en, row.equipment_en).replace(/^بـ?|^بال/, '') || row.equipment_ar || 'أدوات الجيم';
+  // Write to exercise_media_patch.json
+  try {
+    const patchContent = {
+      total_exercises: updatedRows.length,
+      updated_at: new Date().toISOString(),
+      patch_data: updatedRows,
+    };
+    fs.writeFileSync(MEDIA_PATCH_PATH, JSON.stringify(patchContent, null, 2));
+    console.log('✅ [Media Patch] Synchronized exercise_media_patch.json!');
+  } catch (e) {
+    console.warn('⚠️ Media patch sync skipped:', e);
+  }
 
-      return {
-        ...row,
-        name_ar: standardizedAr,
-        muscle_ar: standardizedMuscleAr,
-        equipment_ar: rawEquip,
-      };
-    });
-
-    // Update SQLite database in transaction
-    db.serialize(() => {
-      db.run('BEGIN TRANSACTION');
-      const stmt = db.prepare('UPDATE exercises SET name_ar = ?, muscle_ar = ?, equipment_ar = ? WHERE id = ?');
-
-      updatedRows.forEach(r => {
-        stmt.run(r.name_ar, r.muscle_ar, r.equipment_ar, r.id);
-      });
-
-      stmt.finalize();
-      db.run('COMMIT', (commitErr) => {
-        if (commitErr) {
-          console.error('❌ Commit error:', commitErr);
-        } else {
-          console.log('✅ [SQLite DB] All 4,207 exercises updated with professional Arabic names!');
-        }
-        db.close();
-
-        // Write to exercises_catalog.json
-        fs.writeFileSync(JSON_CATALOG_PATH, JSON.stringify(updatedRows, null, 2));
-        console.log(`✅ [Frontend JSON] Saved ${updatedRows.length} standardized exercises to exercises_catalog.json!`);
-
-        // Write to exercise_media_patch.json
-        try {
-          const patchContent = {
-            total_exercises: updatedRows.length,
-            updated_at: new Date().toISOString(),
-            patch_data: updatedRows,
-          };
-          fs.writeFileSync(MEDIA_PATCH_PATH, JSON.stringify(patchContent, null, 2));
-          console.log('✅ [Media Patch] Synchronized exercise_media_patch.json!');
-        } catch (e) {
-          console.warn('⚠️ Media patch sync skipped:', e);
-        }
-
-        // Print Samples
-        console.log('\n--- 🌟 STANDARDIZED EXAMPLES SAMPLE ---');
-        updatedRows.slice(0, 15).forEach(ex => {
-          console.log(`🔹 EN: "${ex.name_en}"\n   AR: "${ex.name_ar}" (${ex.muscle_ar})\n`);
-        });
-      });
-    });
+  // Print Samples
+  console.log('\n--- 🌟 STANDARDIZED EXAMPLES SAMPLE ---');
+  updatedRows.slice(0, 15).forEach(ex => {
+    console.log(`🔹 EN: "${ex.name_en}"\n   AR: "${ex.name_ar}" (${ex.muscle_ar})\n`);
   });
 }
 

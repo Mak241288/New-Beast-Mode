@@ -1,8 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import path from 'path';
-import sqlite3 from 'sqlite3';
 import crypto from 'crypto';
 import prisma from './db';
+import { exerciseCatalog } from './exerciseCatalogService';
 import {
   PROMPT_SYSTEM_COACH,
   PROMPT_SYSTEM_SWAP,
@@ -224,93 +223,31 @@ function hashKey(prefix: string, data: any): string {
 }
 
 // ============================================================================
-// Local SQLite Database Helpers (`exercises.db`)
+// Local Exercise Catalog Helpers (Pure TS / Memory JSON)
 // ============================================================================
 
-const EXERCISES_DB_PATH = path.join(__dirname, '../../../workout_generator_python/database/exercises.db');
-
-export const getExercisesDbConnection = (): sqlite3.Database => {
-  return new sqlite3.Database(EXERCISES_DB_PATH, sqlite3.OPEN_READWRITE, (err) => {
-    if (err) {
-      console.warn('[SQLite] Could not connect in READWRITE mode, falling back to READONLY:', err.message);
-    }
-  });
-};
-
 /**
- * Searches local SQLite database for exercises matching criteria.
+ * Searches local exercise catalog for exercises matching criteria.
  */
-export const searchLocalExercises = (
+export const searchLocalExercises = async (
   query: string,
   muscle?: string,
   equipment?: string,
   limit: number = 8
 ): Promise<any[]> => {
-  return new Promise((resolve) => {
-    const db = getExercisesDbConnection();
-    let sql = `
-      SELECT id, name_en, name_ar, muscle_en, muscle_ar, equipment_en, equipment_ar, category, instructions_en, instructions_ar, image_url
-      FROM exercises
-      WHERE (name_en LIKE ? OR name_ar LIKE ? OR muscle_en LIKE ? OR muscle_ar LIKE ?)
-    `;
-    const q = `%${query.trim()}%`;
-    const params: any[] = [q, q, q, q];
-
-    if (muscle) {
-      sql += ` AND (muscle_en LIKE ? OR muscle_ar LIKE ?)`;
-      params.push(`%${muscle}%`, `%${muscle}%`);
-    }
-
-    if (equipment && equipment !== 'ALL') {
-      sql += ` AND (equipment_en LIKE ? OR equipment_ar LIKE ?)`;
-      params.push(`%${equipment}%`, `%${equipment}%`);
-    }
-
-    sql += ` ORDER BY rating DESC LIMIT ?`;
-    params.push(limit);
-
-    db.all(sql, params, (err, rows) => {
-      db.close();
-      if (err) {
-        console.error('[searchLocalExercises Error]:', err);
-        resolve([]);
-      } else {
-        resolve(rows || []);
-      }
-    });
-  });
+  return exerciseCatalog.search(query, muscle, equipment, limit);
 };
 
 /**
- * Persists translated Arabic instructions back to SQLite DB.
+ * Persists translated Arabic instructions back to exercise catalog.
  * Token-saving permanent write-back.
  */
-export const saveArabicTranslationToDb = (name_en: string, instructions_ar: string, name_ar?: string): Promise<boolean> => {
-  return new Promise((resolve) => {
-    if (!name_en || !instructions_ar) {
-      resolve(false);
-      return;
-    }
-    const db = getExercisesDbConnection();
-    const sql = `
-      UPDATE exercises 
-      SET instructions_ar = ?,
-          name_ar = CASE WHEN (name_ar IS NULL OR name_ar = '' OR name_ar = name_en) AND ? IS NOT NULL THEN ? ELSE name_ar END
-      WHERE LOWER(name_en) = LOWER(?)
-    `;
-    db.run(sql, [instructions_ar, name_ar || null, name_ar || null, name_en.trim()], function (err) {
-      db.close();
-      if (err) {
-        console.error(`[saveArabicTranslationToDb] Failed to update '${name_en}':`, err.message);
-        resolve(false);
-      } else {
-        if (this.changes > 0) {
-          console.log(`[DB Write-Back] Cached Arabic instructions permanently for '${name_en}'.`);
-        }
-        resolve(true);
-      }
-    });
-  });
+export const saveArabicTranslationToDb = async (
+  name_en: string,
+  instructions_ar: string,
+  name_ar?: string
+): Promise<boolean> => {
+  return exerciseCatalog.saveArabicTranslation(name_en, instructions_ar, name_ar);
 };
 
 // ============================================================================

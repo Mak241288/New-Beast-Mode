@@ -1,14 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import sqlite3 from 'sqlite3';
 
 /**
  * BeastMode Exercise Database Snapshot Exporter
  * Exports the complete 4,200+ enriched exercise dataset to a formatted, timestamped JSON snapshot.
  */
 
-const EXERCISES_DB_PATH = path.resolve(__dirname, '../../../workout_generator_python/database/exercises.db');
 const CATALOG_JSON_PATH = path.resolve(__dirname, '../../../frontend/public/exercises_catalog.json');
+const EXISTING_BACKUP_PATH = path.resolve(__dirname, '../../exercises_backup.json');
 const OUTPUT_BACKUP_PATH = path.resolve(__dirname, '../../exercises_backup.json');
 
 export async function exportExercisesSnapshot(): Promise<{ success: boolean; count: number; outputPath: string; sizeMb: string; error?: string }> {
@@ -17,25 +16,17 @@ export async function exportExercisesSnapshot(): Promise<{ success: boolean; cou
   try {
     let exercises: any[] = [];
 
-    // Strategy 1: Read directly from enriched SQLite Database if available
-    if (fs.existsSync(EXERCISES_DB_PATH)) {
-      console.log(`[Snapshot Source] Reading from SQLite DB: ${EXERCISES_DB_PATH}`);
-      const db = new sqlite3.Database(EXERCISES_DB_PATH, sqlite3.OPEN_READONLY);
-
-      exercises = await new Promise((resolve, reject) => {
-        db.all('SELECT * FROM exercises', (err, rows) => {
-          db.close();
-          if (err) return reject(err);
-          resolve(rows || []);
-        });
-      });
-    }
-
-    // Strategy 2: Fallback to bundled catalog JSON if SQLite isn't present
-    if ((!exercises || exercises.length === 0) && fs.existsSync(CATALOG_JSON_PATH)) {
+    // Strategy 1: Read from bundled Catalog JSON
+    if (fs.existsSync(CATALOG_JSON_PATH)) {
       console.log(`[Snapshot Source] Reading from bundled Catalog JSON: ${CATALOG_JSON_PATH}`);
       const raw = fs.readFileSync(CATALOG_JSON_PATH, 'utf-8');
-      exercises = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      exercises = Array.isArray(parsed) ? parsed : (parsed.exercises || []);
+    } else if (fs.existsSync(EXISTING_BACKUP_PATH)) {
+      console.log(`[Snapshot Source] Reading from existing Backup JSON: ${EXISTING_BACKUP_PATH}`);
+      const raw = fs.readFileSync(EXISTING_BACKUP_PATH, 'utf-8');
+      const parsed = JSON.parse(raw);
+      exercises = Array.isArray(parsed) ? parsed : (parsed.exercises || []);
     }
 
     if (!Array.isArray(exercises) || exercises.length === 0) {
