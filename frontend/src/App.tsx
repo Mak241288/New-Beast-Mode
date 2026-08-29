@@ -106,7 +106,7 @@ function App() {
   };
 
   useEffect(() => {
-    // 1. Check initial active session (handles OAuth redirect callback hash/query)
+    // 1. Check initial active session (handles OAuth redirect callback hash/query & PKCE code)
     const initSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -139,28 +139,31 @@ function App() {
             await api.migrateGuestDataToUser(session.user).catch(() => null);
           }
 
-          // Sync cloud data across devices silently
-          await api.syncUserDataFromCloud();
-
           // Handle password recovery link from Supabase email
           if (window.location.hash.includes('type=recovery')) {
-            setLoading(false);
             setShowSetPasswordModal(true);
             if (session?.user?.email) {
               setUserProfileEmail(session.user.email);
             }
             window.history.replaceState({}, document.title, window.location.pathname + '#dashboard');
             setCurrentView('dashboard');
-            return;
-          } else if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-            // Clean OAuth access token fragment from URL if present
+          } else {
+            // Clean OAuth access token fragment / PKCE code from URL if present
             const savedView = localStorage.getItem('beast_last_view') || 'dashboard';
-            window.history.replaceState({ view: savedView }, document.title, window.location.pathname + `#${savedView}`);
-            setCurrentView(savedView);
+            const targetView = (currentView === 'landing' || currentView === 'login') ? savedView : currentView;
+            if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+              window.history.replaceState({ view: targetView }, document.title, window.location.pathname + `#${targetView}`);
+            }
+            setCurrentView(targetView);
           }
+
+          // Sync cloud data across devices silently in background
+          api.syncUserDataFromCloud().catch(() => {});
         }
       } catch (err) {
         console.warn('[Supabase Auth Init Error]:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -168,6 +171,7 @@ function App() {
 
     // 2. Listen to Supabase auth state changes (OAuth redirects, tokens, signins)
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+      setLoading(false);
       if (session?.access_token) {
         setToken(session.access_token);
         try {
@@ -194,7 +198,7 @@ function App() {
           cacheStore.set('user_profile', profile);
 
           // Migrate any local guest plans/workouts to authenticated user
-          await api.migrateGuestDataToUser(session.user).catch(() => null);
+          api.migrateGuestDataToUser(session.user).catch(() => null);
 
           try {
             await supabase.from('User').upsert(profile, { onConflict: 'email' });
@@ -203,18 +207,21 @@ function App() {
           }
         }
 
-        // Sync cloud data across devices
-        await api.syncUserDataFromCloud();
+        // Sync cloud data across devices in background
+        api.syncUserDataFromCloud().catch(() => {});
 
         if (event === 'PASSWORD_RECOVERY' || window.location.hash.includes('type=recovery')) {
-          setLoading(false);
           setShowSetPasswordModal(true);
           if (session.user?.email) {
             setUserProfileEmail(session.user.email);
           }
           window.history.replaceState({}, document.title, window.location.pathname + '#dashboard');
           setCurrentView('dashboard');
-        } else if (event === 'SIGNED_IN') {
+        } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          // Clean OAuth URL fragments
+          if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+            window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
+          }
           setCurrentView((prev) => {
             const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about', 'onboarding'];
             if (validViews.includes(prev) && prev !== 'landing' && prev !== 'login') {

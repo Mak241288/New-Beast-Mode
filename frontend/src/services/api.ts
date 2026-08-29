@@ -1057,19 +1057,20 @@ export const api = {
   },
 
   signInWithGoogleOAuth: async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${origin}/`,
         queryParams: {
           access_type: 'offline',
-          prompt: 'consent',
+          prompt: 'select_account',
         },
       },
     });
 
     if (error) throw new Error(error.message || 'فشل بدء تسجيل الدخول عبر Google');
-    return { success: true, message: 'جاري التوجيه إلى حساب Google...' };
+    return { success: true, data, message: 'جاري التوجيه إلى حساب Google...' };
   },
 
   signInWithMagicLink: async (email: string) => {
