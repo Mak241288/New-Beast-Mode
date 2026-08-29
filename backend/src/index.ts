@@ -39,6 +39,7 @@ const defaultAllowedOrigins = [
   'http://127.0.0.1:3000',
   'https://beastmode.app',
   'https://beastmode-ai.vercel.app',
+  'https://new-beast-mode.vercel.app',
 ];
 
 // Security Middlewares

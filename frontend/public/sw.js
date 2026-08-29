@@ -36,7 +36,12 @@ function isTrustedOrigin(rawUrl) {
     if (TRUSTED_ORIGINS.has(parsed.origin)) {
       return true;
     }
-    if (parsed.hostname.endsWith('.supabase.co') || parsed.hostname.endsWith('.groq.com')) {
+    if (
+      parsed.hostname.endsWith('.supabase.co') ||
+      parsed.hostname.endsWith('.groq.com') ||
+      parsed.hostname.endsWith('.onrender.com') ||
+      parsed.hostname.endsWith('.vercel.app')
+    ) {
       return true;
     }
     return false;
@@ -80,7 +85,7 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// 4. Fetch Event with Strict SSRF Origin Validation & NetworkFirst Strategy
+// 4. Fetch Event with Strict Bypass for Render / Backend APIs & NetworkFirst Strategy
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
@@ -93,24 +98,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // SSRF Protection: Validate request origin against trusted origins
-  if (!isTrustedOrigin(requestUrl)) {
-    event.respondWith(new Response('Forbidden: Untrusted Origin', { status: 403 }));
-    return;
-  }
-
-  // Bypass /api/ backend endpoints, Local Dev Server dynamic paths, Supabase API, Groq/Gemini APIs
+  // Bypass /api/ backend endpoints, Render backend, Supabase, Groq, Google APIs, and Vite dev server
   if (
     url.pathname.startsWith('/api/') ||
     url.pathname === '/api' ||
-    url.pathname.startsWith('/@vite') ||
-    url.pathname.startsWith('/src/') ||
-    url.pathname.startsWith('/node_modules/') ||
+    url.hostname.includes('onrender.com') ||
     url.hostname.includes('supabase.co') ||
     url.hostname.includes('groq.com') ||
     url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('onrender.com')
+    url.pathname.startsWith('/@vite') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/')
   ) {
+    return;
+  }
+
+  // SSRF Protection: Validate request origin against trusted origins for cached assets
+  if (!isTrustedOrigin(requestUrl)) {
+    event.respondWith(new Response('Forbidden: Untrusted Origin', { status: 403 }));
     return;
   }
 
