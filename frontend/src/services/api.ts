@@ -1,8 +1,16 @@
 import { supabase } from './supabase';
 import { cacheStore } from '../utils/cacheStore';
+import { idbStore } from '../utils/idbStore';
 import { PRESET_WORKOUT_PLANS } from '../utils/presetWorkoutPlans';
 import { parseBulkWorkoutText } from '../utils/workoutParser';
 import { planService } from './planService';
+
+// Module-level realtime channel & sync engine state
+let realtimeChannel: any = null;
+let syncDebounceTimer: any = null;
+let lastSyncedHash: string = '';
+export let _memoryLibraryCache: any[] | null = null;
+export const EXERCISES_CACHE_VERSION = 'bm_exercises_v3_2026_08';
 
 // Helper to get active user ID or email from Supabase Auth
 export async function getCurrentUser() {
@@ -120,13 +128,6 @@ export async function fetchBackendApi(endpoint: string, options: RequestInit = {
 // ==========================================
 // AUTOMATIC DEBOUNCED CLOUD SYNC ENGINE (85%+ Request Reduction)
 // ==========================================
-let syncDebounceTimer: any = null;
-let lastSyncedHash: string = '';
-let realtimeChannel: any = null;
-
-export const EXERCISES_CACHE_VERSION = 'bm_exercises_v3_2026_08';
-export let _memoryLibraryCache: any[] | null = null;
-import { idbStore } from '../utils/idbStore';
 
 // Helper to compact exercise payload for maximal performance and zero bloat
 export function compactExercisesPayload(rawList: any[]): any[] {
