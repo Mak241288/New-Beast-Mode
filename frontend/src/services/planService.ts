@@ -239,7 +239,7 @@ export const planService = {
       plans = cachedHistory.map((p) => normalizePlan(p));
     }
 
-    // 2. Check cloud user metadata and merge
+    // 2. Check cloud user metadata and merge with timestamp conflict resolution
     const user = await getCurrentUser();
     if (user?.user_metadata?.beast_plan_history) {
       try {
@@ -252,8 +252,16 @@ export const planService = {
             plans = cloudPlans;
           } else {
             cloudPlans.forEach((cp) => {
-              if (!plans.some((lp) => String(lp.id) === String(cp.id) || lp.title === cp.title)) {
+              const existingIdx = plans.findIndex((lp) => isSamePlanId(lp.id, cp.id) || lp.title === cp.title);
+              if (existingIdx === -1) {
                 plans.push(cp);
+              } else {
+                // If cloud plan is newer, adopt the cloud plan version
+                const localUpdated = new Date(plans[existingIdx].updatedAt || 0).getTime();
+                const cloudUpdated = new Date(cp.updatedAt || 0).getTime();
+                if (cloudUpdated > localUpdated) {
+                  plans[existingIdx] = cp;
+                }
               }
             });
           }
