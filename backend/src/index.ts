@@ -22,6 +22,9 @@ initCrashTracking();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust First Proxy (Crucial for Render/Reverse Proxies & express-rate-limit X-Forwarded-For validation)
+app.set('trust proxy', 1);
+
 // Configurable Allowed Origins for Production Security
 const rawAllowed = process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '';
 const customOrigins = rawAllowed
@@ -110,16 +113,20 @@ app.get('/', (_req, res) => {
 // Comprehensive Health & Pulse Check Route
 app.get('/api/health', async (_req, res) => {
   let dbStatus = 'connected';
+  let dbError: any = null;
   try {
     await prisma.$queryRaw`SELECT 1`;
-  } catch (err) {
+  } catch (err: any) {
     dbStatus = 'disconnected';
+    dbError = err instanceof Error ? err.message : String(err);
+    logger.error('Database Health Check Failed', err);
   }
 
   const isHealthy = dbStatus === 'connected';
   res.status(isHealthy ? 200 : 503).json({
     status: isHealthy ? 'healthy' : 'unhealthy',
     database: dbStatus,
+    ...(process.env.NODE_ENV !== 'production' && dbError ? { error: dbError } : {}),
     timestamp: Date.now(),
   });
 });

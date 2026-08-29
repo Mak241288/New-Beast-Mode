@@ -388,7 +388,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-app)', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       
       {/* TOP SCROLL PROGRESS BAR */}
       <div className="top-scroll-progress" style={{ width: `${scrollPercent}%` }} />
@@ -439,75 +439,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </header>
 
       {/* HERO SECTION WITH LUXURY KINETIC TYPOGRAPHY */}
-      <section
-        style={{
-          padding: '70px 20px 40px',
-          maxWidth: '1200px',
-          margin: '0 auto',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '20px',
-          position: 'relative',
-          borderRadius: '32px',
-          backgroundImage: 'linear-gradient(180deg, rgba(6, 10, 24, 0.94) 0%, rgba(4, 7, 18, 0.98) 100%), url("/assets/beastmode_hero_bg.jpg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          boxShadow: '0 20px 80px rgba(0, 0, 0, 0.8)',
-          border: '1px solid rgba(0, 210, 255, 0.2)',
-          marginTop: '15px'
-        }}
-      >
+      <section className="landing-hero-section">
         
         {/* Elite Badge */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.16)', border: '1px solid rgba(16, 185, 129, 0.45)', fontSize: '13px', color: '#fff', fontWeight: 'bold', boxShadow: '0 0 25px rgba(16, 185, 129, 0.2)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 20px', borderRadius: '30px', background: 'rgba(16, 185, 129, 0.16)', border: '1px solid rgba(16, 185, 129, 0.45)', fontSize: '13px', color: 'var(--text-primary)', fontWeight: 'bold', boxShadow: '0 0 25px rgba(16, 185, 129, 0.2)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
           <Crown size={16} color="#f59e0b" />
           <span>{isEn ? 'The All-in-One AI Fitness & Bodybuilding Ecosystem' : 'المنظومة الرياضية الشاملة للياقة البدنية، التغذية، وأساطير كمال الأجسام'}</span>
         </div>
 
         {/* Kinetic Rotating Headline */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', maxWidth: '1020px' }}>
-          <h1 style={{ fontSize: 'clamp(32px, 5vw, 54px)', fontWeight: '900', lineHeight: 1.2, margin: 0, letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontSize: 'clamp(32px, 5vw, 54px)', fontWeight: '900', lineHeight: 1.2, margin: 0, letterSpacing: '-0.5px', color: 'var(--text-primary)' }}>
             {isEn ? 'Train Like A Pro With Intelligent AI' : 'درّب جسمك كالمحترفين بذكاء اصطناعي'}
           </h1>
           
           <div
+            className="landing-slogan-pill"
             style={{
-              minHeight: '48px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.26s ease-in-out',
               opacity: sloganFade ? 1 : 0,
-              transform: sloganFade ? 'translateY(0)' : 'translateY(8px)',
-              background: 'rgba(0, 0, 0, 0.65)',
-              padding: '6px 20px',
-              borderRadius: '20px',
-              border: '1px solid rgba(0, 210, 255, 0.35)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              boxShadow: '0 0 25px rgba(0, 210, 255, 0.2)'
+              transform: sloganFade ? 'translateY(0)' : 'translateY(8px)'
             }}
           >
-            <span
-              style={{
-                background: 'linear-gradient(135deg, #00d2ff, #a855f7, #10b981)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: '900',
-                fontSize: 'clamp(18px, 3.2vw, 32px)',
-                letterSpacing: '-0.3px',
-              }}
-            >
+            <span className="landing-slogan-text">
               {ROTATING_SLOGANS[lang][sloganIndex]}
             </span>
           </div>
         </div>
 
         {/* Hero Description */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.65)', padding: '14px 24px', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', maxWidth: '900px' }}>
-          <p style={{ fontSize: 'clamp(14px, 1.8vw, 16.5px)', color: '#e2e8f0', lineHeight: 1.7, margin: 0 }}>
+        <div className="landing-hero-desc">
+          <p>
             {isEn
               ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, enjoy 100% instant cloud sync across all your devices, and run live gym sessions with zero latency.'
               : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، استمتع بمزامنة سحابية فورية ولحظية 100% بين كافة أجهزتك، وتدرب بسلاسة مطلقة.'}
@@ -528,7 +489,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onLogin}
             className="secondary-btn"
-            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700' }}
           >
             {isEn ? 'Existing Athlete Sign In 🔑' : 'دخول الرياضيين المشتركين 🔑'}
           </button>
@@ -536,7 +497,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={() => onNavigateToLegal('about')}
             className="secondary-btn"
-            style={{ padding: '16px 22px', fontSize: '15px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+            style={{ padding: '16px 22px', fontSize: '15px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Info size={16} />
             <span>{isEn ? 'About Platform' : 'عن المنصة ℹ️'}</span>
@@ -553,11 +514,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                border: '1px solid rgba(0, 210, 255, 0.4)',
+                border: '1px solid var(--border-color)',
                 color: 'var(--primary)',
-                background: 'rgba(0, 210, 255, 0.12)',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
               }}
             >
               <Download size={16} />
@@ -566,28 +524,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           )}
         </div>
 
-        {/* Trust Badges Strip (Crystal-Clear Capsule Chips) */}
+        {/* Trust Badges Strip (Theme Aware Chips) */}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', marginTop: '6px', fontSize: '12.5px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(0, 210, 255, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+          <span className="landing-trust-chip">
             <ShieldCheck size={15} color="var(--primary)" />
             {isEn ? '100% Private & OWASP Certified' : '100% خصوصية وأمان معتمد'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(245, 158, 11, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+          <span className="landing-trust-chip">
             <Zap size={15} color="#f59e0b" />
             {isEn ? 'Zero Ads & Instant Access' : 'بدون إعلانات تجارية'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(6, 182, 212, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+          <span className="landing-trust-chip">
             <WifiOff size={15} color="var(--secondary)" />
             {isEn ? 'Works 100% Offline (PWA)' : 'يعمل أوفلاين في الجيم بدون نت'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(236, 72, 153, 0.3)', color: '#fff', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+          <span className="landing-trust-chip">
             <Sparkles size={15} color="#ec4899" />
             {isEn ? '100% Free Community Edition' : 'مجاني بالكامل للمجتمع الرياضي'}
           </span>
         </div>
 
         {/* Interactive App Mockup Showcase */}
-        <div className="glass-panel" style={{ width: '100%', maxWidth: '1080px', marginTop: '20px', padding: '22px', borderRadius: '24px', border: '1px solid rgba(0, 210, 255, 0.35)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', background: 'linear-gradient(180deg, rgba(13, 19, 36, 0.85), rgba(8, 12, 24, 0.95))' }}>
+        <div className="glass-panel landing-mockup-container">
           
           {/* Tab Switcher */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '16px' }}>
@@ -609,7 +567,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Active Preview Content with STABLE MIN-HEIGHT (Zero container jumps) */}
-          <div style={{ padding: '20px', borderRadius: '16px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.08)', minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div className="landing-preview-box">
             
             {activePreviewTab === 'player' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
@@ -843,13 +801,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b' }}>{calculated1RM} kg</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '6px', fontSize: '11.5px', marginTop: '4px' }}>
-                <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
                   🔥 Hypertrophy 80%: <b>{Math.round(calculated1RM * 0.8)} kg</b>
                 </div>
-                <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
                   ⚡ Strength 90%: <b>{Math.round(calculated1RM * 0.9)} kg</b>
                 </div>
-                <div style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px' }}>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
                   💪 Endurance 70%: <b>{Math.round(calculated1RM * 0.7)} kg</b>
                 </div>
               </div>
@@ -883,8 +841,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     padding: '6px 12px',
                     fontSize: '12px',
                     borderRadius: '8px',
-                    border: selectedMuscle === m.id ? '1px solid #8b5cf6' : '1px solid rgba(255,255,255,0.08)',
-                    background: selectedMuscle === m.id ? 'rgba(139, 92, 246, 0.2)' : 'rgba(255,255,255,0.02)',
+                    border: selectedMuscle === m.id ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
+                    background: selectedMuscle === m.id ? 'rgba(139, 92, 246, 0.2)' : 'var(--bg-app)',
                     color: selectedMuscle === m.id ? '#8b5cf6' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     fontWeight: selectedMuscle === m.id ? 'bold' : 'normal'
@@ -922,7 +880,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
         </div>
 
-        <div className="glass-panel" style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="glass-panel" style={{ overflowX: 'auto', borderRadius: '16px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: isEn ? 'left' : 'right', fontSize: '14px' }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -957,7 +915,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* HOW IT WORKS (3-STEP PIPELINE INTERACTIVE CAROUSEL) */}
       <section style={{ padding: '60px 20px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', margin: 0, color: '#fff' }}>
+          <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', margin: 0, color: 'var(--text-primary)' }}>
             {isEn ? 'How BeastMode Powers Your Complete Transformation' : 'كيف يقودك BeastMode نحو أعلى مستويات القوة واللياقة؟'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px', maxWidth: '750px', margin: '8px auto 0' }}>
@@ -977,20 +935,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   setActiveStepIndex(idx);
                   setIsStepsAutoPlay(false);
                 }}
+                className={`landing-step-btn ${isActive ? 'active' : 'inactive'}`}
                 style={{
-                  padding: '14px 12px',
-                  borderRadius: '14px',
-                  border: isActive ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
-                  background: isActive ? 'rgba(0, 210, 255, 0.15)' : 'rgba(15, 23, 42, 0.6)',
-                  color: isActive ? '#fff' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '4px',
-                  transition: 'all 0.25s ease',
-                  boxShadow: isActive ? '0 0 25px rgba(0, 210, 255, 0.2)' : 'none',
+                  border: isActive ? '1px solid var(--primary)' : undefined,
+                  background: isActive ? 'var(--primary-glow)' : undefined,
+                  color: isActive ? 'var(--primary)' : undefined,
+                  boxShadow: isActive ? '0 0 20px var(--primary-glow)' : 'none',
                 }}
               >
                 <span style={{ fontSize: '18px', fontWeight: '900', color: isActive ? 'var(--primary)' : 'var(--text-muted)' }}>
@@ -1006,22 +956,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* Active Step Showcase Card */}
         <div
-          className="glass-panel"
+          className="glass-panel landing-step-card"
           onMouseEnter={() => setIsStepsAutoPlay(false)}
           onMouseLeave={() => setIsStepsAutoPlay(true)}
-          style={{
-            padding: '36px 30px',
-            borderRadius: '24px',
-            border: '1px solid rgba(0, 210, 255, 0.35)',
-            background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.95), rgba(6, 10, 22, 0.98))',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            position: 'relative',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 210, 255, 0.1)',
-            minHeight: '180px',
-            justifyContent: 'center',
-          }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1032,7 +969,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   {isEn ? `STEP ${activeStepIndex + 1} OF 3` : `الخطوة ${activeStepIndex + 1} من 3`}
                 </span>
-                <h3 style={{ fontSize: '20px', fontWeight: '900', margin: '2px 0 0', color: '#fff' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: '900', margin: '2px 0 0', color: 'var(--text-primary)' }}>
                   {steps[activeStepIndex].title}
                 </h3>
               </div>
@@ -1067,7 +1004,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          <p style={{ fontSize: '15px', color: '#cbd5e1', lineHeight: 1.75, margin: 0 }}>
+          <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.75, margin: 0 }}>
             {steps[activeStepIndex].desc}
           </p>
 
@@ -1084,7 +1021,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   width: activeStepIndex === dotIdx ? '28px' : '8px',
                   height: '8px',
                   borderRadius: '4px',
-                  background: activeStepIndex === dotIdx ? 'var(--primary)' : 'rgba(255,255,255,0.2)',
+                  background: activeStepIndex === dotIdx ? 'var(--primary)' : 'var(--border-color)',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                 }}
@@ -1101,7 +1038,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <Sparkles size={14} />
             <span>{isEn ? 'Complete Ecosystem' : 'المنظومة الاحترافية الشاملة'}</span>
           </div>
-          <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', margin: 0, color: '#fff' }}>
+          <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', margin: 0, color: 'var(--text-primary)' }}>
             {isEn ? '10 Elite Pillars Engineered For Total Athletic Dominance' : '10 ركائز احترافية صُنعت خصيصاً لتحقيق أقصى بناء بدني واستشفاء'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '8px', maxWidth: '800px', margin: '8px auto 0' }}>
@@ -1132,18 +1069,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   setActivePillarIndex(pIdx);
                   setIsPillarsAutoPlay(false);
                 }}
+                className={`landing-pillar-chip ${isPillActive ? 'active' : 'inactive'}`}
                 style={{
-                  padding: '7px 14px',
-                  borderRadius: '20px',
-                  border: isPillActive ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
-                  background: isPillActive ? 'rgba(0, 210, 255, 0.2)' : 'rgba(15, 23, 42, 0.65)',
-                  color: isPillActive ? '#fff' : 'var(--text-secondary)',
-                  fontSize: '12px',
+                  border: isPillActive ? '1px solid var(--primary)' : undefined,
+                  background: isPillActive ? 'var(--primary-glow)' : undefined,
+                  color: isPillActive ? 'var(--primary)' : undefined,
                   fontWeight: isPillActive ? '800' : '600',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isPillActive ? '0 0 12px rgba(0, 210, 255, 0.3)' : 'none',
+                  boxShadow: isPillActive ? '0 0 12px var(--primary-glow)' : 'none',
                 }}
               >
                 {isEn ? pill.en : pill.ar}
@@ -1271,23 +1203,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           return (
             <div
-              className="glass-panel ambient-breathing"
+              className="glass-panel ambient-breathing landing-pillar-card"
               onMouseEnter={() => setIsPillarsAutoPlay(false)}
               onMouseLeave={() => setIsPillarsAutoPlay(true)}
-              style={{
-                marginTop: '16px',
-                padding: '36px 30px',
-                borderRadius: '24px',
-                border: '1px solid rgba(0, 210, 255, 0.35)',
-                background: 'linear-gradient(135deg, rgba(13, 19, 36, 0.96), rgba(4, 7, 18, 0.99))',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '18px',
-                position: 'relative',
-                boxShadow: '0 25px 70px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 210, 255, 0.12)',
-                minHeight: '220px',
-                justifyContent: 'center',
-              }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -1303,7 +1221,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         {activePillarIndex + 1} / 10
                       </span>
                     </div>
-                    <h3 style={{ fontSize: '22px', fontWeight: '900', margin: '4px 0 0', color: '#fff' }}>
+                    <h3 style={{ fontSize: '22px', fontWeight: '900', margin: '4px 0 0', color: 'var(--text-primary)' }}>
                       {isEn ? currentPillar.titleEn : currentPillar.titleAr}
                     </h3>
                   </div>
@@ -1338,12 +1256,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
               </div>
 
-              <p style={{ fontSize: '15px', color: '#cbd5e1', lineHeight: 1.8, margin: 0 }}>
+              <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0 }}>
                 {isEn ? currentPillar.descEn : currentPillar.descAr}
               </p>
 
               {/* Stats Chip & Indicators */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderTop: '1px solid var(--border-color)', paddingTop: '14px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 'bold', color: currentPillar.color, background: `${currentPillar.color}15`, padding: '4px 12px', borderRadius: '8px', border: `1px solid ${currentPillar.color}33` }}>
                   {currentPillar.stats}
                 </span>
@@ -1361,7 +1279,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         width: activePillarIndex === pDotIdx ? '20px' : '6px',
                         height: '6px',
                         borderRadius: '3px',
-                        background: activePillarIndex === pDotIdx ? currentPillar.color : 'rgba(255,255,255,0.2)',
+                        background: activePillarIndex === pDotIdx ? currentPillar.color : 'var(--border-color)',
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
                       }}
