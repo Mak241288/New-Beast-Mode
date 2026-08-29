@@ -206,6 +206,9 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="input-field"
                 style={{ width: '100%', paddingRight: isEn ? '40px' : '45px', paddingLeft: isEn ? '45px' : '40px', fontSize: '14px' }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 minLength={8}
               />
@@ -242,6 +245,9 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="input-field"
                 style={{ width: '100%', paddingRight: isEn ? '40px' : '45px', paddingLeft: isEn ? '45px' : '40px', fontSize: '14px' }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 minLength={8}
               />

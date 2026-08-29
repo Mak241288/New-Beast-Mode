@@ -59,22 +59,112 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
     }
   }, [rememberMe, email]);
 
+  const translateAuthError = (errMsg: string, currentLang: 'ar' | 'en'): string => {
+    if (!errMsg) {
+      return currentLang === 'en'
+        ? 'An unexpected error occurred. Please try again.'
+        : 'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى.';
+    }
+    const lower = errMsg.toLowerCase();
+
+    if (
+      lower.includes('invalid login credentials') ||
+      lower.includes('invalid_grant') ||
+      lower.includes('invalid_credentials') ||
+      lower.includes('invalid password') ||
+      lower.includes('كلمة المرور غير صحيحة')
+    ) {
+      return currentLang === 'en'
+        ? 'Invalid email or password. Please check your credentials.'
+        : 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التأكد من صحة البيانات.';
+    }
+
+    if (lower.includes('email not confirmed')) {
+      return currentLang === 'en'
+        ? 'Please confirm your email address via the verification link sent to your inbox before logging in.'
+        : 'يرجى تأكيد بريدك الإلكتروني من خلال الرابط المرسل إلى صندوق الوارد الخاص بك أولاً.';
+    }
+
+    if (
+      lower.includes('user already registered') ||
+      lower.includes('already exists') ||
+      lower.includes('duplicate key') ||
+      lower.includes('مسجل بالفعل')
+    ) {
+      return currentLang === 'en'
+        ? 'This email is already registered. Please sign in or reset your password.'
+        : 'هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول أو استخدام خيار استعادة كلمة المرور.';
+    }
+
+    if (
+      lower.includes('rate limit') ||
+      lower.includes('too many requests') ||
+      lower.includes('over_email_send_rate_limit') ||
+      lower.includes('تم تجاوز')
+    ) {
+      return currentLang === 'en'
+        ? 'Too many attempts. Please wait a few moments before trying again.'
+        : 'تم تجاوز عدد المحاولات المسموح بها، يرجى الانتظار بضع دقائق ثم المحاولة مجدداً.';
+    }
+
+    if (
+      lower.includes('failed to fetch') ||
+      lower.includes('network error') ||
+      lower.includes('connection refused') ||
+      lower.includes('networkrequestfailed')
+    ) {
+      return currentLang === 'en'
+        ? 'Network connection issue. Please check your internet connection and try again.'
+        : 'تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت والمحاولة لاحقاً.';
+    }
+
+    if (lower.includes('password should be at least') || lower.includes('password length')) {
+      return currentLang === 'en'
+        ? 'Password must be at least 8 characters long.'
+        : 'كلمة المرور يجب أن تتكون من 8 خانات على الأقل.';
+    }
+
+    return errMsg;
+  };
+
   const validateInputs = (): boolean => {
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!cleanEmail || !emailRegex.test(cleanEmail)) {
-      setError('يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)');
+      setError(
+        lang === 'en'
+          ? 'Please enter a valid email address (e.g. name@example.com)'
+          : 'يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)'
+      );
       return false;
     }
 
     if (!isLogin) {
       if (name.trim().length < 2) {
-        setError('يرجى إدخال اسم كامل صحيح (حرفين على الأقل)');
+        setError(
+          lang === 'en'
+            ? 'Please enter a valid full name (at least 2 characters)'
+            : 'يرجى إدخال اسم كامل صحيح (حرفين على الأقل)'
+        );
         return false;
       }
-      if (password.length < 8) {
-        setError('كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل');
+      if (cleanPassword.length < 8) {
+        setError(
+          lang === 'en'
+            ? 'Password must be at least 8 characters long'
+            : 'كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل'
+        );
+        return false;
+      }
+    } else {
+      if (!cleanPassword) {
+        setError(
+          lang === 'en'
+            ? 'Please enter your password'
+            : 'يرجى إدخال كلمة المرور'
+        );
         return false;
       }
     }
@@ -136,7 +226,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
         }
       }
     } catch (err: any) {
-      setError(err.message || 'حدث خطأ أثناء الاتصال بالسيرفر، يرجى المحاولة لاحقاً');
+      setError(translateAuthError(err.message || String(err), lang));
     } finally {
       setLoading(false);
     }
@@ -456,6 +546,9 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                   onChange={(e) => setName(e.target.value)}
                   className="input-field"
                   style={{ paddingRight: '45px' }}
+                  autoCapitalize="words"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
               </div>
@@ -473,6 +566,10 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                 onChange={(e) => handleEmailChange(e.target.value)}
                 className="input-field"
                 style={{ paddingRight: '45px', textAlign: 'left', direction: 'ltr' }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
                 required
               />
             </div>
@@ -506,6 +603,9 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field"
                 style={{ paddingRight: '45px', paddingLeft: '45px', textAlign: 'left', direction: 'ltr' }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
               />
               <button
@@ -784,6 +884,10 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                     onChange={(e) => setOtpEmail(e.target.value)}
                     className="input-field"
                     style={{ textAlign: 'left', direction: 'ltr' }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    inputMode="email"
                     required
                   />
                 </div>
@@ -836,6 +940,10 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                     onChange={(e) => setOtpCode(e.target.value.trim())}
                     className="input-field"
                     style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '18px', fontWeight: '800', borderColor: 'var(--primary)' }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    inputMode="numeric"
                     required
                   />
                 </div>
@@ -853,6 +961,9 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                       onChange={(e) => setOtpNewPassword(e.target.value)}
                       className="input-field"
                       style={{ paddingLeft: '45px', textAlign: 'left', direction: 'ltr' }}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       required
                     />
                     <button
@@ -881,6 +992,9 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                       onChange={(e) => setOtpConfirmPassword(e.target.value)}
                       className="input-field"
                       style={{ paddingLeft: '45px', textAlign: 'left', direction: 'ltr' }}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       required
                     />
                     <button
@@ -1009,6 +1123,10 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                     placeholder="athlete@gmail.com"
                     className="input-field"
                     style={{ paddingRight: '40px', fontSize: '14px', direction: 'ltr', textAlign: 'left', opacity: googleRequiresVerification ? 0.7 : 1 }}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    inputMode="email"
                     required
                   />
                   <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
@@ -1030,6 +1148,9 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                       placeholder="Beast Athlete"
                       className="input-field"
                       style={{ paddingRight: '40px', fontSize: '14px' }}
+                      autoCapitalize="words"
+                      autoCorrect="off"
+                      spellCheck={false}
                     />
                     <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                       <User size={16} />
@@ -1057,6 +1178,9 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                       placeholder="••••••••"
                       className="input-field"
                       style={{ fontSize: '13px', direction: 'ltr', textAlign: 'left' }}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                     />
                   </div>
 
@@ -1072,6 +1196,10 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
                       placeholder="رمز OTP (6 أرقام)"
                       className="input-field"
                       style={{ flex: 1, fontSize: '13px', textAlign: 'center', letterSpacing: '2px' }}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      inputMode="numeric"
                     />
                     <button
                       type="button"
