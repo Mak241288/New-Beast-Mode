@@ -79,7 +79,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // Rate Limiting to prevent brute-force and DDoS
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 300, // Limit each IP to 300 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'تم تجاوز عدد الطلبات المسموح بها، يرجى المحاولة بعد 15 دقيقة.' },

@@ -9,6 +9,8 @@ import { planService } from './planService';
 let realtimeChannel: any = null;
 let syncDebounceTimer: any = null;
 let lastSyncedHash: string = '';
+let inFlightProfilePromise: Promise<any> | null = null;
+let lastProfileFetchTime = 0;
 export let _memoryLibraryCache: any[] | null = null;
 export const EXERCISES_CACHE_VERSION = 'bm_exercises_v3_2026_08';
 
@@ -803,61 +805,84 @@ export const api = {
     return { success: true, message: 'تم فك ربط حساب Google بنجاح' };
   },
 
-  getProfile: async () => {
-    // 1. Try Backend Proxy (/api/auth/profile)
-    const backendRes = await fetchBackendApi('/auth/profile');
-    if (backendRes?.user && typeof backendRes.user === 'object') {
-      const cached = cacheStore.get('user_profile') || {};
-      const merged = { ...cached, ...backendRes.user };
-      cacheStore.set('user_profile', merged);
-      return merged;
+  getProfile: async (forceRefresh = false) => {
+    const cached = cacheStore.get<any>('user_profile');
+    const now = Date.now();
+
+    // Deduplicate in-flight requests
+    if (inFlightProfilePromise) {
+      return inFlightProfilePromise;
     }
 
-    const user = await getCurrentUser();
-    const cached: any = cacheStore.get('user_profile') || {};
-    const email = user?.email || cached.email;
+    // Return memory cached profile if fetched within last 5 seconds (unless forced)
+    if (!forceRefresh && cached && (now - lastProfileFetchTime < 5000)) {
+      return cached;
+    }
 
-    // 2. Authoritative Cloud Profile from Supabase Auth user_metadata
-    let cloudProfile: any = null;
-    if (user?.user_metadata?.beast_profile) {
-      cloudProfile = typeof user.user_metadata.beast_profile === 'string'
-        ? JSON.parse(user.user_metadata.beast_profile)
-        : user.user_metadata.beast_profile;
-    } else if (user?.user_metadata?.beast_sync_data) {
+    inFlightProfilePromise = (async () => {
       try {
-        const syncData = typeof user.user_metadata.beast_sync_data === 'string'
-          ? JSON.parse(user.user_metadata.beast_sync_data)
-          : user.user_metadata.beast_sync_data;
-        if (syncData?.userProfile) {
-          cloudProfile = syncData.userProfile;
+        // 1. Try Backend Proxy (/api/auth/profile)
+        const backendRes = await fetchBackendApi('/auth/profile');
+        if (backendRes?.user && typeof backendRes.user === 'object') {
+          const currentCached = cacheStore.get('user_profile') || {};
+          const merged = { ...currentCached, ...backendRes.user };
+          cacheStore.set('user_profile', merged);
+          lastProfileFetchTime = Date.now();
+          return merged;
         }
-      } catch {
-        // Non-fatal
+
+        const user = await getCurrentUser();
+        const currentCached: any = cacheStore.get('user_profile') || {};
+        const email = user?.email || currentCached.email;
+
+        // 2. Authoritative Cloud Profile from Supabase Auth user_metadata
+        let cloudProfile: any = null;
+        if (user?.user_metadata?.beast_profile) {
+          cloudProfile = typeof user.user_metadata.beast_profile === 'string'
+            ? JSON.parse(user.user_metadata.beast_profile)
+            : user.user_metadata.beast_profile;
+        } else if (user?.user_metadata?.beast_sync_data) {
+          try {
+            const syncData = typeof user.user_metadata.beast_sync_data === 'string'
+              ? JSON.parse(user.user_metadata.beast_sync_data)
+              : user.user_metadata.beast_sync_data;
+            if (syncData?.userProfile) {
+              cloudProfile = syncData.userProfile;
+            }
+          } catch {
+            // Non-fatal
+          }
+        }
+
+        // Merge strategy: Cloud profile is the source of truth across all devices!
+        const mergedProfile: any = {
+          email: email || 'athlete@beastmode.ai',
+          name: user?.user_metadata?.name || 'Beast Athlete',
+          onboardingCompleted: true,
+          workoutReminder: false,
+          isGoogleLinked: false,
+          ...currentCached,
+          ...(cloudProfile || {}),
+        };
+
+        // If cloud profile has values, use them over empty cached values
+        if (cloudProfile) {
+          Object.keys(cloudProfile).forEach((key) => {
+            if (cloudProfile[key] !== undefined && cloudProfile[key] !== null && cloudProfile[key] !== '') {
+              mergedProfile[key] = cloudProfile[key];
+            }
+          });
+        }
+
+        cacheStore.set('user_profile', mergedProfile);
+        lastProfileFetchTime = Date.now();
+        return mergedProfile;
+      } finally {
+        inFlightProfilePromise = null;
       }
-    }
+    })();
 
-    // Merge strategy: Cloud profile is the source of truth across all devices!
-    const mergedProfile: any = {
-      email: email || 'athlete@beastmode.ai',
-      name: user?.user_metadata?.name || 'Beast Athlete',
-      onboardingCompleted: true,
-      workoutReminder: false,
-      isGoogleLinked: false,
-      ...cached,
-      ...(cloudProfile || {}),
-    };
-
-    // If cloud profile has values, use them over empty cached values
-    if (cloudProfile) {
-      Object.keys(cloudProfile).forEach((key) => {
-        if (cloudProfile[key] !== undefined && cloudProfile[key] !== null && cloudProfile[key] !== '') {
-          mergedProfile[key] = cloudProfile[key];
-        }
-      });
-    }
-
-    cacheStore.set('user_profile', mergedProfile);
-    return mergedProfile;
+    return inFlightProfilePromise;
   },
 
   updateProfile: async (profileData: any) => {
@@ -1136,7 +1161,7 @@ export const api = {
 
     // 2. Complete Signout & Local Cache Purge
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
     } catch {}
 
     localStorage.clear();

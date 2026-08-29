@@ -135,35 +135,46 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const [securitySaving, setSecuritySaving] = useState(false);
   const [securityError, setSecurityError] = useState('');
   const [securitySuccess, setSecuritySuccess] = useState('');
+  const isFetchingProfileRef = React.useRef(false);
+  const isMountedRef = React.useRef(true);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (force = false) => {
+    if (isFetchingProfileRef.current) return;
+    isFetchingProfileRef.current = true;
+
     if (!cacheStore.get('user_profile')) {
-      setLoading(true);
+      if (isMountedRef.current) setLoading(true);
     }
     try {
-      const data = await api.getProfile();
-      if (data.birthDate) {
-        data.birthDate = new Date(data.birthDate).toISOString().split('T')[0];
-      }
-
-      if (data) {
-        setProfile(data);
+      const data = await api.getProfile(force);
+      if (data && isMountedRef.current) {
+        if (data.birthDate) {
+          data.birthDate = new Date(data.birthDate).toISOString().split('T')[0];
+        }
+        setProfile((prev: any) => ({ ...prev, ...data }));
         cacheStore.set('user_profile', data);
       }
     } catch (err) {
-      console.error('Failed to load profile:', err);
+      console.warn('Failed to load profile:', err);
     } finally {
-      setLoading(false);
+      isFetchingProfileRef.current = false;
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchProfile();
     const handleCloudSync = () => {
-      fetchProfile();
+      fetchProfile(false);
     };
     window.addEventListener('beast_cloud_synced', handleCloudSync);
-    return () => window.removeEventListener('beast_cloud_synced', handleCloudSync);
+    return () => {
+      isMountedRef.current = false;
+      window.removeEventListener('beast_cloud_synced', handleCloudSync);
+    };
   }, []);
 
   useEffect(() => {
