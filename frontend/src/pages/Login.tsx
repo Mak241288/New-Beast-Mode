@@ -339,6 +339,7 @@ export const Login: React.FC<LoginProps> = ({ lang = 'ar', onSuccess, onBack, on
       await api.signInWithGoogleOAuth();
     } catch (err: any) {
       console.warn('[Direct Google OAuth error]:', err);
+      setError(translateAuthError(err.message || String(err), lang));
       // Fallback to fast modal if popup/redirect is restricted
       handleOpenGoogleLoginModal();
     } finally {
