@@ -99,14 +99,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Bypass Local Dev Server dynamic paths, Supabase API, Groq/Gemini APIs
+  // Bypass /api/ backend endpoints, Local Dev Server dynamic paths, Supabase API, Groq/Gemini APIs
   if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname === '/api' ||
     url.pathname.startsWith('/@vite') ||
     url.pathname.startsWith('/src/') ||
     url.pathname.startsWith('/node_modules/') ||
     url.hostname.includes('supabase.co') ||
     url.hostname.includes('groq.com') ||
-    url.hostname.includes('googleapis.com')
+    url.hostname.includes('googleapis.com') ||
+    url.hostname.includes('onrender.com')
   ) {
     return;
   }

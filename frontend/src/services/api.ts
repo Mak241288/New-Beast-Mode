@@ -34,17 +34,32 @@ function generateId(): number {
   return Math.floor(Date.now() + Math.random() * 1000);
 }
 
+// Clean sanitized Auth headers without bloated payload objects
+export const getAuthHeaders = async (): Promise<HeadersInit> => {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || localStorage.getItem('token');
+    if (token && typeof token === 'string' && token.trim().length > 0) {
+      headers['Authorization'] = `Bearer ${token.trim()}`;
+    }
+  } catch {
+    const fallbackToken = localStorage.getItem('token');
+    if (fallbackToken && typeof fallbackToken === 'string' && fallbackToken.trim().length > 0) {
+      headers['Authorization'] = `Bearer ${fallbackToken.trim()}`;
+    }
+  }
+  return headers;
+};
+
 // Universal resilient backend API client through Vercel/Render proxy
 export async function fetchBackendApi(endpoint: string, options: RequestInit = {}): Promise<any> {
   try {
-    const token = localStorage.getItem('token');
+    const authHeaders = await getAuthHeaders();
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...(authHeaders as Record<string, string>),
       ...((options.headers as Record<string, string>) || {}),
     };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
 
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `/api${cleanEndpoint}`;
