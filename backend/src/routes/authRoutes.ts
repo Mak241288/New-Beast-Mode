@@ -27,6 +27,7 @@ router.post('/verify-otp-reset-password', verifyOtpAndResetPassword);
 // Protected routes (require JWT verification)
 router.get('/profile', protect as any, getProfile);
 router.put('/profile', protect as any, updateProfile);
+router.patch('/profile', protect as any, updateProfile);
 router.put('/security', protect as any, updateAccountSecurity);
 router.post('/link-google', protect as any, linkGoogleAccount);
 router.post('/unlink-google', protect as any, unlinkGoogleAccount);

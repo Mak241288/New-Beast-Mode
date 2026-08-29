@@ -62,15 +62,17 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
 
   const handleLogWeight = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newWeight || isNaN(parseFloat(newWeight))) {
+    const weightNum = parseFloat(newWeight);
+    if (!newWeight || isNaN(weightNum) || weightNum <= 0) {
       alert(lang === 'en' ? 'Please enter a valid weight in kg.' : 'يرجى إدخال وزن صحيح بالكيلوجرام.');
       return;
     }
 
     setSubmittingWeight(true);
     try {
-      await api.updateProfile({
-        currentWeight: parseFloat(newWeight),
+      await api.logWeight({
+        weight: weightNum,
+        notes: weightNotes,
       });
       alert(lang === 'en' ? 'Weight recorded successfully! ⚖️' : 'تم تسجيل الوزن بنجاح! ⚖️');
       setShowWeightModal(false);

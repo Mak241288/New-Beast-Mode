@@ -256,3 +256,75 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
     res.status(500).json({ error: 'حدث خطأ أثناء جلب الإحصاءات' });
   }
 };
+
+// @desc    Log weight entry and update athlete profile (Granular & Fast)
+// @route   POST /api/stats/weight-log
+export const logWeight = async (req: AuthRequest, res: Response): Promise<void> => {
+  const userId = Number(req.user?.id);
+  if (!userId || isNaN(userId)) {
+    res.status(401).json({ error: 'غير مصرح' });
+    return;
+  }
+
+  const { weight, notes, date } = req.body || {};
+  const weightNum = parseFloat(String(weight));
+  if (isNaN(weightNum) || weightNum <= 0) {
+    res.status(400).json({ error: 'الرجاء إدخال وزن صحيح بالكيلوجرام' });
+    return;
+  }
+
+  try {
+    const logDate = date ? new Date(date) : new Date();
+    const validDate = isNaN(logDate.getTime()) ? new Date() : logDate;
+    const dayStart = new Date(validDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(validDate);
+    dayEnd.setHours(23, 59, 59, 999);
+
+    const [userUpdate] = await Promise.all([
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          currentWeight: weightNum,
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.weightLog.findFirst({
+        where: {
+          userId,
+          date: { gte: dayStart, lte: dayEnd },
+        },
+      }).then(async (existing) => {
+        if (existing) {
+          return prisma.weightLog.update({
+            where: { id: existing.id },
+            data: {
+              weight: weightNum,
+              date: validDate,
+              notes: notes ? String(notes).substring(0, 500) : existing.notes,
+            },
+          });
+        }
+        return prisma.weightLog.create({
+          data: {
+            userId,
+            weight: weightNum,
+            date: validDate,
+            notes: notes ? String(notes).substring(0, 500) : 'Log from weight tracker',
+          },
+        });
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: 'تم تسجيل الوزن وتحديث الملف الشخصي بنجاح!',
+      data: {
+        weight: weightNum,
+        currentWeight: userUpdate.currentWeight,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'فشل تسجيل الوزن', message: err?.message });
+  }
+};

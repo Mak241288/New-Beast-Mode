@@ -1550,11 +1550,19 @@ export const api = {
       notes: logData.notes || '',
     };
 
-    try {
-      await supabase.from('ProgressLog').insert(log);
-    } catch {
-      // Non-fatal
-    }
+    // 1. Optimistic Local Save (0ms)
+    const activeSession: any = cacheStore.get('active_gym_session') || {};
+    cacheStore.set('active_gym_session', {
+      ...activeSession,
+      lastLoggedSet: log,
+      lastUpdatedTimestamp: Date.now(),
+    });
+
+    // 2. Fast background backend sync
+    fetchBackendApi(`/workout/exercise/${exerciseId}/log`, {
+      method: 'POST',
+      body: JSON.stringify(log),
+    }).catch(() => {});
 
     return { success: true, log, message: 'تم حفظ تسجيل التقدم بنجاح!' };
   },
@@ -1881,6 +1889,69 @@ export const api = {
 
   getWorkoutStats: async () => {
     return api.getStats();
+  },
+
+  logWeight: async (weightData: { weight: number | string; notes?: string; date?: string }) => {
+    const weightNum = parseFloat(String(weightData.weight));
+    if (isNaN(weightNum) || weightNum <= 0) {
+      throw new Error('الرجاء إدخال وزن صحيح بالكيلوجرام');
+    }
+
+    // 1. Optimistic Local Update (0ms)
+    const profile: any = cacheStore.get('user_profile') || {};
+    const updatedProfile = {
+      ...profile,
+      currentWeight: weightNum,
+      updatedAt: new Date().toISOString(),
+    };
+    cacheStore.set('user_profile', updatedProfile);
+    try {
+      localStorage.setItem('beastmode_user_profile', JSON.stringify(updatedProfile));
+    } catch {}
+
+    const userStats: any = cacheStore.get('user_stats') || {};
+    const history = Array.isArray(userStats.weightHistory) ? [...userStats.weightHistory] : [];
+    const todayStr = (weightData.date ? new Date(weightData.date) : new Date()).toISOString().split('T')[0];
+    const existingIdx = history.findIndex((h: any) => h.date && new Date(h.date).toISOString().split('T')[0] === todayStr);
+
+    const logEntry = {
+      weight: weightNum,
+      date: weightData.date || new Date().toISOString(),
+      notes: weightData.notes || '',
+    };
+
+    if (existingIdx >= 0) {
+      history[existingIdx] = logEntry;
+    } else {
+      history.unshift(logEntry);
+    }
+
+    cacheStore.set('user_stats', {
+      ...userStats,
+      currentWeight: weightNum,
+      weightHistory: history,
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_profile_updated', { detail: updatedProfile }));
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
+
+    // 2. Granular API Call in background (Fast & Light)
+    fetchBackendApi('/stats/weight-log', {
+      method: 'POST',
+      body: JSON.stringify({
+        weight: weightNum,
+        notes: weightData.notes,
+        date: weightData.date,
+      }),
+    }).catch(() => {});
+
+    return {
+      success: true,
+      data: logEntry,
+      message: 'تم تسجيل الوزن بنجاح!',
+    };
   },
 
   getCheckInStatus: async (_force?: boolean) => {
