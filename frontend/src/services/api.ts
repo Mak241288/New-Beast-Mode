@@ -243,7 +243,23 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
 
     const finalActivePlan = localActivePlan || cloudActivePlan;
 
-    // Dirty Checking: Skip network request only if debounce mode and data hasn't changed
+    // Push Unified Full Snapshot to Backend Database
+    const pushPayload = {
+      userProfile,
+      activePlan: finalActivePlan,
+      workoutPlans: finalPlanHistory,
+      weightLogs: (userStats as any)?.weightHistory || [],
+      checkIns: cacheStore.get('daily_check_ins') || [],
+      activeSession: activeGymSession,
+      clientTimestamp: Date.now(),
+    };
+
+    await fetchBackendApi('/sync/full-push', {
+      method: 'POST',
+      body: JSON.stringify(pushPayload),
+    }).catch(() => {});
+
+    // Dirty Checking: Skip realtime broadcast only if debounce mode and data hasn't changed
     const currentHash = JSON.stringify({
       activePlan: finalActivePlan,
       userProfile,
@@ -331,10 +347,67 @@ export function subscribeToUserRealtimeSync(onUpdate?: (data?: any) => void): ()
   };
 }
 
+let isSyncMutexLocked = false;
+
+export async function syncEverything(force = false): Promise<boolean> {
+  if (isSyncMutexLocked) return false;
+  isSyncMutexLocked = true;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('beast_sync_status', { detail: { status: 'syncing', timestamp: Date.now() } }));
+  }
+  try {
+    await pushUserDataToCloud(force);
+    await syncUserDataFromCloud();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_sync_status', { detail: { status: 'synced', timestamp: Date.now() } }));
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
+    return true;
+  } catch (err: any) {
+    console.warn('[FullSync] syncEverything error:', err);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_sync_status', { detail: { status: 'error', error: err?.message, timestamp: Date.now() } }));
+    }
+    return false;
+  } finally {
+    isSyncMutexLocked = false;
+  }
+}
+
 export async function syncUserDataFromCloud(): Promise<boolean> {
   try {
     const user = await getCurrentUser();
     if (!user) return false;
+
+    // 1. Pull Unified Snapshot from Backend Database (/api/sync/full-pull)
+    try {
+      const pullRes = await fetchBackendApi('/sync/full-pull');
+      if (pullRes?.success && pullRes.data) {
+        const { user: serverUser, activePlan: serverPlan, workoutPlans: serverPlans, weightLogs: serverWeightLogs, checkIns: serverCheckIns } = pullRes.data;
+        if (serverUser) {
+          const localProf: any = cacheStore.get('user_profile') || {};
+          cacheStore.set('user_profile', { ...localProf, ...serverUser });
+        }
+        if (serverPlan) {
+          cacheStore.set('active_plan', serverPlan);
+        }
+        if (Array.isArray(serverPlans) && serverPlans.length > 0) {
+          cacheStore.set('plan_history', serverPlans);
+        }
+        if (Array.isArray(serverWeightLogs) && serverWeightLogs.length > 0) {
+          const currentStats: any = cacheStore.get('user_stats') || {};
+          cacheStore.set('user_stats', {
+            ...currentStats,
+            weightHistory: serverWeightLogs,
+          });
+        }
+        if (Array.isArray(serverCheckIns) && serverCheckIns.length > 0) {
+          cacheStore.set('daily_check_ins', serverCheckIns);
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
 
     // 1. Read cloud sync data from Supabase Auth user_metadata FIRST (Never push before pulling)
     let syncData: any = null;
@@ -1828,6 +1901,9 @@ export const api = {
 
   subscribeToRealtimeSync: subscribeToUserRealtimeSync,
   broadcastWorkoutSetUpdate: broadcastWorkoutSetUpdate,
+  pushAllToCloud: pushUserDataToCloud,
+  pullAllFromCloud: syncUserDataFromCloud,
+  syncEverything: syncEverything,
 
   // ==========================================
   // GUEST-TO-USER ACCOUNT MIGRATION ENGINE

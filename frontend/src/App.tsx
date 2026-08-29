@@ -329,6 +329,29 @@ function App() {
     };
   }, [token]);
 
+  // Full Cloud Sync on Window Focus / App Resume (with 30s cooldown)
+  useEffect(() => {
+    if (!token) return;
+    let lastResumeSync = Date.now();
+
+    const handleAppResume = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        const now = Date.now();
+        if (now - lastResumeSync > 30000) {
+          lastResumeSync = now;
+          api.syncEverything(false).catch(() => {});
+        }
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleAppResume);
+    window.addEventListener('focus', handleAppResume);
+    return () => {
+      window.removeEventListener('visibilitychange', handleAppResume);
+      window.removeEventListener('focus', handleAppResume);
+    };
+  }, [token]);
+
   const [initError, setInitError] = useState<string | null>(null);
   const isStatusCheckingRef = useRef(false);
 

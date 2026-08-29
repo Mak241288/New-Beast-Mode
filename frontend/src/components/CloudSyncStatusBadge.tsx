@@ -45,25 +45,21 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
       return;
     }
 
-    if (_manual) {
-      setSyncState('syncing');
-    }
+    setSyncState('syncing');
 
     try {
-      await api.pushUserDataToCloud(true);
-      await api.syncUserDataFromCloud();
-      setLastSyncedTimestamp(Date.now());
-      setSyncState('synced');
-      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
-      if (_manual) {
-        showSyncNotification(isEn ? '⚡ All workout plans & stats synced to cloud!' : '⚡ تم رفع ومزامنة كافة الجداول والإحصائيات سحابياً بنجاح!');
+      const ok = await api.syncEverything(true);
+      if (ok) {
+        setLastSyncedTimestamp(Date.now());
+        setSyncState('synced');
+        if (_manual) {
+          showSyncNotification(isEn ? '⚡ All your workout plans, stats & profile synced successfully!' : '⚡ تمت مزامنة كافة بياناتك وجداولك وإحصائياتك بنجاح!');
+        }
+      } else {
+        setSyncState(!navigator.onLine ? 'offline' : 'offline');
       }
     } catch {
-      if (!navigator.onLine) {
-        setSyncState('offline');
-      } else {
-        setSyncState('synced');
-      }
+      setSyncState('offline');
     }
   };
 
@@ -132,15 +128,29 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
       setSyncState('synced');
     };
 
+    const handleSyncStatus = (e: any) => {
+      const status = e.detail?.status;
+      if (status === 'syncing') {
+        setSyncState('syncing');
+      } else if (status === 'synced') {
+        setSyncState('synced');
+        setLastSyncedTimestamp(e.detail?.timestamp || Date.now());
+      } else if (status === 'error') {
+        setSyncState(navigator.onLine ? 'offline' : 'offline');
+      }
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('beast_cloud_synced', handleLocalSyncEvent);
+    window.addEventListener('beast_sync_status', handleSyncStatus);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('beast_cloud_synced', handleLocalSyncEvent);
+      window.removeEventListener('beast_sync_status', handleSyncStatus);
     };
   }, [lastSyncedTimestamp, isEn]);
 
