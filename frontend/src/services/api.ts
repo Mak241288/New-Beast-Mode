@@ -31,28 +31,57 @@ let lastSyncedHash: string = '';
 let realtimeChannel: any = null;
 
 export const EXERCISES_CACHE_VERSION = 'bm_exercises_v3_2026_08';
-let _memoryLibraryCache: any[] | null = null;
+export let _memoryLibraryCache: any[] | null = null;
+import { idbStore } from '../utils/idbStore';
 
-// Preload catalog immediately into RAM on startup with version invalidation check
+// Helper to compact exercise payload for maximal performance and zero bloat
+export function compactExercisesPayload(rawList: any[]): any[] {
+  if (!Array.isArray(rawList)) return [];
+  return rawList.map((e: any) => ({
+    id: e.id ?? e._id,
+    name_en: e.name_en || e.name || 'Exercise',
+    name_ar: e.name_ar || e.name_en || e.name || 'تمرين',
+    muscle_en: e.muscle_en || e.targetMuscle || e.muscle || 'General',
+    muscle_ar: e.muscle_ar || e.muscle_en || 'عام',
+    equipment_en: e.equipment_en || e.equipment || 'Bodyweight',
+    equipment_ar: e.equipment_ar || e.equipment_en || 'وزن الجسم',
+    category: e.category || 'IRON',
+    level: e.level || 'intermediate',
+    image_url: e.image_url || e.imageUrl || null,
+    gif_url: e.gif_url || e.videoUrl || null,
+    instructions_en: e.instructions_en || e.tips_en || '',
+    instructions_ar: e.instructions_ar || e.tips_ar || '',
+    secondary_muscles_en: e.secondary_muscles_en || '',
+    secondary_muscles_ar: e.secondary_muscles_ar || '',
+  }));
+}
+
+// Preload catalog asynchronously into RAM + IndexedDB with version invalidation check
 if (typeof window !== 'undefined') {
-  const currentVersion = cacheStore.get('library_cache_version');
-  const cachedData = cacheStore.get<any[]>('library_tree_flat');
+  // Purge any legacy localStorage keys to restore 5MB quota
+  try {
+    localStorage.removeItem('beast_cache_library_tree_flat');
+    localStorage.removeItem('library_tree_flat');
+  } catch {}
 
-  if (currentVersion === EXERCISES_CACHE_VERSION && Array.isArray(cachedData) && cachedData.length > 50) {
-    _memoryLibraryCache = cachedData;
-  } else {
-    // Invalidate stale cache and quietly re-fetch latest catalog
-    fetch('/exercises_catalog.json')
-      .then(r => (r.ok ? r.json() : []))
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          _memoryLibraryCache = data;
-          cacheStore.set('library_tree_flat', data);
-          cacheStore.set('library_cache_version', EXERCISES_CACHE_VERSION);
-        }
-      })
-      .catch(() => {});
-  }
+  idbStore.get<any[]>('library_tree_flat').then((cached) => {
+    if (Array.isArray(cached) && cached.length > 50) {
+      _memoryLibraryCache = cached;
+      cacheStore.set('library_tree_flat', cached);
+    } else {
+      fetch('/exercises_catalog.json')
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const compact = compactExercisesPayload(data);
+            _memoryLibraryCache = compact;
+            cacheStore.set('library_tree_flat', compact);
+            idbStore.set('library_tree_flat', compact).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+  }).catch(() => {});
 }
 
 export async function pushUserDataToCloud(immediate: boolean = false): Promise<void> {
@@ -1472,49 +1501,33 @@ export const api = {
       return _memoryLibraryCache;
     }
 
-    const cached = cacheStore.get<any[]>('library_tree_flat');
-    if (cached && cached.length > 50) {
-      _memoryLibraryCache = cached;
-      return cached;
+    // 2. Check non-blocking IndexedDB for offline persistence
+    const idbCached = await idbStore.get<any[]>('library_tree_flat');
+    if (idbCached && idbCached.length > 50) {
+      _memoryLibraryCache = idbCached;
+      return idbCached;
     }
 
     let allExercises: any[] = [];
 
-    // 2. Load from full bundled catalog (4,207 enriched exercises)
+    // 3. Load from bundled catalog (4,200+ enriched exercises)
     try {
       const res = await fetch('/exercises_catalog.json');
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json) && json.length > 0) {
-          allExercises = json;
-          _memoryLibraryCache = json;
+          allExercises = compactExercisesPayload(json);
         }
       }
     } catch (err) {
       console.warn('[ExercisesCatalog fetch warn]:', err);
     }
 
-    // 3. If Supabase has additional or customized exercises, merge them
+    // 4. If Supabase has additional or customized exercises, merge them
     try {
       const { data: sbData, error: sbErr } = await supabase.from('exercises').select('*').limit(1000);
       if (!sbErr && sbData && sbData.length > 0) {
-        const sbFormatted = sbData.map((item: any) => ({
-          id: item.id || item._id,
-          name_en: item.name_en || item.name || 'Exercise',
-          name_ar: item.name_ar || item.name_en || item.name || 'تمرين',
-          muscle_en: item.muscle_en || item.targetMuscle || item.muscle || 'General',
-          muscle_ar: item.muscle_ar || item.muscle_en || 'عام',
-          equipment_en: item.equipment_en || item.equipment || 'Bodyweight',
-          equipment_ar: item.equipment_ar || item.equipment || 'وزن الجسم',
-          category: item.category || 'IRON',
-          level: item.level || 'intermediate',
-          image_url: item.image_url || item.imageUrl || null,
-          gif_url: item.gif_url || item.videoUrl || null,
-          instructions_en: item.instructions_en || item.tips_en || '',
-          instructions_ar: item.instructions_ar || item.tips_ar || '',
-          secondary_muscles_en: item.secondary_muscles_en || '',
-          secondary_muscles_ar: item.secondary_muscles_ar || '',
-        }));
+        const sbFormatted = compactExercisesPayload(sbData);
 
         if (allExercises.length === 0) {
           allExercises = sbFormatted;
@@ -1534,13 +1547,12 @@ export const api = {
 
     if (allExercises.length > 0) {
       _memoryLibraryCache = allExercises;
-      cacheStore.set('library_tree_flat', allExercises);
-      cacheStore.set('library_cache_version', EXERCISES_CACHE_VERSION);
+      idbStore.set('library_tree_flat', allExercises).catch(() => {});
       return allExercises;
     }
 
     // Curated rich exercise library fallback
-    const fallbackList = [
+    const fallbackList = compactExercisesPayload([
       { id: 101, name_en: 'Barbell Bench Press', name_ar: 'بنش برس بالبار مستوي', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Barbell', equipment_ar: 'بار', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg' },
       { id: 102, name_en: 'Incline Dumbbell Press', name_ar: 'بنش مائل دمبلز', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Dumbbells', equipment_ar: 'دمبلز', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Incline_Dumbbell_Press/0.jpg' },
       { id: 103, name_en: 'Cable Chest Flyes', name_ar: 'تجميع الصدر بالكيبل', muscle_en: 'Chest', muscle_ar: 'الصدر', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Cable_Crossover/0.jpg' },
@@ -1556,9 +1568,9 @@ export const api = {
       { id: 502, name_en: 'Tricep Rope Pushdown', name_ar: 'ترايسبس حبل بالكيبل', muscle_en: 'Arms', muscle_ar: 'الذراعين', equipment_en: 'Cables', equipment_ar: 'جهاز كيبل', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Triceps_Pushdown_-_Rope_Attachment/0.jpg' },
       { id: 601, name_en: 'Hanging Leg Raise', name_ar: 'رفع الأرجل على العقلة للبطن', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'intermediate', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Hanging_Leg_Raise/0.jpg' },
       { id: 602, name_en: 'Plank', name_ar: 'بلانك ثبات', muscle_en: 'Abs', muscle_ar: 'البطن', equipment_en: 'Bodyweight', equipment_ar: 'وزن الجسم', level: 'beginner', category: 'IRON', image_url: 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/master/exercises/Plank/0.jpg' },
-    ];
+    ]);
     _memoryLibraryCache = fallbackList;
-    cacheStore.set('library_tree_flat', fallbackList);
+    idbStore.set('library_tree_flat', fallbackList).catch(() => {});
     return fallbackList;
   },
 

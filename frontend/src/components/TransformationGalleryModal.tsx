@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Camera, Plus, Trash2, ArrowLeftRight, Sparkles, Brain, CheckCircle2, Flame, Award, Dumbbell, Utensils, Activity } from 'lucide-react';
 import { api } from '../services/api';
+import { idbStore } from '../utils/idbStore';
 
 export interface TransformationPhoto {
   id: string;
@@ -26,17 +27,27 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
   onClose,
 }) => {
   const isEn = lang === 'en';
-  const [photos, setPhotos] = useState<TransformationPhoto[]>(() => {
-    const raw = localStorage.getItem('transformation_photos');
-    if (raw) {
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        return [];
+  const [photos, setPhotos] = useState<TransformationPhoto[]>([]);
+
+  // Load photos asynchronously from IndexedDB
+  useEffect(() => {
+    if (!isOpen) return;
+    idbStore.get<TransformationPhoto[]>('transformation_photos').then((cached) => {
+      if (Array.isArray(cached) && cached.length > 0) {
+        setPhotos(cached);
+      } else {
+        const raw = localStorage.getItem('transformation_photos');
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            setPhotos(parsed);
+            idbStore.set('transformation_photos', parsed);
+            localStorage.removeItem('transformation_photos');
+          } catch {}
+        }
       }
-    }
-    return [];
-  });
+    });
+  }, [isOpen]);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newLabel, setNewLabel] = useState('');
@@ -55,7 +66,9 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('transformation_photos', JSON.stringify(photos));
+    if (photos.length > 0) {
+      idbStore.set('transformation_photos', photos).catch(() => {});
+    }
   }, [photos]);
 
   if (!isOpen) return null;
