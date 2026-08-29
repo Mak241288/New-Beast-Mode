@@ -840,11 +840,20 @@ export const api = {
   },
 
   getProfile: async () => {
+    // 1. Try Backend Proxy (/api/auth/profile)
+    const backendRes = await fetchBackendApi('/auth/profile');
+    if (backendRes?.user && typeof backendRes.user === 'object') {
+      const cached = cacheStore.get('user_profile') || {};
+      const merged = { ...cached, ...backendRes.user };
+      cacheStore.set('user_profile', merged);
+      return merged;
+    }
+
     const user = await getCurrentUser();
     const cached: any = cacheStore.get('user_profile') || {};
     const email = user?.email || cached.email;
 
-    // 1. Authoritative Cloud Profile from Supabase Auth user_metadata
+    // 2. Authoritative Cloud Profile from Supabase Auth user_metadata
     let cloudProfile: any = null;
     if (user?.user_metadata?.beast_profile) {
       cloudProfile = typeof user.user_metadata.beast_profile === 'string'
@@ -860,23 +869,6 @@ export const api = {
         }
       } catch {
         // Non-fatal
-      }
-    }
-
-    // 2. Fallback to Supabase User table
-    if (!cloudProfile && email) {
-      try {
-        const { data: profileRow } = await supabase
-          .from('User')
-          .select('*')
-          .eq('email', email)
-          .maybeSingle();
-
-        if (profileRow) {
-          cloudProfile = profileRow;
-        }
-      } catch {
-        // Fallback
       }
     }
 
@@ -1758,6 +1750,10 @@ export const api = {
         { date: '2026-08-12', workout: 'Legs Day', volume: 17500, duration: '64 min' },
       ],
     };
+  },
+
+  getWorkoutStats: async () => {
+    return api.getStats();
   },
 
   getCheckInStatus: async (_force?: boolean) => {
