@@ -265,7 +265,8 @@ function App() {
           if (saved && validViews.includes(saved)) {
             setCurrentView(saved);
           } else {
-            setCurrentView(token ? 'dashboard' : 'landing');
+            const hasAuth = !!localStorage.getItem('token');
+            setCurrentView(hasAuth ? 'dashboard' : 'landing');
           }
         }
       }
@@ -281,7 +282,7 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
       authListener?.subscription?.unsubscribe?.();
     };
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';

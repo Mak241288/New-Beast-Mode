@@ -1,6 +1,6 @@
 // BeastMode AI Service Worker — High-Performance NetworkFirst PWA Cache
-const CACHE_NAME = 'beastmode-pwa-v2';
-const STATIC_CACHE = 'beastmode-static-v2';
+const CACHE_NAME = 'beastmode-pwa-v3';
+const STATIC_CACHE = 'beastmode-static-v3';
 
 const OFFLINE_SHELL = [
   '/',
