@@ -4,13 +4,26 @@ import { syncService } from '../services/syncService';
 import { execFile } from 'child_process';
 import path from 'path';
 import prisma from '../services/db';
+import { logger } from '../services/logger';
+
+const parseSafeDate = (val: any): Date | undefined => {
+  if (!val) return undefined;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? undefined : d;
+};
+
+const parseSafeNumber = (val: any): number | null => {
+  if (val === undefined || val === null || val === '') return null;
+  const clean = typeof val === 'string' ? parseFloat(val.replace(/[^0-9.-]/g, '')) : Number(val);
+  return isNaN(clean) ? null : clean;
+};
 
 export const syncController = {
   async fullPull(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ error: 'غير مصرح' });
+      const userId = Number(req.user?.id);
+      if (!userId || isNaN(userId)) {
+        res.status(401).json({ error: 'غير مصرح - معرف المستخدم غير صالح' });
         return;
       }
 
@@ -93,16 +106,20 @@ export const syncController = {
         },
       });
     } catch (err: any) {
-      console.error('[SyncController] fullPull error:', err);
+      logger.error('[SyncController] fullPull error:', {
+        message: err?.message,
+        code: err?.code,
+        stack: err?.stack,
+      });
       res.status(500).json({ error: 'فشل جلب البيانات السحابية الكاملة', message: err.message });
     }
   },
 
   async fullPush(req: AuthRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        res.status(401).json({ error: 'غير مصرح' });
+      const userId = Number(req.user?.id);
+      if (!userId || isNaN(userId)) {
+        res.status(401).json({ error: 'غير مصرح - معرف المستخدم غير صالح' });
         return;
       }
 
@@ -117,35 +134,38 @@ export const syncController = {
         // 1. Update user profile if provided
         if (userProfile && typeof userProfile === 'object') {
           const updateData: any = {};
-          if (userProfile.name) updateData.name = String(userProfile.name).trim();
-          if (userProfile.gender) updateData.gender = String(userProfile.gender);
-          if (userProfile.height !== undefined && userProfile.height !== null && userProfile.height !== '') {
-            updateData.height = Number(userProfile.height) || null;
-          }
-          if (userProfile.currentWeight !== undefined && userProfile.currentWeight !== null && userProfile.currentWeight !== '') {
-            updateData.currentWeight = Number(userProfile.currentWeight) || null;
-          }
-          if (userProfile.targetWeight !== undefined && userProfile.targetWeight !== null && userProfile.targetWeight !== '') {
-            updateData.targetWeight = Number(userProfile.targetWeight) || null;
-          }
+          if (userProfile.name) updateData.name = String(userProfile.name).trim().substring(0, 150);
+          if (userProfile.gender) updateData.gender = String(userProfile.gender).toUpperCase();
+          
+          const heightNum = parseSafeNumber(userProfile.height);
+          if (heightNum !== null) updateData.height = heightNum;
+
+          const currentWeightNum = parseSafeNumber(userProfile.currentWeight);
+          if (currentWeightNum !== null) updateData.currentWeight = currentWeightNum;
+
+          const targetWeightNum = parseSafeNumber(userProfile.targetWeight);
+          if (targetWeightNum !== null) updateData.targetWeight = targetWeightNum;
+
+          const ageNum = parseSafeNumber(userProfile.age);
+          if (ageNum !== null) updateData.age = Math.round(ageNum);
+
+          const daysPerWeekNum = parseSafeNumber(userProfile.daysPerWeek);
+          if (daysPerWeekNum !== null) updateData.daysPerWeek = Math.round(daysPerWeekNum);
+
           if (userProfile.fitnessGoal) updateData.fitnessGoal = String(userProfile.fitnessGoal);
           if (userProfile.fitnessLevel) updateData.fitnessLevel = String(userProfile.fitnessLevel);
-          if (userProfile.daysPerWeek) updateData.daysPerWeek = Number(userProfile.daysPerWeek) || null;
-          if (userProfile.equipment !== undefined) updateData.equipment = String(userProfile.equipment);
-          if (userProfile.medicalConditions !== undefined) updateData.medicalConditions = String(userProfile.medicalConditions);
+          if (userProfile.equipment !== undefined) updateData.equipment = userProfile.equipment ? String(userProfile.equipment) : null;
+          if (userProfile.medicalConditions !== undefined) updateData.medicalConditions = userProfile.medicalConditions ? String(userProfile.medicalConditions) : null;
           if (userProfile.workoutLocation) updateData.workoutLocation = String(userProfile.workoutLocation);
-          if (userProfile.age) updateData.age = Number(userProfile.age) || null;
           if (userProfile.workoutReminder !== undefined) updateData.workoutReminder = Boolean(userProfile.workoutReminder);
           if (userProfile.reminderTime) updateData.reminderTime = String(userProfile.reminderTime);
           if (userProfile.onboardingCompleted !== undefined) updateData.onboardingCompleted = Boolean(userProfile.onboardingCompleted);
-          if (userProfile.birthDate) {
-            try {
-              updateData.birthDate = new Date(userProfile.birthDate);
-            } catch {}
-          }
+
+          const safeBirthDate = parseSafeDate(userProfile.birthDate);
+          if (safeBirthDate) updateData.birthDate = safeBirthDate;
 
           if (Object.keys(updateData).length > 0) {
-            await tx.user.update({
+            await tx.user.updateMany({
               where: { id: userId },
               data: updateData,
             });
@@ -153,75 +173,84 @@ export const syncController = {
         }
 
         // 2. Sync Active Plan if provided
-        if (activePlan && activePlan.title && Array.isArray(activePlan.dayWorkouts)) {
-          // Deactivate existing plans
+        if (activePlan && typeof activePlan === 'object' && (activePlan.title || Array.isArray(activePlan.dayWorkouts) || Array.isArray(activePlan.days))) {
+          const rawDays = Array.isArray(activePlan.dayWorkouts) ? activePlan.dayWorkouts : (Array.isArray(activePlan.days) ? activePlan.days : []);
+          
+          // Deactivate existing active plans for this user
           await tx.workoutPlan.updateMany({
             where: { userId, active: true },
             data: { active: false },
           });
 
-          // Create new active plan with nested dayWorkouts and exercises
+          // Create new active plan with properly mapped nested dayWorkouts and exercises
           await tx.workoutPlan.create({
             data: {
               userId,
-              title: activePlan.title,
-              durationWeeks: Number(activePlan.durationWeeks) || 4,
-              startDate: activePlan.startDate ? new Date(activePlan.startDate) : new Date(),
+              title: String(activePlan.title || 'My Workout Plan').substring(0, 200),
+              durationWeeks: parseSafeNumber(activePlan.durationWeeks) ? Math.round(Number(activePlan.durationWeeks)) : 4,
+              startDate: parseSafeDate(activePlan.startDate) || new Date(),
               active: true,
-              weeklyTips: activePlan.weeklyTips || null,
+              weeklyTips: activePlan.weeklyTips ? String(activePlan.weeklyTips) : null,
               isManual: Boolean(activePlan.isManual),
               dayWorkouts: {
-                create: activePlan.dayWorkouts.map((day: any, idx: number) => ({
-                  dayIndex: Number(day.dayIndex) || idx + 1,
-                  title: day.title || `Day ${idx + 1}`,
-                  focusArea: day.focusArea || day.targetMuscle || 'General',
-                  dayTips: day.dayTips || day.tips || null,
-                  isRestDay: Boolean(day.isRestDay),
-                  exercises: {
-                    create: Array.isArray(day.exercises)
-                      ? day.exercises.map((ex: any, exIdx: number) => ({
-                          name: ex.name_en || ex.name || 'Exercise',
-                          name_en: ex.name_en || ex.name || null,
-                          name_ar: ex.name_ar || null,
-                          description_en: ex.description_en || null,
-                          description_ar: ex.description_ar || null,
-                          muscle_en: ex.muscle_en || ex.muscle || 'General',
-                          muscle_ar: ex.muscle_ar || null,
-                          targetMuscle: ex.targetMuscle || ex.muscle_en || null,
-                          equipment_en: ex.equipment_en || ex.equipment || 'Bodyweight',
-                          equipment_ar: ex.equipment_ar || null,
-                          level: ex.level || 'intermediate',
-                          category: ex.category || 'IRON',
-                          rating: Number(ex.rating) || 0.0,
-                          imageUrl: ex.imageUrl || ex.image_url || null,
-                          image_url: ex.image_url || ex.imageUrl || null,
-                          videoUrl: ex.videoUrl || null,
-                          gif_url: ex.gif_url || null,
-                          sets: Number(ex.sets) || 3,
-                          reps: String(ex.reps || '10-12'),
-                          weight: ex.weight ? String(ex.weight) : null,
-                          exerciseTips: ex.exerciseTips || ex.tips || null,
-                          order: Number(ex.order) || exIdx,
-                        }))
-                      : [],
-                  },
-                })),
+                create: rawDays.map((day: any, idx: number) => {
+                  const rawExercises = Array.isArray(day.exercises) ? day.exercises : [];
+                  return {
+                    dayIndex: parseSafeNumber(day.dayIndex) ? Math.round(Number(day.dayIndex)) : idx + 1,
+                    title: String(day.title || `Day ${idx + 1}`).substring(0, 150),
+                    focusArea: String(day.focusArea || day.targetMuscle || 'General').substring(0, 150),
+                    dayTips: day.dayTips || day.tips ? String(day.dayTips || day.tips) : null,
+                    isRestDay: Boolean(day.isRestDay),
+                    exercises: {
+                      create: rawExercises.map((ex: any, exIdx: number) => ({
+                        name: String(ex.name_en || ex.name || 'Exercise').substring(0, 200),
+                        name_en: ex.name_en ? String(ex.name_en).substring(0, 200) : null,
+                        name_ar: ex.name_ar ? String(ex.name_ar).substring(0, 200) : null,
+                        description_en: ex.description_en ? String(ex.description_en) : null,
+                        description_ar: ex.description_ar ? String(ex.description_ar) : null,
+                        muscle_en: ex.muscle_en || ex.muscle ? String(ex.muscle_en || ex.muscle).substring(0, 100) : 'General',
+                        muscle_ar: ex.muscle_ar ? String(ex.muscle_ar).substring(0, 100) : null,
+                        targetMuscle: ex.targetMuscle || ex.muscle_en ? String(ex.targetMuscle || ex.muscle_en).substring(0, 100) : null,
+                        equipment_en: ex.equipment_en || ex.equipment ? String(ex.equipment_en || ex.equipment).substring(0, 100) : 'Bodyweight',
+                        equipment_ar: ex.equipment_ar ? String(ex.equipment_ar).substring(0, 100) : null,
+                        level: ex.level ? String(ex.level).substring(0, 50) : 'intermediate',
+                        category: ex.category ? String(ex.category).substring(0, 50) : 'IRON',
+                        rating: parseSafeNumber(ex.rating) ?? 0.0,
+                        imageUrl: ex.imageUrl || ex.image_url ? String(ex.imageUrl || ex.image_url) : null,
+                        image_url: ex.image_url || ex.imageUrl ? String(ex.image_url || ex.imageUrl) : null,
+                        videoUrl: ex.videoUrl ? String(ex.videoUrl) : null,
+                        gif_url: ex.gif_url ? String(ex.gif_url) : null,
+                        sets: parseSafeNumber(ex.sets) ? Math.round(Number(ex.sets)) : 3,
+                        reps: String(ex.reps || '10-12').substring(0, 50),
+                        weight: ex.weight ? String(ex.weight).substring(0, 50) : null,
+                        exerciseTips: ex.exerciseTips || ex.tips ? String(ex.exerciseTips || ex.tips) : null,
+                        order: parseSafeNumber(ex.order) ? Math.round(Number(ex.order)) : exIdx,
+                      })),
+                    },
+                  };
+                }),
               },
             },
           });
         }
 
-        // 3. Sync Weight Logs (Append any new logs)
+        // 3. Sync Weight Logs (Append any new logs safely)
         if (Array.isArray(weightLogs) && weightLogs.length > 0) {
           for (const wl of weightLogs) {
-            if (wl.weight && Number(wl.weight) > 0) {
-              const logDate = wl.date ? new Date(wl.date) : new Date();
+            const weightNum = parseSafeNumber(wl?.weight);
+            if (weightNum !== null && weightNum > 0) {
+              const logDate = parseSafeDate(wl?.date) || new Date();
+              const dayStart = new Date(logDate);
+              dayStart.setHours(0, 0, 0, 0);
+              const dayEnd = new Date(logDate);
+              dayEnd.setHours(23, 59, 59, 999);
+
               const existing = await tx.weightLog.findFirst({
                 where: {
                   userId,
                   date: {
-                    gte: new Date(new Date(logDate).setHours(0, 0, 0, 0)),
-                    lte: new Date(new Date(logDate).setHours(23, 59, 59, 999)),
+                    gte: dayStart,
+                    lte: dayEnd,
                   },
                 },
               });
@@ -230,9 +259,9 @@ export const syncController = {
                 await tx.weightLog.create({
                   data: {
                     userId,
-                    weight: Number(wl.weight),
+                    weight: weightNum,
                     date: logDate,
-                    notes: wl.notes ? String(wl.notes) : null,
+                    notes: wl.notes ? String(wl.notes).substring(0, 500) : null,
                   },
                 });
               }
@@ -240,17 +269,24 @@ export const syncController = {
           }
         }
 
-        // 4. Sync Check-in Logs
+        // 4. Sync Check-in Logs safely
         if (Array.isArray(checkIns) && checkIns.length > 0) {
           for (const ci of checkIns) {
-            if (ci.workoutFeel && ci.sessionsCompleted) {
-              const checkInDate = ci.date ? new Date(ci.date) : new Date();
+            if (ci && typeof ci === 'object') {
+              const workoutFeel = String(ci.workoutFeel || 'NORMAL');
+              const sessionsCompleted = String(ci.sessionsCompleted || 'YES');
+              const checkInDate = parseSafeDate(ci.date) || new Date();
+              const dayStart = new Date(checkInDate);
+              dayStart.setHours(0, 0, 0, 0);
+              const dayEnd = new Date(checkInDate);
+              dayEnd.setHours(23, 59, 59, 999);
+
               const existing = await tx.checkIn.findFirst({
                 where: {
                   userId,
                   date: {
-                    gte: new Date(new Date(checkInDate).setHours(0, 0, 0, 0)),
-                    lte: new Date(new Date(checkInDate).setHours(23, 59, 59, 999)),
+                    gte: dayStart,
+                    lte: dayEnd,
                   },
                 },
               });
@@ -259,10 +295,10 @@ export const syncController = {
                 await tx.checkIn.create({
                   data: {
                     userId,
-                    workoutFeel: String(ci.workoutFeel),
-                    sessionsCompleted: String(ci.sessionsCompleted),
-                    painNotes: ci.painNotes ? String(ci.painNotes) : null,
-                    aiRecommendation: ci.aiRecommendation ? String(ci.aiRecommendation) : null,
+                    workoutFeel,
+                    sessionsCompleted,
+                    painNotes: ci.painNotes ? String(ci.painNotes).substring(0, 500) : null,
+                    aiRecommendation: ci.aiRecommendation ? String(ci.aiRecommendation).substring(0, 1000) : null,
                     applied: Boolean(ci.applied),
                     date: checkInDate,
                   },
@@ -279,8 +315,16 @@ export const syncController = {
         message: 'تمت المزامنة السحابية الكاملة بنجاح وحفظ كافة البيانات',
       });
     } catch (err: any) {
-      console.error('[SyncController] fullPush error:', err);
-      res.status(500).json({ error: 'فشل حفظ ومزامنة البيانات السحابية', message: err.message });
+      logger.error('[SyncController] Full Push Prisma Error:', {
+        message: err?.message,
+        code: err?.code,
+        meta: err?.meta,
+        stack: err?.stack,
+      });
+      res.status(500).json({
+        error: 'فشل حفظ ومزامنة البيانات السحابية',
+        message: err?.message || 'Prisma Transaction Error',
+      });
     }
   },
 
@@ -305,7 +349,10 @@ export const syncController = {
         errors: [],
       });
     } catch (err: any) {
-      console.error('[SyncController] Critical Sync error:', err);
+      logger.error('[SyncController] Critical Sync error:', {
+        message: err?.message,
+        stack: err?.stack,
+      });
       return res.status(500).json({
         message: 'فشل مزامنة التمارين الرياضية بسبب خطأ داخلي في السيرفر.',
         error: err.message,
@@ -320,7 +367,10 @@ export const syncController = {
       console.log('[SyncController] Launching Python cache performance benchmark test...');
       execFile('python', ['test_performance.py'], { cwd, env: process.env }, (error, stdout, stderr) => {
         if (error) {
-          console.error('[SyncController] Performance test execution error:', error);
+          logger.error('[SyncController] Performance test execution error:', {
+            error: error.message,
+            stderr,
+          });
           res.status(500).json({
             message: 'فشل تشغيل اختبار الأداء للـ Cache بسبب خطأ في الخادم أو عدم توفر بايثون.',
             error: error.message + '\n' + stderr
@@ -334,7 +384,10 @@ export const syncController = {
         });
       });
     } catch (err: any) {
-      console.error('[SyncController] Performance test exception:', err);
+      logger.error('[SyncController] Performance test exception:', {
+        message: err?.message,
+        stack: err?.stack,
+      });
       res.status(500).json({
         message: 'فشل تشغيل اختبار الأداء للـ Cache بسبب خطأ داخلي.',
         error: err.message

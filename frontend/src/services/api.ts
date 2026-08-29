@@ -184,7 +184,14 @@ if (typeof window !== 'undefined') {
   }).catch(() => {});
 }
 
+let lastPushFailureTimestamp = 0;
+
 export async function pushUserDataToCloud(immediate: boolean = false): Promise<void> {
+  // If an auto-push failed recently, respect a 2-minute cooldown to prevent infinite server spam
+  if (!immediate && Date.now() - lastPushFailureTimestamp < 120000) {
+    return;
+  }
+
   if (!immediate) {
     if (syncDebounceTimer) {
       clearTimeout(syncDebounceTimer);
@@ -243,21 +250,27 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
 
     const finalActivePlan = localActivePlan || cloudActivePlan;
 
-    // Push Unified Full Snapshot to Backend Database
-    const pushPayload = {
-      userProfile,
-      activePlan: finalActivePlan,
-      workoutPlans: finalPlanHistory,
+    // Push Sanitized Full Snapshot to Backend Database
+    const cleanPayload = JSON.parse(JSON.stringify({
+      userProfile: userProfile || undefined,
+      activePlan: finalActivePlan || undefined,
+      workoutPlans: finalPlanHistory || undefined,
       weightLogs: (userStats as any)?.weightHistory || [],
       checkIns: cacheStore.get('daily_check_ins') || [],
-      activeSession: activeGymSession,
+      activeSession: activeGymSession || undefined,
       clientTimestamp: Date.now(),
-    };
+    }));
 
-    await fetchBackendApi('/sync/full-push', {
+    const res = await fetchBackendApi('/sync/full-push', {
       method: 'POST',
-      body: JSON.stringify(pushPayload),
-    }).catch(() => {});
+      body: JSON.stringify(cleanPayload),
+    });
+
+    if (!res || res.error) {
+      lastPushFailureTimestamp = Date.now();
+    } else {
+      lastPushFailureTimestamp = 0;
+    }
 
     // Dirty Checking: Skip realtime broadcast only if debounce mode and data hasn't changed
     const currentHash = JSON.stringify({
@@ -288,6 +301,7 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
       }
     }
   } catch (err) {
+    lastPushFailureTimestamp = Date.now();
     console.warn('[CloudSync] Sync push failed:', err);
   }
 }
