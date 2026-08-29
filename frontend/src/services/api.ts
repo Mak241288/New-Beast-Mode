@@ -65,6 +65,7 @@ export async function fetchBackendApi(endpoint: string, options: RequestInit = {
     const url = `/api${cleanEndpoint}`;
 
     const res = await fetch(url, {
+      credentials: 'omit', // 👈 Prevents oversized cookies from being sent, eliminating HTTP 494
       ...options,
       headers,
     });
@@ -1136,22 +1137,10 @@ export const api = {
   },
 
   deleteAccount: async () => {
-    const token = localStorage.getItem('token');
-
     // 1. Trigger Backend Cascade Delete
-    try {
-      if (token && token.length > 20) {
-        await fetch('/api/auth/account', {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }).catch(() => {});
-      }
-    } catch {
-      // Non-fatal
-    }
+    await fetchBackendApi('/auth/account', {
+      method: 'DELETE',
+    }).catch(() => {});
 
     // 2. Complete Signout & Local Cache Purge
     try {
@@ -1173,10 +1162,20 @@ export const api = {
   plan: planService,
 
   getActivePlan: async () => {
+    // 1. Try Backend Proxy (/api/workout/active)
+    const backendRes = await fetchBackendApi('/workout/active');
+    if (backendRes?.plan && Array.isArray(backendRes.plan.dayWorkouts)) {
+      return backendRes.plan;
+    }
     return planService.getActive();
   },
 
   getPlanHistory: async () => {
+    // 1. Try Backend Proxy (/api/workout/history)
+    const backendRes = await fetchBackendApi('/workout/history');
+    if (Array.isArray(backendRes?.plans)) {
+      return backendRes.plans;
+    }
     return planService.getAll();
   },
 
