@@ -86,6 +86,31 @@ function App() {
     return () => window.removeEventListener('beast_pwa_update_available', handleUpdate);
   }, []);
 
+  // Watchdog timer & 401 Unauthorized event listener to guarantee splash screen never hangs
+  useEffect(() => {
+    const watchdog = setTimeout(() => {
+      setLoading((current) => {
+        if (current) {
+          console.warn('[App] Watchdog safety timer fired: clearing splash screen loading.');
+          return false;
+        }
+        return false;
+      });
+    }, 2500);
+
+    const handleUnauthorized = () => {
+      console.warn('[App] 401 Unauthorized received. Clearing session and navigating to landing/login.');
+      setLoading(false);
+      handleLogout();
+    };
+
+    window.addEventListener('beast_auth_unauthorized', handleUnauthorized);
+    return () => {
+      clearTimeout(watchdog);
+      window.removeEventListener('beast_auth_unauthorized', handleUnauthorized);
+    };
+  }, []);
+
   const handleLanguageChange = (newLang: 'ar' | 'en') => {
     setLang(newLang);
     try {
@@ -321,6 +346,14 @@ function App() {
     setInitError(null);
 
     try {
+      // Validate session with Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.access_token) {
+        // Stale or invalid session
+        await handleLogout();
+        return;
+      }
+
       // Fast single-pass profile verification with Supabase
       const profile = await api.getProfile();
       const isCompleted = profile ? !!profile.onboardingCompleted : true;
@@ -338,7 +371,7 @@ function App() {
       // Check if user is an existing / old user without a permanent password
       const isPasswordSetupDone = localStorage.getItem('bm_password_setup_done') === 'true';
       const isPromptDismissed = sessionStorage.getItem('bm_password_prompt_dismissed') === 'true';
-      const email = profile?.email || localStorage.getItem('bm_remember_email') || '';
+      const email = profile?.email || localStorage.getItem('bm_remember_email') || session?.user?.email || '';
 
       if (email) {
         setUserProfileEmail(email);
@@ -369,7 +402,7 @@ function App() {
       const cachedProfile: any = cacheStore.get('user_profile');
 
       if (err?.status === 401 && !isOffline && !cachedProfile?.isGuest) {
-        handleLogout();
+        await handleLogout();
       } else {
         // Offline resilience: Use local cache without kicking user out
         if (cachedProfile) {

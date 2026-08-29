@@ -115,6 +115,9 @@ export async function fetchBackendApi(endpoint: string, options: RequestInit = {
     });
 
     if (!res.ok) {
+      if (res.status === 401 && typeof window !== 'undefined' && cleanEndpoint.startsWith('/auth')) {
+        window.dispatchEvent(new CustomEvent('beast_auth_unauthorized'));
+      }
       return null;
     }
 
