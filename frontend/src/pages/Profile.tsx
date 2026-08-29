@@ -209,9 +209,27 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     setSuccessMsg('');
 
     try {
-      const res = await api.updateProfile(profile);
+      const sanitizedProfile = {
+        ...profile,
+        currentWeight: profile.currentWeight !== '' && profile.currentWeight !== undefined && profile.currentWeight !== null
+          ? parseFloat(String(profile.currentWeight))
+          : undefined,
+        targetWeight: profile.targetWeight !== '' && profile.targetWeight !== undefined && profile.targetWeight !== null
+          ? parseFloat(String(profile.targetWeight))
+          : undefined,
+        height: profile.height !== '' && profile.height !== undefined && profile.height !== null
+          ? parseFloat(String(profile.height))
+          : undefined,
+        age: profile.age !== '' && profile.age !== undefined && profile.age !== null
+          ? parseInt(String(profile.age), 10)
+          : undefined,
+      };
+
+      const res = await api.updateProfile(sanitizedProfile);
+      if (res) {
+        setProfile((prev: any) => ({ ...prev, ...res }));
+      }
       setSuccessMsg(lang === 'en' ? 'Profile saved successfully!' : 'تم حفظ البيانات بنجاح!');
-      fetchProfile();
 
       if (res.needsPlanAdjustment && res.adjustmentSuggestion) {
         setAdjustmentText(res.adjustmentSuggestion);

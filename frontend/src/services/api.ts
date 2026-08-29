@@ -400,7 +400,29 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
         const { user: serverUser, activePlan: serverPlan, workoutPlans: serverPlans, weightLogs: serverWeightLogs, checkIns: serverCheckIns } = pullRes.data;
         if (serverUser) {
           const localProf: any = cacheStore.get('user_profile') || {};
-          cacheStore.set('user_profile', { ...localProf, ...serverUser });
+          const localUpdated = localProf.updatedAt ? new Date(localProf.updatedAt).getTime() : 0;
+          const serverUpdated = serverUser.updatedAt ? new Date(serverUser.updatedAt).getTime() : 0;
+
+          let mergedUser: any;
+          if (serverUpdated > localUpdated) {
+            mergedUser = { ...localProf, ...serverUser };
+          } else {
+            // Local changes are newer or equal: preserve local weight and attributes
+            mergedUser = {
+              ...serverUser,
+              ...localProf,
+              currentWeight: localProf.currentWeight !== undefined && localProf.currentWeight !== null && localProf.currentWeight !== ''
+                ? Number(localProf.currentWeight)
+                : serverUser.currentWeight,
+              targetWeight: localProf.targetWeight !== undefined && localProf.targetWeight !== null && localProf.targetWeight !== ''
+                ? Number(localProf.targetWeight)
+                : serverUser.targetWeight,
+            };
+          }
+          cacheStore.set('user_profile', mergedUser);
+          try {
+            localStorage.setItem('beastmode_user_profile', JSON.stringify(mergedUser));
+          } catch {}
         }
         if (serverPlan) {
           cacheStore.set('active_plan', serverPlan);
@@ -423,7 +445,7 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
       // Non-fatal
     }
 
-    // 1. Read cloud sync data from Supabase Auth user_metadata FIRST (Never push before pulling)
+    // 1. Read cloud sync data from Supabase Auth user_metadata (Fallback only)
     let syncData: any = null;
     let profileData: any = null;
     let planData: any = null;
@@ -467,7 +489,11 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
 
     if (finalProfile) {
       const localProf: any = cacheStore.get('user_profile') || {};
-      cacheStore.set('user_profile', { ...localProf, ...finalProfile });
+      const localUpdated = localProf.updatedAt ? new Date(localProf.updatedAt).getTime() : 0;
+      const metaUpdated = finalProfile.updatedAt ? new Date(finalProfile.updatedAt).getTime() : 0;
+      if (metaUpdated > localUpdated) {
+        cacheStore.set('user_profile', { ...localProf, ...finalProfile });
+      }
     }
 
     // Authoritatively hydrate custom plans from cloud to device
@@ -977,14 +1003,45 @@ export const api = {
     const cached: any = cacheStore.get('user_profile') || {};
     const email = user?.email || profileData.email || cached.email;
 
+    const parsedWeight = profileData.currentWeight !== undefined && profileData.currentWeight !== null && profileData.currentWeight !== ''
+      ? parseFloat(String(profileData.currentWeight))
+      : (cached.currentWeight !== undefined ? parseFloat(String(cached.currentWeight)) : undefined);
+
+    const parsedTargetWeight = profileData.targetWeight !== undefined && profileData.targetWeight !== null && profileData.targetWeight !== ''
+      ? parseFloat(String(profileData.targetWeight))
+      : (cached.targetWeight !== undefined ? parseFloat(String(cached.targetWeight)) : undefined);
+
     const merged = {
       ...cached,
       ...profileData,
+      currentWeight: parsedWeight !== undefined && !isNaN(parsedWeight) ? parsedWeight : cached.currentWeight,
+      targetWeight: parsedTargetWeight !== undefined && !isNaN(parsedTargetWeight) ? parsedTargetWeight : cached.targetWeight,
       email: email || 'athlete@beastmode.ai',
       updatedAt: new Date().toISOString(),
     };
 
     cacheStore.set('user_profile', merged);
+    try {
+      localStorage.setItem('beastmode_user_profile', JSON.stringify(merged));
+    } catch {}
+
+    // Update weight history in user_stats
+    if (parsedWeight && !isNaN(parsedWeight) && parsedWeight > 0) {
+      const userStats: any = cacheStore.get('user_stats') || {};
+      const history = Array.isArray(userStats.weightHistory) ? [...userStats.weightHistory] : [];
+      const todayStr = new Date().toISOString().split('T')[0];
+      const existingIdx = history.findIndex((h: any) => h.date && new Date(h.date).toISOString().split('T')[0] === todayStr);
+      if (existingIdx >= 0) {
+        history[existingIdx] = { ...history[existingIdx], weight: parsedWeight, date: new Date().toISOString() };
+      } else {
+        history.unshift({ weight: parsedWeight, date: new Date().toISOString() });
+      }
+      cacheStore.set('user_stats', {
+        ...userStats,
+        currentWeight: parsedWeight,
+        weightHistory: history,
+      });
+    }
 
     // Lightweight name update in Supabase Auth (Zero bloated metadata)
     if (merged.name) {
@@ -1000,12 +1057,27 @@ export const api = {
     }
 
     // Sync to Backend Proxy
-    await fetchBackendApi('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(merged),
-    }).catch(() => {});
+    let backendRes: any = null;
+    try {
+      backendRes = await fetchBackendApi('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(merged),
+      });
+    } catch {}
 
-    return merged;
+    // Trigger full cloud push to sync backend database
+    await pushUserDataToCloud(true);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('beast_profile_updated', { detail: merged }));
+      window.dispatchEvent(new CustomEvent('beast_cloud_synced'));
+    }
+
+    return {
+      ...merged,
+      needsPlanAdjustment: backendRes?.needsPlanAdjustment || false,
+      adjustmentSuggestion: backendRes?.adjustmentSuggestion || '',
+    };
   },
 
   updateAccountSecurity: async (securityData: { currentPassword?: string; newEmail?: string; newPassword?: string; email?: string }) => {

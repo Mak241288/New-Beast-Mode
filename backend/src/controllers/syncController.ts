@@ -165,11 +165,45 @@ export const syncController = {
             const safeBirthDate = parseSafeDate(userProfile.birthDate);
             if (safeBirthDate) updateData.birthDate = safeBirthDate;
 
+            updateData.updatedAt = new Date();
+
             if (Object.keys(updateData).length > 0) {
               await tx.user.updateMany({
                 where: { id: userId },
                 data: updateData,
               });
+            }
+
+            // Ensure today's weightLog is also updated or recorded
+            if (currentWeightNum !== null && currentWeightNum > 0) {
+              const today = new Date();
+              const dayStart = new Date(today);
+              dayStart.setHours(0, 0, 0, 0);
+              const dayEnd = new Date(today);
+              dayEnd.setHours(23, 59, 59, 999);
+
+              const existingToday = await tx.weightLog.findFirst({
+                where: {
+                  userId,
+                  date: { gte: dayStart, lte: dayEnd },
+                },
+              });
+
+              if (existingToday) {
+                await tx.weightLog.update({
+                  where: { id: existingToday.id },
+                  data: { weight: currentWeightNum, date: today },
+                });
+              } else {
+                await tx.weightLog.create({
+                  data: {
+                    userId,
+                    weight: currentWeightNum,
+                    date: today,
+                    notes: 'Updated from athlete profile sync',
+                  },
+                });
+              }
             }
           }
 
