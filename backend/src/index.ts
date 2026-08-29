@@ -142,6 +142,8 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // Start Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`[BeastMode Server] Running on http://localhost:${PORT}`);
 });
+server.maxHeadersCount = 2000;
+
