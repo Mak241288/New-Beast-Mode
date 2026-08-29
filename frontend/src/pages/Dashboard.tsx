@@ -107,8 +107,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
   };
 
   const fetchDashboardData = async (targetUser?: any) => {
-    const activeUser = targetUser || currentUser;
-    if (!activeUser?.id || isFetchingRef.current || lastFetchedUserIdRef.current === String(activeUser.id)) {
+    const activeUser = targetUser || currentUser || user;
+    if (!activeUser || !activeUser.id || isFetchingRef.current || lastFetchedUserIdRef.current === String(activeUser.id)) {
+      return;
+    }
+
+    if (activeUser.id === 'guest') {
+      const localPlan = cacheStore.get('active_plan');
+      const localProfile = cacheStore.get('user_profile');
+      const localStats = cacheStore.get('user_stats');
+      if (localPlan) setActivePlan(localPlan);
+      if (localProfile) setProfile(localProfile);
+      if (localStats) setStats(localStats);
+      lastFetchedUserIdRef.current = 'guest';
+      if (isMountedRef.current) setLoading(false);
       return;
     }
 

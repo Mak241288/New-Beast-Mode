@@ -49,6 +49,7 @@ const getInitialToken = () => {
 function App() {
   const initialToken = getInitialToken();
   const [token, setToken] = useState<string | null>(initialToken);
+  const [user, setUser] = useState<any>(null);
   const [currentView, setCurrentView] = useState<string>(() => {
     try {
       const hash = (window.location.hash || '').replace('#', '');
@@ -119,6 +120,7 @@ function App() {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (!error && session?.access_token) {
           setToken(session.access_token);
+          setUser(session.user ?? null);
           try {
             localStorage.setItem('token', session.access_token);
           } catch {
@@ -166,9 +168,12 @@ function App() {
 
           // Sync cloud data across devices silently in background
           api.syncUserDataFromCloud().catch(() => {});
+        } else {
+          setUser(null);
         }
       } catch (err) {
         console.warn('[Supabase Auth Init Error]:', err);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -179,6 +184,7 @@ function App() {
     // 2. Listen to Supabase auth state changes (OAuth redirects, tokens, signins)
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       setLoading(false);
+      setUser(session?.user ?? null);
       if (session?.access_token) {
         setToken(session.access_token);
         try {
@@ -241,6 +247,7 @@ function App() {
         }
       } else if (event === 'SIGNED_OUT') {
         setToken(null);
+        setUser(null);
         try {
           localStorage.removeItem('token');
           localStorage.removeItem('beast_last_view');
@@ -674,7 +681,7 @@ function App() {
       <main className="main-content">
         <Suspense fallback={<PageLoaderFallback />}>
           {currentView === 'dashboard' && (
-            <Dashboard lang={lang} onNavigate={navigateTo} />
+            <Dashboard lang={lang} onNavigate={navigateTo} user={user} />
           )}
 
           {currentView === 'myplan' && (
