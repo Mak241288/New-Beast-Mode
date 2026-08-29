@@ -5,7 +5,7 @@ import { parseBulkWorkoutText } from '../utils/workoutParser';
 import { planService } from './planService';
 
 // Helper to get active user ID or email from Supabase Auth
-async function getCurrentUser() {
+export async function getCurrentUser() {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!userError && user) return user;

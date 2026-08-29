@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { api } from '../services/api';
+import { api, getCurrentUser } from '../services/api';
 import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, Volume2 } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
@@ -19,11 +19,13 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 interface DashboardProps {
   lang: 'ar' | 'en';
   onNavigate: (view: string) => void;
+  user?: any;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) => {
   const t = translations[lang] || translations.ar;
   const { startSession, maximizePlayer, state: sessionState } = useWorkoutSession();
+  const [currentUser, setCurrentUser] = useState<any>(user || null);
   const [activePlan, setActivePlan] = useState<any>(() => cacheStore.get('active_plan'));
   const [profile, setProfile] = useState<any>(() => cacheStore.get('user_profile'));
   const [stats, setStats] = useState<any>(() => cacheStore.get('user_stats'));
@@ -44,11 +46,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [timerVolume, setTimerVolume] = useState<number>(() => parseInt(localStorage.getItem('bm_timer_volume') || '80', 10));
   const [showSoundSettings, setShowSoundSettings] = useState(false);
 
-  // Infinite fetch loop guards and concurrency control
+  // Infinite fetch loop guards and circuit breaker concurrency control
   const isFetchingRef = useRef(false);
-  const lastFetchTimeRef = useRef(0);
+  const lastFetchedUserIdRef = useRef<string | null>(null);
   const isMountedRef = useRef(true);
-  const hasFetchedRef = useRef(false);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -105,30 +106,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
     }
   };
 
-  const fetchDashboardData = async (force: boolean = false) => {
-    const now = Date.now();
-    if (!force && isFetchingRef.current) return;
-    if (!force && now - lastFetchTimeRef.current < 2000) return; // 2s throttle protection
+  const fetchDashboardData = async (targetUser?: any) => {
+    const activeUser = targetUser || currentUser;
+    if (!activeUser?.id || isFetchingRef.current || lastFetchedUserIdRef.current === String(activeUser.id)) {
+      return;
+    }
 
     isFetchingRef.current = true;
-    lastFetchTimeRef.current = now;
 
     // Only show full loading spinner if no cached data exists at all
     if (!cacheStore.get('active_plan') && !cacheStore.get('user_profile')) {
       if (isMountedRef.current) setLoading(true);
     }
     try {
-      // Fetch plan, profile, stats, and check-in status in parallel (Fast Concurrent Load)
-      const [planRes, profRes, statsRes, checkInRes] = await Promise.allSettled([
-        api.getActivePlan(),
+      // Fetch profile, plan, stats, and check-in status in parallel (Fast Concurrent Load)
+      const [profRes, planRes, statsRes, checkInRes] = await Promise.allSettled([
         api.getProfile(),
-        api.getStats(),
+        api.getActivePlan(),
+        api.getWorkoutStats(),
         api.getCheckInStatus(),
       ]);
 
       if (!isMountedRef.current) return;
 
-      // 1. Process Plan
+      // 1. Process Profile
+      if (profRes.status === 'fulfilled' && profRes.value) {
+        setProfile(profRes.value);
+        cacheStore.set('user_profile', profRes.value);
+      }
+
+      // 2. Process Plan
       if (planRes.status === 'fulfilled' && planRes.value) {
         const plan = planRes.value;
         setActivePlan(plan);
@@ -138,12 +145,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
           const todayDayIndex = today.getDay() + 1; // 0 = Sunday (Day 1), 1 = Monday (Day 2) ... 6 = Saturday (Day 7)
           setSelectedDayIndex(todayDayIndex >= 1 && todayDayIndex <= 7 ? todayDayIndex : 1);
         }
-      }
-
-      // 2. Process Profile
-      if (profRes.status === 'fulfilled' && profRes.value) {
-        setProfile(profRes.value);
-        cacheStore.set('user_profile', profRes.value);
       }
 
       // 3. Process Stats
@@ -160,6 +161,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         setHasStartedWorkouts(!!status.hasStartedWorkouts);
         setDaysRemaining(status.daysRemaining || 0);
       }
+
+      lastFetchedUserIdRef.current = String(activeUser.id);
     } catch (err: any) {
       console.warn('[Dashboard] Fetch dashboard data exception:', err);
     } finally {
@@ -172,12 +175,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
 
   useEffect(() => {
     isMountedRef.current = true;
-    if (!hasFetchedRef.current) {
-      hasFetchedRef.current = true;
-      fetchDashboardData(true);
+    if (!user) {
+      getCurrentUser().then((u: any) => {
+        if (isMountedRef.current) {
+          setCurrentUser(u || { id: 'guest' });
+        }
+      });
+    } else {
+      setCurrentUser(user);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    if (currentUser?.id && !isFetchingRef.current && lastFetchedUserIdRef.current !== String(currentUser.id)) {
+      fetchDashboardData(currentUser);
     }
     const handleCloudSync = () => {
-      fetchDashboardData(false);
+      lastFetchedUserIdRef.current = null;
+      if (currentUser?.id) {
+        fetchDashboardData(currentUser);
+      }
     };
     const handlePlanChanged = (e: any) => {
       if (e.detail?.activePlan && isMountedRef.current) {
@@ -191,7 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
       window.removeEventListener('beast_plan_changed', handlePlanChanged);
       window.removeEventListener('beast_cloud_synced', handleCloudSync);
     };
-  }, []);
+  }, [currentUser?.id]);
 
   const handleSubmitCheckIn = async (e: React.FormEvent) => {
     e.preventDefault();
