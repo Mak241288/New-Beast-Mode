@@ -25,6 +25,7 @@ try {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      flowType: 'pkce',
     },
   });
 } catch (err) {
