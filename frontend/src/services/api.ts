@@ -201,17 +201,10 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
     const localActivePlan = cacheStore.get('active_plan');
     const userProfile = cacheStore.get('user_profile');
     const localPlanHistory = cacheStore.get('plan_history');
-    const userRecovery = cacheStore.get('user_recovery');
-    const allRecoveryLogs = cacheStore.get('all_recovery_logs');
-    const latestRecoveryLog = cacheStore.get('latest_recovery_log');
     const userStats = cacheStore.get('user_stats');
     const activeGymSession = cacheStore.get('active_gym_session');
-    const timerSoundPack = localStorage.getItem('bm_timer_sound_pack') || 'BOXING_BELL';
-    const timerVolume = localStorage.getItem('bm_timer_volume') || '80';
     const currentTheme = localStorage.getItem('theme') || 'dark';
     const currentColorTheme = localStorage.getItem('color_theme') || 'volt';
-    const currentLang = localStorage.getItem('lang') || 'ar';
-    const currentWater = localStorage.getItem('beast_water_today') || '0';
     const transformationPhotosRaw = localStorage.getItem('transformation_photos');
     let transformationPhotos: any[] = [];
     if (transformationPhotosRaw) {
@@ -244,27 +237,6 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
 
     const finalActivePlan = localActivePlan || cloudActivePlan;
 
-    const payload = {
-      activePlan: finalActivePlan,
-      userProfile,
-      planHistory: finalPlanHistory,
-      userRecovery,
-      allRecoveryLogs,
-      latestRecoveryLog,
-      userStats,
-      activeGymSession,
-      transformationPhotos,
-      userPreferences: {
-        timerSoundPack,
-        timerVolume,
-        theme: currentTheme,
-        colorTheme: currentColorTheme,
-        lang: currentLang,
-        waterToday: currentWater,
-      },
-      lastSyncedAt: Date.now(),
-    };
-
     // Dirty Checking: Skip network request only if debounce mode and data hasn't changed
     const currentHash = JSON.stringify({
       activePlan: finalActivePlan,
@@ -281,19 +253,7 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
     }
     lastSyncedHash = currentHash;
 
-    // 1. Persist directly to Supabase Auth User Metadata (immune to RLS, cross-platform)
-    await supabase.auth.updateUser({
-      data: {
-        name: (userProfile as any)?.name || user.user_metadata?.name,
-        beast_profile: userProfile,
-        beast_active_plan: finalActivePlan,
-        beast_plan_history: finalPlanHistory,
-        beast_active_session: activeGymSession,
-        beast_sync_data: JSON.stringify(payload),
-      },
-    });
-
-    // 2. Realtime WebSocket Broadcast (Zero polling)
+    // Realtime WebSocket Broadcast (Zero polling)
     if (realtimeChannel && user.id) {
       try {
         await realtimeChannel.send({
@@ -567,27 +527,30 @@ export async function createCloudSnapshot(name: string): Promise<any> {
   };
 
   const updated = [newSnapshot, ...snapshots.slice(0, 9)]; // Keep up to 10 snapshots
-  await supabase.auth.updateUser({
-    data: {
-      beast_snapshots: JSON.stringify(updated),
-    },
-  });
+  cacheStore.set('beast_snapshots', updated);
+  try {
+    localStorage.setItem('beast_snapshots', JSON.stringify(updated));
+  } catch {}
 
   return newSnapshot;
 }
 
 export async function getCloudSnapshots(): Promise<any[]> {
-  const user = await getCurrentUser();
-  if (!user) return [];
-
-  const existingRaw = user.user_metadata?.beast_snapshots;
-  if (!existingRaw) return [];
+  const cached = cacheStore.get('beast_snapshots');
+  if (Array.isArray(cached) && cached.length > 0) return cached;
 
   try {
-    return typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw;
-  } catch {
-    return [];
-  }
+    const raw = localStorage.getItem('beast_snapshots');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        cacheStore.set('beast_snapshots', parsed);
+        return parsed;
+      }
+    }
+  } catch {}
+
+  return [];
 }
 
 export async function restoreCloudSnapshot(snapshotId: string | number): Promise<boolean> {
@@ -607,17 +570,13 @@ export async function restoreCloudSnapshot(snapshotId: string | number): Promise
 }
 
 export async function deleteCloudSnapshot(snapshotId: string | number): Promise<boolean> {
-  const user = await getCurrentUser();
-  if (!user) return false;
-
   const snapshots = await getCloudSnapshots();
   const filtered = snapshots.filter((s) => String(s.id) !== String(snapshotId) && s.id !== snapshotId);
 
-  await supabase.auth.updateUser({
-    data: {
-      beast_snapshots: JSON.stringify(filtered),
-    },
-  });
+  cacheStore.set('beast_snapshots', filtered);
+  try {
+    localStorage.setItem('beast_snapshots', JSON.stringify(filtered));
+  } catch {}
 
   return true;
 }
@@ -911,27 +870,20 @@ export const api = {
 
     cacheStore.set('user_profile', merged);
 
-    // Direct Instant Cloud Sync to Supabase Auth User Metadata (Works on all devices instantly!)
-    try {
-      await supabase.auth.updateUser({
-        data: {
-          name: merged.name || user?.user_metadata?.name,
-          beast_profile: merged,
-          beast_sync_data: JSON.stringify({
-            activePlan: cacheStore.get('active_plan'),
-            userProfile: merged,
-            planHistory: cacheStore.get('plan_history'),
-            userRecovery: cacheStore.get('user_recovery'),
-            userStats: cacheStore.get('user_stats'),
-            lastSyncedAt: Date.now(),
-          }),
-        },
-      });
-    } catch (authErr) {
-      console.warn('[Supabase Auth Profile Update]:', authErr);
+    // Lightweight name update in Supabase Auth (Zero bloated metadata)
+    if (merged.name) {
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            name: merged.name,
+          },
+        });
+      } catch (authErr) {
+        console.warn('[Supabase Auth Profile Update]:', authErr);
+      }
     }
 
-    // Also sync to Backend Proxy
+    // Sync to Backend Proxy
     await fetchBackendApi('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(merged),
