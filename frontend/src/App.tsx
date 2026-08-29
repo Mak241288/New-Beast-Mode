@@ -152,7 +152,7 @@ function App() {
             const savedView = localStorage.getItem('beast_last_view') || 'dashboard';
             const targetView = (currentView === 'landing' || currentView === 'login') ? savedView : currentView;
             if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-              window.history.replaceState({ view: targetView }, document.title, window.location.pathname + `#${targetView}`);
+              window.history.replaceState({ view: targetView }, document.title, window.location.pathname);
             }
             setCurrentView(targetView);
           }
@@ -218,9 +218,9 @@ function App() {
           window.history.replaceState({}, document.title, window.location.pathname + '#dashboard');
           setCurrentView('dashboard');
         } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-          // Clean OAuth URL fragments
+          // Clean OAuth URL fragments and parameters
           if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
-            window.history.replaceState({ view: 'dashboard' }, document.title, window.location.pathname + '#dashboard');
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
           setCurrentView((prev) => {
             const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about', 'onboarding'];
