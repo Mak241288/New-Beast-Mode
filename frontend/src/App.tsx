@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { api } from './services/api';
 import { supabase } from './services/supabase';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -296,6 +296,7 @@ function App() {
   }, [token]);
 
   const [initError, setInitError] = useState<string | null>(null);
+  const isStatusCheckingRef = useRef(false);
 
   const checkStatus = async () => {
     if (!token) {
@@ -303,6 +304,9 @@ function App() {
       setInitError(null);
       return;
     }
+
+    if (isStatusCheckingRef.current) return;
+    isStatusCheckingRef.current = true;
     
     setLoading(true);
     setInitError(null);
@@ -373,6 +377,7 @@ function App() {
         });
       }
     } finally {
+      isStatusCheckingRef.current = false;
       setLoading(false);
     }
   };

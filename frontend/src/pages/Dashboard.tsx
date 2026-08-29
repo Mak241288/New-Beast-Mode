@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { api } from '../services/api';
 import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, Volume2 } from 'lucide-react';
 import { translations } from '../utils/translations';
@@ -43,6 +43,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const [timerSoundPack, setTimerSoundPack] = useState<SoundPack>(() => (localStorage.getItem('bm_timer_sound_pack') as SoundPack) || 'BOXING_BELL');
   const [timerVolume, setTimerVolume] = useState<number>(() => parseInt(localStorage.getItem('bm_timer_volume') || '80', 10));
   const [showSoundSettings, setShowSoundSettings] = useState(false);
+
+  // Infinite fetch loop guards and concurrency control
+  const isFetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -99,10 +104,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
     }
   };
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (force: boolean = false) => {
+    const now = Date.now();
+    if (!force && isFetchingRef.current) return;
+    if (!force && now - lastFetchTimeRef.current < 2000) return; // 2s throttle protection
+
+    isFetchingRef.current = true;
+    lastFetchTimeRef.current = now;
+
     // Only show full loading spinner if no cached data exists at all
     if (!cacheStore.get('active_plan') && !cacheStore.get('user_profile')) {
-      setLoading(true);
+      if (isMountedRef.current) setLoading(true);
     }
     try {
       // Fetch plan, profile, stats, and check-in status in parallel (Fast Concurrent Load)
@@ -112,6 +124,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         api.getStats(),
         api.getCheckInStatus(),
       ]);
+
+      if (!isMountedRef.current) return;
 
       // 1. Process Plan
       if (planRes.status === 'fulfilled' && planRes.value) {
@@ -146,25 +160,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
         setDaysRemaining(status.daysRemaining || 0);
       }
     } catch (err: any) {
-      console.error('[Dashboard] Error fetching dashboard data:', err);
+      console.warn('[Dashboard] Fetch dashboard data exception:', err);
     } finally {
-      setLoading(false);
+      isFetchingRef.current = false;
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    isMountedRef.current = true;
+    fetchDashboardData(true);
     const handleCloudSync = () => {
-      fetchDashboardData();
+      fetchDashboardData(false);
     };
     const handlePlanChanged = (e: any) => {
-      if (e.detail?.activePlan) {
+      if (e.detail?.activePlan && isMountedRef.current) {
         setActivePlan(e.detail.activePlan);
       }
     };
     window.addEventListener('beast_plan_changed', handlePlanChanged);
     window.addEventListener('beast_cloud_synced', handleCloudSync);
     return () => {
+      isMountedRef.current = false;
       window.removeEventListener('beast_plan_changed', handlePlanChanged);
       window.removeEventListener('beast_cloud_synced', handleCloudSync);
     };

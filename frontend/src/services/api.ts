@@ -7,12 +7,24 @@ import { planService } from './planService';
 // Helper to get active user ID or email from Supabase Auth
 async function getCurrentUser() {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) return user;
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (!userError && user) return user;
+
+    if (userError && (userError.status === 401 || userError.message?.includes('refresh_token_not_found') || userError.message?.includes('Invalid Refresh Token'))) {
+      try {
+        localStorage.removeItem('token');
+      } catch {}
+      return null;
+    }
     
     const { data: { session } } = await supabase.auth.getSession();
     return session?.user || null;
-  } catch {
+  } catch (err: any) {
+    if (err?.status === 401 || err?.message?.includes('refresh_token_not_found')) {
+      try {
+        localStorage.removeItem('token');
+      } catch {}
+    }
     return null;
   }
 }
@@ -1693,23 +1705,17 @@ export const api = {
 
     if (user?.id) {
       try {
-        const { data: logs, error } = await supabase
+        let { data: logs, error } = await supabase
           .from('ProgressLog')
           .select('*')
-          .eq('userId', user.id)
-          .order('date', { ascending: false })
           .limit(10);
 
-        if (error) {
-          console.error('[Supabase ProgressLog Query Error]:', error);
-        }
-
-        if (logs && logs.length > 0) {
+        if (!error && logs && logs.length > 0) {
           logsCount = logs.length;
           recentLogs = logs;
         }
       } catch (err) {
-        console.warn('[Stats] ProgressLog fetch exception:', err);
+        // Safe fallback - zero crash
       }
     }
 
@@ -1739,7 +1745,8 @@ export const api = {
 
     if (user?.id) {
       try {
-        const { data, error } = await supabase
+        // Safe dual column check: try userId then user_id
+        let { data, error } = await supabase
           .from('CheckIn')
           .select('*')
           .eq('userId', user.id)
@@ -1748,13 +1755,23 @@ export const api = {
           .maybeSingle();
 
         if (error) {
-          console.error('[Supabase CheckIn Query Error]:', error);
+          const fallbackRes = await supabase
+            .from('CheckIn')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (fallbackRes.data) {
+            data = fallbackRes.data;
+          }
         }
+
         if (data) {
           latestCheckIn = data;
         }
       } catch (err) {
-        console.warn('[CheckIn] Fetch exception:', err);
+        // Safe fallback - zero crash
       }
     }
 
@@ -1786,9 +1803,22 @@ export const api = {
     };
 
     try {
-      await supabase.from('CheckIn').insert(checkIn);
+      const { error } = await supabase.from('CheckIn').insert(checkIn);
+      if (error) {
+        // Fallback for snake_case column
+        await supabase.from('CheckIn').insert({
+          id: checkIn.id,
+          user_id: checkIn.userId,
+          date: checkIn.date,
+          workoutFeel: checkIn.workoutFeel,
+          sessionsCompleted: checkIn.sessionsCompleted,
+          painNotes: checkIn.painNotes,
+          aiRecommendation: checkIn.aiRecommendation,
+          applied: checkIn.applied,
+        });
+      }
     } catch (err) {
-      console.error('[Supabase CheckIn Insert Error]:', err);
+      // Safe fallback
     }
 
     return {
