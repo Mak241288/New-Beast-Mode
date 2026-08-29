@@ -39,14 +39,20 @@ export const getAuthHeaders = async (): Promise<HeadersInit> => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || localStorage.getItem('token');
-    if (token && typeof token === 'string' && token.trim().length > 0) {
-      headers['Authorization'] = `Bearer ${token.trim()}`;
+    let token = session?.access_token || localStorage.getItem('token');
+    if (token && typeof token === 'string') {
+      token = token.trim();
+      if (token.length > 0 && !token.startsWith('{') && !token.startsWith('[')) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
     }
   } catch {
     const fallbackToken = localStorage.getItem('token');
-    if (fallbackToken && typeof fallbackToken === 'string' && fallbackToken.trim().length > 0) {
-      headers['Authorization'] = `Bearer ${fallbackToken.trim()}`;
+    if (fallbackToken && typeof fallbackToken === 'string') {
+      const clean = fallbackToken.trim();
+      if (clean.length > 0 && !clean.startsWith('{') && !clean.startsWith('[')) {
+        headers['Authorization'] = `Bearer ${clean}`;
+      }
     }
   }
   return headers;

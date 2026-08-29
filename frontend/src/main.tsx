@@ -14,6 +14,7 @@ Sentry.init({
     Sentry.browserTracingIntegration(),
     Sentry.replayIntegration(),
   ],
+  tracePropagationTargets: [], // Disable baggage and sentry-trace header injection to eliminate HTTP 494
   tracesSampleRate: 0.1,
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
