@@ -58,7 +58,9 @@ export const getAuthHeaders = async (): Promise<HeadersInit> => {
   return headers;
 };
 
-// Universal resilient backend API client through Vercel/Render proxy
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://new-beast-mode.onrender.com').replace(/\/+$/, '');
+
+// Universal resilient backend API client directly connecting to Backend API
 export async function fetchBackendApi(endpoint: string, options: RequestInit = {}): Promise<any> {
   try {
     const authHeaders = await getAuthHeaders();
@@ -68,7 +70,7 @@ export async function fetchBackendApi(endpoint: string, options: RequestInit = {
     };
 
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = `/api${cleanEndpoint}`;
+    const url = `${API_BASE_URL}/api${cleanEndpoint}`;
 
     const res = await fetch(url, {
       credentials: 'omit', // 👈 Prevents oversized cookies from being sent, eliminating HTTP 494
