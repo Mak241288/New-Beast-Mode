@@ -106,6 +106,13 @@ function App() {
   };
 
   useEffect(() => {
+    // 0. Immediately clean OAuth code query parameter to prevent reuse
+    if (window.location.search.includes('code=')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('code');
+      window.history.replaceState({}, document.title, url.pathname + url.hash);
+    }
+
     // 1. Check initial active session (handles OAuth redirect callback hash/query & PKCE code)
     const initSession = async () => {
       try {

@@ -48,6 +48,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
   const isFetchingRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
   const isMountedRef = useRef(true);
+  const hasFetchedRef = useRef(false);
 
   // Weekly Check-in States
   const [checkInDue, setCheckInDue] = useState(false);
@@ -171,7 +172,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate }) => {
 
   useEffect(() => {
     isMountedRef.current = true;
-    fetchDashboardData(true);
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchDashboardData(true);
+    }
     const handleCloudSync = () => {
       fetchDashboardData(false);
     };
