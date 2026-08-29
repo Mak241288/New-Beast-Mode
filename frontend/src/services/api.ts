@@ -34,25 +34,53 @@ function generateId(): number {
   return Math.floor(Date.now() + Math.random() * 1000);
 }
 
+// Safely extracts a clean token string, ensuring no stringified JSON objects or bloated headers
+function sanitizeToken(raw: any): string | null {
+  if (!raw || typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  // If it's inadvertently a JSON string, extract the actual access token
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed?.access_token && typeof parsed.access_token === 'string') {
+        return parsed.access_token.trim();
+      }
+      if (parsed?.token && typeof parsed.token === 'string') {
+        return parsed.token.trim();
+      }
+      if (parsed?.currentSession?.access_token) {
+        return parsed.currentSession.access_token.trim();
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Ensure token does not contain spaces or newlines
+  if (trimmed.includes(' ') || trimmed.includes('\n') || trimmed.includes('\r')) {
+    const firstPart = trimmed.split(/\s+/)[0];
+    return firstPart.length > 0 ? firstPart : null;
+  }
+
+  return trimmed;
+}
+
 // Clean sanitized Auth headers without bloated payload objects
 export const getAuthHeaders = async (): Promise<HeadersInit> => {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    let token = session?.access_token || localStorage.getItem('token');
-    if (token && typeof token === 'string') {
-      token = token.trim();
-      if (token.length > 0 && !token.startsWith('{') && !token.startsWith('[')) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+    const token = sanitizeToken(session?.access_token) || sanitizeToken(localStorage.getItem('token'));
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
   } catch {
-    const fallbackToken = localStorage.getItem('token');
-    if (fallbackToken && typeof fallbackToken === 'string') {
-      const clean = fallbackToken.trim();
-      if (clean.length > 0 && !clean.startsWith('{') && !clean.startsWith('[')) {
-        headers['Authorization'] = `Bearer ${clean}`;
-      }
+    const fallbackToken = sanitizeToken(localStorage.getItem('token'));
+    if (fallbackToken) {
+      headers['Authorization'] = `Bearer ${fallbackToken}`;
     }
   }
   return headers;
