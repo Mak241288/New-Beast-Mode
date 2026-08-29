@@ -29,7 +29,7 @@ app.set('trust proxy', 1);
 const rawAllowed = process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || '';
 const customOrigins = rawAllowed
   .split(',')
-  .map((o) => o.trim().toLowerCase())
+  .map((o) => o.trim().replace(/\/+$/, '').toLowerCase())
   .filter(Boolean);
 
 const defaultAllowedOrigins = [
@@ -42,34 +42,37 @@ const defaultAllowedOrigins = [
   'https://new-beast-mode.vercel.app',
 ];
 
-// Security Middlewares
-app.use(helmet()); // Sets various HTTP headers for security
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow server-to-server requests, mobile apps, or local toolings with no origin header
-      if (!origin) return callback(null, true);
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow server-to-server requests, mobile apps, or local toolings with no origin header
+    if (!origin) return callback(null, true);
 
-      const lower = origin.toLowerCase();
-      const isAllowed =
-        customOrigins.includes(lower) ||
-        defaultAllowedOrigins.includes(lower) ||
-        lower.endsWith('.vercel.app') ||
-        lower.endsWith('.beastmode.app');
+    const cleanOrigin = origin.trim().replace(/\/+$/, '').toLowerCase();
+    const isAllowed =
+      customOrigins.includes(cleanOrigin) ||
+      defaultAllowedOrigins.includes(cleanOrigin) ||
+      cleanOrigin.endsWith('.vercel.app') ||
+      cleanOrigin.endsWith('.beastmode.app');
 
-      if (isAllowed) {
-        return callback(null, true);
-      }
+    if (isAllowed) {
+      return callback(null, true);
+    }
 
-      logger.warn(`[CORS Blocked]: Origin "${origin}" rejected by security policy.`);
-      return callback(new Error('CORS policy: Access from this origin is forbidden'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
-);
+    logger.warn(`[CORS Blocked]: Origin "${origin}" rejected by security policy.`);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
 
+// Security Middlewares - CORS must be placed first to ensure all responses (including errors) retain CORS headers
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })); // Sets security HTTP headers without blocking cross-origin assets
 app.use(express.json({ limit: '10mb' })); // Parses incoming JSON requests
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
@@ -135,9 +138,13 @@ app.get('/api/health', async (_req, res) => {
 // Global Error Handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error('Unhandled API Endpoint Error', err);
+  if (res.headersSent) {
+    return _next(err);
+  }
   res.status(500).json({
     status: 'error',
     message: 'حدث خطأ غير متوقع في الخادم، يرجى المحاولة لاحقاً',
+    ...(process.env.NODE_ENV !== 'production' ? { detail: err.message } : {}),
   });
 });
 
