@@ -130,184 +130,194 @@ export const syncController = {
         checkIns,
       } = req.body || {};
 
-      await prisma.$transaction(async (tx) => {
-        // 1. Update user profile if provided
-        if (userProfile && typeof userProfile === 'object') {
-          const updateData: any = {};
-          if (userProfile.name) updateData.name = String(userProfile.name).trim().substring(0, 150);
-          if (userProfile.gender) updateData.gender = String(userProfile.gender).toUpperCase();
-          
-          const heightNum = parseSafeNumber(userProfile.height);
-          if (heightNum !== null) updateData.height = heightNum;
+      await prisma.$transaction(
+        async (tx) => {
+          // 1. Update user profile if provided
+          if (userProfile && typeof userProfile === 'object') {
+            const updateData: any = {};
+            if (userProfile.name) updateData.name = String(userProfile.name).trim().substring(0, 150);
+            if (userProfile.gender) updateData.gender = String(userProfile.gender).toUpperCase();
+            
+            const heightNum = parseSafeNumber(userProfile.height);
+            if (heightNum !== null) updateData.height = heightNum;
 
-          const currentWeightNum = parseSafeNumber(userProfile.currentWeight);
-          if (currentWeightNum !== null) updateData.currentWeight = currentWeightNum;
+            const currentWeightNum = parseSafeNumber(userProfile.currentWeight);
+            if (currentWeightNum !== null) updateData.currentWeight = currentWeightNum;
 
-          const targetWeightNum = parseSafeNumber(userProfile.targetWeight);
-          if (targetWeightNum !== null) updateData.targetWeight = targetWeightNum;
+            const targetWeightNum = parseSafeNumber(userProfile.targetWeight);
+            if (targetWeightNum !== null) updateData.targetWeight = targetWeightNum;
 
-          const ageNum = parseSafeNumber(userProfile.age);
-          if (ageNum !== null) updateData.age = Math.round(ageNum);
+            const ageNum = parseSafeNumber(userProfile.age);
+            if (ageNum !== null) updateData.age = Math.round(ageNum);
 
-          const daysPerWeekNum = parseSafeNumber(userProfile.daysPerWeek);
-          if (daysPerWeekNum !== null) updateData.daysPerWeek = Math.round(daysPerWeekNum);
+            const daysPerWeekNum = parseSafeNumber(userProfile.daysPerWeek);
+            if (daysPerWeekNum !== null) updateData.daysPerWeek = Math.round(daysPerWeekNum);
 
-          if (userProfile.fitnessGoal) updateData.fitnessGoal = String(userProfile.fitnessGoal);
-          if (userProfile.fitnessLevel) updateData.fitnessLevel = String(userProfile.fitnessLevel);
-          if (userProfile.equipment !== undefined) updateData.equipment = userProfile.equipment ? String(userProfile.equipment) : null;
-          if (userProfile.medicalConditions !== undefined) updateData.medicalConditions = userProfile.medicalConditions ? String(userProfile.medicalConditions) : null;
-          if (userProfile.workoutLocation) updateData.workoutLocation = String(userProfile.workoutLocation);
-          if (userProfile.workoutReminder !== undefined) updateData.workoutReminder = Boolean(userProfile.workoutReminder);
-          if (userProfile.reminderTime) updateData.reminderTime = String(userProfile.reminderTime);
-          if (userProfile.onboardingCompleted !== undefined) updateData.onboardingCompleted = Boolean(userProfile.onboardingCompleted);
+            if (userProfile.fitnessGoal) updateData.fitnessGoal = String(userProfile.fitnessGoal);
+            if (userProfile.fitnessLevel) updateData.fitnessLevel = String(userProfile.fitnessLevel);
+            if (userProfile.equipment !== undefined) updateData.equipment = userProfile.equipment ? String(userProfile.equipment) : null;
+            if (userProfile.medicalConditions !== undefined) updateData.medicalConditions = userProfile.medicalConditions ? String(userProfile.medicalConditions) : null;
+            if (userProfile.workoutLocation) updateData.workoutLocation = String(userProfile.workoutLocation);
+            if (userProfile.workoutReminder !== undefined) updateData.workoutReminder = Boolean(userProfile.workoutReminder);
+            if (userProfile.reminderTime) updateData.reminderTime = String(userProfile.reminderTime);
+            if (userProfile.onboardingCompleted !== undefined) updateData.onboardingCompleted = Boolean(userProfile.onboardingCompleted);
 
-          const safeBirthDate = parseSafeDate(userProfile.birthDate);
-          if (safeBirthDate) updateData.birthDate = safeBirthDate;
+            const safeBirthDate = parseSafeDate(userProfile.birthDate);
+            if (safeBirthDate) updateData.birthDate = safeBirthDate;
 
-          if (Object.keys(updateData).length > 0) {
-            await tx.user.updateMany({
-              where: { id: userId },
-              data: updateData,
+            if (Object.keys(updateData).length > 0) {
+              await tx.user.updateMany({
+                where: { id: userId },
+                data: updateData,
+              });
+            }
+          }
+
+          // 2. Sync Active Plan if provided (Atomic Nested Create)
+          if (activePlan && typeof activePlan === 'object' && (activePlan.title || Array.isArray(activePlan.dayWorkouts) || Array.isArray(activePlan.days))) {
+            const rawDays = Array.isArray(activePlan.dayWorkouts) ? activePlan.dayWorkouts : (Array.isArray(activePlan.days) ? activePlan.days : []);
+            
+            // Deactivate existing active plans for this user
+            await tx.workoutPlan.updateMany({
+              where: { userId, active: true },
+              data: { active: false },
+            });
+
+            // Create new active plan with properly mapped nested dayWorkouts and exercises in a single round-trip
+            await tx.workoutPlan.create({
+              data: {
+                userId,
+                title: String(activePlan.title || 'My Workout Plan').substring(0, 200),
+                durationWeeks: parseSafeNumber(activePlan.durationWeeks) ? Math.round(Number(activePlan.durationWeeks)) : 4,
+                startDate: parseSafeDate(activePlan.startDate) || new Date(),
+                active: true,
+                weeklyTips: activePlan.weeklyTips ? String(activePlan.weeklyTips) : null,
+                isManual: Boolean(activePlan.isManual),
+                dayWorkouts: {
+                  create: rawDays.map((day: any, idx: number) => {
+                    const rawExercises = Array.isArray(day.exercises) ? day.exercises : [];
+                    return {
+                      dayIndex: parseSafeNumber(day.dayIndex) ? Math.round(Number(day.dayIndex)) : idx + 1,
+                      title: String(day.title || `Day ${idx + 1}`).substring(0, 150),
+                      focusArea: String(day.focusArea || day.targetMuscle || 'General').substring(0, 150),
+                      dayTips: day.dayTips || day.tips ? String(day.dayTips || day.tips) : null,
+                      isRestDay: Boolean(day.isRestDay),
+                      exercises: {
+                        create: rawExercises.map((ex: any, exIdx: number) => ({
+                          name: String(ex.name_en || ex.name || 'Exercise').substring(0, 200),
+                          name_en: ex.name_en ? String(ex.name_en).substring(0, 200) : null,
+                          name_ar: ex.name_ar ? String(ex.name_ar).substring(0, 200) : null,
+                          description_en: ex.description_en ? String(ex.description_en) : null,
+                          description_ar: ex.description_ar ? String(ex.description_ar) : null,
+                          muscle_en: ex.muscle_en || ex.muscle ? String(ex.muscle_en || ex.muscle).substring(0, 100) : 'General',
+                          muscle_ar: ex.muscle_ar ? String(ex.muscle_ar).substring(0, 100) : null,
+                          targetMuscle: ex.targetMuscle || ex.muscle_en ? String(ex.targetMuscle || ex.muscle_en).substring(0, 100) : null,
+                          equipment_en: ex.equipment_en || ex.equipment ? String(ex.equipment_en || ex.equipment).substring(0, 100) : 'Bodyweight',
+                          equipment_ar: ex.equipment_ar ? String(ex.equipment_ar).substring(0, 100) : null,
+                          level: ex.level ? String(ex.level).substring(0, 50) : 'intermediate',
+                          category: ex.category ? String(ex.category).substring(0, 50) : 'IRON',
+                          rating: parseSafeNumber(ex.rating) ?? 0.0,
+                          imageUrl: ex.imageUrl || ex.image_url ? String(ex.imageUrl || ex.image_url) : null,
+                          image_url: ex.image_url || ex.imageUrl ? String(ex.image_url || ex.imageUrl) : null,
+                          videoUrl: ex.videoUrl ? String(ex.videoUrl) : null,
+                          gif_url: ex.gif_url ? String(ex.gif_url) : null,
+                          sets: parseSafeNumber(ex.sets) ? Math.round(Number(ex.sets)) : 3,
+                          reps: String(ex.reps || '10-12').substring(0, 50),
+                          weight: ex.weight ? String(ex.weight).substring(0, 50) : null,
+                          exerciseTips: ex.exerciseTips || ex.tips ? String(ex.exerciseTips || ex.tips) : null,
+                          order: parseSafeNumber(ex.order) ? Math.round(Number(ex.order)) : exIdx,
+                        })),
+                      },
+                    };
+                  }),
+                },
+              },
             });
           }
-        }
 
-        // 2. Sync Active Plan if provided
-        if (activePlan && typeof activePlan === 'object' && (activePlan.title || Array.isArray(activePlan.dayWorkouts) || Array.isArray(activePlan.days))) {
-          const rawDays = Array.isArray(activePlan.dayWorkouts) ? activePlan.dayWorkouts : (Array.isArray(activePlan.days) ? activePlan.days : []);
-          
-          // Deactivate existing active plans for this user
-          await tx.workoutPlan.updateMany({
-            where: { userId, active: true },
-            data: { active: false },
-          });
+          // 3. Sync Weight Logs (Fast Batched Query & createMany)
+          if (Array.isArray(weightLogs) && weightLogs.length > 0) {
+            const validLogs = weightLogs
+              .map((wl: any) => ({
+                weight: parseSafeNumber(wl?.weight),
+                date: parseSafeDate(wl?.date) || new Date(),
+                notes: wl?.notes ? String(wl.notes).substring(0, 500) : null,
+              }))
+              .filter((wl: any) => wl.weight !== null && wl.weight > 0);
 
-          // Create new active plan with properly mapped nested dayWorkouts and exercises
-          await tx.workoutPlan.create({
-            data: {
-              userId,
-              title: String(activePlan.title || 'My Workout Plan').substring(0, 200),
-              durationWeeks: parseSafeNumber(activePlan.durationWeeks) ? Math.round(Number(activePlan.durationWeeks)) : 4,
-              startDate: parseSafeDate(activePlan.startDate) || new Date(),
-              active: true,
-              weeklyTips: activePlan.weeklyTips ? String(activePlan.weeklyTips) : null,
-              isManual: Boolean(activePlan.isManual),
-              dayWorkouts: {
-                create: rawDays.map((day: any, idx: number) => {
-                  const rawExercises = Array.isArray(day.exercises) ? day.exercises : [];
-                  return {
-                    dayIndex: parseSafeNumber(day.dayIndex) ? Math.round(Number(day.dayIndex)) : idx + 1,
-                    title: String(day.title || `Day ${idx + 1}`).substring(0, 150),
-                    focusArea: String(day.focusArea || day.targetMuscle || 'General').substring(0, 150),
-                    dayTips: day.dayTips || day.tips ? String(day.dayTips || day.tips) : null,
-                    isRestDay: Boolean(day.isRestDay),
-                    exercises: {
-                      create: rawExercises.map((ex: any, exIdx: number) => ({
-                        name: String(ex.name_en || ex.name || 'Exercise').substring(0, 200),
-                        name_en: ex.name_en ? String(ex.name_en).substring(0, 200) : null,
-                        name_ar: ex.name_ar ? String(ex.name_ar).substring(0, 200) : null,
-                        description_en: ex.description_en ? String(ex.description_en) : null,
-                        description_ar: ex.description_ar ? String(ex.description_ar) : null,
-                        muscle_en: ex.muscle_en || ex.muscle ? String(ex.muscle_en || ex.muscle).substring(0, 100) : 'General',
-                        muscle_ar: ex.muscle_ar ? String(ex.muscle_ar).substring(0, 100) : null,
-                        targetMuscle: ex.targetMuscle || ex.muscle_en ? String(ex.targetMuscle || ex.muscle_en).substring(0, 100) : null,
-                        equipment_en: ex.equipment_en || ex.equipment ? String(ex.equipment_en || ex.equipment).substring(0, 100) : 'Bodyweight',
-                        equipment_ar: ex.equipment_ar ? String(ex.equipment_ar).substring(0, 100) : null,
-                        level: ex.level ? String(ex.level).substring(0, 50) : 'intermediate',
-                        category: ex.category ? String(ex.category).substring(0, 50) : 'IRON',
-                        rating: parseSafeNumber(ex.rating) ?? 0.0,
-                        imageUrl: ex.imageUrl || ex.image_url ? String(ex.imageUrl || ex.image_url) : null,
-                        image_url: ex.image_url || ex.imageUrl ? String(ex.image_url || ex.imageUrl) : null,
-                        videoUrl: ex.videoUrl ? String(ex.videoUrl) : null,
-                        gif_url: ex.gif_url ? String(ex.gif_url) : null,
-                        sets: parseSafeNumber(ex.sets) ? Math.round(Number(ex.sets)) : 3,
-                        reps: String(ex.reps || '10-12').substring(0, 50),
-                        weight: ex.weight ? String(ex.weight).substring(0, 50) : null,
-                        exerciseTips: ex.exerciseTips || ex.tips ? String(ex.exerciseTips || ex.tips) : null,
-                        order: parseSafeNumber(ex.order) ? Math.round(Number(ex.order)) : exIdx,
-                      })),
-                    },
-                  };
-                }),
-              },
-            },
-          });
-        }
-
-        // 3. Sync Weight Logs (Append any new logs safely)
-        if (Array.isArray(weightLogs) && weightLogs.length > 0) {
-          for (const wl of weightLogs) {
-            const weightNum = parseSafeNumber(wl?.weight);
-            if (weightNum !== null && weightNum > 0) {
-              const logDate = parseSafeDate(wl?.date) || new Date();
-              const dayStart = new Date(logDate);
-              dayStart.setHours(0, 0, 0, 0);
-              const dayEnd = new Date(logDate);
-              dayEnd.setHours(23, 59, 59, 999);
-
-              const existing = await tx.weightLog.findFirst({
-                where: {
-                  userId,
-                  date: {
-                    gte: dayStart,
-                    lte: dayEnd,
-                  },
-                },
+            if (validLogs.length > 0) {
+              const existingLogs = await tx.weightLog.findMany({
+                where: { userId },
+                select: { date: true },
               });
+              const existingDateStrings = new Set(
+                existingLogs.map((l) => new Date(l.date).toISOString().split('T')[0])
+              );
 
-              if (!existing) {
-                await tx.weightLog.create({
-                  data: {
+              const toCreate = validLogs.filter(
+                (l) => !existingDateStrings.has(new Date(l.date).toISOString().split('T')[0])
+              );
+
+              if (toCreate.length > 0) {
+                await tx.weightLog.createMany({
+                  data: toCreate.map((l) => ({
                     userId,
-                    weight: weightNum,
-                    date: logDate,
-                    notes: wl.notes ? String(wl.notes).substring(0, 500) : null,
-                  },
+                    weight: l.weight as number,
+                    date: l.date,
+                    notes: l.notes,
+                  })),
                 });
               }
             }
           }
-        }
 
-        // 4. Sync Check-in Logs safely
-        if (Array.isArray(checkIns) && checkIns.length > 0) {
-          for (const ci of checkIns) {
-            if (ci && typeof ci === 'object') {
-              const workoutFeel = String(ci.workoutFeel || 'NORMAL');
-              const sessionsCompleted = String(ci.sessionsCompleted || 'YES');
-              const checkInDate = parseSafeDate(ci.date) || new Date();
-              const dayStart = new Date(checkInDate);
-              dayStart.setHours(0, 0, 0, 0);
-              const dayEnd = new Date(checkInDate);
-              dayEnd.setHours(23, 59, 59, 999);
+          // 4. Sync Check-in Logs (Fast Batched Query & createMany)
+          if (Array.isArray(checkIns) && checkIns.length > 0) {
+            const validCheckIns = checkIns
+              .filter((ci: any) => ci && typeof ci === 'object')
+              .map((ci: any) => ({
+                workoutFeel: String(ci.workoutFeel || 'NORMAL'),
+                sessionsCompleted: String(ci.sessionsCompleted || 'YES'),
+                painNotes: ci.painNotes ? String(ci.painNotes).substring(0, 500) : null,
+                aiRecommendation: ci.aiRecommendation ? String(ci.aiRecommendation).substring(0, 1000) : null,
+                applied: Boolean(ci.applied),
+                date: parseSafeDate(ci.date) || new Date(),
+              }));
 
-              const existing = await tx.checkIn.findFirst({
-                where: {
-                  userId,
-                  date: {
-                    gte: dayStart,
-                    lte: dayEnd,
-                  },
-                },
+            if (validCheckIns.length > 0) {
+              const existingCheckIns = await tx.checkIn.findMany({
+                where: { userId },
+                select: { date: true },
               });
+              const existingCheckInDates = new Set(
+                existingCheckIns.map((c) => new Date(c.date).toISOString().split('T')[0])
+              );
 
-              if (!existing) {
-                await tx.checkIn.create({
-                  data: {
+              const toCreate = validCheckIns.filter(
+                (c) => !existingCheckInDates.has(new Date(c.date).toISOString().split('T')[0])
+              );
+
+              if (toCreate.length > 0) {
+                await tx.checkIn.createMany({
+                  data: toCreate.map((c) => ({
                     userId,
-                    workoutFeel,
-                    sessionsCompleted,
-                    painNotes: ci.painNotes ? String(ci.painNotes).substring(0, 500) : null,
-                    aiRecommendation: ci.aiRecommendation ? String(ci.aiRecommendation).substring(0, 1000) : null,
-                    applied: Boolean(ci.applied),
-                    date: checkInDate,
-                  },
+                    workoutFeel: c.workoutFeel,
+                    sessionsCompleted: c.sessionsCompleted,
+                    painNotes: c.painNotes,
+                    aiRecommendation: c.aiRecommendation,
+                    applied: c.applied,
+                    date: c.date,
+                  })),
                 });
               }
             }
           }
+        },
+        {
+          maxWait: 10000, // 10s max wait for connection acquisition
+          timeout: 25000, // 25s transaction execution limit
         }
-      });
+      );
 
       res.status(200).json({
         success: true,
