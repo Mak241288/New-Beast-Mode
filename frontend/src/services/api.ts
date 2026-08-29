@@ -253,23 +253,6 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
         // Non-fatal
       }
     }
-
-    // 3. Also persist to User row if table accessible
-    const email = user.email || (userProfile as any)?.email;
-    if (email) {
-      try {
-        await supabase.from('User').upsert(
-          {
-            email,
-            name: (userProfile as any)?.name || user.user_metadata?.name || 'Beast Athlete',
-            updatedAt: new Date().toISOString(),
-          },
-          { onConflict: 'email' }
-        );
-      } catch {
-        // Non-fatal
-      }
-    }
   } catch (err) {
     console.warn('[CloudSync] Sync push failed:', err);
   }
@@ -640,11 +623,6 @@ export const api = {
     };
 
     if (token) {
-      try {
-        await supabase.from('User').upsert(defaultProfile, { onConflict: 'email' });
-      } catch {
-        // Non-fatal if table permissions restrict anon write
-      }
       cacheStore.set('user_profile', defaultProfile);
     }
 
@@ -700,31 +678,13 @@ export const api = {
     localStorage.setItem('token', token);
     localStorage.setItem('bm_password_setup_done', 'true');
 
-    // Fetch user profile from Supabase User table
-    let profile = null;
-    try {
-      const { data: profileRow } = await supabase
-        .from('User')
-        .select('*')
-        .eq('email', cleanEmail)
-        .maybeSingle();
-
-      if (profileRow) {
-        profile = profileRow;
-      }
-    } catch {
-      // Fallback
-    }
-
-    if (!profile) {
-      profile = {
-        email: cleanEmail,
-        name: data.user?.user_metadata?.name || cleanEmail.split('@')[0],
-        onboardingCompleted: true,
-        isGoogleLinked: false,
-        hasPassword: true,
-      };
-    }
+    const profile = {
+      email: cleanEmail,
+      name: data.user?.user_metadata?.name || cleanEmail.split('@')[0],
+      onboardingCompleted: true,
+      isGoogleLinked: false,
+      hasPassword: true,
+    };
 
     cacheStore.set('user_profile', profile);
 
@@ -745,10 +705,10 @@ export const api = {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           },
         },
       });
@@ -777,12 +737,6 @@ export const api = {
       updatedAt: new Date().toISOString(),
     };
 
-    try {
-      await supabase.from('User').upsert(profile, { onConflict: 'email' });
-    } catch {
-      // Non-fatal
-    }
-
     cacheStore.set('user_profile', profile);
 
     return {
@@ -805,13 +759,11 @@ export const api = {
       updatedAt: new Date().toISOString(),
     };
 
-    try {
-      if (cachedProfile.email) {
-        await supabase.from('User').update(updated).eq('email', cachedProfile.email);
-      }
-    } catch {
-      // Fallback
-    }
+    // Sync to backend auth proxy
+    await fetchBackendApi('/auth/link-google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }).catch(() => {});
 
     cacheStore.set('user_profile', updated);
     return { success: true, message: 'تم ربط وتوثيق حساب Google بنجاح!' };
@@ -827,13 +779,10 @@ export const api = {
       updatedAt: new Date().toISOString(),
     };
 
-    try {
-      if (cachedProfile.email) {
-        await supabase.from('User').update(updated).eq('email', cachedProfile.email);
-      }
-    } catch {
-      // Fallback
-    }
+    // Sync to backend auth proxy
+    await fetchBackendApi('/auth/unlink-google', {
+      method: 'POST',
+    }).catch(() => {});
 
     cacheStore.set('user_profile', updated);
     return { success: true, message: 'تم فك ربط حساب Google بنجاح' };
@@ -930,13 +879,11 @@ export const api = {
       console.warn('[Supabase Auth Profile Update]:', authErr);
     }
 
-    try {
-      if (email) {
-        await supabase.from('User').upsert(merged, { onConflict: 'email' });
-      }
-    } catch {
-      // Non-fatal
-    }
+    // Also sync to Backend Proxy
+    await fetchBackendApi('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(merged),
+    }).catch(() => {});
 
     return merged;
   },
@@ -1174,7 +1121,6 @@ export const api = {
   },
 
   deleteAccount: async () => {
-    const user = await getCurrentUser();
     const token = localStorage.getItem('token');
 
     // 1. Trigger Backend Cascade Delete
@@ -1192,16 +1138,7 @@ export const api = {
       // Non-fatal
     }
 
-    // 2. Supabase Cloud delete
-    if (user?.email) {
-      try {
-        await supabase.from('User').delete().eq('email', user.email);
-      } catch {
-        // Fallback
-      }
-    }
-
-    // 3. Complete Signout & Local Cache Purge
+    // 2. Complete Signout & Local Cache Purge
     try {
       await supabase.auth.signOut();
     } catch {}

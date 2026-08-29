@@ -4,8 +4,8 @@
   "description": "AI-Powered Personalized Workout & Nutrition Planner with Offline Gym Sync.",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2964/2964514.png",
-      "type": "image/png",
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "any maskable"
     }
