@@ -289,7 +289,7 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
     lastSyncedHash = currentHash;
 
     // Realtime WebSocket Broadcast (Zero polling)
-    if (realtimeChannel && user.id) {
+    if (typeof realtimeChannel !== 'undefined' && realtimeChannel && user.id) {
       try {
         await realtimeChannel.send({
           type: 'broadcast',
@@ -306,13 +306,25 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
   }
 }
 
+export const cleanupRealtimeChannel = () => {
+  try {
+    if (typeof realtimeChannel !== 'undefined' && realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+  } catch (err) {
+    console.warn('[Realtime cleanup warning]:', err);
+  }
+};
+
 export function subscribeToUserRealtimeSync(onUpdate?: (data?: any) => void): () => void {
   try {
     getCurrentUser().then((user) => {
       const channelName = user?.id ? `beast_sync_${user.id}` : 'user-sync';
-      if (realtimeChannel) {
+      if (typeof realtimeChannel !== 'undefined' && realtimeChannel) {
         try {
           supabase.removeChannel(realtimeChannel);
+          realtimeChannel = null;
         } catch {}
       }
 
@@ -352,12 +364,7 @@ export function subscribeToUserRealtimeSync(onUpdate?: (data?: any) => void): ()
   }
 
   return () => {
-    if (realtimeChannel) {
-      try {
-        supabase.removeChannel(realtimeChannel);
-        realtimeChannel = null;
-      } catch {}
-    }
+    cleanupRealtimeChannel();
   };
 }
 
@@ -601,10 +608,10 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
  */
 export async function broadcastWorkoutSetUpdate(sessionData: any): Promise<void> {
   try {
-    if (!realtimeChannel) {
+    if (typeof realtimeChannel === 'undefined' || !realtimeChannel) {
       subscribeToUserRealtimeSync();
     }
-    if (realtimeChannel) {
+    if (typeof realtimeChannel !== 'undefined' && realtimeChannel) {
       await realtimeChannel.send({
         type: 'broadcast',
         event: 'workout_set_update',

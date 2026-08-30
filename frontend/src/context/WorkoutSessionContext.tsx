@@ -301,12 +301,19 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     };
 
     // Initialize Supabase realtime channel listener
-    const unsubscribeRealtime = api.subscribeToRealtimeSync();
+    let unsubscribeRealtime: (() => void) | undefined;
+    try {
+      unsubscribeRealtime = api.subscribeToRealtimeSync?.();
+    } catch {}
 
     window.addEventListener('beast_cloud_synced', handleCloudRestore);
     return () => {
       window.removeEventListener('beast_cloud_synced', handleCloudRestore);
-      unsubscribeRealtime();
+      try {
+        unsubscribeRealtime?.();
+      } catch (err) {
+        console.warn('[WorkoutSessionContext] Realtime cleanup error:', err);
+      }
     };
   }, []);
 
