@@ -1,6 +1,6 @@
 import { cacheStore } from '../utils/cacheStore';
 import { supabase } from './supabase';
-import { pushUserDataToCloud } from './api';
+import { pushUserDataToCloud, fetchBackendApi } from './api';
 
 async function getCurrentUser() {
   try {
@@ -225,51 +225,56 @@ export const normalizePlan = (raw: any, fallbackTitle = 'جدول تدريبي �
   };
 };
 
+// Helper to strictly deduplicate plans by unique ID and unique Title (Latest Timestamp Wins)
+export function deduplicatePlans(list: any[]): BeastPlan[] {
+  if (!Array.isArray(list)) return [];
+  const normalizedList = list.filter(Boolean).map((p) => normalizePlan(p));
+  const seenIds = new Set<string>();
+  const seenTitles = new Map<string, BeastPlan>();
+
+  for (const plan of normalizedList) {
+    const cleanId = String(plan.id);
+    const cleanTitle = (plan.title || '').trim().toLowerCase();
+
+    if (seenIds.has(cleanId)) continue;
+    seenIds.add(cleanId);
+
+    const existingByTitle = seenTitles.get(cleanTitle);
+    if (!existingByTitle) {
+      seenTitles.set(cleanTitle, plan);
+    } else {
+      // Keep active plan or the one with more recent updatedAt
+      const existingTime = new Date(existingByTitle.updatedAt || 0).getTime();
+      const planTime = new Date(plan.updatedAt || 0).getTime();
+      if (plan.active || planTime > existingTime) {
+        seenTitles.set(cleanTitle, plan);
+      }
+    }
+  }
+
+  const result = Array.from(seenTitles.values());
+  const hasActive = result.some((p) => p.active);
+  if (!hasActive && result.length > 0) {
+    result[0].active = true;
+  }
+  return result;
+}
+
 // -------------------------------------------------------------
 // CENTRALIZED PLAN SERVICE
 // -------------------------------------------------------------
 export const planService = {
-  // 1. Get all plans (Smart Local-First + Cloud Merge)
+  // 1. Get all plans (Strict Deduplicated Local-First)
   getAll: async (): Promise<BeastPlan[]> => {
     let plans: BeastPlan[] = [];
 
-    // 1. Get cached local plans first (contains latest modifications)
+    // 1. Get cached local plans first (authoritative user state)
     const cachedHistory = cacheStore.get<any[]>('plan_history');
     if (Array.isArray(cachedHistory) && cachedHistory.length > 0) {
-      plans = cachedHistory.map((p) => normalizePlan(p));
+      plans = deduplicatePlans(cachedHistory);
     }
 
-    // 2. Check cloud user metadata and merge with timestamp conflict resolution
-    const user = await getCurrentUser();
-    if (user?.user_metadata?.beast_plan_history) {
-      try {
-        const rawHistory = typeof user.user_metadata.beast_plan_history === 'string'
-          ? JSON.parse(user.user_metadata.beast_plan_history)
-          : user.user_metadata.beast_plan_history;
-        if (Array.isArray(rawHistory) && rawHistory.length > 0) {
-          const cloudPlans = rawHistory.map((p) => normalizePlan(p));
-          if (plans.length === 0) {
-            plans = cloudPlans;
-          } else {
-            cloudPlans.forEach((cp) => {
-              const existingIdx = plans.findIndex((lp) => isSamePlanId(lp.id, cp.id) || lp.title === cp.title);
-              if (existingIdx === -1) {
-                plans.push(cp);
-              } else {
-                // If cloud plan is newer, adopt the cloud plan version
-                const localUpdated = new Date(plans[existingIdx].updatedAt || 0).getTime();
-                const cloudUpdated = new Date(cp.updatedAt || 0).getTime();
-                if (cloudUpdated > localUpdated) {
-                  plans[existingIdx] = cp;
-                }
-              }
-            });
-          }
-        }
-      } catch {}
-    }
-
-    // 3. Check active plan cache to ensure it is in history
+    // 2. Check active plan cache to ensure it is in history
     const cachedActive = cacheStore.get<any>('active_plan');
     if (cachedActive) {
       const normalizedActive = normalizePlan(cachedActive);
@@ -277,8 +282,23 @@ export const planService = {
       const idx = plans.findIndex((p) => isSamePlanId(p.id, normalizedActive.id) || p.title === normalizedActive.title);
       if (idx >= 0) {
         plans[idx] = { ...plans[idx], ...normalizedActive, active: true };
-      } else {
-        plans = [{ ...normalizedActive, active: true }, ...plans.map((p) => ({ ...p, active: false }))];
+      } else if (plans.length === 0) {
+        plans = [normalizedActive];
+      }
+    }
+
+    // 3. Fallback to cloud only if local is completely empty (first time on new device)
+    if (plans.length === 0) {
+      const user = await getCurrentUser();
+      if (user?.user_metadata?.beast_plan_history) {
+        try {
+          const rawHistory = typeof user.user_metadata.beast_plan_history === 'string'
+            ? JSON.parse(user.user_metadata.beast_plan_history)
+            : user.user_metadata.beast_plan_history;
+          if (Array.isArray(rawHistory) && rawHistory.length > 0) {
+            plans = deduplicatePlans(rawHistory);
+          }
+        } catch {}
       }
     }
 
@@ -289,11 +309,8 @@ export const planService = {
       plans = [defaultPlan];
     }
 
-    // Guarantee at least 1 active plan
-    const hasActive = plans.some((p) => p.active);
-    if (!hasActive && plans.length > 0) {
-      plans[0].active = true;
-    }
+    // Strictly deduplicate and ensure exactly 1 active plan
+    plans = deduplicatePlans(plans);
 
     // Store normalized history
     cacheStore.set('plan_history', plans);
@@ -490,7 +507,7 @@ export const planService = {
     }
 
     const wasActive = plans.some((p) => isSamePlanId(p.id, planId) && p.active);
-    const updatedHistory = plans.filter((p) => !isSamePlanId(p.id, planId));
+    const updatedHistory = deduplicatePlans(plans.filter((p) => !isSamePlanId(p.id, planId)));
 
     let nextActive = cacheStore.get<BeastPlan>('active_plan');
     if (wasActive || !nextActive || isSamePlanId(nextActive.id, planId)) {
@@ -500,6 +517,24 @@ export const planService = {
     }
 
     cacheStore.set('plan_history', updatedHistory);
+
+    // 1. Delete on Backend if it has a numeric ID
+    const numId = typeof planId === 'number' ? planId : (typeof planId === 'string' && /^\d+$/.test(planId) ? parseInt(planId, 10) : null);
+    if (numId) {
+      fetchBackendApi(`/workout/plan/${numId}`, { method: 'DELETE' }).catch(() => {});
+    }
+
+    // 2. Clean up Supabase Auth user_metadata so deleted plans never resurrect
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          beast_active_plan: JSON.stringify(nextActive),
+          beast_plan_history: JSON.stringify(updatedHistory),
+        },
+      });
+    } catch {}
+
+    // 3. Push authoritative clean list to cloud
     await pushUserDataToCloud(true);
 
     if (typeof window !== 'undefined') {

@@ -431,11 +431,14 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
             localStorage.setItem('beastmode_user_profile', JSON.stringify(mergedUser));
           } catch {}
         }
-        if (serverPlan) {
+        if (serverPlan && !cacheStore.get('active_plan')) {
           cacheStore.set('active_plan', serverPlan);
         }
         if (Array.isArray(serverPlans) && serverPlans.length > 0) {
-          cacheStore.set('plan_history', serverPlans);
+          const localH = cacheStore.get<any[]>('plan_history');
+          if (!Array.isArray(localH) || localH.length === 0) {
+            cacheStore.set('plan_history', serverPlans);
+          }
         }
         if (Array.isArray(serverWeightLogs) && serverWeightLogs.length > 0) {
           const currentStats: any = cacheStore.get('user_stats') || {};
@@ -503,24 +506,20 @@ export async function syncUserDataFromCloud(): Promise<boolean> {
       }
     }
 
-    // Authoritatively hydrate custom plans from cloud to device
-    if (Array.isArray(finalHistory) && finalHistory.length > 0) {
-      cacheStore.set('plan_history', finalHistory);
-      if (finalPlan) {
+    // Authoritatively hydrate custom plans from cloud to device ONLY if local is empty
+    const currentLocalHistory = cacheStore.get<any[]>('plan_history');
+    if (!Array.isArray(currentLocalHistory) || currentLocalHistory.length === 0) {
+      if (Array.isArray(finalHistory) && finalHistory.length > 0) {
+        cacheStore.set('plan_history', finalHistory);
+        if (finalPlan) {
+          cacheStore.set('active_plan', finalPlan);
+        } else {
+          const act = finalHistory.find((p: any) => p.active) || finalHistory[0];
+          if (act) cacheStore.set('active_plan', act);
+        }
+      } else if (finalPlan) {
         cacheStore.set('active_plan', finalPlan);
-      } else {
-        const act = finalHistory.find((p: any) => p.active) || finalHistory[0];
-        if (act) cacheStore.set('active_plan', act);
-      }
-    } else if (finalPlan) {
-      cacheStore.set('active_plan', finalPlan);
-      cacheStore.set('plan_history', [finalPlan]);
-    } else {
-      // If cloud has no plans yet, push local device plans to cloud immediately
-      const localP = cacheStore.get('active_plan');
-      const localH = cacheStore.get('plan_history');
-      if (localP || (Array.isArray(localH) && localH.length > 0)) {
-        await pushUserDataToCloud(true);
+        cacheStore.set('plan_history', [finalPlan]);
       }
     }
 
