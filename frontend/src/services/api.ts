@@ -1686,44 +1686,38 @@ export const api = {
 
     let allExercises: any[] = [];
 
-    // 3. Load from bundled catalog (4,200+ enriched exercises)
+    // 3. Load from bundled catalog (4,200+ enriched exercises) instantly
     try {
       const res = await fetch('/exercises_catalog.json');
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json) && json.length > 0) {
           allExercises = compactExercisesPayload(json);
+          _memoryLibraryCache = allExercises;
+          idbStore.set('library_tree_flat', allExercises).catch(() => {});
         }
       }
     } catch (err) {
       console.warn('[ExercisesCatalog fetch warn]:', err);
     }
 
-    // 4. If Supabase has additional or customized exercises, merge them
-    try {
-      const { data: sbData, error: sbErr } = await supabase.from('exercises').select('*').limit(1000);
-      if (!sbErr && sbData && sbData.length > 0) {
-        const sbFormatted = compactExercisesPayload(sbData);
-
-        if (allExercises.length === 0) {
-          allExercises = sbFormatted;
-        } else {
-          // Merge unique items from Supabase
+    // 4. Background non-blocking enrichment from Supabase
+    if (allExercises.length > 0) {
+      supabase.from('exercises').select('*').limit(1000).then((res: any) => {
+        const { data: sbData, error: sbErr } = res || {};
+        if (!sbErr && sbData && sbData.length > 0) {
+          const sbFormatted = compactExercisesPayload(sbData);
           const existingIds = new Set(allExercises.map((e: any) => String(e.id)));
           sbFormatted.forEach((sbEx: any) => {
             if (!existingIds.has(String(sbEx.id))) {
               allExercises.unshift(sbEx);
             }
           });
+          _memoryLibraryCache = allExercises;
+          idbStore.set('library_tree_flat', allExercises).catch(() => {});
         }
-      }
-    } catch (err) {
-      console.warn('[Supabase Exercises Fetch Exception]:', err);
-    }
+      }).catch(() => {});
 
-    if (allExercises.length > 0) {
-      _memoryLibraryCache = allExercises;
-      idbStore.set('library_tree_flat', allExercises).catch(() => {});
       return allExercises;
     }
 

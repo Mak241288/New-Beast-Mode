@@ -375,7 +375,10 @@ function App() {
     if (isStatusCheckingRef.current) return;
     isStatusCheckingRef.current = true;
     
-    setLoading(true);
+    const hasCachedData = !!cacheStore.get('user_profile') || !!cacheStore.get('active_plan');
+    if (!hasCachedData) {
+      setLoading(true);
+    }
     setInitError(null);
 
     try {

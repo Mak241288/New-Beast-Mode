@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/api';
 import { Info, HelpCircle, LayoutGrid, MapPin, Database, RefreshCw } from 'lucide-react';
 import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
@@ -170,62 +170,75 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     }
   };
 
-  const filteredExercises = exercises.filter((ex) => {
-    const nameEn = (ex.name_en || '').toLowerCase();
-    const nameAr = (ex.name_ar || '').toLowerCase();
-    const query = searchQuery.toLowerCase();
+  const [visibleCount, setVisibleCount] = useState<number>(24);
 
-    const matchesQuery = nameEn.includes(query) || nameAr.includes(query);
+  // Reset pagination on filter changes
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [selectedMuscle, selectedEquipment, selectedDifficulty, searchQuery]);
 
-    const muscleEn = (ex.muscle_en || '').toLowerCase();
-    const muscleAr = (ex.muscle_ar || '').toLowerCase();
-    const matchesMuscle =
-      selectedMuscle === 'ALL' ||
-      muscleEn === selectedMuscle ||
-      muscleAr.includes(selectedMuscle) ||
-      (selectedMuscle === 'chest' && (muscleEn.includes('chest') || muscleEn.includes('pectoral') || muscleAr.includes('صدر'))) ||
-      (selectedMuscle === 'back' && (muscleEn.includes('back') || muscleEn.includes('lat') || muscleEn.includes('rhomboid') || muscleEn.includes('trapezius') || muscleAr.includes('ظهر'))) ||
-      (selectedMuscle === 'shoulders' && (muscleEn.includes('shoulder') || muscleEn.includes('delt') || muscleAr.includes('كتف'))) ||
-      (selectedMuscle === 'traps' && (muscleEn.includes('trap') || muscleEn.includes('neck') || nameEn.includes('shrug') || muscleAr.includes('ترابيس') || muscleAr.includes('رقبة'))) ||
-      (selectedMuscle === 'biceps' && (muscleEn.includes('bicep') || muscleEn.includes('brachii') || muscleAr.includes('باي'))) ||
-      (selectedMuscle === 'triceps' && (muscleEn.includes('tricep') || muscleAr.includes('تراي'))) ||
-      (selectedMuscle === 'forearms' && (muscleEn.includes('forearm') || muscleEn.includes('wrist') || muscleEn.includes('grip') || muscleAr.includes('ساعد'))) ||
-      (selectedMuscle === 'quads' && (muscleEn.includes('quad') || nameEn.includes('squat') || nameEn.includes('lunge') || nameEn.includes('leg extension') || muscleAr.includes('أمامي'))) ||
-      (selectedMuscle === 'hamstrings' && (muscleEn.includes('hamstring') || nameEn.includes('deadlift') || nameEn.includes('leg curl') || nameEn.includes('rdl') || muscleAr.includes('خلفي'))) ||
-      (selectedMuscle === 'glutes' && (muscleEn.includes('glute') || nameEn.includes('hip thrust') || nameEn.includes('bridge') || muscleAr.includes('أرداف') || muscleAr.includes('مؤخرة'))) ||
-      (selectedMuscle === 'legs' && (muscleEn.includes('quad') || muscleEn.includes('hamstring') || muscleEn.includes('glute') || muscleEn.includes('leg') || muscleEn.includes('calf') || muscleAr.includes('رجل') || muscleAr.includes('فخذ'))) ||
-      (selectedMuscle === 'calves' && (muscleEn.includes('calf') || muscleEn.includes('calves') || muscleEn.includes('soleus') || nameEn.includes('calf') || muscleAr.includes('سمانة') || muscleAr.includes('بطات'))) ||
-      (selectedMuscle === 'abs' && (muscleEn.includes('ab') || muscleEn.includes('core') || muscleEn.includes('oblique') || muscleEn.includes('plank') || muscleAr.includes('بطن') || muscleAr.includes('جذع'))) ||
-      (selectedMuscle === 'cardio' && (muscleEn.includes('cardio') || muscleEn.includes('hiit') || (ex.category || '').toLowerCase().includes('cardio') || (ex.category || '').toLowerCase().includes('plyometrics') || muscleAr.includes('كارديو')));
+  const filteredExercises = useMemo(() => {
+    return exercises.filter((ex) => {
+      const nameEn = (ex.name_en || '').toLowerCase();
+      const nameAr = (ex.name_ar || '').toLowerCase();
+      const query = searchQuery.toLowerCase();
 
-    const equipEn = (ex.equipment_en || '').toLowerCase();
-    const equipAr = (ex.equipment_ar || '').toLowerCase();
-    const matchesEquipment =
-      selectedEquipment === 'ALL' ||
-      (selectedEquipment === 'home' && (ex.isHomeFriendly || ['bodyweight', 'dumbbell', 'band', 'kettlebell', 'mat', 'ball', 'floor', 'body only'].some(k => equipEn.includes(k)))) ||
-      (selectedEquipment === 'bodyweight' && (equipEn.includes('body only') || equipEn.includes('bodyweight') || equipEn.includes('none') || equipAr.includes('وزن الجسم'))) ||
-      (selectedEquipment === 'dumbbell' && (equipEn.includes('dumbbell') || equipAr.includes('دمبل'))) ||
-      (selectedEquipment === 'barbell' && (equipEn.includes('barbell') || equipEn.includes('sz-bar') || equipEn.includes('e-z') || equipEn.includes('bar') || equipAr.includes('بار'))) ||
-      (selectedEquipment === 'band' && (equipEn.includes('band') || equipAr.includes('مقاومة') || equipAr.includes('حبل'))) ||
-      (selectedEquipment === 'kettlebell' && (equipEn.includes('kettlebell') || equipAr.includes('كتلبل'))) ||
-      (selectedEquipment === 'cable' && (equipEn.includes('cable') || equipAr.includes('كيبل') || equipAr.includes('كابل'))) ||
-      (selectedEquipment === 'machine' && (equipEn.includes('machine') || equipAr.includes('جهاز') || equipAr.includes('آلة'))) ||
-      (selectedEquipment === 'pullup' && (equipEn.includes('pull-up') || nameEn.includes('pull-up') || nameEn.includes('chin-up') || nameEn.includes('dip') || equipAr.includes('عقلة') || equipAr.includes('متوازي'))) ||
-      (selectedEquipment === 'trx' && (equipEn.includes('trx') || equipEn.includes('suspension') || nameEn.includes('trx') || equipAr.includes('trx'))) ||
-      (selectedEquipment === 'ball' && (equipEn.includes('ball') || equipEn.includes('swiss') || equipEn.includes('exercise ball') || equipAr.includes('كرة'))) ||
-      (selectedEquipment === 'medicine_ball' && (equipEn.includes('medicine ball') || equipAr.includes('طبي'))) ||
-      (selectedEquipment === 'bench' && (equipEn.includes('bench') || equipEn.includes('incline') || nameEn.includes('bench') || equipAr.includes('بنش'))) ||
-      (selectedEquipment === 'mat' && (equipEn.includes('mat') || equipEn.includes('yoga') || equipEn.includes('floor') || equipAr.includes('فرشة') || equipAr.includes('يوغا'))) ||
-      (selectedEquipment === 'foam_roller' && (equipEn.includes('foam') || equipEn.includes('roll') || nameEn.includes('foam') || equipAr.includes('فوم') || equipAr.includes('رولر'))) ||
-      equipEn.includes(selectedEquipment) ||
-      equipAr.includes(selectedEquipment);
+      const matchesQuery = !query || nameEn.includes(query) || nameAr.includes(query);
 
-    const matchesDifficulty =
-      selectedDifficulty === 'ALL' ||
-      (ex.level || '').toLowerCase() === selectedDifficulty;
+      const muscleEn = (ex.muscle_en || '').toLowerCase();
+      const muscleAr = (ex.muscle_ar || '').toLowerCase();
+      const matchesMuscle =
+        selectedMuscle === 'ALL' ||
+        muscleEn === selectedMuscle ||
+        muscleAr.includes(selectedMuscle) ||
+        (selectedMuscle === 'chest' && (muscleEn.includes('chest') || muscleEn.includes('pectoral') || muscleAr.includes('صدر'))) ||
+        (selectedMuscle === 'back' && (muscleEn.includes('back') || muscleEn.includes('lat') || muscleEn.includes('rhomboid') || muscleEn.includes('trapezius') || muscleAr.includes('ظهر'))) ||
+        (selectedMuscle === 'shoulders' && (muscleEn.includes('shoulder') || muscleEn.includes('delt') || muscleAr.includes('كتف'))) ||
+        (selectedMuscle === 'traps' && (muscleEn.includes('trap') || muscleEn.includes('neck') || nameEn.includes('shrug') || muscleAr.includes('ترابيس') || muscleAr.includes('رقبة'))) ||
+        (selectedMuscle === 'biceps' && (muscleEn.includes('bicep') || muscleEn.includes('brachii') || muscleAr.includes('باي'))) ||
+        (selectedMuscle === 'triceps' && (muscleEn.includes('tricep') || muscleAr.includes('تراي'))) ||
+        (selectedMuscle === 'forearms' && (muscleEn.includes('forearm') || muscleEn.includes('wrist') || muscleEn.includes('grip') || muscleAr.includes('ساعد'))) ||
+        (selectedMuscle === 'quads' && (muscleEn.includes('quad') || nameEn.includes('squat') || nameEn.includes('lunge') || nameEn.includes('leg extension') || muscleAr.includes('أمامي'))) ||
+        (selectedMuscle === 'hamstrings' && (muscleEn.includes('hamstring') || nameEn.includes('deadlift') || nameEn.includes('leg curl') || nameEn.includes('rdl') || muscleAr.includes('خلفي'))) ||
+        (selectedMuscle === 'glutes' && (muscleEn.includes('glute') || nameEn.includes('hip thrust') || nameEn.includes('bridge') || muscleAr.includes('أرداف') || muscleAr.includes('مؤخرة'))) ||
+        (selectedMuscle === 'legs' && (muscleEn.includes('quad') || muscleEn.includes('hamstring') || muscleEn.includes('glute') || muscleEn.includes('leg') || muscleEn.includes('calf') || muscleAr.includes('رجل') || muscleAr.includes('فخذ'))) ||
+        (selectedMuscle === 'calves' && (muscleEn.includes('calf') || muscleEn.includes('calves') || muscleEn.includes('soleus') || nameEn.includes('calf') || muscleAr.includes('سمانة') || muscleAr.includes('بطات'))) ||
+        (selectedMuscle === 'abs' && (muscleEn.includes('ab') || muscleEn.includes('core') || muscleEn.includes('oblique') || muscleEn.includes('plank') || muscleAr.includes('بطن') || muscleAr.includes('جذع'))) ||
+        (selectedMuscle === 'cardio' && (muscleEn.includes('cardio') || muscleEn.includes('hiit') || (ex.category || '').toLowerCase().includes('cardio') || (ex.category || '').toLowerCase().includes('plyometrics') || muscleAr.includes('كارديو')));
 
-    return matchesQuery && matchesMuscle && matchesEquipment && matchesDifficulty;
-  });
+      const equipEn = (ex.equipment_en || '').toLowerCase();
+      const equipAr = (ex.equipment_ar || '').toLowerCase();
+      const matchesEquipment =
+        selectedEquipment === 'ALL' ||
+        (selectedEquipment === 'home' && (ex.isHomeFriendly || ['bodyweight', 'dumbbell', 'band', 'kettlebell', 'mat', 'ball', 'floor', 'body only'].some(k => equipEn.includes(k)))) ||
+        (selectedEquipment === 'bodyweight' && (equipEn.includes('body only') || equipEn.includes('bodyweight') || equipEn.includes('none') || equipAr.includes('وزن الجسم'))) ||
+        (selectedEquipment === 'dumbbell' && (equipEn.includes('dumbbell') || equipAr.includes('دمبل'))) ||
+        (selectedEquipment === 'barbell' && (equipEn.includes('barbell') || equipEn.includes('sz-bar') || equipEn.includes('e-z') || equipEn.includes('bar') || equipAr.includes('بار'))) ||
+        (selectedEquipment === 'band' && (equipEn.includes('band') || equipAr.includes('مقاومة') || equipAr.includes('حبل'))) ||
+        (selectedEquipment === 'kettlebell' && (equipEn.includes('kettlebell') || equipAr.includes('كتلبل'))) ||
+        (selectedEquipment === 'cable' && (equipEn.includes('cable') || equipAr.includes('كيبل') || equipAr.includes('كابل'))) ||
+        (selectedEquipment === 'machine' && (equipEn.includes('machine') || equipAr.includes('جهاز') || equipAr.includes('آلة'))) ||
+        (selectedEquipment === 'pullup' && (equipEn.includes('pull-up') || nameEn.includes('pull-up') || nameEn.includes('chin-up') || nameEn.includes('dip') || equipAr.includes('عقلة') || equipAr.includes('متوازي'))) ||
+        (selectedEquipment === 'trx' && (equipEn.includes('trx') || equipEn.includes('suspension') || nameEn.includes('trx') || equipAr.includes('trx'))) ||
+        (selectedEquipment === 'ball' && (equipEn.includes('ball') || equipEn.includes('swiss') || equipEn.includes('exercise ball') || equipAr.includes('كرة'))) ||
+        (selectedEquipment === 'medicine_ball' && (equipEn.includes('medicine ball') || equipAr.includes('طبي'))) ||
+        (selectedEquipment === 'bench' && (equipEn.includes('bench') || equipEn.includes('incline') || nameEn.includes('bench') || equipAr.includes('بنش'))) ||
+        (selectedEquipment === 'mat' && (equipEn.includes('mat') || equipEn.includes('yoga') || equipEn.includes('floor') || equipAr.includes('فرشة') || equipAr.includes('يوغا'))) ||
+        (selectedEquipment === 'foam_roller' && (equipEn.includes('foam') || equipEn.includes('roll') || nameEn.includes('foam') || equipAr.includes('فوم') || equipAr.includes('رولر'))) ||
+        equipEn.includes(selectedEquipment) ||
+        equipAr.includes(selectedEquipment);
+
+      const matchesDifficulty =
+        selectedDifficulty === 'ALL' ||
+        (ex.level || '').toLowerCase() === selectedDifficulty;
+
+      return matchesQuery && matchesMuscle && matchesEquipment && matchesDifficulty;
+    });
+  }, [exercises, searchQuery, selectedMuscle, selectedEquipment, selectedDifficulty]);
+
+  const displayedExercises = useMemo(() => {
+    return filteredExercises.slice(0, visibleCount);
+  }, [filteredExercises, visibleCount]);
 
   return (
     <div style={{ padding: '20px 0' }}>
@@ -421,85 +434,108 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
           {lang === 'en' ? 'Loading exercise library...' : 'جاري تحميل مكتبة التمارين...'}
         </div>
       ) : (
-        <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
-          {filteredExercises.map((ex) => (
-            <div
-              key={ex.id}
-              className="card glass-panel animated-fade"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                border: '1px solid var(--border-color)',
-                transition: 'transform var(--transition-fast)',
-                cursor: 'pointer',
-              }}
-              onClick={() => setSelectedExercise(ex)}
-            >
-              {/* Exercise Image */}
-              <div style={{ height: '180px', position: 'relative', background: '#0e111a', overflow: 'hidden' }}>
-                <ExerciseImage
-                  src={ex.gif_url || ex.image_url}
-                  alt={ex.name_en}
-                  muscle={ex.muscle_en || ex.muscle_ar}
-                />
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: 'linear-gradient(to top, rgba(6, 8, 20, 0.95) 0%, transparent 100%)',
-                    padding: '20px 15px 10px',
-                  }}
-                >
-                  <span
-                    className="badge"
+        <>
+          <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '20px' }}>
+            {displayedExercises.map((ex: any) => (
+              <div
+                key={ex.id}
+                className="card glass-panel animated-fade"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  border: '1px solid var(--border-color)',
+                  transition: 'transform var(--transition-fast)',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setSelectedExercise(ex)}
+              >
+                {/* Exercise Image */}
+                <div style={{ height: '180px', position: 'relative', background: '#0e111a', overflow: 'hidden' }}>
+                  <ExerciseImage
+                    src={ex.gif_url || ex.image_url}
+                    alt={ex.name_en}
+                    muscle={ex.muscle_en || ex.muscle_ar}
+                  />
+                  <div
                     style={{
-                      background: 'var(--primary-glow)',
-                      color: 'var(--primary)',
-                      border: '1px solid var(--primary)',
-                      fontSize: '10px',
-                      padding: '2px 8px',
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(6, 8, 20, 0.95) 0%, transparent 100%)',
+                      padding: '20px 15px 10px',
                     }}
                   >
-                    {lang === 'en' ? ex.muscle_en : (ex.muscle_ar || ex.muscle_en)}
-                  </span>
+                    <span
+                      className="badge"
+                      style={{
+                        background: 'var(--primary-glow)',
+                        color: 'var(--primary)',
+                        border: '1px solid var(--primary)',
+                        fontSize: '10px',
+                        padding: '2px 8px',
+                      }}
+                    >
+                      {lang === 'en' ? ex.muscle_en : (ex.muscle_ar || ex.muscle_en)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Title & Equipment */}
+                <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '10px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
+                      {lang === 'en' ? ex.name_en : (ex.name_ar || ex.name_en)}
+                    </h4>
+                    {lang === 'ar' && ex.name_en && (
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '500' }}>
+                        {ex.name_en}
+                      </div>
+                    )}
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      🏋️‍♂️ {lang === 'en' ? ex.equipment_en : (ex.equipment_ar || ex.equipment_en)}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold' }}>
+                    <Info size={14} />
+                    {lang === 'en' ? 'View Details' : 'عرض التفاصيل والتعليمات'}
+                  </div>
                 </div>
               </div>
+            ))}
 
-              {/* Title & Equipment */}
-              <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '10px' }}>
-                <div>
-                  <h4 style={{ fontSize: '15px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-                    {lang === 'en' ? ex.name_en : (ex.name_ar || ex.name_en)}
-                  </h4>
-                  {lang === 'ar' && ex.name_en && (
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '500' }}>
-                      {ex.name_en}
-                    </div>
-                  )}
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    🏋️‍♂️ {lang === 'en' ? ex.equipment_en : (ex.equipment_ar || ex.equipment_en)}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--primary)', fontWeight: 'bold' }}>
-                  <Info size={14} />
-                  {lang === 'en' ? 'View Details' : 'عرض التفاصيل والتعليمات'}
-                </div>
+            {filteredExercises.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+                <HelpCircle size={48} style={{ marginBottom: '15px', opacity: 0.5 }} />
+                <h3>{lang === 'en' ? 'No exercises found' : 'لم نجد أي تمارين تطابق البحث'}</h3>
+                <p style={{ fontSize: '13px', marginTop: '5px' }}>{lang === 'en' ? 'Try changing your filters or query' : 'حاول تغيير العضلة أو الكلمة الدلالية للبحث'}</p>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
 
-          {filteredExercises.length === 0 && (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-              <HelpCircle size={48} style={{ marginBottom: '15px', opacity: 0.5 }} />
-              <h3>{lang === 'en' ? 'No exercises found' : 'لم نجد أي تمارين تطابق البحث'}</h3>
-              <p style={{ fontSize: '13px', marginTop: '5px' }}>{lang === 'en' ? 'Try changing your filters or query' : 'حاول تغيير العضلة أو الكلمة الدلالية للبحث'}</p>
+          {/* High-Performance Pagination Button */}
+          {visibleCount < filteredExercises.length && (
+            <div style={{ textAlign: 'center', marginTop: '30px', marginBottom: '20px' }}>
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 24)}
+                className="glow-btn"
+                style={{
+                  padding: '12px 30px',
+                  fontSize: '14px',
+                  borderRadius: '25px',
+                  fontWeight: '700',
+                  boxShadow: '0 4px 20px rgba(0, 210, 255, 0.25)',
+                }}
+              >
+                {lang === 'en'
+                  ? `Show More Exercises (+24 of ${filteredExercises.length - visibleCount} remaining)`
+                  : `عرض المزيد من التمارين (+24 من أصل ${filteredExercises.length - visibleCount} تمرين متبقي)`}
+              </button>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* EXERCISE DETAIL MODAL */}
