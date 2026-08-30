@@ -98,10 +98,20 @@ function App() {
       });
     }, 2500);
 
-    const handleUnauthorized = () => {
-      console.warn('[App] 401 Unauthorized received. Clearing session and navigating to landing/login.');
-      setLoading(false);
-      handleLogout();
+    const handleUnauthorized = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session && !localStorage.getItem('token')) {
+          console.warn('[App] 401 Unauthorized with no active session. Navigating to landing/login.');
+          setLoading(false);
+          handleLogout();
+        } else {
+          console.warn('[App] 401 received but user session is still active. Keeping user logged in.');
+          setLoading(false);
+        }
+      } catch {
+        setLoading(false);
+      }
     };
 
     window.addEventListener('beast_auth_unauthorized', handleUnauthorized);

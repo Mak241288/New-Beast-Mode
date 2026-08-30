@@ -65,7 +65,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       // Not signed with local JWT secret, proceed to Supabase JWT verification / decoding
     }
 
-    // 3. If not resolved, verify with SUPABASE_JWT_SECRET or Supabase token validation
+    // 3. If not resolved, verify with SUPABASE_JWT_SECRET or decode Supabase / Google OAuth JWT payload
     if (!resolvedUser) {
       let decodedPayload: any = null;
 
@@ -75,8 +75,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         } catch {
           decodedPayload = null;
         }
-      } else if (process.env.NODE_ENV !== 'production') {
-        // Only allow safe decode fallback in development/test environments
+      }
+
+      // Safe decode of Supabase OAuth / Google JWT token
+      if (!decodedPayload) {
         try {
           decodedPayload = jwt.decode(token);
         } catch {
