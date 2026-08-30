@@ -247,6 +247,49 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, [state.status, state.activeExerciseIndex, state.currentSetIndex, state.setLogs, state.isPaused]);
 
+  // Bulletproof Mobile Lifecycle Persistence (Incoming Phone Calls, App Switcher, Tab Freezing)
+  useEffect(() => {
+    const persistCurrentSessionSync = () => {
+      const currentState = stateRef.current;
+      if (currentState && (currentState.status === 'active' || currentState.status === 'resting' || currentState.status === 'paused')) {
+        try {
+          const snapshot = { ...currentState, lastUpdatedTimestamp: Date.now() };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+          cacheStore.set('active_gym_session', snapshot);
+        } catch {}
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        persistCurrentSessionSync();
+      } else if (document.visibilityState === 'visible') {
+        // Refresh draft status from storage if background updated it
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && (parsed.status === 'active' || parsed.status === 'resting' || parsed.status === 'paused')) {
+              setHasSavedDraft(true);
+            }
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener('pagehide', persistCurrentSessionSync);
+    window.addEventListener('beforeunload', persistCurrentSessionSync);
+    window.addEventListener('freeze', persistCurrentSessionSync);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('pagehide', persistCurrentSessionSync);
+      window.removeEventListener('beforeunload', persistCurrentSessionSync);
+      window.removeEventListener('freeze', persistCurrentSessionSync);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   // Listen for Cross-Device Session Restore & Live Realtime Concurrency
   useEffect(() => {
     const handleCloudRestore = (event?: any) => {

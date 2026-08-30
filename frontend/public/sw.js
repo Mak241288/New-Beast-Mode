@@ -153,7 +153,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // STRATEGY B: Stale-While-Revalidate for Static Assets (JS, CSS, SVGs, Fonts)
+  // STRATEGY B: Cache-First for Hashed Production Assets (/assets/*)
+  const isHashedAsset = url.pathname.startsWith('/assets/') || url.pathname.endsWith('.woff2') || url.pathname.endsWith('.svg');
+  if (isHashedAsset) {
+    event.respondWith(
+      (async () => {
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        try {
+          const networkResponse = await fetch(event.request);
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            const cache = await caches.open(STATIC_CACHE);
+            cache.put(event.request, responseClone);
+          }
+          return networkResponse;
+        } catch {
+          return new Response('Asset unavailable', { status: 404 });
+        }
+      })()
+    );
+    return;
+  }
+
+  // STRATEGY C: Stale-While-Revalidate for other static assets and images
   event.respondWith(
     (async () => {
       // Validate origin before executing fetch
