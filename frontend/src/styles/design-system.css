@@ -1075,6 +1075,50 @@ html[dir="ltr"] .speed-dial-fab {
 }
 
 /* --- LANDING PAGE THEMED STYLES --- */
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  border-radius: 0 0 20px 20px;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.landing-logo-text {
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .landing-header {
+    padding: 10px 12px;
+  }
+  .landing-logo-text {
+    font-size: 15px;
+  }
+  .landing-logo-badge {
+    display: none !important;
+  }
+  .desktop-only-action {
+    display: none !important;
+  }
+}
+
 .landing-hero-section {
   padding: 70px 20px 40px;
   max-width: 1200px;

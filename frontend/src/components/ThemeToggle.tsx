@@ -17,9 +17,9 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [colorTheme, setColorTheme] = useState<ColorTheme>('volt');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [openUpwards, setOpenUpwards] = useState(false);
-  const [alignRight, setAlignRight] = useState(true);
+  const [coords, setCoords] = useState<{ top?: number; bottom?: number; left?: number }>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedTheme = (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
@@ -31,15 +31,68 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
     document.documentElement.setAttribute('data-color-theme', savedColor);
   }, []);
 
+  const calculatePosition = () => {
+    if (!dropdownRef.current) return;
+    const rect = dropdownRef.current.getBoundingClientRect();
+    const dropdownWidth = 230;
+    const viewportWidth = window.innerWidth;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const isUp = placement === 'up' || (placement === 'auto' && spaceBelow < 260);
+
+    // Smart horizontal clamping within viewport boundaries
+    let calculatedLeft = rect.left;
+    if (document.documentElement.dir === 'rtl') {
+      calculatedLeft = rect.right - dropdownWidth;
+    }
+
+    if (calculatedLeft + dropdownWidth > viewportWidth - 12) {
+      calculatedLeft = viewportWidth - dropdownWidth - 12;
+    }
+    if (calculatedLeft < 12) {
+      calculatedLeft = 12;
+    }
+
+    if (isUp) {
+      setCoords({
+        bottom: window.innerHeight - rect.top + 8,
+        left: calculatedLeft,
+      });
+    } else {
+      setCoords({
+        top: rect.bottom + 8,
+        left: calculatedLeft,
+      });
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
         setShowDropdown(false);
       }
     };
+
+    const handleScrollOrResize = () => {
+      if (showDropdown) {
+        calculatePosition();
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('resize', handleScrollOrResize, { passive: true });
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize);
+    };
+  }, [showDropdown]);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -56,25 +109,8 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
   };
 
   const handleToggleDropdown = () => {
-    if (!showDropdown && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceRight = window.innerWidth - rect.right;
-      const isRtl = document.documentElement.dir === 'rtl';
-
-      // If there's less than 260px below the element, or placement forced to 'up', open upwards!
-      if (placement === 'up' || (placement === 'auto' && spaceBelow < 260)) {
-        setOpenUpwards(true);
-      } else {
-        setOpenUpwards(false);
-      }
-
-      // If in RTL or near right screen edge (< 250px), anchor to right edge to prevent horizontal clipping
-      if (isRtl || spaceRight < 250) {
-        setAlignRight(true);
-      } else {
-        setAlignRight(false);
-      }
+    if (!showDropdown) {
+      calculatePosition();
     }
     setShowDropdown((prev) => !prev);
   };
@@ -87,10 +123,10 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
       <button
         onClick={toggleTheme}
         className="secondary-btn"
-        style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-        title={theme === 'dark' ? (isRtl ? 'الوضع المضيء' : 'Light Mode') : (isRtl ? 'الوضع الداكن' : 'Dark Mode')}
+        style={{ width: '40px', height: '40px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+        aria-label={theme === 'dark' ? (isRtl ? 'الوضع المضيء' : 'Light Mode') : (isRtl ? 'الوضع الداكن' : 'Dark Mode')}
       >
-        {theme === 'dark' ? <Sun size={17} color="var(--primary)" /> : <Moon size={17} color="#059669" />}
+        {theme === 'dark' ? <Sun size={18} color="var(--primary)" /> : <Moon size={18} color="#059669" />}
       </button>
 
       {/* Color Palette Menu Button */}
@@ -99,8 +135,8 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
           onClick={handleToggleDropdown}
           className="secondary-btn"
           style={{
-            width: '36px',
-            height: '36px',
+            width: '40px',
+            height: '40px',
             borderRadius: '50%',
             padding: 0,
             display: 'flex',
@@ -111,26 +147,23 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
             boxShadow: '0 0 10px var(--primary-glow)',
             flexShrink: 0,
           }}
-          title={isRtl ? 'تغيير ثيم وهوية الألوان الرياضية (Theme Palette)' : 'Change Visual Theme Palette'}
+          aria-label={isRtl ? 'تغيير ثيم وهوية الألوان الرياضية' : 'Change Visual Theme Palette'}
         >
-          <Palette size={16} color="var(--primary)" />
+          <Palette size={17} color="var(--primary)" />
         </button>
       )}
 
-      {/* Palette Popover Menu with Bulletproof Boundary Alignment */}
+      {/* Palette Popover Menu with 100% Mobile Viewport Clamping (Zero Screen Overflow) */}
       {showDropdown && (
         <div
+          ref={popoverRef}
           className="glass-panel animated-fade"
           style={{
-            position: 'absolute',
-            ...(openUpwards
-              ? { bottom: 'calc(100% + 10px)', top: 'auto' }
-              : { top: 'calc(100% + 10px)', bottom: 'auto' }),
-            ...(alignRight
-              ? { right: 0, left: 'auto' }
-              : { left: 0, right: 'auto' }),
-            width: 'max-content',
-            minWidth: '220px',
+            position: 'fixed',
+            top: coords.top !== undefined ? `${coords.top}px` : 'auto',
+            bottom: coords.bottom !== undefined ? `${coords.bottom}px` : 'auto',
+            left: coords.left !== undefined ? `${coords.left}px` : '12px',
+            width: '230px',
             maxWidth: 'calc(100vw - 24px)',
             padding: '10px 12px',
             borderRadius: '16px',
@@ -139,7 +172,7 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
             backdropFilter: 'blur(25px)',
             WebkitBackdropFilter: 'blur(25px)',
             boxShadow: '0 20px 50px rgba(0,0,0,0.85), 0 0 25px var(--primary-glow)',
-            zIndex: 999999,
+            zIndex: 9999999,
             display: 'flex',
             flexDirection: 'column',
             gap: '6px',
@@ -147,7 +180,7 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
           }}
         >
           <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', padding: '4px 6px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-            <span>🎨</span>
+            <Palette size={13} color="var(--primary)" />
             <span>{isRtl ? 'اختر هوية الألوان الرياضية' : 'Curated Visual Themes'}</span>
           </div>
 
