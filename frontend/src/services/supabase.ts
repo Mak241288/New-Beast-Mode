@@ -1,35 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
 
-const getEnv = (key: string, fallback: string): string => {
-  try {
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
-      return import.meta.env[key];
-    }
-  } catch {
-    // Ignore env resolution failure
-  }
-  return fallback;
-};
-
-const supabaseUrl = getEnv('VITE_SUPABASE_URL', 'https://dqvvylgrxaztyaxskzby.supabase.co');
-const supabaseAnonKey = getEnv(
-  'VITE_SUPABASE_ANON_KEY',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxdnZ5bGdyeGF6dHlheHNremJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4NDkyMzQsImV4cCI6MjEwMjQyNTIzNH0.kBsOAnaQUECHNw21VXErvEqC0mQ1YjySZwDUKk0Je6k'
-);
+// Read strictly from environment variables without hardcoded client-side keys
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 let clientInstance: any = null;
 
-try {
-  clientInstance = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce',
-    },
-  });
-} catch (err) {
-  console.warn('[Supabase] Init warning, creating safe fallback client:', err);
+if (supabaseUrl && supabaseAnonKey) {
+  try {
+    clientInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+      },
+    });
+  } catch (err) {
+    console.warn('[Supabase] Init warning:', err);
+  }
+}
+
+if (!clientInstance) {
+  console.warn('[Supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY not provided, creating safe fallback client');
   
   const createChainableMock = (): any => {
     const fn: any = () => createChainableMock();
