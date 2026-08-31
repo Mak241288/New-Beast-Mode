@@ -97,20 +97,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   // Rotating Slogans State for Cinematic Hero
   const ROTATING_SLOGANS = {
     ar: [
-      'يحلل تناسقك العضلي بالذكاء الاصطناعي 🧠',
-      'يوجهك بـ +4,298 تمرين بدقة HD وبحث فوري 🎬',
-      'يحسب سعراتك وماكروزك بدقة الغرام 🥗',
-      'يسجل جولاتك ومؤقتات الراحة بنقرة واحدة ⚡',
-      'يوفر قوالب تمارين جاهزة بنقرة واحدة 📋',
-      'يتتبع زيادة أحمالك واستشفاءك العصبي التلقائي 🦍'
+      'يحلل تناسقك العضلي بالذكاء الاصطناعي',
+      'يوجهك بـ +4,298 تمرين بدقة HD وبحث فوري',
+      'يحسب سعراتك وماكروزك بدقة الغرام',
+      'يسجل جولاتك ومؤقتات الراحة بنقرة واحدة',
+      'يوفر قوالب تمارين جاهزة بنقرة واحدة',
+      'يتتبع زيادة أحمالك واستشفاءك العصبي التلقائي'
     ],
     en: [
-      'AI Muscle Symmetry & Physique Analysis 🧠',
-      'Guided by 4,298+ HD Exercises & Instant Search 🎬',
-      'Precision Macro & TDEE Nutrition Engine 🥗',
-      '1-Tap Set Logging & Floating Auto Rest Timers ⚡',
-      '1-Click Pro Workout Plans (PPL, Arnold, Upper/Lower) 📋',
-      'Progressive Overload & CNS Recovery Tracker 🦍'
+      'AI Muscle Symmetry & Physique Analysis',
+      'Guided by 4,298+ HD Exercises & Instant Search',
+      'Precision Macro & TDEE Nutrition Engine',
+      '1-Tap Set Logging & Floating Auto Rest Timers',
+      '1-Click Pro Workout Plans (PPL, Arnold, Upper/Lower)',
+      'Progressive Overload & CNS Recovery Tracker'
     ]
   };
 
@@ -355,17 +355,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   ] : [
     {
       num: '01',
-      title: 'تحليل المعطيات والأدوات والتغذية 🎯',
+      title: 'تحليل المعطيات والأدوات والتغذية',
       desc: 'حدد هدفك الرياضي، أيام تمرينك (2-6 أيام)، أدواتك المتاحة (نادي، بنش، دمبلز، مات)، واحسب سعراتك وماكروزك بدقة.'
     },
     {
       num: '02',
-      title: 'توليد ذكي أو اختيار من الأساطير 👑',
+      title: 'توليد ذكي أو اختيار من الأساطير',
       desc: 'صِغ جدولك بالذكاء الاصطناعي المزدوج، أو اختر من مكتبة أساطير كمال الأجسام (آرنولد، PPL)، أو صمم وأدر جداول متعددة.'
     },
     {
       num: '03',
-      title: 'التنفيذ، فحص AI والاستشفاء 📈',
+      title: 'التنفيذ، فحص AI والاستشفاء',
       desc: 'تدرّب مع مشغل الحصة، احسب صفائح البار والـ 1RM، افحص تحولك البدني بماسح الذكاء الاصطناعي، وتابع نومك وترطيبك.'
     }
   ];
@@ -407,14 +407,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </span>
         </div>
 
-        <div className="landing-nav-actions">
-          {/* Language Switcher */}
+        <div className="landing-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Language Switcher with WCAG 44px touch target */}
           <button
             onClick={() => onLanguageChange(isEn ? 'ar' : 'en')}
             className="secondary-btn"
-            style={{ padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px' }}
+            style={{ minHeight: '44px', minWidth: '44px', padding: '8px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', borderRadius: '10px' }}
+            aria-label={isEn ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
           >
-            <Globe size={13} />
+            <Globe size={16} />
             <span>{isEn ? 'العربية' : 'English'}</span>
           </button>
           
@@ -423,7 +424,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onLogin}
             className="secondary-btn desktop-only-action"
-            style={{ padding: '8px 14px', fontSize: '12.5px', borderRadius: '8px' }}
+            style={{ minHeight: '44px', padding: '8px 16px', fontSize: '13px', borderRadius: '10px', fontWeight: '600' }}
           >
             {isEn ? 'Sign In' : 'تسجيل الدخول'}
           </button>
@@ -431,9 +432,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             onClick={onGetStarted}
             className="glow-btn shimmer-glow"
-            style={{ padding: '7px 14px', fontSize: '12.5px', borderRadius: '8px', whiteSpace: 'nowrap' }}
+            style={{ minHeight: '44px', padding: '8px 18px', fontSize: '13px', borderRadius: '10px', whiteSpace: 'nowrap', fontWeight: '700' }}
           >
-            {isEn ? 'Get Started ⚡' : 'ابدأ مجاناً ⚡'}
+            {isEn ? 'Start Free' : 'ابدأ مجاناً'}
           </button>
         </div>
       </header>
@@ -466,66 +467,66 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </div>
 
-        {/* Hero Description */}
+        {/* Crisp High-Converting Hero Description */}
         <div className="landing-hero-desc">
           <p>
             {isEn
-              ? 'Access certified routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique transformation with AI, enjoy 100% instant cloud sync across all your devices, and run live gym sessions with zero latency.'
-              : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد شوارزنيجر، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك وتناسقك العضلي بالذكاء الاصطناعي، استمتع بمزامنة سحابية فورية ولحظية 100% بين كافة أجهزتك، وتدرب بسلاسة مطلقة.'}
+              ? 'Access world-class routines (Arnold, Science PPL, Dorian Yates), calculate TDEE & macro cycling, scan your physique with AI, and run offline gym sessions with 0ms delay.'
+              : 'استفد من مناهج أبطال العالم المعتمدة (آرنولد، PPL العلمي، دوريان ييتس)، احسب سعراتك وماكروزك اليومية، افحص تحولك البدني بالذكاء الاصطناعي، وتدرب بسلاسة أوفلاين في الجيم.'}
           </p>
         </div>
 
-        {/* Hero Action Buttons */}
-        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
+        {/* Hero Action Buttons - Single Radiant Primary CTA + Clean Secondary Text Link */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginTop: '10px', width: '100%', maxWidth: '480px' }}>
           <button
             onClick={onGetStarted}
             className="glow-btn shimmer-glow"
-            style={{ padding: '16px 36px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px', borderRadius: '12px', fontWeight: '800' }}
+            style={{
+              padding: '18px 36px',
+              fontSize: '17px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              borderRadius: '16px',
+              fontWeight: '800',
+              width: '100%',
+              boxShadow: '0 8px 30px rgba(16, 185, 129, 0.35)',
+              minHeight: '54px',
+            }}
           >
-            <span>{isEn ? 'Build My Plan in 60s ⏱️⚡' : 'صمم خطتك المخصصة في 60 ثانية ⏱️⚡'}</span>
-            <ArrowRight size={18} style={{ transform: isEn ? 'none' : 'rotate(180deg)' }} />
+            <Zap size={20} />
+            <span>{isEn ? 'Build My Plan in 60s (100% Free)' : 'صمم خطتك المخصصة في 60 ثانية (مجاناً)'}</span>
+            <ArrowRight size={20} style={{ transform: isEn ? 'none' : 'rotate(180deg)' }} />
           </button>
 
-          <button
-            onClick={onLogin}
-            className="secondary-btn"
-            style={{ padding: '16px 30px', fontSize: '15px', borderRadius: '12px', fontWeight: '700' }}
-          >
-            {isEn ? 'Existing Athlete Sign In 🔑' : 'دخول الرياضيين المشتركين 🔑'}
-          </button>
-
-          <button
-            onClick={() => onNavigateToLegal('about')}
-            className="secondary-btn"
-            style={{ padding: '16px 22px', fontSize: '15px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Info size={16} />
-            <span>{isEn ? 'About Platform' : 'عن المنصة ℹ️'}</span>
-          </button>
-
-          {!isInstalled && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+            <span>{isEn ? 'Already an athlete?' : 'لديك حساب مسجل بالفعل؟'}</span>
             <button
-              onClick={handleInstallClick}
-              className="secondary-btn"
+              onClick={onLogin}
               style={{
-                padding: '16px 22px',
-                fontSize: '15px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                border: '1px solid var(--border-color)',
+                background: 'none',
+                border: 'none',
                 color: 'var(--primary)',
+                fontWeight: '700',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                padding: '6px 8px',
+                fontSize: '14px',
+                minHeight: '44px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
               }}
             >
-              <Download size={16} />
-              <span>{isEn ? '📱 Install App on Mobile' : '📱 تثبيت التطبيق على هاتفك'}</span>
+              <Lock size={14} />
+              <span>{isEn ? 'Sign In Here' : 'تسجيل الدخول هنا'}</span>
             </button>
-          )}
+          </div>
         </div>
 
         {/* Trust Badges Strip (Theme Aware Chips) */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', marginTop: '6px', fontSize: '12.5px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '10px', marginTop: '12px', fontSize: '12.5px' }}>
           <span className="landing-trust-chip">
             <ShieldCheck size={15} color="var(--primary)" />
             {isEn ? '100% Private & OWASP Certified' : '100% خصوصية وأمان معتمد'}
@@ -547,26 +548,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         {/* Interactive App Mockup Showcase */}
         <div className="glass-panel landing-mockup-container">
           
-          {/* Tab Switcher */}
+          {/* Tab Switcher with Accessible 44px touch targets */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '16px' }}>
             {[
-              { id: 'player', labelEn: '⏱️ Workout Player & Timer', labelAr: '⏱️ مشغل الحصة ومؤقت الراحة' },
-              { id: 'scanner', labelEn: '🤖 AI Physique Scanner', labelAr: '🤖 ماسح التحول بالذكاء الاصطناعي' },
-              { id: 'macros', labelEn: '🥗 Smart Macro Cycling', labelAr: '🥗 تدوير السعرات والماكروز' },
-              { id: 'plans', labelEn: '👑 1-Click Pro Plans Hub', labelAr: '👑 مكتبة الجداول العالمية الجاهزة' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActivePreviewTab(tab.id as any)}
-                className={activePreviewTab === tab.id ? 'primary-btn' : 'secondary-btn'}
-                style={{ padding: '8px 16px', fontSize: '13px', borderRadius: '10px', cursor: 'pointer' }}
-              >
-                {isEn ? tab.labelEn : tab.labelAr}
-              </button>
-            ))}
+              { id: 'player', labelEn: 'Workout Player & Timer', labelAr: 'مشغل الحصة ومؤقت الراحة', icon: Timer },
+              { id: 'scanner', labelEn: 'AI Physique Scanner', labelAr: 'ماسح التحول بالذكاء الاصطناعي', icon: Brain },
+              { id: 'macros', labelEn: 'Smart Macro Cycling', labelAr: 'تدوير السعرات والماكروز', icon: Utensils },
+              { id: 'plans', labelEn: 'Pro Plans Library', labelAr: 'مكتبة الجداول العالمية الجاهزة', icon: Crown },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActivePreviewTab(tab.id as any)}
+                  className={activePreviewTab === tab.id ? 'primary-btn' : 'secondary-btn'}
+                  style={{
+                    padding: '10px 18px',
+                    fontSize: '13.5px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    minHeight: '44px',
+                    fontWeight: activePreviewTab === tab.id ? '700' : '500',
+                  }}
+                >
+                  <TabIcon size={16} />
+                  <span>{isEn ? tab.labelEn : tab.labelAr}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Active Preview Content with STABLE MIN-HEIGHT (Zero container jumps) */}
+          {/* Active Preview Content with STABLE MIN-HEIGHT */}
           <div className="landing-preview-box">
             
             {activePreviewTab === 'player' && (
@@ -578,22 +593,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.15)', padding: '6px 14px', borderRadius: '20px', color: 'var(--primary)', fontWeight: 'bold', fontSize: '14px' }}>
                     <Timer size={16} />
-                    <span>REST: 01:30 🔔</span>
+                    <span>REST: 01:30</span>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', width: '100%' }}>
                   <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '10px' }}>
                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>SET 1</div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold' }}>32 kg × 12 reps ✅</div>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                      <span>32 kg × 12 reps</span>
+                      <CheckCircle2 size={16} color="var(--primary)" />
+                    </div>
                   </div>
                   <div style={{ padding: '12px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '10px' }}>
                     <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>SET 2</div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold' }}>34 kg × 10 reps ✅</div>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                      <span>34 kg × 10 reps</span>
+                      <CheckCircle2 size={16} color="var(--primary)" />
+                    </div>
                   </div>
                   <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '10px' }}>
                     <div style={{ fontSize: '11px', color: '#f59e0b' }}>SET 3 (ACTIVE)</div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#f59e0b' }}>36 kg × 8 reps 🔥</div>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                      <span>36 kg × 8 reps</span>
+                      <Zap size={16} color="#f59e0b" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -602,19 +626,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {activePreviewTab === 'scanner' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', textAlign: isEn ? 'left' : 'right' }}>
                 <div style={{ padding: '14px', background: 'rgba(236, 72, 153, 0.08)', borderRadius: '12px', border: '1px solid rgba(236, 72, 153, 0.3)' }}>
-                  <div style={{ fontSize: '12px', color: '#ec4899', fontWeight: 'bold' }}>{isEn ? 'MUSCLE DEFINITION' : 'مؤشر البروز العضلي'}</div>
-                  <div style={{ fontSize: '28px', fontWeight: '900', color: '#ec4899' }}>88 / 100 🏆</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Sharp deltoid & chest separation' : 'بروز وتحديد عالي لألياف الصدر والأكتاف'}</div>
+                  <div style={{ fontSize: '12px', color: '#ec4899', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Crown size={14} />
+                    <span>{isEn ? 'MUSCLE DEFINITION' : 'مؤشر البروز العضلي'}</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: '#ec4899', margin: '4px 0' }}>88 / 100</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{isEn ? 'Sharp deltoid & chest separation' : 'بروز وتحديد عالي لألياف الصدر والأكتاف'}</div>
                 </div>
                 <div style={{ padding: '14px', background: 'rgba(6, 182, 212, 0.08)', borderRadius: '12px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--secondary)', fontWeight: 'bold' }}>{isEn ? 'ESTIMATED BODY FAT' : 'الدهون التقديرية'}</div>
-                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--secondary)' }}>12.4% 🔥</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Optimal athletic lean mass range' : 'نطاق كتلة عضلية صافية ممتاز'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--secondary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Activity size={14} />
+                    <span>{isEn ? 'ESTIMATED BODY FAT' : 'الدهون التقديرية'}</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--secondary)', margin: '4px 0' }}>12.4%</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{isEn ? 'Optimal athletic lean mass range' : 'نطاق كتلة عضلية صافية ممتاز'}</div>
                 </div>
                 <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold' }}>{isEn ? 'V-TAPER SYMMETRY' : 'تناسق الظهر والخصر'}</div>
-                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)' }}>92% 📐</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Target upper lats for next block' : 'يوصى بالتركيز على المجنص العلوي'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldCheck size={14} />
+                    <span>{isEn ? 'V-TAPER SYMMETRY' : 'تناسق الظهر والخصر'}</span>
+                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--primary)', margin: '4px 0' }}>92%</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{isEn ? 'Target upper lats for next block' : 'يوصى بالتركيز على المجنص العلوي'}</div>
                 </div>
               </div>
             )}
@@ -622,12 +655,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {activePreviewTab === 'macros' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
                 <div style={{ padding: '16px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--primary)' }}>🏋️ {isEn ? 'TRAINING DAY (HYPERTROPHY)' : 'يوم التمرين (تغذية البناء)'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Dumbbell size={15} />
+                    <span>{isEn ? 'TRAINING DAY (HYPERTROPHY)' : 'يوم التمرين (تغذية البناء)'}</span>
+                  </div>
                   <div style={{ fontSize: '24px', fontWeight: '900', margin: '6px 0' }}>2,850 kcal (+6%)</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Protein: 180g | Carbs: 360g | Fats: 65g</div>
                 </div>
                 <div style={{ padding: '16px', background: 'rgba(6, 182, 212, 0.08)', borderRadius: '12px', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--secondary)' }}>🛌 {isEn ? 'REST DAY (DEEP RECOVERY)' : 'يوم الراحة (الاستشفاء العميق)'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Activity size={15} />
+                    <span>{isEn ? 'REST DAY (DEEP RECOVERY)' : 'يوم الراحة (الاستشفاء العميق)'}</span>
+                  </div>
                   <div style={{ fontSize: '24px', fontWeight: '900', margin: '6px 0' }}>2,450 kcal (-6%)</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Protein: 180g | Carbs: 260g | Fats: 75g</div>
                 </div>
@@ -637,15 +676,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {activePreviewTab === 'plans' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
                 <div style={{ padding: '14px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b' }}>👑 {isEn ? 'Science Push Pull Legs (PPL)' : 'جدول PPL العلمي (دفع / سحب / أرجل)'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Crown size={15} />
+                    <span>{isEn ? 'Science Push Pull Legs (PPL)' : 'جدول PPL العلمي (دفع / سحب / أرجل)'}</span>
+                  </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Hypertrophy & Strength Split (6 Days)' : 'توزيع الضخامة والقوة المثالي (6 أيام)'}</div>
                 </div>
                 <div style={{ padding: '14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#3b82f6' }}>⚡ {isEn ? 'Arnold Golden Split' : 'تقسيم آرنولد الذهبي الكلاسيكي'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Zap size={15} />
+                    <span>{isEn ? 'Arnold Golden Split' : 'تقسيم آرنولد الذهبي الكلاسيكي'}</span>
+                  </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Chest & Back / Shoulders & Arms' : 'صدر وظهر / أكتاف وذراعين (ضخامة قصوى)'}</div>
                 </div>
                 <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--primary)' }}>🏆 {isEn ? 'Upper / Lower 4-Day Power' : 'علوي / سفلي 4 أيام للمشغولين'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldCheck size={15} />
+                    <span>{isEn ? 'Upper / Lower 4-Day Power' : 'علوي / سفلي 4 أيام للمشغولين'}</span>
+                  </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>{isEn ? 'Maximum recovery & consistent gains' : 'أعلى استشفاء ونتائج مستمرة بدون إرهاق'}</div>
                 </div>
               </div>
@@ -801,20 +849,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b' }}>{calculated1RM} kg</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '6px', fontSize: '11.5px', marginTop: '4px' }}>
-                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
-                  🔥 Hypertrophy 80%: <b>{Math.round(calculated1RM * 0.8)} kg</b>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Zap size={13} color="#f59e0b" />
+                  <span>Hypertrophy 80%: <b>{Math.round(calculated1RM * 0.8)} kg</b></span>
                 </div>
-                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
-                  ⚡ Strength 90%: <b>{Math.round(calculated1RM * 0.9)} kg</b>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Crown size={13} color="var(--primary)" />
+                  <span>Strength 90%: <b>{Math.round(calculated1RM * 0.9)} kg</b></span>
                 </div>
-                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
-                  💪 Endurance 70%: <b>{Math.round(calculated1RM * 0.7)} kg</b>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Activity size={13} color="var(--secondary)" />
+                  <span>Endurance 70%: <b>{Math.round(calculated1RM * 0.7)} kg</b></span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Tool 3: Mini Muscle & Exercise Explorer */}
+          {/* Tool 3: Mini Muscle & Exercise Explorer with WCAG AA Contrast */}
           <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6' }}>
@@ -825,7 +876,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </h3>
             </div>
 
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {[
                 { id: 'chest', en: 'Chest', ar: 'الصدر' },
                 { id: 'back', en: 'Back', ar: 'الظهر' },
@@ -838,15 +889,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   key={m.id}
                   onClick={() => setSelectedMuscle(m.id)}
                   style={{
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    borderRadius: '8px',
-                    border: selectedMuscle === m.id ? '1px solid #8b5cf6' : '1px solid var(--border-color)',
-                    background: selectedMuscle === m.id ? 'rgba(139, 92, 246, 0.2)' : 'var(--bg-app)',
-                    color: selectedMuscle === m.id ? '#8b5cf6' : 'var(--text-secondary)',
+                    minHeight: '44px',
+                    minWidth: '44px',
+                    padding: '8px 16px',
+                    fontSize: '13px',
+                    borderRadius: '10px',
+                    border: selectedMuscle === m.id ? '1.5px solid #a78bfa' : '1px solid var(--border-color)',
+                    background: selectedMuscle === m.id ? 'rgba(139, 92, 246, 0.25)' : 'var(--bg-app)',
+                    color: selectedMuscle === m.id ? '#ffffff' : '#cbd5e1',
                     cursor: 'pointer',
-                    fontWeight: selectedMuscle === m.id ? 'bold' : 'normal'
+                    fontWeight: selectedMuscle === m.id ? '700' : '500',
+                    transition: 'all var(--transition-fast)'
                   }}
+                  aria-pressed={selectedMuscle === m.id}
                 >
                   {isEn ? m.en : m.ar}
                 </button>
@@ -854,8 +909,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div style={{ padding: '14px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.25)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: 'bold' }}>
-                ⭐ {muscleExercisesMap[selectedMuscle].level}
+              <div style={{ fontSize: '11px', color: '#a78bfa', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Crown size={13} color="#a78bfa" />
+                <span>{muscleExercisesMap[selectedMuscle].level}</span>
               </div>
               <div style={{ fontSize: '15px', fontWeight: 'bold' }}>
                 {isEn ? muscleExercisesMap[selectedMuscle].nameEn : muscleExercisesMap[selectedMuscle].nameAr}
@@ -885,8 +941,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 <th style={{ padding: '16px 20px', fontWeight: '800' }}>{isEn ? 'Feature / Capability' : 'الميزة / الخاصية'}</th>
-                <th style={{ padding: '16px 20px', fontWeight: '800', color: '#ef4444' }}>{isEn ? 'Traditional Gym Apps ❌' : 'التطبيقات التقليدية ❌'}</th>
-                <th style={{ padding: '16px 20px', fontWeight: '800', color: 'var(--primary)' }}>{isEn ? 'BeastMode AI Ecosystem 🦍🔥' : 'منظومة BeastMode AI 🦍🔥'}</th>
+                <th style={{ padding: '16px 20px', fontWeight: '800', color: '#ef4444' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <XCircle size={16} color="#ef4444" />
+                    <span>{isEn ? 'Traditional Gym Apps' : 'التطبيقات التقليدية'}</span>
+                  </div>
+                </th>
+                <th style={{ padding: '16px 20px', fontWeight: '800', color: 'var(--primary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Crown size={16} color="var(--primary)" />
+                    <span>{isEn ? 'BeastMode AI Ecosystem' : 'منظومة BeastMode AI'}</span>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -937,6 +1003,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 }}
                 className={`landing-step-btn ${isActive ? 'active' : 'inactive'}`}
                 style={{
+                  minHeight: '44px',
                   border: isActive ? '1px solid var(--primary)' : undefined,
                   background: isActive ? 'var(--primary-glow)' : undefined,
                   color: isActive ? 'var(--primary)' : undefined,
@@ -975,7 +1042,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
 
-            {/* Step Carousel Navigation Controls */}
+            {/* Step Carousel Navigation Controls with 44px min touch target */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
                 type="button"
@@ -984,10 +1051,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   setIsStepsAutoPlay(false);
                 }}
                 className="secondary-btn"
-                style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
-                title={isEn ? 'Previous Step' : 'الخطوة السابقة'}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                aria-label={isEn ? 'Previous Step' : 'الخطوة السابقة'}
               >
-                {isEn ? '◀' : '▶'}
+                <ChevronDown size={18} style={{ transform: isEn ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
               </button>
               <button
                 type="button"
@@ -996,10 +1063,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   setIsStepsAutoPlay(false);
                 }}
                 className="secondary-btn"
-                style={{ width: '36px', height: '36px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
-                title={isEn ? 'Next Step' : 'الخطوة التالية'}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                aria-label={isEn ? 'Next Step' : 'الخطوة التالية'}
               >
-                {isEn ? '▶' : '◀'}
+                <ChevronDown size={18} style={{ transform: isEn ? 'rotate(-90deg)' : 'rotate(90deg)' }} />
               </button>
             </div>
           </div>
@@ -1046,21 +1113,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </p>
         </div>
 
-        {/* 10 Category Chips / Selector Bar (All 10 Visible & Centered) */}
+        {/* 10 Category Chips / Selector Bar (All 10 Visible & Centered with 44px min touch target) */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '14px' }}>
           {[
-            { en: '🥗 Nutrition & Macros', ar: '🥗 مدرب الماكروز' },
-            { en: '🧠 AI Physique Scan', ar: '🧠 ماسح التحول' },
-            { en: '🏋️ Barbell & 1RM', ar: '🏋️ صفائح البار والـ 1RM' },
-            { en: '💧 Recovery & Sleep', ar: '💧 الاستشفاء وشرب الماء' },
-            { en: '👑 Legendary Plans', ar: '👑 جداول الأساطير' },
-            { en: '📑 Multi-Plan Hub', ar: '📑 الجداول المتعددة' },
-            { en: '⚡ Smart Adaptation', ar: '⚡ تكييف الأدوات' },
-            { en: '🎬 4,100+ Exercises', ar: '🎬 موسوعة +4,100 تمرين' },
-            { en: '⏱️ Offline PWA Player', ar: '⏱️ مشغل الجيم أوفلاين' },
-            { en: '🔒 Google & Security', ar: '🔒 ربط Google والأمان' },
+            { en: 'Nutrition & Macros', ar: 'مدرب الماكروز', icon: Utensils },
+            { en: 'AI Physique Scan', ar: 'ماسح التحول', icon: Brain },
+            { en: 'Barbell & 1RM', ar: 'صفائح البار والـ 1RM', icon: Dumbbell },
+            { en: 'Recovery & Sleep', ar: 'الاستشفاء وشرب الماء', icon: Droplets },
+            { en: 'Legendary Plans', ar: 'جداول الأساطير', icon: Crown },
+            { en: 'Multi-Plan Hub', ar: 'الجداول المتعددة', icon: Layers },
+            { en: 'Smart Adaptation', ar: 'تكييف الأدوات', icon: Zap },
+            { en: '4,100+ Exercises', ar: 'موسوعة +4,100 تمرين', icon: Activity },
+            { en: 'Offline PWA Player', ar: 'مشغل الجيم أوفلاين', icon: Timer },
+            { en: 'Google & Security', ar: 'ربط Google والأمان', icon: ShieldCheck },
           ].map((pill, pIdx) => {
             const isPillActive = activePillarIndex === pIdx;
+            const PillIcon = pill.icon;
             return (
               <button
                 key={pIdx}
@@ -1071,14 +1139,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 }}
                 className={`landing-pillar-chip ${isPillActive ? 'active' : 'inactive'}`}
                 style={{
-                  border: isPillActive ? '1px solid var(--primary)' : undefined,
-                  background: isPillActive ? 'var(--primary-glow)' : undefined,
-                  color: isPillActive ? 'var(--primary)' : undefined,
+                  minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  border: isPillActive ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+                  background: isPillActive ? 'var(--primary-glow)' : 'var(--bg-app)',
+                  color: isPillActive ? 'var(--primary)' : 'var(--text-secondary)',
                   fontWeight: isPillActive ? '800' : '600',
                   boxShadow: isPillActive ? '0 0 12px var(--primary-glow)' : 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
                 }}
               >
-                {isEn ? pill.en : pill.ar}
+                <PillIcon size={14} />
+                <span>{isEn ? pill.en : pill.ar}</span>
               </button>
             );
           })}
@@ -1227,7 +1304,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                 </div>
 
-                {/* Pillar Navigation Controls */}
+                {/* Pillar Navigation Controls with 44px min touch target */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <button
                     type="button"
@@ -1236,10 +1313,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       setIsPillarsAutoPlay(false);
                     }}
                     className="secondary-btn"
-                    style={{ width: '38px', height: '38px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
-                    title={isEn ? 'Previous Pillar' : 'الركيزة السابقة'}
+                    style={{ width: '44px', height: '44px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    aria-label={isEn ? 'Previous Pillar' : 'الركيزة السابقة'}
                   >
-                    {isEn ? '◀' : '▶'}
+                    <ChevronDown size={18} style={{ transform: isEn ? 'rotate(90deg)' : 'rotate(-90deg)' }} />
                   </button>
                   <button
                     type="button"
@@ -1248,10 +1325,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       setIsPillarsAutoPlay(false);
                     }}
                     className="secondary-btn"
-                    style={{ width: '38px', height: '38px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
-                    title={isEn ? 'Next Pillar' : 'الركيزة التالية'}
+                    style={{ width: '44px', height: '44px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    aria-label={isEn ? 'Next Pillar' : 'الركيزة التالية'}
                   >
-                    {isEn ? '▶' : '◀'}
+                    <ChevronDown size={18} style={{ transform: isEn ? 'rotate(-90deg)' : 'rotate(90deg)' }} />
                   </button>
                 </div>
               </div>
@@ -1350,6 +1427,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           © {new Date().getFullYear()} BeastMode AI Fitness. {isEn ? 'All rights reserved.' : 'جميع الحقوق محفوظة.'}
         </div>
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          {!isInstalled && (
+            <button onClick={handleInstallClick} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+              <Download size={13} />
+              <span>{isEn ? 'Install App' : 'تثبيت التطبيق'}</span>
+            </button>
+          )}
           <button onClick={() => onNavigateToLegal('about')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Info size={13} />
             <span>{isEn ? 'About BeastMode' : 'من نحن (About Us)'}</span>
