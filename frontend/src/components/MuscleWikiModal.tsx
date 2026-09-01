@@ -335,6 +335,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
   const [anatomyView, setAnatomyView] = React.useState<'front' | 'back'>('front');
   const [motionSpeed, setMotionSpeed] = React.useState<number>(1);
   const [isPlayingMotion, setIsPlayingMotion] = React.useState<boolean>(true);
+  const [showBiomechanicalVector, setShowBiomechanicalVector] = React.useState<boolean>(false);
 
   // Keyboard Accessibility: Escape key listener & Body Scroll Lock
   useEffect(() => {
@@ -583,16 +584,45 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         {/* Dual Split: Animated Exercise Movement Loop + Interactive Muscle Heatmap */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '20px' }}>
           
-          {/* Box 1: Looping Motion Demonstration */}
+          {/* Box 1: Looping Motion Demonstration / Biomechanical Diagram */}
           <div style={{ position: 'relative', height: '240px', background: 'rgba(0,0,0,0.6)', borderRadius: '18px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <ExerciseImage
-              src={mediaSource}
-              alt={name}
-              muscle={exercise.muscle_en || exercise.muscle_ar || exercise.targetMuscle}
-              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-              autoAnimate={isPlayingMotion}
-              showBadge={true}
-            />
+            {showBiomechanicalVector ? (
+              <img
+                src="/assets/exercises/exercise_motion_flyes.jpg"
+                alt={name}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+              />
+            ) : (
+              <ExerciseImage
+                src={mediaSource}
+                alt={name}
+                muscle={exercise.muscle_en || exercise.muscle_ar || exercise.targetMuscle}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                autoAnimate={isPlayingMotion}
+                showBadge={true}
+              />
+            )}
+
+            {/* Biomechanical Motion Toggle Badge on Top Right */}
+            <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 3 }}>
+              <button
+                type="button"
+                onClick={() => setShowBiomechanicalVector(!showBiomechanicalVector)}
+                style={{
+                  background: showBiomechanicalVector ? 'var(--primary)' : 'rgba(0,0,0,0.75)',
+                  color: showBiomechanicalVector ? '#050710' : '#00d2ff',
+                  border: '1px solid rgba(0,210,255,0.4)',
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  fontSize: '10.5px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                }}
+              >
+                {showBiomechanicalVector ? (isAr ? 'عرض الحركة 🎬' : 'Motion View 🎬') : (isAr ? 'مسار بيوميكانيكي 📐' : 'Biomechanical 📐')}
+              </button>
+            </div>
 
             {/* Motion Speed & Play/Pause Controls Overlay */}
             <div style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', padding: '4px 8px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>

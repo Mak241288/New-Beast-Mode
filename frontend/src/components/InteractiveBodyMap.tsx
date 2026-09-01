@@ -13,6 +13,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
   onSelectMuscle: parentOnSelectMuscle,
 }) => {
   const [viewMode, setViewMode] = useState<'front' | 'back'>('front');
+  const [is3DMode, setIs3DMode] = useState<boolean>(false);
 
   const handleSelectMuscle = (muscleKey: string) => {
     trackEvent('muscle_selected_bodymap', { muscle: muscleKey, viewMode });
@@ -44,14 +45,23 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {lang === 'ar' ? '🗺️ خريطة الجسم التفاعلية (MuscleWiki Map)' : '🗺️ Interactive Muscle Map'}
+            {lang === 'ar' ? '🗺️ خريطة الجسم والتشريح ثلاثي الأبعاد' : '🗺️ 3D Muscle Anatomy Map'}
           </h3>
           <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
             {lang === 'ar' ? 'انقر على أي عضلة في الجسم لاستعراض التمارين المستهدفة فوراً' : 'Click on any muscle to filter targeted exercises immediately'}
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* 3D / Interactive Mode Toggle */}
+          <button
+            onClick={() => setIs3DMode(!is3DMode)}
+            className={is3DMode ? 'glow-btn' : 'secondary-btn'}
+            style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '8px', fontWeight: 'bold' }}
+          >
+            {is3DMode ? (lang === 'ar' ? '⚡ العرض المجسم 3D نشط' : '⚡ 3D Render Active') : (lang === 'ar' ? 'مجسم 3D 🔮' : '3D View 🔮')}
+          </button>
+
           {/* Front / Back Toggle */}
           <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.06)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
             <button
@@ -93,7 +103,30 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
         </span>
       </div>
 
-      {/* Muscle Anatomy Vector Map */}
+      {/* Muscle Anatomy Map or 3D Render View */}
+      {is3DMode ? (
+        <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '380px', padding: '10px' }}>
+          <div style={{ position: 'relative', maxWidth: '380px', width: '100%', borderRadius: '20px', overflow: 'hidden', border: '1.5px solid rgba(0, 210, 255, 0.4)', boxShadow: '0 15px 40px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 210, 255, 0.25)' }}>
+            <img
+              src={viewMode === 'front' ? '/assets/anatomy/anatomy_3d_front.jpg' : '/assets/anatomy/anatomy_3d_back.jpg'}
+              alt={viewMode === 'front' ? '3D Muscle Anatomy Front' : '3D Muscle Anatomy Back'}
+              style={{ width: '100%', height: 'auto', display: 'block' }}
+            />
+            <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', background: 'rgba(6, 10, 22, 0.85)', backdropFilter: 'blur(8px)', padding: '8px 12px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#00d2ff' }}>
+                {viewMode === 'front' ? '⚡ PECTORALS & DELTOIDS (FRONT)' : '⚡ LATS & TRAPEZIUS (BACK)'}
+              </span>
+              <button
+                onClick={() => handleSelectMuscle(viewMode === 'front' ? 'chest' : 'back')}
+                className="glow-btn"
+                style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '8px' }}
+              >
+                {lang === 'ar' ? 'تصفية التمارين 🎯' : 'Filter Exercises 🎯'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="body-map-interactive-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '340px', padding: '10px' }}>
         <svg
           viewBox="0 0 400 520"
@@ -281,6 +314,7 @@ export const InteractiveBodyMap: React.FC<InteractiveBodyMapProps> = ({
           )}
         </svg>
       </div>
+      )}
 
       {/* Quick Muscle Selector Chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '16px' }}>
