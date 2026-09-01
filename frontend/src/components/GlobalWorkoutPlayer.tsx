@@ -7,6 +7,7 @@ import { SmartExerciseSwapModal } from './SmartExerciseSwapModal';
 import { DynamicWarmupModal } from './DynamicWarmupModal';
 import { RoutineCardExportModal } from './RoutineCardExportModal';
 import { MuscleWikiModal } from './MuscleWikiModal';
+import { StoryProgressBar } from './StoryProgressBar';
 import { audioCues } from '../utils/audioCues';
 import { 
   Play, 
@@ -52,6 +53,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
     togglePauseWorkout,
     nextExercise,
     prevExercise,
+    selectExercise,
     finishWorkoutSession,
     discardSession,
     closeSummaryModal,
@@ -420,6 +422,16 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
           </div>
         </div>
 
+        {/* Story-Style Segmented Progress Bar */}
+        <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto' }}>
+          <StoryProgressBar
+            exercises={exercises}
+            activeExerciseIndex={state.activeExerciseIndex}
+            setLogs={state.setLogs}
+            onSelectExercise={selectExercise}
+          />
+        </div>
+
         {/* Water Toast */}
         {waterToast && (
           <div className="animated-fade" style={{ position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(6, 182, 212, 0.95)', color: '#000', padding: '8px 20px', borderRadius: '30px', fontWeight: '900', fontSize: '14px', zIndex: 10001, boxShadow: '0 0 20px rgba(6, 182, 212, 0.5)' }}>
@@ -763,6 +775,16 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               <Square size={13} />
             </button>
           </div>
+        </div>
+
+        {/* Story-Style Segmented Progress Bar */}
+        <div style={{ padding: '4px 16px 0' }}>
+          <StoryProgressBar
+            exercises={exercises}
+            activeExerciseIndex={state.activeExerciseIndex}
+            setLogs={state.setLogs}
+            onSelectExercise={selectExercise}
+          />
         </div>
 
         {/* Water Toast Notification */}

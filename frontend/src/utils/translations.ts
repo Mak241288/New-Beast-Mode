@@ -105,6 +105,26 @@ export const translations = {
     syncSettings: "مزامنة مكتبة التمارين الضخمة (للمطورين)",
     developerTools: "أدوات المطور واختبار كفاءة التشغيل",
     testPerfBtn: "بدء فحص أداء استدعاء البيانات والـ API",
+
+    // Super Upgrade Master Tokens
+    weeklyStreak: "الاستمرارية الأسبوعية",
+    daysStreak: "أيام متتالية",
+    burnedCalories: "السعرات المحروقة",
+    totalMinutes: "دقائق التمرين",
+    totalVolume: "الحجم التدريبي",
+    hydrationTracker: "تتبع شرب الماء اليومي",
+    addWater250: "+250 مل",
+    addWater500: "+500 مل",
+    waterGoal: "الهدف اليومي",
+    circumferenceMetrics: "سجل قياسات محيط الجسم (سم)",
+    chest: "الصدر",
+    arm: "الذراع",
+    waist: "الخصر",
+    thigh: "الفخذ",
+    workoutDistribution: "توزيع تمرين العضلات",
+    setupGrip: "الوضعية والاستعداد",
+    execution: "طريقة الأداء",
+    breathingFocus: "التنفس والتركيز",
   },
 
   en: {
@@ -213,5 +233,25 @@ export const translations = {
     syncSettings: "Sync Giant Exercise Library (Developer Mode)",
     developerTools: "Developer Tools & Benchmarks",
     testPerfBtn: "Run Database & API Performance Tests",
+
+    // Super Upgrade Master Tokens
+    weeklyStreak: "Weekly Streak",
+    daysStreak: "Days Streak",
+    burnedCalories: "Est. Calories",
+    totalMinutes: "Workout Time",
+    totalVolume: "Total Volume",
+    hydrationTracker: "Daily Hydration",
+    addWater250: "+250 ml",
+    addWater500: "+500 ml",
+    waterGoal: "Daily Goal",
+    circumferenceMetrics: "Body Circumference Metrics (cm)",
+    chest: "Chest",
+    arm: "Arm",
+    waist: "Waist",
+    thigh: "Thigh",
+    workoutDistribution: "Muscle Workout Distribution",
+    setupGrip: "Setup & Grip",
+    execution: "Execution",
+    breathingFocus: "Breathing & Focus",
   }
 };

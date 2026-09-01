@@ -469,32 +469,15 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
 
   return (
     <div
-      className="modal-overlay animated-fade"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.88)',
-        backdropFilter: 'blur(12px)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        overflowY: 'auto',
-      }}
+      className="adaptive-modal-overlay animated-fade"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-exercise-title"
     >
       <div
-        className="modal-content glass-card"
+        className="adaptive-modal-content glass-card"
         style={{
-          width: '100%',
-          maxWidth: '820px',
-          maxHeight: '94vh',
-          overflowY: 'auto',
-          borderRadius: '24px',
           padding: '24px',
           position: 'relative',
           border: '1px solid rgba(0, 210, 255, 0.25)',
@@ -503,6 +486,9 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Mobile Bottom-Sheet Drag Handle Pill */}
+        <div className="bottom-sheet-drag-handle" />
+
         {/* Close Button */}
         <button
           onClick={onClose}

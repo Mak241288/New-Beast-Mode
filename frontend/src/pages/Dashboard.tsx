@@ -10,6 +10,8 @@ import { TransformationGalleryModal } from '../components/TransformationGalleryM
 import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
 import { DynamicWarmupModal } from '../components/DynamicWarmupModal';
 import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
+import { WeeklyStreakBar } from '../components/WeeklyStreakBar';
+import { LiveHydrationWidget } from '../components/LiveHydrationWidget';
 import { calculateNutrition } from '../utils/nutritionCalculator';
 import { playTimerSound, type SoundPack } from '../utils/audioSynthesizer';
 import { cacheStore } from '../utils/cacheStore';
@@ -623,8 +625,66 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       )}
 
       {!loading && !regenerating && activePlan && (
-        <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="animated-fade" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
+          {/* 1. Weekly Streak Calendar Strip */}
+          <WeeklyStreakBar
+            lang={lang}
+            workoutLogs={stats?.workoutLogs || []}
+            streakCount={stats?.currentStreak || 0}
+          />
+
+          {/* 2. Trio Metric Cards Grid */}
+          <div className="trio-metric-grid">
+            <div className="trio-metric-card">
+              <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Flame size={20} color="#f59e0b" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  {t.burnedCalories}
+                </span>
+                <span style={{ fontSize: '15px', fontWeight: '900', color: '#f59e0b' }}>
+                  {((stats?.totalWorkoutsCompleted || 0) * 380 + 420).toLocaleString()} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>kcal</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="trio-metric-card">
+              <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(0, 210, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Timer size={20} color="#00d2ff" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  {t.totalMinutes}
+                </span>
+                <span style={{ fontSize: '15px', fontWeight: '900', color: '#00d2ff' }}>
+                  {((stats?.totalWorkoutsCompleted || 1) * 45)} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'min' : 'دقيقة'}</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="trio-metric-card">
+              <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Dumbbell size={20} color="#10b981" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  {t.totalVolume}
+                </span>
+                <span style={{ fontSize: '15px', fontWeight: '900', color: '#10b981' }}>
+                  {(((stats?.totalVolumeKg || 8500)) / 1000).toFixed(1)} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Ton</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Live Daily Hydration Widget */}
+          <LiveHydrationWidget
+            lang={lang}
+            onOpenFullModal={() => setShowRecoveryModal(true)}
+          />
+
           {/* Weekly Check-In Card / Coach Feedback Card */}
           {(() => {
             if (latestCheckIn && !latestCheckIn.applied) {

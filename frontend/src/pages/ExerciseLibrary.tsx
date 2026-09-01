@@ -19,6 +19,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
   const [selectedEquipment, setSelectedEquipment] = useState<string>('ALL');
   const [selectedExercise, setSelectedExercise] = useState<any | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('ALL');
+  const [selectedGoal, setSelectedGoal] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('map');
   const [isDbEmpty, setIsDbEmpty] = useState<boolean>(false);
   const [syncing, setSyncing] = useState<boolean>(false);
@@ -232,9 +233,15 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
         selectedDifficulty === 'ALL' ||
         (ex.level || '').toLowerCase() === selectedDifficulty;
 
-      return matchesQuery && matchesMuscle && matchesEquipment && matchesDifficulty;
+      const matchesGoal =
+        selectedGoal === 'ALL' ||
+        (selectedGoal === 'hypertrophy' && (equipEn.includes('dumbbell') || equipEn.includes('barbell') || equipEn.includes('cable') || equipEn.includes('machine'))) ||
+        (selectedGoal === 'strength' && (equipEn.includes('barbell') || equipEn.includes('dumbbell') || nameEn.includes('squat') || nameEn.includes('deadlift') || nameEn.includes('press') || nameEn.includes('row'))) ||
+        (selectedGoal === 'fat_loss' && (ex.isHomeFriendly || equipEn.includes('bodyweight') || equipEn.includes('body only') || muscleEn.includes('cardio') || equipEn.includes('kettlebell') || equipEn.includes('band')));
+
+      return matchesQuery && matchesMuscle && matchesEquipment && matchesDifficulty && matchesGoal;
     });
-  }, [exercises, searchQuery, selectedMuscle, selectedEquipment, selectedDifficulty]);
+  }, [exercises, searchQuery, selectedMuscle, selectedEquipment, selectedDifficulty, selectedGoal]);
 
   const displayedExercises = useMemo(() => {
     return filteredExercises.slice(0, visibleCount);
@@ -423,6 +430,31 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
                 }}
               >
                 {diff.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Training Goal Focus */}
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+            {[
+              { id: 'ALL', label: lang === 'en' ? '🎯 All Goals' : '🎯 كل الأهداف' },
+              { id: 'hypertrophy', label: lang === 'en' ? '⚡ Hypertrophy (Muscle)' : '⚡ تضخيم وبناء عضلي' },
+              { id: 'strength', label: lang === 'en' ? '🏋️ Max Strength' : '🏋️ قوة بدنية قصوى' },
+              { id: 'fat_loss', label: lang === 'en' ? '🔥 Fat Loss & Calisthenics' : '🔥 حرق دهون ولياقة' },
+            ].map((goal) => (
+              <button
+                key={goal.id}
+                onClick={() => setSelectedGoal(goal.id)}
+                className={selectedGoal === goal.id ? 'glow-btn' : 'secondary-btn'}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  borderRadius: '20px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {goal.label}
               </button>
             ))}
           </div>

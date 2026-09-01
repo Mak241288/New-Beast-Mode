@@ -821,6 +821,65 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
               )}
             </div>
 
+            {/* Body Circumference Metrics (Tape Measurements in cm) */}
+            <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Scale size={20} color="var(--primary)" />
+                  <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>
+                    {lang === 'en' ? 'Body Circumference Measurements (cm) 📏' : 'سجل قياسات محيط الجسم بالسنتيمتر 📏'}
+                  </h3>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+                {[
+                  { key: 'chest', label: lang === 'en' ? 'Chest' : 'محيط الصدر', defaultVal: '102', icon: '👕' },
+                  { key: 'arm', label: lang === 'en' ? 'Arm (Bicep)' : 'محيط الذراع', defaultVal: '38.5', icon: '💪' },
+                  { key: 'waist', label: lang === 'en' ? 'Waist' : 'محيط الخصر', defaultVal: '82', icon: '🥋' },
+                  { key: 'thigh', label: lang === 'en' ? 'Thigh' : 'محيط الفخذ', defaultVal: '59', icon: '🦵' },
+                ].map((item) => (
+                  <div key={item.key} style={{ padding: '14px', borderRadius: '14px', background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px', marginBottom: '4px' }}>{item.icon}</div>
+                    <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', display: 'block', fontWeight: 'bold' }}>{item.label}</span>
+                    <span style={{ fontSize: '18px', fontWeight: '900', color: 'var(--primary)', marginTop: '4px', display: 'block' }}>
+                      {item.defaultVal} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>cm</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Muscle Workout Distribution Pie / Share Widget */}
+            <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <PieChart size={20} color="var(--primary)" />
+                <h3 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>
+                  {lang === 'en' ? 'Monthly Muscle Group Distribution 📊' : 'توزيع تمرين المجموعات العضلية الشهري 📊'}
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { muscle: lang === 'en' ? 'Chest (Pectorals)' : 'عضلات الصدر', percent: 24, color: '#00d2ff' },
+                  { muscle: lang === 'en' ? 'Back & Lats' : 'عضلات الظهر والمجنص', percent: 26, color: '#10b981' },
+                  { muscle: lang === 'en' ? 'Legs & Glutes' : 'عضلات الأرجل والأرداف', percent: 22, color: '#f59e0b' },
+                  { muscle: lang === 'en' ? 'Shoulders & Traps' : 'عضلات الأكتاف والترابيس', percent: 16, color: '#a855f7' },
+                  { muscle: lang === 'en' ? 'Arms & Core' : 'عضلات الذراعين والبطن', percent: 12, color: '#ec4899' },
+                ].map((m, i) => (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', fontWeight: 'bold' }}>
+                      <span>{m.muscle}</span>
+                      <span style={{ color: m.color }}>{m.percent}%</span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                      <div style={{ width: `${m.percent}%`, height: '100%', borderRadius: '4px', background: m.color, transition: 'width 0.4s ease' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
 
         </div>
