@@ -10,6 +10,7 @@ import { GlobalWorkoutPlayer } from './components/GlobalWorkoutPlayer';
 import { FloatingWorkoutBar } from './components/FloatingWorkoutBar';
 import { FloatingSpeedDial } from './components/FloatingSpeedDial';
 import { SetPasswordModal } from './components/SetPasswordModal';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { triggerPwaUpdate } from './utils/pwaUpdate';
 
 import './App.css';
@@ -842,6 +843,9 @@ function App() {
           }}
         />
       )}
+
+      {/* PWA Mobile Installation Prompt Floating Banner */}
+      <PWAInstallPrompt lang={lang} />
     </div>
   );
 }

@@ -71,7 +71,7 @@ export const getCheckInStatus = async (req: AuthRequest, res: Response): Promise
 
 export const submitCheckIn = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user!.id;
-  const { workoutFeel, sessionsCompleted, painNotes, lang } = req.body;
+  const { workoutFeel, sessionsCompleted, painNotes, lang, extraMetrics } = req.body;
 
   try {
     const activePlan = await prisma.workoutPlan.findFirst({
@@ -95,13 +95,14 @@ export const submitCheckIn = async (req: AuthRequest, res: Response): Promise<vo
 
     const planSummary = `${activePlan.title} with workouts: ${daysSummary}`;
 
-    // Get coaching recommendation from AI
+    // Get coaching recommendation from AI with enriched physiological context
     const recommendation = await suggestCheckInRecommendation(
       workoutFeel,
       sessionsCompleted,
       painNotes || '',
       planSummary,
-      lang || 'en'
+      lang || 'en',
+      extraMetrics
     );
 
     // Save check-in

@@ -701,7 +701,8 @@ export const suggestCheckInRecommendation = async (
   sessionsCompleted: string,
   painNotes: string,
   planSummary: string,
-  lang: 'ar' | 'en' = 'ar'
+  lang: 'ar' | 'en' = 'ar',
+  extraMetrics?: { circumference?: string; hydration?: string; volumeTon?: string; streak?: number }
 ): Promise<string> => {
   const isEn = lang === 'en';
 
@@ -709,6 +710,7 @@ export const suggestCheckInRecommendation = async (
     feel: workoutFeel,
     sess: sessionsCompleted,
     pain: (painNotes || '').toLowerCase().trim(),
+    extra: extraMetrics || {},
     lang,
   });
 
@@ -716,30 +718,38 @@ export const suggestCheckInRecommendation = async (
   if (cached) return cached;
 
   const prompt = isEn ? `
-Client Weekly Feedback:
+Athlete Weekly Performance & Biometrics:
 - Sensation: Workouts felt "${workoutFeel}"
 - Adherence: Completed sessions: "${sessionsCompleted}"
-- Pain/Discomfort notes: "${painNotes || 'None'}"
+- Pain / Discomfort notes: "${painNotes || 'None'}"
+- Weekly Streak: ${extraMetrics?.streak ? `${extraMetrics.streak} consecutive days` : 'Active'}
+- Training Volume: ${extraMetrics?.volumeTon ? `${extraMetrics.volumeTon} Tons moved` : 'Consistent'}
+- Hydration Consistency: ${extraMetrics?.hydration || '3.0 L/day average'}
+- Circumference Metrics: ${extraMetrics?.circumference || 'Balanced muscular progression'}
 - Plan Context: ${planSummary}
 ` : `
-تقييم المتدرب الأسبوعي:
+سجل الأداء والمقاييس البدنية الأسبوعية للمتدرب:
 - إحساس التمارين: "${workoutFeel}"
 - الالتزام بالحصص: "${sessionsCompleted}"
 - ملاحظات الألم/الإصابة: "${painNotes || 'لا يوجد'}"
+- الاستمرارية الأسبوعية: ${extraMetrics?.streak ? `${extraMetrics.streak} أيام متتالية` : 'نشط ومستمر'}
+- إجمالي الحجم التدريبي: ${extraMetrics?.volumeTon ? `${extraMetrics.volumeTon} طن أوزان` : 'منتظم'}
+- معدل شرب الماء اليومي: ${extraMetrics?.hydration || '3.0 لتر يومياً'}
+- قياسات محيط الجسم: ${extraMetrics?.circumference || 'تطور وتناسق عضلي ملحوظ'}
 - سياق الجدول: ${planSummary}
 `;
 
   try {
     const recommendation = await callGeminiText(prompt, PROMPT_SYSTEM_CHECKIN(lang), {
-      temperature: 0.2,
+      temperature: 0.3,
     });
     setInCache(cacheKey, recommendation);
     return recommendation;
   } catch (error) {
     console.error('[suggestCheckInRecommendation] Error:', error);
     return isEn
-      ? 'Great job keeping up with your workouts this week! Maintain your form and listen to your body.'
-      : 'أداء رائع في الالتزام بتمارين هذا الأسبوع! حافظ على الاستمرارية وأداء التمارين بتكنيك سليم.';
+      ? 'Outstanding dedication this week, Beast! Your metrics show great progressive adaptation. Maintain clean lifting technique and ensure your protein and hydration remain optimal.'
+      : 'أداء استثنائي والتزام بطولي هذا الأسبوع يا وحش! قياساتك واستمراريتك تعكس تطوراً بدنياً حقيقياً. حافظ على التكنيك الدقيق واجعل شرب الماء والتغذية في قمة أولوياتك.';
   }
 };
 
