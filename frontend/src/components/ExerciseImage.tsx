@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Dumbbell } from 'lucide-react';
 
 interface ExerciseImageProps {
@@ -11,6 +11,9 @@ interface ExerciseImageProps {
   autoAnimate?: boolean;
   showBadge?: boolean;
 }
+
+// In-Memory Global Image Preload Cache to eliminate mobile flicker
+const PRELOAD_CACHE = new Set<string>();
 
 // Convert GitHub raw URLs to ultra-fast jsDelivr CDN to bypass CORS & rate limits
 function toCdnUrl(url?: string | null): string {
@@ -25,27 +28,27 @@ function toCdnUrl(url?: string | null): string {
   return trimmed;
 }
 
-// Guaranteed High-Availability CDN Images per Muscle Group
+// Guaranteed High-Availability HD CDN Images per Muscle Group
 const VERIFIED_MUSCLE_FALLBACKS: Record<string, string> = {
-  chest: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&auto=format&fit=crop&q=80',
-  pectoral: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&auto=format&fit=crop&q=80',
-  back: 'https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=400&auto=format&fit=crop&q=80',
-  lat: 'https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=400&auto=format&fit=crop&q=80',
-  shoulder: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80',
-  deltoid: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=400&auto=format&fit=crop&q=80',
-  bicep: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&auto=format&fit=crop&q=80',
-  tricep: 'https://images.unsplash.com/photo-1530822847156-5df684ec5ee1?w=400&auto=format&fit=crop&q=80',
-  quad: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&auto=format&fit=crop&q=80',
-  thigh: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=400&auto=format&fit=crop&q=80',
-  hamstring: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80',
-  glute: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&auto=format&fit=crop&q=80',
-  calf: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&auto=format&fit=crop&q=80',
-  calves: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&auto=format&fit=crop&q=80',
-  ab: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&auto=format&fit=crop&q=80',
-  core: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&auto=format&fit=crop&q=80',
-  forearm: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&auto=format&fit=crop&q=80',
-  cardio: 'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=400&auto=format&fit=crop&q=80',
-  default: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&auto=format&fit=crop&q=80'
+  chest: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&auto=format&fit=crop&q=85',
+  pectoral: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&auto=format&fit=crop&q=85',
+  back: 'https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=600&auto=format&fit=crop&q=85',
+  lat: 'https://images.unsplash.com/photo-1603287681836-b174ce5074c2?w=600&auto=format&fit=crop&q=85',
+  shoulder: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&auto=format&fit=crop&q=85',
+  deltoid: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&auto=format&fit=crop&q=85',
+  bicep: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&auto=format&fit=crop&q=85',
+  tricep: 'https://images.unsplash.com/photo-1530822847156-5df684ec5ee1?w=600&auto=format&fit=crop&q=85',
+  quad: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&auto=format&fit=crop&q=85',
+  thigh: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&auto=format&fit=crop&q=85',
+  hamstring: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=85',
+  glute: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=600&auto=format&fit=crop&q=85',
+  calf: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=85',
+  calves: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&auto=format&fit=crop&q=85',
+  ab: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&auto=format&fit=crop&q=85',
+  core: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&auto=format&fit=crop&q=85',
+  forearm: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&auto=format&fit=crop&q=85',
+  cardio: 'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=600&auto=format&fit=crop&q=85',
+  default: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=85'
 };
 
 function getMuscleFallback(muscle?: string | null): string {
@@ -71,6 +74,14 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   const [activeFrame, setActiveFrame] = useState<0 | 1>(0);
   const [frame0Loaded, setFrame0Loaded] = useState(false);
   const [frame1Loaded, setFrame1Loaded] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Compute 2-Phase Frames from either 0.jpg, 1.jpg, or direct URLs
   const { frame0, frame1 } = useMemo(() => {
@@ -102,16 +113,36 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
     return { frame0: cSrc, frame1: null };
   }, [src, step2]);
 
-  // Preload frame 1 for instant zero-flicker transitions
+  // Preload frames in parallel with instant memory caching
   useEffect(() => {
-    if (frame1 && currentTier === 1) {
-      const img = new Image();
-      img.src = frame1;
-      img.onload = () => setFrame1Loaded(true);
+    if (frame0) {
+      if (PRELOAD_CACHE.has(frame0)) {
+        setFrame0Loaded(true);
+      } else {
+        const img0 = new Image();
+        img0.src = frame0;
+        img0.onload = () => {
+          PRELOAD_CACHE.add(frame0);
+          if (isMountedRef.current) setFrame0Loaded(true);
+        };
+      }
     }
-  }, [frame1, currentTier]);
 
-  // Auto Animation Loop
+    if (frame1 && currentTier === 1) {
+      if (PRELOAD_CACHE.has(frame1)) {
+        setFrame1Loaded(true);
+      } else {
+        const img1 = new Image();
+        img1.src = frame1;
+        img1.onload = () => {
+          PRELOAD_CACHE.add(frame1);
+          if (isMountedRef.current) setFrame1Loaded(true);
+        };
+      }
+    }
+  }, [frame0, frame1, currentTier]);
+
+  // Smooth Motion Loop (1.2s cadence)
   useEffect(() => {
     if (!autoAnimate || !frame1 || frame1 === frame0 || currentTier !== 1) {
       setActiveFrame(0);
@@ -119,8 +150,10 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
     }
 
     const interval = setInterval(() => {
-      setActiveFrame((prev) => (prev === 0 ? 1 : 0));
-    }, 1100);
+      if (isMountedRef.current) {
+        setActiveFrame((prev) => (prev === 0 ? 1 : 0));
+      }
+    }, 1200);
 
     return () => clearInterval(interval);
   }, [autoAnimate, frame0, frame1, currentTier]);
@@ -129,7 +162,7 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
 
   const handleError = () => {
     if (currentTier === 1) {
-      setCurrentTier(2); // Fallback to verified muscle photography
+      setCurrentTier(2); // Fallback to verified HD muscle photography
     } else if (currentTier === 2) {
       setCurrentTier(3); // Fallback to offline SVG card
     }
@@ -147,19 +180,19 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.15), rgba(124, 58, 237, 0.2))',
+          background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.12), rgba(124, 58, 237, 0.18))',
           border: '1px solid rgba(0, 210, 255, 0.25)',
-          borderRadius: '12px',
+          borderRadius: '16px',
           color: 'var(--primary)',
-          gap: '6px',
-          padding: '8px',
+          gap: '8px',
+          padding: '12px',
           ...style,
         }}
         title={alt}
       >
-        <Dumbbell size={24} />
+        <Dumbbell size={28} />
         <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#fff', textAlign: 'center', lineHeight: 1.1 }}>
-          {muscle || 'BeastMode'}
+          {muscle || 'BeastMode Exercise'}
         </span>
       </div>
     );
@@ -168,7 +201,7 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   // Tier 2: Muscle Photography Fallback
   if (currentTier === 2) {
     return (
-      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', ...style }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', borderRadius: '14px', ...style }}>
         <img
           src={fallbackUrl}
           alt={alt}
@@ -180,18 +213,22 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
             width: '100%',
             height: '100%',
             objectFit: 'cover',
+            transition: 'transform 0.3s ease',
           }}
         />
+        <div style={{ position: 'absolute', bottom: '6px', left: '6px', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', padding: '2px 8px', borderRadius: '6px', fontSize: '9px', color: '#94a3b8', fontWeight: 'bold' }}>
+          {muscle || 'Exercise'}
+        </div>
       </div>
     );
   }
 
   const isVideo = frame0 && (frame0.endsWith('.mp4') || frame0.endsWith('.webm') || frame0.includes('/videos/'));
 
-  // Tier 1: High-Performance Animated Display (Video Loop OR 2-Frame Dynamic Crossfade)
+  // Tier 1: High-Performance Animated Video Loop
   if (isVideo) {
     return (
-      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#0a0d16', ...style }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#060a16', borderRadius: '14px', ...style }}>
         <video
           src={frame0}
           autoPlay
@@ -210,17 +247,17 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
     );
   }
 
-  const isGif = frame0 && frame0.includes('.gif');
+  const isGif = frame0 && (frame0.includes('.gif') || frame0.includes('.webp'));
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#0a0d16', ...style }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: '#060a16', borderRadius: '14px', ...style }}>
       {/* Sleek Skeleton Shimmer until loaded */}
       {!frame0Loaded && currentTier === 1 && (
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(0,210,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(0,210,255,0.06) 50%, rgba(255,255,255,0.02) 100%)',
             backgroundSize: '200% 100%',
             animation: 'skeletonShimmer 1.5s infinite linear',
             display: 'flex',
@@ -228,11 +265,11 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
             justifyContent: 'center',
           }}
         >
-          <Dumbbell size={24} style={{ opacity: 0.2, color: 'var(--primary)' }} />
+          <Dumbbell size={24} style={{ opacity: 0.25, color: '#00d2ff' }} />
         </div>
       )}
 
-      {/* Frame 0 / Real Animated GIF */}
+      {/* Frame 0: Starting Motion Position */}
       <img
         src={frame0}
         alt={alt}
@@ -247,15 +284,16 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
           height: '100%',
           objectFit: 'contain',
           opacity: activeFrame === 0 || !frame1 || isGif ? 1 : 0,
-          transition: isGif ? 'none' : 'opacity 0.2s ease-in-out',
+          transform: activeFrame === 0 ? 'scale(1)' : 'scale(0.98)',
+          transition: isGif ? 'none' : 'opacity 0.35s ease-in-out, transform 0.35s ease-in-out',
         }}
       />
 
-      {/* Frame 1 (Peak Contraction) - Only if 2-Phase Mode */}
+      {/* Frame 1: Peak Muscle Contraction (Smooth Crossfade Morph) */}
       {frame1 && !isGif && (
         <img
           src={frame1}
-          alt={`${alt} peak`}
+          alt={`${alt} peak contraction`}
           className={className}
           referrerPolicy="no-referrer"
           onLoad={() => setFrame1Loaded(true)}
@@ -266,58 +304,60 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
             height: '100%',
             objectFit: 'contain',
             opacity: activeFrame === 1 && frame1Loaded ? 1 : 0,
-            transition: 'opacity 0.2s ease-in-out',
+            transform: activeFrame === 1 ? 'scale(1.02)' : 'scale(1)',
+            filter: activeFrame === 1 ? 'drop-shadow(0 0 10px rgba(0, 210, 255, 0.3))' : 'none',
+            transition: 'opacity 0.35s ease-in-out, transform 0.35s ease-in-out, filter 0.35s ease',
           }}
         />
       )}
 
-      {/* Motion Phase Badge (START / PEAK) */}
+      {/* Dynamic Phase Indicator Badge (START -> PEAK 🔥) */}
       {showBadge && frame1 && !isGif && autoAnimate && (
         <span
           style={{
             position: 'absolute',
             top: '8px',
             right: '8px',
-            background: activeFrame === 0 ? 'rgba(0, 210, 255, 0.25)' : 'rgba(16, 185, 129, 0.25)',
-            border: activeFrame === 0 ? '1px solid rgba(0, 210, 255, 0.5)' : '1px solid rgba(16, 185, 129, 0.5)',
-            color: activeFrame === 0 ? 'var(--primary)' : '#10b981',
+            background: activeFrame === 0 ? 'rgba(0, 210, 255, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+            border: activeFrame === 0 ? '1px solid rgba(0, 210, 255, 0.6)' : '1px solid rgba(245, 158, 11, 0.7)',
+            color: activeFrame === 0 ? '#00d2ff' : '#f59e0b',
             fontSize: '9.5px',
             fontWeight: '900',
-            padding: '2px 8px',
-            borderRadius: '6px',
-            backdropFilter: 'blur(6px)',
+            padding: '3px 8px',
+            borderRadius: '8px',
+            backdropFilter: 'blur(8px)',
             pointerEvents: 'none',
             letterSpacing: '0.5px',
-            transition: 'all 0.2s ease',
+            boxShadow: activeFrame === 1 ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none',
+            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
-          {activeFrame === 0 ? '1. START' : '2. PEAK 🔥'}
+          {activeFrame === 0 ? '1. START' : '2. PEAK CONTRACTION 🔥'}
         </span>
       )}
 
-      {/* Real 60fps GIF Live Badge */}
+      {/* 60 FPS Badge for Animated Loops */}
       {showBadge && isGif && (
         <span
           style={{
             position: 'absolute',
             top: '8px',
             right: '8px',
-            background: 'rgba(139, 92, 246, 0.3)',
-            border: '1px solid rgba(139, 92, 246, 0.6)',
-            color: '#c084fc',
+            background: 'rgba(0, 210, 255, 0.25)',
+            border: '1px solid rgba(0, 210, 255, 0.5)',
+            color: '#00d2ff',
             fontSize: '9px',
             fontWeight: '900',
-            padding: '2px 6px',
+            padding: '2px 7px',
             borderRadius: '6px',
             backdropFilter: 'blur(6px)',
             pointerEvents: 'none',
             letterSpacing: '0.5px',
           }}
         >
-          60 FPS ⚡
+          HD MOTION ⚡
         </span>
       )}
     </div>
   );
 };
-
