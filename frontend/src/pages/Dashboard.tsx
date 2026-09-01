@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { api, getCurrentUser } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, Volume2 } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, Volume2, RefreshCw } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
 import { ExerciseImage } from '../components/ExerciseImage';
@@ -78,6 +78,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
   // Exercise countdown timer (for time-based exercises like Plank)
   const [exerciseSeconds, setExerciseSeconds] = useState(0);
   const [isExerciseTimerActive, setIsExerciseTimerActive] = useState(false);
+
+  // Real-time Today Workout Completion State
+  const [todayCompletedLocally, setTodayCompletedLocally] = useState<boolean>(() => {
+    try {
+      const raw = localStorage.getItem('beast_completed_workout_dates');
+      const dates = raw ? JSON.parse(raw) : [];
+      const todayStr = new Date().toISOString().split('T')[0];
+      return dates.includes(todayStr);
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleCompleted = () => {
+      setTodayCompletedLocally(true);
+      api.getWorkoutStats().then(s => setStats(s)).catch(() => null);
+    };
+    window.addEventListener('beast_workout_completed', handleCompleted);
+    window.addEventListener('storage', handleCompleted);
+    return () => {
+      window.removeEventListener('beast_workout_completed', handleCompleted);
+      window.removeEventListener('storage', handleCompleted);
+    };
+  }, []);
 
   const handleGeneratePlan = async () => {
     const isComplete = profile && profile.fitnessGoal && profile.fitnessLevel && profile.daysPerWeek;
@@ -748,20 +773,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
             return null;
           })()}
 
-          {/* Today's Workout Routine Card (Hero Section) */}
-          {todayWorkout && (
-            <div className="glass-panel animated-fade" style={{ padding: '26px', border: '1px solid var(--primary)', background: 'linear-gradient(135deg, rgba(0, 210, 255, 0.05), rgba(16, 185, 129, 0.05))', borderRadius: '18px', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)' }}>
+          {/* Today's Workout Routine Card (Hero Section matching Mockup 1) */}
+          {todayWorkout && (() => {
+            const todayDateStr = new Date().toISOString().split('T')[0];
+            const isTodayCompleted = todayCompletedLocally || (stats?.workoutLogs || []).some((l: any) => {
+              const logDate = (l.date || l.createdAt || '').split('T')[0];
+              return logDate === todayDateStr;
+            });
+
+            return (
+            <div
+              className="glass-panel animated-fade"
+              style={{
+                padding: '26px',
+                border: isTodayCompleted ? '1.5px solid #10b981' : '1.5px solid rgba(0, 210, 255, 0.4)',
+                background: isTodayCompleted
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 10, 22, 0.96))'
+                  : 'linear-gradient(135deg, rgba(0, 210, 255, 0.08), rgba(6, 10, 22, 0.98))',
+                borderRadius: '20px',
+                boxShadow: isTodayCompleted
+                  ? '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(16, 185, 129, 0.2)'
+                  : '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 210, 255, 0.18)',
+              }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '20px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <span className="badge" style={{ background: 'var(--primary)', color: '#050710', fontSize: '11px', fontWeight: '900', padding: '3px 9px', borderRadius: '8px' }}>
-                      {lang === 'en' ? '🔥 TODAY\'S WORKOUT' : '🔥 تمرين اليوم'}
-                    </span>
+                    {isTodayCompleted ? (
+                      <span className="badge" style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#ffffff', fontSize: '11px', fontWeight: '900', padding: '4px 10px', borderRadius: '8px', boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)' }}>
+                        {lang === 'en' ? '✅ COMPLETED TODAY! 🏆' : '✅ تم إنجاز تمرين اليوم بنجاح! 🏆'}
+                      </span>
+                    ) : (
+                      <span className="badge" style={{ background: 'var(--primary)', color: '#050710', fontSize: '11px', fontWeight: '900', padding: '3px 9px', borderRadius: '8px' }}>
+                        {lang === 'en' ? '🔥 TODAY\'S WORKOUT' : '🔥 تمرين اليوم'}
+                      </span>
+                    )}
                     <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                       ⏱️ {todayWorkout.isRestDay ? (lang === 'en' ? 'Recovery' : 'استشفاء') : `~${todayWorkout.exercises.length * 9} ${lang === 'en' ? 'mins' : 'دقيقة تقريبياً'}`}
                     </span>
                   </div>
-                  <h2 style={{ fontSize: '22px', fontWeight: '900', margin: '4px 0 0 0', color: 'var(--text-primary)' }}>
+                  <h2 style={{ fontSize: '24px', fontWeight: '900', margin: '4px 0 0 0', color: '#ffffff', letterSpacing: '-0.3px' }}>
                     {todayWorkout.title}
                   </h2>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: '4px 0 0 0' }}>
@@ -822,23 +873,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                         <Dumbbell size={18} />
                         <span>{lang === 'en' ? 'Resume Workout ⛶' : 'استئناف التمرين ⛶'}</span>
                       </button>
+                    ) : isTodayCompleted ? (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          onClick={() => setShowRoutineCardModal(true)}
+                          className="glow-btn"
+                          style={{
+                            padding: '11px 20px',
+                            fontSize: '14px',
+                            fontWeight: '800',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          <CheckCircle2 size={16} />
+                          <span>{lang === 'en' ? 'Share Story Card 📸' : 'مشاركة الإنجاز 📸'}</span>
+                        </button>
+                        <button
+                          onClick={handleStartWorkout}
+                          className="secondary-btn"
+                          style={{
+                            padding: '11px 16px',
+                            fontSize: '12.5px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          <RefreshCw size={14} />
+                          <span>{lang === 'en' ? 'Replay' : 'إعادة'}</span>
+                        </button>
+                      </div>
                     ) : (
                       <button
                         onClick={handleStartWorkout}
                         className="glow-btn shimmer-glow"
                         style={{
-                          padding: '12px 24px',
-                          fontSize: '15px',
-                          fontWeight: '800',
+                          padding: '12px 28px',
+                          fontSize: '15.5px',
+                          fontWeight: '900',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
-                          borderRadius: '12px',
-                          boxShadow: '0 0 25px rgba(0, 210, 255, 0.4)',
+                          borderRadius: '14px',
+                          background: 'linear-gradient(135deg, #00d2ff, #0077ff)',
+                          boxShadow: '0 0 30px rgba(0, 210, 255, 0.45)',
                         }}
                       >
                         <Dumbbell size={18} />
-                        <span>{lang === 'en' ? 'Start Today\'s Workout 🚀' : 'بدء تمرين اليوم الآن 🚀'}</span>
+                        <span>{lang === 'en' ? 'START WORKOUT 🚀' : 'بدء تمرين اليوم الآن 🚀'}</span>
                       </button>
                     )
                   )}
@@ -908,7 +996,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Top Widgets Row: Streak, Workouts, Minutes, Exercises */}
           <div className="grid-responsive-4col">

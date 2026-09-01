@@ -764,6 +764,24 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         volumeKg: totalVolumeKg,
         completedSets: totalSetsDone,
       }).catch(() => null);
+
+      // Save today's completion date to local storage logs
+      const todayStr = new Date().toISOString().split('T')[0];
+      const existingLogsRaw = localStorage.getItem('beast_completed_workout_dates');
+      const existingLogs: string[] = existingLogsRaw ? JSON.parse(existingLogsRaw) : [];
+      if (!existingLogs.includes(todayStr)) {
+        existingLogs.push(todayStr);
+        localStorage.setItem('beast_completed_workout_dates', JSON.stringify(existingLogs));
+      }
+
+      // Dispatch global event for instant UI reflection on Dashboard & Weekly Streak
+      window.dispatchEvent(new CustomEvent('beast_workout_completed', {
+        detail: {
+          ...summary,
+          date: todayStr,
+          dayId: currentState.dayData.id,
+        }
+      }));
     } catch (err) {
       console.warn('[Workout Finish Log Error]:', err);
     }
