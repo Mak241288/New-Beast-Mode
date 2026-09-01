@@ -29,23 +29,32 @@ Experience the live, production-ready progressive web application directly in yo
 
 ---
 
-## 📖 About The Platform
+## 📸 Interface & Live Experience Showcase
 
-**BeastMode AI** is an engineering-first, sports-science backed fitness and bodybuilding ecosystem. Built for lifters who demand zero-fluff tracking, instant offline responsiveness in basement gym signal dead zones, and actionable AI coaching that understands biomechanics and progressive overload.
+<p align="center">
+  <img src="docs/screenshots/dashboard_showcase.jpg" alt="BeastMode AI Dashboard Showcase" width="95%" style="border-radius: 14px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);" />
+</p>
 
-Instead of generic template routines, BeastMode synthesizes **4,298+ HD exercises**, interactive 3D muscle anatomy heatmaps, dynamic rest bell synthesizers, and intelligent weekly check-ins into an ultra-clean glassmorphic UI.
+<p align="center">
+  <em>⚡ Dynamic Glassmorphism Dashboard: Weekly Streaks, Trio Metric Pills, Live Hydration & Cinematic Cards.</em>
+</p>
 
-```
-+-----------------------------------------------------------------------------------+
-|   🔥 WEEKLY STREAK: 5 Days Active  |  💧 HYDRATION: 2.75L / 3.0L  |  🏋️ VOL: 14.2T  |
-+-----------------------------------------------------------------------------------+
-|  [=========================== STORY WORKOUT PLAYER ===========================]  |
-|  [Ex 1: Bench Press (Done)] -> [Ex 2: Incline DB (Active)] -> [Ex 3: Dips (Next)]  |
-+-----------------------------------------------------------------------------------+
-|  🎯 TARGET: Pectoralis Major & Triceps Lateral Head (MuscleWiki Pro 1-2-3 Guide)  |
-|  ⚡ REALTIME AI COACH: "Add +2.5kg on Set 2 to trigger progressive hypertrophy"   |
-+-----------------------------------------------------------------------------------+
-```
+<br />
+
+<table align="center" width="100%">
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/workout_player_showcase.jpg" alt="Live Gym Workout Player" width="100%" style="border-radius: 12px;" />
+      <br />
+      <b>🏋️ Zero-Latency Live Player & Story Segments</b>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/muscle_anatomy_showcase.jpg" alt="3D Muscle Anatomy & Wiki" width="100%" style="border-radius: 12px;" />
+      <br />
+      <b>🗺️ 3D Muscle Anatomy & MuscleWiki 1-2-3 Guide</b>
+    </td>
+  </tr>
+</table>
 
 ---
 
