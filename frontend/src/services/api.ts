@@ -1071,8 +1071,8 @@ export const api = {
       });
     } catch {}
 
-    // Trigger full cloud push to sync backend database
-    await pushUserDataToCloud(true);
+    // Trigger non-blocking cloud push to sync backend database in background
+    pushUserDataToCloud(false).catch(() => {});
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('beast_profile_updated', { detail: merged }));
