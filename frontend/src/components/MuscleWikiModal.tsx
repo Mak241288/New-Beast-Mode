@@ -389,22 +389,31 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
       : (exercise.equipment_en || exercise.equipment_ar || '');
   }, [exercise, isAr]);
 
-  // Steps computation
+  // Steps computation: Always guarantees 4 rich biomechanical steps
   const stepsList = useMemo(() => {
     if (!exercise) return [];
+    const smartArSteps = getSmartArabicInstructions(exercise.muscle_en || exercise.targetMuscle || '');
     const rawInstructions = exercise.instructions_ar || exercise.description_ar;
     const isRawEnglish = typeof rawInstructions === 'string' && /^[a-zA-Z0-9\s.,'()\-]+$/.test(rawInstructions.substring(0, 50));
 
     if (isAr) {
       if (rawInstructions && !isRawEnglish && String(rawInstructions).trim().length > 10) {
-        return parseInstructionsArray(rawInstructions);
+        const parsed = parseInstructionsArray(rawInstructions);
+        if (parsed.length >= 3) {
+          return parsed;
+        } else if (parsed.length > 0) {
+          return [
+            `1. نصيحة الأداء الفني: ${parsed[0].replace(/^[\d.)\s]+/, '')}`,
+            ...smartArSteps.slice(1)
+          ];
+        }
       }
-      return getSmartArabicInstructions(exercise.muscle_en || '');
+      return smartArSteps;
     }
 
     const engInstructions = exercise.instructions_en || exercise.description_en || exercise.instructions_ar;
     const parsedEng = parseInstructionsArray(engInstructions);
-    return parsedEng.length > 0
+    return parsedEng.length >= 3
       ? parsedEng
       : [
           '1. Setup & Stance: Set up in a solid stable stance with your spine in a neutral position.',
@@ -414,22 +423,25 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
         ];
   }, [exercise, isAr]);
 
-  // Common Mistakes computation
+  // Common Mistakes computation: Always guarantees multiple critical injury-prevention cues
   const mistakesList = useMemo(() => {
     if (!exercise) return [];
+    const smartArMistakes = getSmartArabicMistakes(exercise.muscle_en || exercise.targetMuscle || '');
     const rawMistakes = exercise.common_mistakes_ar;
     const isMistakeEnglish = typeof rawMistakes === 'string' && /^[a-zA-Z0-9\s.,'()\-]+$/.test(rawMistakes.substring(0, 30));
 
     if (isAr) {
       if (rawMistakes && !isMistakeEnglish && String(rawMistakes).trim().length > 5) {
-        return parseInstructionsArray(rawMistakes);
+        const parsed = parseInstructionsArray(rawMistakes);
+        if (parsed.length >= 2) return parsed;
+        if (parsed.length > 0) return [parsed[0], ...smartArMistakes.slice(1)];
       }
-      return getSmartArabicMistakes(exercise.muscle_en || '');
+      return smartArMistakes;
     }
 
     const engMistakes = exercise.common_mistakes_en || exercise.common_mistakes_ar;
     const parsedEng = parseInstructionsArray(engMistakes);
-    return parsedEng.length > 0
+    return parsedEng.length >= 2
       ? parsedEng
       : [
           '⚠️ Using excessive momentum and swinging the body instead of isolating the muscle.',

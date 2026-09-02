@@ -605,31 +605,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       localDates = raw ? JSON.parse(raw) : [];
     } catch {}
 
-    const workoutLogsCount = Array.isArray(stats?.workoutLogs) ? stats.workoutLogs.length : 0;
+    let cachedStats: any = null;
+    try {
+      cachedStats = cacheStore.get('user_stats') || JSON.parse(localStorage.getItem('beastmode_user_stats') || '{}');
+    } catch {}
+
+    const effectiveStats = stats || cachedStats || {};
+    const workoutLogsCount = Array.isArray(effectiveStats?.workoutLogs) ? effectiveStats.workoutLogs.length : 0;
     const localCount = localDates.length;
     const totalWorkouts = Math.max(
-      stats?.workoutStats?.globalWorkouts || 0,
-      stats?.totalWorkoutsCompleted || 0,
+      effectiveStats?.workoutStats?.globalWorkouts || 0,
+      effectiveStats?.totalWorkoutsCompleted || 0,
       workoutLogsCount,
       localCount
     );
 
     const streak = Math.max(
-      stats?.workoutStats?.globalStreak || 0,
-      stats?.currentStreak || 0,
-      stats?.streak || 0,
+      effectiveStats?.workoutStats?.globalStreak || 0,
+      effectiveStats?.currentStreak || 0,
+      effectiveStats?.streak || 0,
       localCount > 0 ? localCount : (totalWorkouts > 0 ? 1 : 0)
     );
 
     const totalMinutes = Math.max(
-      stats?.workoutStats?.globalMinutes || 0,
-      stats?.totalMinutes || 0,
+      effectiveStats?.workoutStats?.globalMinutes || 0,
+      effectiveStats?.totalMinutes || 0,
       totalWorkouts * 45
     );
 
     const totalExercises = Math.max(
-      stats?.workoutStats?.globalExercises || 0,
-      stats?.totalExercisesCompleted || 0,
+      effectiveStats?.workoutStats?.globalExercises || 0,
+      effectiveStats?.totalExercisesCompleted || 0,
       totalWorkouts * 4
     );
 
@@ -1061,47 +1067,64 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {todayWorkout.exercises.map((ex: any) => (
-                    <div
-                      key={ex.id}
-                      onClick={() => setWikiExercise({
-                        ...ex,
-                        name_en: ex.name,
-                        name_ar: ex.name,
-                        muscle_en: ex.targetMuscle || 'Chest',
-                        instructions_ar: ex.exerciseTips || '',
-                        image_url: ex.imageUrl || null,
-                      })}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '12px 18px',
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '12px',
-                        fontSize: '13.5px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ color: 'var(--primary)', fontSize: '18px' }}>⚡</span>
-                        <div>
-                          <span style={{ fontWeight: '800', color: 'var(--text-primary)' }}>{ex.name}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginInlineStart: '8px' }}>
-                            ({ex.targetMuscle || 'عضلة رئيسية'})
+                  {todayWorkout.exercises.map((ex: any) => {
+                    let cleanEnName = ex.name_en || ex.name || '';
+                    const match = (ex.name || '').match(/\(([^)]+)\)/);
+                    if (match && /[a-zA-Z]/.test(match[1])) {
+                      cleanEnName = match[1].trim();
+                    }
+
+                    return (
+                      <div
+                        key={ex.id}
+                        onClick={() => setWikiExercise({
+                          ...ex,
+                          name_en: cleanEnName,
+                          name_ar: ex.name_ar || ex.name,
+                          muscle_en: ex.muscle_en || ex.targetMuscle || 'Chest',
+                          instructions_ar: ex.exerciseTips || ex.instructions_ar || '',
+                          image_url: ex.imageUrl || ex.gif_url || null,
+                        })}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 18px',
+                          background: isTodayCompleted ? 'rgba(16, 185, 129, 0.06)' : 'rgba(255,255,255,0.03)',
+                          border: isTodayCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-color)',
+                          borderRadius: '12px',
+                          fontSize: '13.5px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ color: isTodayCompleted ? '#10b981' : 'var(--primary)', fontSize: '18px' }}>
+                            {isTodayCompleted ? '✅' : '⚡'}
                           </span>
+                          <div>
+                            <span style={{ fontWeight: '800', color: isTodayCompleted ? '#10b981' : 'var(--text-primary)' }}>
+                              {ex.name}
+                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginInlineStart: '8px' }}>
+                              ({ex.targetMuscle || 'عضلة رئيسية'})
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {isTodayCompleted && (
+                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '6px' }}>
+                              {lang === 'en' ? 'DONE ✓' : 'مكتمل ✓'}
+                            </span>
+                          )}
+                          <span className="badge" style={{ color: 'var(--primary)', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.2)', fontSize: '12px', fontWeight: 'bold', padding: '4px 10px', borderRadius: '8px' }}>
+                            {ex.sets} {t.sets} × {ex.reps}
+                          </span>
+                          <Info size={16} style={{ color: 'var(--text-muted)' }} />
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="badge" style={{ color: 'var(--primary)', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.2)', fontSize: '12px', fontWeight: 'bold', padding: '4px 10px', borderRadius: '8px' }}>
-                          {ex.sets} {t.sets} × {ex.reps}
-                        </span>
-                        <Info size={16} style={{ color: 'var(--text-muted)' }} />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
