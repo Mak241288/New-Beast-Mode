@@ -423,8 +423,69 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
   }, [profile]);
 
   const getSelectedDay = () => {
-    if (!activePlan) return null;
-    return activePlan.dayWorkouts.find((dw: any) => dw.dayIndex === selectedDayIndex);
+    if (activePlan && activePlan.dayWorkouts && activePlan.dayWorkouts.length > 0) {
+      const found = activePlan.dayWorkouts.find((dw: any) => dw.dayIndex === selectedDayIndex);
+      if (found) return found;
+      return activePlan.dayWorkouts[0];
+    }
+    // Instant Starter Routine for immediate live workout testing
+    return {
+      id: 'starter_day_1',
+      dayIndex: 1,
+      title: lang === 'en' ? 'Chest & Triceps Power (Day 1)' : 'تضخيم الصدر والترايسبس (اليوم 1)',
+      focusArea: lang === 'en' ? 'Chest, Shoulders & Triceps' : 'الصدر، الأكتاف والترايسبس',
+      isRestDay: false,
+      exercises: [
+        {
+          id: 'ex_1',
+          name: lang === 'en' ? 'Barbell Bench Press' : 'تمرين البنش برس بالبار (Barbell Bench Press)',
+          name_en: 'Barbell Bench Press',
+          sets: 4,
+          reps: '8-10',
+          weight: '60 kg',
+          targetMuscle: 'Chest',
+          muscle_en: 'chest',
+          muscle_ar: 'الصدر',
+          gif_url: 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Barbell_Bench_Press/0.jpg',
+        },
+        {
+          id: 'ex_2',
+          name: lang === 'en' ? 'Incline Dumbbell Press' : 'تمرين تجميع دمبل مائل (Incline Dumbbell Press)',
+          name_en: 'Incline Dumbbell Press',
+          sets: 3,
+          reps: '10-12',
+          weight: '24 kg',
+          targetMuscle: 'Upper Chest',
+          muscle_en: 'chest',
+          muscle_ar: 'الصدر العلوي',
+          gif_url: 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Incline_Dumbbell_Press/0.jpg',
+        },
+        {
+          id: 'ex_3',
+          name: lang === 'en' ? 'Dumbbell Chest Flyes' : 'تمرين التفتيح بالدمبل (Dumbbell Flyes)',
+          name_en: 'Dumbbell Chest Flyes',
+          sets: 3,
+          reps: '12-15',
+          weight: '14 kg',
+          targetMuscle: 'Chest Isolation',
+          muscle_en: 'chest',
+          muscle_ar: 'عزل الصدر',
+          gif_url: '/assets/exercises/exercise_motion_flyes.jpg',
+        },
+        {
+          id: 'ex_4',
+          name: lang === 'en' ? 'Triceps Rope Pushdown' : 'دفع كيبل الحبل للترايسبس (Rope Pushdown)',
+          name_en: 'Triceps Rope Pushdown',
+          sets: 3,
+          reps: '12-15',
+          weight: '25 kg',
+          targetMuscle: 'Triceps',
+          muscle_en: 'triceps',
+          muscle_ar: 'الترايسبس',
+          gif_url: 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/Cable_Rope_Pushdown/0.jpg',
+        },
+      ]
+    };
   };
 
   const handleStartWorkout = () => {
