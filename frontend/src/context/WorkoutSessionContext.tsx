@@ -4,6 +4,9 @@ import { cacheStore } from '../utils/cacheStore';
 import { audioCues } from '../utils/audioCues';
 import { wakeLockManager } from '../utils/wakeLock';
 import { generateUUID } from '../utils/offlineSync';
+import { triggerHaptic } from '../utils/haptics';
+import { preloadWorkoutImages } from '../utils/imagePreloader';
+import { getExerciseHistoryAndSuggestion, saveExerciseCompletionRecord } from '../utils/progressiveOverload';
 
 export type SessionStatus = 'idle' | 'active' | 'resting' | 'paused' | 'completed';
 
@@ -344,7 +347,11 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
             newIsResting = false;
             newRestRemaining = 0;
             playBeep(980, 0.25); // Ding when rest finishes!
+            triggerHaptic('restEnd');
           } else {
+            if (secondsLeft === 3) {
+              triggerHaptic('warning');
+            }
             newRestRemaining = secondsLeft;
           }
         }
@@ -369,7 +376,12 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       return;
     }
 
-    // Initialize set logs
+    // 1. Gym Mode: Request screen wake lock & preload today's exercise assets
+    wakeLockManager.requestLock();
+    preloadWorkoutImages(dayData.exercises || []);
+    triggerHaptic('success');
+
+    // 2. Initialize set logs with smart progressive overload history
     const initialLogs: { [idx: number]: SetLogItem[] } = {};
     dayData.exercises.forEach((ex: any, idx: number) => {
       const totalSets = typeof ex.sets === 'number' ? ex.sets : parseInt(String(ex.sets || 3), 10) || 3;
@@ -382,11 +394,17 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       if (!cleanWeight || cleanWeight.toLowerCase() === 'weight') {
         cleanWeight = (ex.equipment_en?.toLowerCase().includes('body') || ex.weight?.toLowerCase()?.includes('body')) ? 'Bodyweight' : '15 kg';
       }
+
+      // Auto-fetch last lifted performance from history
+      const historyRecord = getExerciseHistoryAndSuggestion(ex.name || ex.name_en, cleanWeight, cleanReps);
+      const assignedWeight = historyRecord.lastWeight || cleanWeight;
+      const assignedReps = historyRecord.lastReps || cleanReps;
+
       initialLogs[idx] = Array.from({ length: totalSets }, (_, sIdx) => ({
         clientSideId: generateUUID(),
         setNumber: sIdx + 1,
-        reps: cleanReps,
-        weight: cleanWeight,
+        reps: assignedReps,
+        weight: assignedWeight,
         completed: false,
         updatedAt: new Date().toISOString(),
       }));
@@ -420,12 +438,14 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
 
   const finishCurrentSet = useCallback((customValues?: { reps?: string | number; weight?: string | number }) => {
     // Tactile haptic feedback on set completion
-    audioCues.triggerHaptic('setDone');
+    triggerHaptic('medium');
 
     setState(prev => {
       const exIdx = prev.activeExerciseIndex;
       const setIdx = prev.currentSetIndex;
       const currentLogs = prev.setLogs[exIdx] || [];
+      const exercises = prev.dayData?.exercises || [];
+      const currentEx = exercises[exIdx];
       
       const updatedSetLogs = [...currentLogs];
       const targetSet = updatedSetLogs[setIdx] || {
@@ -437,12 +457,20 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         updatedAt: new Date().toISOString(),
       };
 
+      const finalWeight = customValues?.weight ?? targetSet.weight;
+      const finalReps = customValues?.reps ?? targetSet.reps;
+
+      // Persist exercise completion weight & reps for next session
+      if (currentEx) {
+        saveExerciseCompletionRecord(currentEx.name || currentEx.name_en, finalWeight, finalReps);
+      }
+
       const nowIso = new Date().toISOString();
       updatedSetLogs[setIdx] = {
         ...targetSet,
         clientSideId: targetSet.clientSideId || generateUUID(),
-        reps: customValues?.reps ?? targetSet.reps,
-        weight: customValues?.weight ?? targetSet.weight,
+        reps: finalReps,
+        weight: finalWeight,
         completed: true,
         completedAt: nowIso,
         updatedAt: nowIso,
@@ -452,9 +480,6 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         ...prev.setLogs,
         [exIdx]: updatedSetLogs,
       };
-
-      const exercises = prev.dayData?.exercises || [];
-      const currentEx = exercises[exIdx];
 
       // Scientific Smart Rest Duration Recommender
       const getSmartRestSeconds = (ex: any): number => {

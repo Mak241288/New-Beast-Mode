@@ -17,6 +17,7 @@ import { playTimerSound, type SoundPack } from '../utils/audioSynthesizer';
 import { cacheStore } from '../utils/cacheStore';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { preloadWorkoutImages } from '../utils/imagePreloader';
 
 interface DashboardProps {
   lang: 'ar' | 'en';
@@ -492,6 +493,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       ]
     };
   };
+
+  // Preload today's exercise images in background RAM for 0ms start
+  useEffect(() => {
+    const today = getSelectedDay();
+    if (today?.exercises && today.exercises.length > 0) {
+      preloadWorkoutImages(today.exercises);
+    }
+  }, [activePlan, selectedDayIndex]);
 
   const handleStartWorkout = () => {
     const today = getSelectedDay();

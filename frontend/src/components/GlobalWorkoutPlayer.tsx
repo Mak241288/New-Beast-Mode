@@ -9,6 +9,7 @@ import { RoutineCardExportModal } from './RoutineCardExportModal';
 import { MuscleWikiModal } from './MuscleWikiModal';
 import { StoryProgressBar } from './StoryProgressBar';
 import { audioCues } from '../utils/audioCues';
+import { getExerciseHistoryAndSuggestion } from '../utils/progressiveOverload';
 import { 
   Play, 
   Pause, 
@@ -960,6 +961,30 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
 
           {/* Right Column: Sets Logger Table */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Progressive Overload Goal Badge */}
+            {currentEx && (() => {
+              const hist = getExerciseHistoryAndSuggestion(currentEx.name || currentEx.name_en, currentEx.weight, currentEx.reps);
+              return (
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.08))',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '12px',
+                  padding: '8px 14px',
+                  fontSize: '12.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  color: '#10b981'
+                }}>
+                  <span>🦍 {isAr ? `آخر أداء مسجل: ${hist.lastWeight} × ${hist.lastReps}` : `Last Lift: ${hist.lastWeight} × ${hist.lastReps}`}</span>
+                  <span style={{ fontSize: '11.5px', background: 'rgba(16, 185, 129, 0.25)', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                    {isAr ? `الهدف: ${hist.suggestedWeight} 🚀` : `Goal: ${hist.suggestedWeight} 🚀`}
+                  </span>
+                </div>
+              );
+            })()}
+
             {/* Rest Timer Overlay Banner if Resting */}
             {state.isResting && (
               <div
