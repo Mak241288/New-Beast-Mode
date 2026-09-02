@@ -2044,6 +2044,50 @@ export const api = {
   },
 
   logWorkoutActivity: async (activityData: any) => {
+    try {
+      const existingStats: any = cacheStore.get('user_stats') || {};
+      const duration = Number(activityData?.durationMinutes) || 45;
+      const volume = Number(activityData?.volumeKg) || 0;
+      const totalSets = Number(activityData?.completedSets) || 4;
+
+      const updatedWorkoutLogs = Array.isArray(existingStats.workoutLogs) ? [...existingStats.workoutLogs] : [];
+      updatedWorkoutLogs.unshift({
+        id: `wlog_${Date.now()}`,
+        date: new Date().toISOString(),
+        title: activityData?.title || 'Workout Session',
+        durationMinutes: duration,
+        volumeKg: volume,
+        completedSets: totalSets,
+      });
+
+      const updatedStats = {
+        ...existingStats,
+        totalWorkoutsCompleted: (existingStats.totalWorkoutsCompleted || 0) + 1,
+        totalVolumeKg: (existingStats.totalVolumeKg || 0) + volume,
+        totalMinutes: (existingStats.totalMinutes || 0) + duration,
+        totalExercisesCompleted: (existingStats.totalExercisesCompleted || 0) + (activityData?.totalExercises || 4),
+        currentStreak: (existingStats.currentStreak || 0) + 1,
+        workoutStats: {
+          globalStreak: (existingStats.currentStreak || 0) + 1,
+          globalWorkouts: (existingStats.totalWorkoutsCompleted || 0) + 1,
+          globalMinutes: (existingStats.totalMinutes || 0) + duration,
+          globalExercises: (existingStats.totalExercisesCompleted || 0) + (activityData?.totalExercises || 4),
+        },
+        workoutLogs: updatedWorkoutLogs,
+        updatedAt: new Date().toISOString(),
+      };
+
+      cacheStore.set('user_stats', updatedStats);
+      try {
+        localStorage.setItem('beastmode_user_stats', JSON.stringify(updatedStats));
+      } catch {}
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('beast_stats_updated', { detail: updatedStats }));
+      }
+    } catch (err) {
+      console.warn('[logWorkoutActivity] Stats local update warning:', err);
+    }
     return { success: true, activityData };
   },
 

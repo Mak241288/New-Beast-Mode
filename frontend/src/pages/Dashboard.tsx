@@ -96,10 +96,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       setTodayCompletedLocally(true);
       api.getWorkoutStats().then(s => setStats(s)).catch(() => null);
     };
+    const handleStatsUpdated = (e: any) => {
+      if (e?.detail) setStats(e.detail);
+    };
     window.addEventListener('beast_workout_completed', handleCompleted);
+    window.addEventListener('beast_stats_updated', handleStatsUpdated);
     window.addEventListener('storage', handleCompleted);
     return () => {
       window.removeEventListener('beast_workout_completed', handleCompleted);
+      window.removeEventListener('beast_stats_updated', handleStatsUpdated);
       window.removeEventListener('storage', handleCompleted);
     };
   }, []);
@@ -592,6 +597,49 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
   }, [isExerciseTimerActive, exerciseSeconds]);
 
   const todayWorkout = getSelectedDay();
+
+  const computedSummaryStats = useMemo(() => {
+    let localDates: string[] = [];
+    try {
+      const raw = localStorage.getItem('beast_completed_workout_dates');
+      localDates = raw ? JSON.parse(raw) : [];
+    } catch {}
+
+    const workoutLogsCount = Array.isArray(stats?.workoutLogs) ? stats.workoutLogs.length : 0;
+    const localCount = localDates.length;
+    const totalWorkouts = Math.max(
+      stats?.workoutStats?.globalWorkouts || 0,
+      stats?.totalWorkoutsCompleted || 0,
+      workoutLogsCount,
+      localCount
+    );
+
+    const streak = Math.max(
+      stats?.workoutStats?.globalStreak || 0,
+      stats?.currentStreak || 0,
+      stats?.streak || 0,
+      localCount > 0 ? localCount : (totalWorkouts > 0 ? 1 : 0)
+    );
+
+    const totalMinutes = Math.max(
+      stats?.workoutStats?.globalMinutes || 0,
+      stats?.totalMinutes || 0,
+      totalWorkouts * 45
+    );
+
+    const totalExercises = Math.max(
+      stats?.workoutStats?.globalExercises || 0,
+      stats?.totalExercisesCompleted || 0,
+      totalWorkouts * 4
+    );
+
+    return {
+      streak,
+      totalWorkouts,
+      totalMinutes,
+      totalExercises,
+    };
+  }, [stats, todayCompletedLocally]);
 
   return (
     <div style={{ padding: '20px 0' }}>
@@ -1086,7 +1134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                   <span style={{ fontSize: '9px', padding: '1px 5px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontWeight: 'bold' }}>🏅</span>
                 </div>
                 <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#ef4444', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalStreak || 0} {lang === 'en' ? 'Days' : 'يوم'}
+                  {computedSummaryStats.streak} {lang === 'en' ? 'Days' : 'يوم'}
                 </h2>
               </div>
             </div>
@@ -1099,7 +1147,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Total Workouts' : 'إجمالي الحصص'}</span>
                 <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#3b82f6', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalWorkouts || 0} {lang === 'en' ? 'Sessions' : 'حصة'}
+                  {computedSummaryStats.totalWorkouts} {lang === 'en' ? 'Sessions' : 'حصة'}
                 </h2>
               </div>
             </div>
@@ -1112,7 +1160,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Estimated Minutes' : 'دقائق التمرين'}</span>
                 <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#f59e0b', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalMinutes || 0} {lang === 'en' ? 'Min' : 'دقيقة'}
+                  {computedSummaryStats.totalMinutes} {lang === 'en' ? 'Min' : 'دقيقة'}
                 </h2>
               </div>
             </div>
@@ -1125,7 +1173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
               <div>
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Completed Exercises' : 'التمارين المنجزة'}</span>
                 <h2 style={{ fontSize: '22px', fontWeight: '900', color: '#10b981', marginTop: '2px', whiteSpace: 'nowrap' }}>
-                  {stats?.workoutStats?.globalExercises || 0} {lang === 'en' ? 'Exs' : 'تمرين'}
+                  {computedSummaryStats.totalExercises} {lang === 'en' ? 'Exs' : 'تمرين'}
                 </h2>
               </div>
             </div>

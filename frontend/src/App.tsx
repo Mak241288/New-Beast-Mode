@@ -382,6 +382,25 @@ function App() {
     }
     setInitError(null);
 
+    if (token.startsWith('bm_guest_') || localStorage.getItem('bm_is_guest') === 'true') {
+      const guestProfile: any = cacheStore.get('user_profile') || {
+        name: lang === 'en' ? 'Guest Athlete' : 'رياضي تجريبي (ضيف)',
+        email: 'guest@beastmode.ai',
+        isGuest: true,
+        onboardingCompleted: true,
+      };
+      setUser({ id: 'guest', email: 'guest@beastmode.ai', user_metadata: { name: guestProfile.name } });
+      setOnboardingCompleted(true);
+      setCurrentView((prev) => {
+        const validViews = ['dashboard', 'myplan', 'library', 'stats', 'profile', 'privacy', 'terms', 'about'];
+        if (validViews.includes(prev)) return prev;
+        return 'dashboard';
+      });
+      isStatusCheckingRef.current = false;
+      setLoading(false);
+      return;
+    }
+
     try {
       // Validate session with Supabase
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
