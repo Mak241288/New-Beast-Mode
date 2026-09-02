@@ -26,7 +26,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) => {
   const t = translations[lang] || translations.ar;
-  const { startSession, maximizePlayer, state: sessionState } = useWorkoutSession();
+  const { startSession, maximizePlayer, finishWorkoutSession, state: sessionState } = useWorkoutSession();
   const [currentUser, setCurrentUser] = useState<any>(user || null);
   const [activePlan, setActivePlan] = useState<any>(() => cacheStore.get('active_plan'));
   const [profile, setProfile] = useState<any>(() => cacheStore.get('user_profile'));
@@ -499,6 +499,54 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
     startSession(today);
   };
 
+  const handleQuickCompleteDay = async () => {
+    const today = getSelectedDay();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const durationMin = 45;
+    const totalSets = (today?.exercises || []).reduce((acc: number, ex: any) => acc + (Number(ex.sets) || 3), 0) || 16;
+    const estimatedVolume = totalSets * 10 * 25; // 4000 kg approx
+
+    try {
+      // 1. Log activity to backend & cacheStore
+      await api.logWorkoutActivity({
+        title: today?.title || (lang === 'en' ? 'Chest & Triceps Power' : 'تمرين اليوم المكتمل'),
+        durationMinutes: durationMin,
+        volumeKg: estimatedVolume,
+        completedSets: totalSets,
+        totalExercises: today?.exercises?.length || 4,
+      });
+
+      if (today?.id) {
+        await api.completeDay(today.id).catch(() => null);
+      }
+
+      // 2. Save completion date to local storage
+      const existingLogsRaw = localStorage.getItem('beast_completed_workout_dates');
+      const existingLogs: string[] = existingLogsRaw ? JSON.parse(existingLogsRaw) : [];
+      if (!existingLogs.includes(todayStr)) {
+        existingLogs.push(todayStr);
+        localStorage.setItem('beast_completed_workout_dates', JSON.stringify(existingLogs));
+      }
+
+      setTodayCompletedLocally(true);
+
+      // 3. Dispatch global event for instant UI reflection on Dashboard & Weekly Streak
+      window.dispatchEvent(new CustomEvent('beast_workout_completed', {
+        detail: {
+          dayTitle: today?.title || 'Workout Routine',
+          dayNumber: today?.dayIndex || 1,
+          totalExercises: today?.exercises?.length || 4,
+          totalSetsCompleted: totalSets,
+          totalVolumeKg: estimatedVolume,
+          durationMinutes: durationMin,
+          date: todayStr,
+        }
+      }));
+    } catch (err) {
+      console.warn('[handleQuickCompleteDay Error]:', err);
+    }
+  };
+
   const handleFinishSet = () => {
     const exercises = getSelectedDay()?.exercises || [];
     const currentEx = exercises[activeExerciseIndex];
@@ -969,25 +1017,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
 
                   {!todayWorkout.isRestDay && (
                     sessionState.status === 'active' || sessionState.status === 'resting' || sessionState.status === 'paused' ? (
-                      <button
-                        onClick={maximizePlayer}
-                        className="glow-btn"
-                        style={{
-                          padding: '12px 24px',
-                          fontSize: '15px',
-                          fontWeight: '800',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          background: 'linear-gradient(135deg, #10b981, #059669)',
-                          border: 'none',
-                          boxShadow: '0 0 25px rgba(16, 185, 129, 0.5)',
-                          borderRadius: '12px',
-                        }}
-                      >
-                        <Dumbbell size={18} />
-                        <span>{lang === 'en' ? 'Resume Workout ⛶' : 'استئناف التمرين ⛶'}</span>
-                      </button>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          onClick={maximizePlayer}
+                          className="glow-btn"
+                          style={{
+                            padding: '12px 22px',
+                            fontSize: '14.5px',
+                            fontWeight: '800',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            border: 'none',
+                            boxShadow: '0 0 25px rgba(16, 185, 129, 0.5)',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          <Dumbbell size={18} />
+                          <span>{lang === 'en' ? 'Resume Workout ⛶' : 'استئناف التمرين ⛶'}</span>
+                        </button>
+                        <button
+                          onClick={() => finishWorkoutSession()}
+                          className="secondary-btn"
+                          style={{
+                            padding: '12px 18px',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            borderColor: '#10b981',
+                            color: '#10b981',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          <span>🏆 {lang === 'en' ? 'Finish & Log Now' : 'إنهاء وحفظ الإنجاز 🏆'}</span>
+                        </button>
+                      </div>
                     ) : isTodayCompleted ? (
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         <button
@@ -1025,24 +1092,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={handleStartWorkout}
-                        className="glow-btn shimmer-glow"
-                        style={{
-                          padding: '12px 28px',
-                          fontSize: '15.5px',
-                          fontWeight: '900',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          borderRadius: '14px',
-                          background: 'linear-gradient(135deg, #00d2ff, #0077ff)',
-                          boxShadow: '0 0 30px rgba(0, 210, 255, 0.45)',
-                        }}
-                      >
-                        <Dumbbell size={18} />
-                        <span>{lang === 'en' ? 'START WORKOUT 🚀' : 'بدء تمرين اليوم الآن 🚀'}</span>
-                      </button>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                        <button
+                          onClick={handleStartWorkout}
+                          className="glow-btn shimmer-glow"
+                          style={{
+                            padding: '12px 24px',
+                            fontSize: '15px',
+                            fontWeight: '900',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            borderRadius: '14px',
+                            background: 'linear-gradient(135deg, #00d2ff, #0077ff)',
+                            boxShadow: '0 0 30px rgba(0, 210, 255, 0.45)',
+                          }}
+                        >
+                          <Dumbbell size={18} />
+                          <span>{lang === 'en' ? 'START WORKOUT 🚀' : 'بدء تمرين اليوم الآن 🚀'}</span>
+                        </button>
+                        <button
+                          onClick={handleQuickCompleteDay}
+                          className="secondary-btn"
+                          style={{
+                            padding: '12px 18px',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            borderColor: 'rgba(16, 185, 129, 0.4)',
+                            color: '#10b981',
+                            background: 'rgba(16, 185, 129, 0.08)',
+                            borderRadius: '14px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <span>🏆 {lang === 'en' ? 'Quick Complete Day' : 'إتمام اليوم وتحديث المجموع 🏆'}</span>
+                        </button>
+                      </div>
                     )
                   )}
                 </div>
