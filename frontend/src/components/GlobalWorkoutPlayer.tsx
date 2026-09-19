@@ -10,6 +10,7 @@ import { MuscleWikiModal } from './MuscleWikiModal';
 import { StoryProgressBar } from './StoryProgressBar';
 import { audioCues } from '../utils/audioCues';
 import { getExerciseHistoryAndSuggestion } from '../utils/progressiveOverload';
+import { getDailyRecovery, saveDailyRecovery } from '../utils/recoveryTracker';
 import { 
   Play, 
   Pause, 
@@ -55,6 +56,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
     nextExercise,
     prevExercise,
     selectExercise,
+    swapExercise,
     finishWorkoutSession,
     discardSession,
     closeSummaryModal,
@@ -118,27 +120,49 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
     return finishDate.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' });
   }, [remainingSets, isAr]);
 
-  // 2. 1-Tap Hydration Sip (+200ml)
+  // 2. 1-Tap Hydration Sip (+200ml) - Unified across whole ecosystem
   const handleQuickWaterSip = () => {
     try {
+      const currentRec = getDailyRecovery();
+      const updatedRec = {
+        ...currentRec,
+        waterMl: (currentRec.waterMl || 0) + 200,
+      };
+      saveDailyRecovery(updatedRec);
+
+      // Backwards-compatible local storage keys & events
       const today = new Date().toISOString().split('T')[0];
-      const key = `hydration_log_${today}`;
-      const current = Number(localStorage.getItem(key) || 0) + 200;
-      localStorage.setItem(key, String(current));
+      localStorage.setItem(`hydration_log_${today}`, String(updatedRec.waterMl));
+      localStorage.setItem('beast_water_today', String(updatedRec.waterMl));
+      window.dispatchEvent(new CustomEvent('beast_recovery_updated'));
+      window.dispatchEvent(new CustomEvent('beast_water_updated', { detail: { current: updatedRec.waterMl } }));
+
       setWaterToast(isAr ? '+200 مل ماء 💧 عاش!' : '+200ml Water 💧 Hydrated!');
       setTimeout(() => setWaterToast(null), 2000);
-    } catch {
-      // Non-fatal
+    } catch (err) {
+      console.warn('[Hydration] Failed to save water log:', err);
     }
   };
 
-  // 3. Keyboard Spacebar Shortcut to Complete Set & Trigger Rest
+  // 3. Keyboard Spacebar Shortcut to Complete Set OR Skip Rest (Modal-safe)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         const activeTag = (document.activeElement?.tagName || '').toLowerCase();
         if (activeTag !== 'input' && activeTag !== 'textarea' && activeTag !== 'select') {
+          // Do not intercept spacebar if any submodal is currently open
+          if (showShareCardModal || showDynamicWarmupModal || showRoutineCardModal || showQuickSwapModal || showMuscleWiki) {
+            return;
+          }
+
           e.preventDefault();
+
+          // If resting, pressing spacebar skips the rest safely instead of completing the next set!
+          if (state.isResting) {
+            skipRest();
+            return;
+          }
+
           const currentLogs = state.setLogs[state.activeExerciseIndex] || [];
           const currentSet = currentLogs[state.currentSetIndex];
           if (currentSet && !currentSet.completed) {
@@ -150,7 +174,19 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.activeExerciseIndex, state.currentSetIndex, state.setLogs, finishCurrentSet]);
+  }, [
+    state.activeExerciseIndex,
+    state.currentSetIndex,
+    state.setLogs,
+    state.isResting,
+    finishCurrentSet,
+    skipRest,
+    showShareCardModal,
+    showDynamicWarmupModal,
+    showRoutineCardModal,
+    showQuickSwapModal,
+    showMuscleWiki,
+  ]);
 
   // If summary modal is active
   if (state.showSummaryModal && state.summaryData) {
@@ -374,12 +410,12 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   ];
 
   const handleApplyAlternative = (altName: string) => {
-    if (currentEx) {
-      currentEx.name = altName;
-      currentEx.name_en = altName;
-      currentEx.name_ar = altName;
-      setShowQuickSwapModal(false);
-    }
+    swapExercise(state.activeExerciseIndex, {
+      name: altName,
+      name_en: altName,
+      name_ar: altName,
+    });
+    setShowQuickSwapModal(false);
   };
 
   // ==========================================
@@ -539,26 +575,52 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
 
         </div>
 
-        {/* Focus Bottom Navigation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: '800px', margin: '0 auto', gap: '12px' }}>
+        {/* Focus Mode Actions & Finish CTA */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '800px', margin: '0 auto' }}>
           <button
-            onClick={prevExercise}
-            disabled={state.activeExerciseIndex === 0}
-            className="secondary-btn"
-            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex === 0 ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            onClick={handleFinishWorkout}
+            disabled={saving}
+            className="glow-btn"
+            style={{
+              width: '100%',
+              padding: '14px',
+              fontSize: '15px',
+              fontWeight: '900',
+              borderRadius: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              background: remainingSets === 0 ? 'linear-gradient(135deg, #10b981, #059669)' : 'rgba(16, 185, 129, 0.2)',
+              borderColor: '#10b981',
+              boxShadow: remainingSets === 0 ? '0 0 25px rgba(16, 185, 129, 0.4)' : undefined,
+            }}
           >
-            {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-            <span>{isAr ? 'التمرين السابق' : 'Previous Ex'}</span>
+            <Trophy size={18} />
+            <span>{saving ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'إنهاء التمرين وحفظ الإنجاز 🏆' : 'Finish & Log Workout 🏆')}</span>
           </button>
-          <button
-            onClick={nextExercise}
-            disabled={state.activeExerciseIndex >= exercises.length - 1}
-            className="secondary-btn"
-            style={{ flex: 1, padding: '14px', fontSize: '14px', borderRadius: '12px', opacity: state.activeExerciseIndex >= exercises.length - 1 ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-          >
-            <span>{isAr ? 'التالي' : 'Next Ex'}</span>
-            {isAr ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
-          </button>
+
+          {/* Focus Bottom Navigation */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+            <button
+              onClick={prevExercise}
+              disabled={state.activeExerciseIndex === 0}
+              className="secondary-btn"
+              style={{ flex: 1, padding: '12px', fontSize: '13px', borderRadius: '12px', opacity: state.activeExerciseIndex === 0 ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              {isAr ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              <span>{isAr ? 'التمرين السابق' : 'Previous Ex'}</span>
+            </button>
+            <button
+              onClick={nextExercise}
+              disabled={state.activeExerciseIndex >= exercises.length - 1}
+              className="secondary-btn"
+              style={{ flex: 1, padding: '12px', fontSize: '13px', borderRadius: '12px', opacity: state.activeExerciseIndex >= exercises.length - 1 ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            >
+              <span>{isAr ? 'التالي' : 'Next Ex'}</span>
+              {isAr ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1128,7 +1190,8 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                 <tbody>
                   {currentLogs.map((setLog, sIdx) => {
                     const isTargetSet = sIdx === state.currentSetIndex;
-                    const displayWeight = (setLog.weight === 'Bodyweight' || setLog.weight === 'وزن الجسم') ? (isAr ? 'وزن الجسم' : 'BW') : setLog.weight;
+                    const isBw = setLog.weight === 'Bodyweight' || setLog.weight === 'وزن الجسم' || setLog.weight === 'BW';
+                    const displayWeight = isBw ? '' : setLog.weight;
 
                     return (
                       <tr
@@ -1151,8 +1214,12 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                             inputMode="decimal"
                             dir="ltr"
                             value={displayWeight}
-                            onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { weight: e.target.value })}
-                            placeholder={isAr ? 'وزن الجسم' : '15 kg'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateSetLog(state.activeExerciseIndex, sIdx, { weight: val.trim() === '' ? 'Bodyweight' : val });
+                            }}
+                            placeholder={isAr ? 'وزن الجسم' : 'Bodyweight'}
+                            aria-label={isAr ? `وزن الجولة ${setLog.setNumber}` : `Weight for set ${setLog.setNumber}`}
                             style={{
                               width: '100%',
                               padding: '8px 4px',
@@ -1176,6 +1243,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                             value={setLog.reps}
                             onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { reps: e.target.value })}
                             placeholder="10-12"
+                            aria-label={isAr ? `تكرار الجولة ${setLog.setNumber}` : `Reps for set ${setLog.setNumber}`}
                             style={{
                               width: '100%',
                               padding: '8px 4px',
@@ -1195,6 +1263,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           <select
                             value={setLog.rpe || ''}
                             onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { rpe: e.target.value ? Number(e.target.value) : undefined })}
+                            aria-label={isAr ? `مقياس الجهد RPE للجولة ${setLog.setNumber}` : `RPE for set ${setLog.setNumber}`}
                             style={{
                               width: '100%',
                               padding: '7px 2px',
@@ -1225,6 +1294,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                                 updateSetLog(state.activeExerciseIndex, sIdx, { completed: false });
                               }
                             }}
+                            aria-label={isAr ? `إتمام الجولة ${setLog.setNumber}` : `Complete set ${setLog.setNumber}`}
                             style={{
                               width: '36px',
                               height: '36px',
@@ -1393,9 +1463,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
           currentExerciseName={exName}
           targetMuscle={currentEx.muscle_en || currentEx.targetMuscle || 'Chest'}
           onSwap={(newEx) => {
-            currentEx.name = newEx.name;
-            currentEx.name_en = newEx.name;
-            currentEx.name_ar = newEx.name;
+            swapExercise(state.activeExerciseIndex, newEx);
           }}
           lang={lang as any}
         />

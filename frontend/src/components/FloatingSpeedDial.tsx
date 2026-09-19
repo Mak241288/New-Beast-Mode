@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Droplets, Scale, Timer, X, Check } from 'lucide-react';
 import { api } from '../services/api';
+import { getDailyRecovery, saveDailyRecovery } from '../utils/recoveryTracker';
 
 interface FloatingSpeedDialProps {
   lang: 'ar' | 'en';
@@ -21,10 +22,22 @@ export const FloatingSpeedDial: React.FC<FloatingSpeedDialProps> = ({ lang }) =>
   };
 
   const handleQuickWater = () => {
-    // Dispatch water logged event or save local water intake
-    const current = Number(localStorage.getItem('beast_water_today') || '0') + 250;
-    localStorage.setItem('beast_water_today', String(current));
-    window.dispatchEvent(new CustomEvent('beast_water_updated', { detail: { current } }));
+    try {
+      const currentRec = getDailyRecovery();
+      const updatedRec = {
+        ...currentRec,
+        waterMl: (currentRec.waterMl || 0) + 250,
+      };
+      saveDailyRecovery(updatedRec);
+
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem(`hydration_log_${today}`, String(updatedRec.waterMl));
+      localStorage.setItem('beast_water_today', String(updatedRec.waterMl));
+      window.dispatchEvent(new CustomEvent('beast_recovery_updated'));
+      window.dispatchEvent(new CustomEvent('beast_water_updated', { detail: { current: updatedRec.waterMl } }));
+    } catch (err) {
+      console.warn('[FloatingSpeedDial] Water sync warning:', err);
+    }
     showNotification(isEn ? '💧 +250ml Water logged!' : '💧 تم تسجيل +250 مل ماء!');
     setIsOpen(false);
   };

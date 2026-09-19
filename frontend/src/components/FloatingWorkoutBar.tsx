@@ -18,6 +18,16 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
   } = useWorkoutSession();
 
   const isAr = lang === 'ar';
+  const [isFinishingSet, setIsFinishingSet] = React.useState(false);
+
+  const handleFinishSetThrottled = () => {
+    if (isFinishingSet) return;
+    setIsFinishingSet(true);
+    finishCurrentSet();
+    setTimeout(() => {
+      setIsFinishingSet(false);
+    }, 600);
+  };
 
   // Only render if a session is currently in progress and the full player is minimized / closed
   if (state.status === 'idle' || state.status === 'completed' || state.isPlayerOpen) {
@@ -42,6 +52,7 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
       className="floating-workout-bar animated-fade"
       style={{
         position: 'fixed',
+        bottom: '24px',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 9999,
@@ -231,7 +242,8 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
             </button>
 
             <button
-              onClick={() => finishCurrentSet()}
+              onClick={handleFinishSetThrottled}
+              disabled={isFinishingSet}
               title={isAr ? 'إنهاء الجولة وبدء الراحة' : 'Finish Set & Rest'}
               style={{
                 background: 'linear-gradient(135deg, #10b981, #059669)',
@@ -239,7 +251,8 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
                 color: '#fff',
                 padding: '6px 12px',
                 borderRadius: '10px',
-                cursor: 'pointer',
+                cursor: isFinishingSet ? 'not-allowed' : 'pointer',
+                opacity: isFinishingSet ? 0.7 : 1,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',

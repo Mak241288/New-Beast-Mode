@@ -42,6 +42,7 @@ export interface WorkoutSessionState {
   restRemainingSeconds: number;
   isRestPaused: boolean;
   restPausedRemainingSeconds: number;
+  pendingNextExerciseIndex?: number | null;
 
   // UI state
   isMinimized: boolean;
@@ -64,6 +65,7 @@ interface WorkoutSessionContextType {
   nextExercise: () => void;
   prevExercise: () => void;
   selectExercise: (index: number) => void;
+  swapExercise: (exerciseIndex: number, newExercise: any) => void;
   minimizePlayer: () => void;
   maximizePlayer: () => void;
   finishWorkoutSession: () => Promise<void>;
@@ -92,6 +94,7 @@ const initialState: WorkoutSessionState = {
   restRemainingSeconds: 0,
   isRestPaused: false,
   restPausedRemainingSeconds: 0,
+  pendingNextExerciseIndex: null,
   isMinimized: false,
   isPlayerOpen: false,
   showSummaryModal: false,
@@ -210,6 +213,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
 
   const stateRef = useRef(state);
   stateRef.current = state;
+  const cloudSyncDebounceTimerRef = useRef<any>(null);
 
   // Play audio beep
   const playBeep = useCallback((freq = 880, duration = 0.15) => {
@@ -233,22 +237,38 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payloadWithTime));
         cacheStore.set('active_gym_session', payloadWithTime);
         setHasSavedDraft(true);
-        api.pushUserDataToCloud();
-        api.broadcastWorkoutSetUpdate(payloadWithTime);
-      } catch {
-        // Ignore quota error
+
+        // Debounce cloud push and realtime broadcast to batch rapid typing in set inputs
+        if (cloudSyncDebounceTimerRef.current) {
+          clearTimeout(cloudSyncDebounceTimerRef.current);
+        }
+        cloudSyncDebounceTimerRef.current = setTimeout(() => {
+          api.pushUserDataToCloud().catch(err => console.warn('[WorkoutSessionContext] Cloud push error:', err));
+          api.broadcastWorkoutSetUpdate(payloadWithTime).catch(err => console.warn('[WorkoutSessionContext] Broadcast error:', err));
+        }, 1000);
+      } catch (err) {
+        console.warn('[WorkoutSessionContext] LocalStorage quota or save error:', err);
       }
     } else if (state.status === 'idle' || state.status === 'completed') {
       try {
+        if (cloudSyncDebounceTimerRef.current) {
+          clearTimeout(cloudSyncDebounceTimerRef.current);
+        }
         localStorage.removeItem(STORAGE_KEY);
         cacheStore.remove('active_gym_session');
         setHasSavedDraft(false);
-        api.pushUserDataToCloud();
-      } catch {
-        // Ignore
+        api.pushUserDataToCloud().catch(err => console.warn('[WorkoutSessionContext] Cloud push on idle error:', err));
+      } catch (err) {
+        console.warn('[WorkoutSessionContext] Storage cleanup error:', err);
       }
     }
-  }, [state.status, state.activeExerciseIndex, state.currentSetIndex, state.setLogs, state.isPaused]);
+
+    return () => {
+      if (cloudSyncDebounceTimerRef.current) {
+        clearTimeout(cloudSyncDebounceTimerRef.current);
+      }
+    };
+  }, [state.status, state.activeExerciseIndex, state.currentSetIndex, state.setLogs, state.isPaused, state.dayData]);
 
   // Bulletproof Mobile Lifecycle Persistence (Incoming Phone Calls, App Switcher, Tab Freezing)
   useEffect(() => {
@@ -348,6 +368,24 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
             newRestRemaining = 0;
             playBeep(980, 0.25); // Ding when rest finishes!
             triggerHaptic('restEnd');
+
+            let newActiveExIdx = prev.activeExerciseIndex;
+            let newCurSetIdx = prev.currentSetIndex;
+            if (prev.pendingNextExerciseIndex !== null && prev.pendingNextExerciseIndex !== undefined) {
+              newActiveExIdx = prev.pendingNextExerciseIndex;
+              newCurSetIdx = 0;
+            }
+
+            return {
+              ...prev,
+              totalElapsedSeconds: newElapsed,
+              isResting: false,
+              restRemainingSeconds: 0,
+              activeExerciseIndex: newActiveExIdx,
+              currentSetIndex: newCurSetIdx,
+              pendingNextExerciseIndex: null,
+              status: prev.isPaused ? 'paused' : 'active',
+            };
           } else {
             if (secondsLeft === 3) {
               triggerHaptic('warning');
@@ -514,11 +552,13 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         }
       }
 
+      let pendingNext: number | null = null;
       if (nextSetIdx >= updatedSetLogs.length) {
-        // Exercise completed! Move to next exercise
+        // Exercise completed!
         if (exIdx + 1 < exercises.length) {
-          nextExIdx = exIdx + 1;
-          nextSetIdx = 0;
+          nextExIdx = exIdx; // Keep on current exercise during rest so user can see what they completed
+          pendingNext = exIdx + 1;
+          nextSetIdx = updatedSetLogs.length - 1; // Highlight final completed set
         } else {
           // All exercises in day completed!
           isCompleted = true;
@@ -526,11 +566,14 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       }
 
       if (isCompleted) {
+        triggerHaptic('success');
+        playBeep(1080, 0.35);
         return {
           ...prev,
           setLogs: newAllLogs,
           status: 'active',
           isResting: false,
+          pendingNextExerciseIndex: null,
         };
       }
 
@@ -541,6 +584,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         setLogs: newAllLogs,
         activeExerciseIndex: nextExIdx,
         currentSetIndex: nextSetIdx,
+        pendingNextExerciseIndex: pendingNext,
         isResting: true,
         restTargetTimestamp: restTarget,
         restTotalDuration: restSeconds,
@@ -611,14 +655,25 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   const skipRest = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      isResting: false,
-      restTargetTimestamp: null,
-      restRemainingSeconds: 0,
-      isRestPaused: false,
-      status: prev.isPaused ? 'paused' : 'active',
-    }));
+    setState(prev => {
+      let newActiveExIdx = prev.activeExerciseIndex;
+      let newCurSetIdx = prev.currentSetIndex;
+      if (prev.pendingNextExerciseIndex !== null && prev.pendingNextExerciseIndex !== undefined) {
+        newActiveExIdx = prev.pendingNextExerciseIndex;
+        newCurSetIdx = 0;
+      }
+      return {
+        ...prev,
+        isResting: false,
+        restTargetTimestamp: null,
+        restRemainingSeconds: 0,
+        isRestPaused: false,
+        activeExerciseIndex: newActiveExIdx,
+        currentSetIndex: newCurSetIdx,
+        pendingNextExerciseIndex: null,
+        status: prev.isPaused ? 'paused' : 'active',
+      };
+    });
   }, []);
 
   const addRestSeconds = useCallback((seconds: number) => {
@@ -721,9 +776,39 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
           activeExerciseIndex: index,
           currentSetIndex: 0,
           isResting: false,
+          pendingNextExerciseIndex: null,
         };
       }
       return prev;
+    });
+  }, []);
+
+  const swapExercise = useCallback((exerciseIndex: number, newExercise: any) => {
+    setState(prev => {
+      if (!prev.dayData?.exercises?.[exerciseIndex]) return prev;
+      const updatedExercises = [...prev.dayData.exercises];
+      const oldEx = updatedExercises[exerciseIndex];
+      updatedExercises[exerciseIndex] = {
+        ...oldEx,
+        ...newExercise,
+        name: newExercise.name || newExercise.name_en || oldEx.name,
+        name_en: newExercise.name_en || newExercise.name || oldEx.name_en,
+        name_ar: newExercise.name_ar || newExercise.name || oldEx.name_ar,
+        muscle_en: newExercise.muscle_en || newExercise.targetMuscle || oldEx.muscle_en,
+        muscle_ar: newExercise.muscle_ar || oldEx.muscle_ar,
+        targetMuscle: newExercise.targetMuscle || newExercise.muscle_en || oldEx.targetMuscle,
+        equipment_en: newExercise.equipment_en || oldEx.equipment_en,
+        equipment_ar: newExercise.equipment_ar || oldEx.equipment_ar,
+        gif_url: newExercise.gif_url || newExercise.image_url || oldEx.gif_url,
+      };
+      return {
+        ...prev,
+        dayData: {
+          ...prev.dayData,
+          exercises: updatedExercises,
+        },
+        lastUpdatedTimestamp: Date.now(),
+      };
     });
   }, []);
 
@@ -742,8 +827,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       try {
         localStorage.removeItem(STORAGE_KEY);
         setHasSavedDraft(false);
-      } catch {
-        // Ignore
+      } catch (err) {
+        console.warn('[WorkoutSessionContext] Discard storage removal warning:', err);
       }
     }
   }, []);
@@ -756,12 +841,38 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     let totalSetsDone = 0;
     let totalVolumeKg = 0;
 
+    // Safe volume calculation resolving ranges like '10-12', numbers, and bodyweight movements
+    const parseSafeReps = (repsVal: any): number => {
+      if (typeof repsVal === 'number') return Math.max(1, Math.round(repsVal));
+      const str = String(repsVal || '').trim();
+      if (str.includes('-')) {
+        const parts = str.split('-').map(p => parseInt(p.replace(/[^0-9]/g, ''), 10)).filter(n => !isNaN(n));
+        if (parts.length > 0) return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
+      }
+      const cleaned = parseInt(str.replace(/[^0-9]/g, ''), 10);
+      return isNaN(cleaned) || cleaned <= 0 ? 10 : cleaned;
+    };
+
+    let userWeightKg = 75;
+    try {
+      const cachedProfile = cacheStore.get<any>('user_profile');
+      if (cachedProfile && cachedProfile.currentWeight) {
+        userWeightKg = parseFloat(String(cachedProfile.currentWeight)) || 75;
+      }
+    } catch {}
+
     Object.values(currentState.setLogs).forEach((sets) => {
       sets.forEach((s) => {
         if (s.completed) {
           totalSetsDone += 1;
-          const weightNum = parseFloat(String(s.weight).replace(/[^0-9.]/g, '')) || 0;
-          const repsNum = parseInt(String(s.reps).replace(/[^0-9]/g, ''), 10) || 10;
+          const weightStr = String(s.weight || '').toLowerCase().trim();
+          let weightNum = 0;
+          if (weightStr.includes('body') || weightStr.includes('جسم') || weightStr === 'bw') {
+            weightNum = userWeightKg;
+          } else {
+            weightNum = parseFloat(weightStr.replace(/[^0-9.]/g, '')) || 0;
+          }
+          const repsNum = parseSafeReps(s.reps);
           totalVolumeKg += weightNum * repsNum;
         }
       });
@@ -866,6 +977,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         nextExercise,
         prevExercise,
         selectExercise,
+        swapExercise,
         minimizePlayer,
         maximizePlayer,
         finishWorkoutSession,

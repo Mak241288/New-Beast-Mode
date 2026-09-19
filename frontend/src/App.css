@@ -258,6 +258,10 @@ html[dir="ltr"] .main-content {
   color: var(--primary);
 }
 
+.floating-workout-bar {
+  bottom: 24px;
+}
+
 /* Responsive Media Queries */
 @media (max-width: 991.98px) {
   .sidebar {

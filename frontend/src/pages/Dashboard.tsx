@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { api, getCurrentUser } from '../services/api';
-import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, Volume2, RefreshCw } from 'lucide-react';
+import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, RefreshCw } from 'lucide-react';
 import { translations } from '../utils/translations';
 import { MuscleWikiModal } from '../components/MuscleWikiModal';
-import { ExerciseImage } from '../components/ExerciseImage';
 import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { RecoveryTrackerModal } from '../components/RecoveryTrackerModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
@@ -13,7 +12,6 @@ import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
 import { WeeklyStreakBar } from '../components/WeeklyStreakBar';
 import { LiveHydrationWidget } from '../components/LiveHydrationWidget';
 import { calculateNutrition } from '../utils/nutritionCalculator';
-import { playTimerSound, type SoundPack } from '../utils/audioSynthesizer';
 import { cacheStore } from '../utils/cacheStore';
 import { useWorkoutSession } from '../context/WorkoutSessionContext';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -45,9 +43,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
   const [showDynamicWarmupModal, setShowDynamicWarmupModal] = useState(false);
   const [showBodyMap, setShowBodyMap] = useState(false);
   const [selectedBodyMuscle, setSelectedBodyMuscle] = useState('ALL');
-  const [timerSoundPack, setTimerSoundPack] = useState<SoundPack>(() => (localStorage.getItem('bm_timer_sound_pack') as SoundPack) || 'BOXING_BELL');
-  const [timerVolume, setTimerVolume] = useState<number>(() => parseInt(localStorage.getItem('bm_timer_volume') || '80', 10));
-  const [showSoundSettings, setShowSoundSettings] = useState(false);
 
   // Infinite fetch loop guards and circuit breaker concurrency control
   const isFetchingRef = useRef(false);
@@ -65,20 +60,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
   const [submittingCheckIn, setSubmittingCheckIn] = useState(false);
   const [, setHasStartedWorkouts] = useState(false);
   const [, setDaysRemaining] = useState(0);
-
-  // Active Player state
-  const [showPlayer, setShowPlayer] = useState(false);
-  const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
-  const [currentSet, setCurrentSet] = useState(1);
-  const [restSeconds, setRestSeconds] = useState(60);
-  const [isResting, setIsResting] = useState(false);
-  const [completedReps, setCompletedReps] = useState<string[]>([]);
-  const [loggedWeight, setLoggedWeight] = useState<string[]>([]);
-  const [exerciseLogNotes, setExerciseLogNotes] = useState('');
-
-  // Exercise countdown timer (for time-based exercises like Plank)
-  const [exerciseSeconds, setExerciseSeconds] = useState(0);
-  const [isExerciseTimerActive, setIsExerciseTimerActive] = useState(false);
 
   // Real-time Today Workout Completion State
   const [todayCompletedLocally, setTodayCompletedLocally] = useState<boolean>(() => {
@@ -389,33 +370,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
     }
   };
 
-  const playBeep = () => {
-    playTimerSound(timerSoundPack, timerVolume);
-  };
-
-  const parseRepsToSeconds = (repsText: string): number | null => {
-    const match = repsText.match(/(\d+)\s*(ثانية|s|second|sec|ثوان|دقيقة|min)/i);
-    if (!match) return null;
-    const value = parseInt(match[1]);
-    const unit = match[2].toLowerCase();
-    if (unit.includes('دقيقة') || unit.includes('min')) {
-      return value * 60;
-    }
-    return value;
-  };
-
-  const checkAndInitExerciseTimer = (ex: any) => {
-    if (!ex) return;
-    const secs = parseRepsToSeconds(ex.reps);
-    if (secs !== null) {
-      setExerciseSeconds(secs);
-      setIsExerciseTimerActive(false);
-    } else {
-      setExerciseSeconds(0);
-      setIsExerciseTimerActive(false);
-    }
-  };
-
   const quickNutrition = useMemo(() => {
     if (!profile) return null;
     return calculateNutrition({
@@ -555,103 +509,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       console.warn('[handleQuickCompleteDay Error]:', err);
     }
   };
-
-  const handleFinishSet = () => {
-    const exercises = getSelectedDay()?.exercises || [];
-    const currentEx = exercises[activeExerciseIndex];
-    
-    let currentRepVal = '';
-    let currentWeightVal = '';
-
-    const isTimeBased = parseRepsToSeconds(currentEx.reps) !== null;
-    if (isTimeBased) {
-      currentRepVal = `${currentEx.reps}`;
-      currentWeightVal = currentEx.weight || 'Bodyweight';
-    } else {
-      currentRepVal = (document.getElementById('rep-input') as HTMLInputElement)?.value || '10';
-      currentWeightVal = (document.getElementById('weight-input') as HTMLInputElement)?.value || 'Bodyweight';
-    }
-
-    const newReps = [...completedReps];
-    newReps[currentSet - 1] = currentRepVal;
-    setCompletedReps(newReps);
-
-    const newWeights = [...loggedWeight];
-    newWeights[currentSet - 1] = currentWeightVal;
-    setLoggedWeight(newWeights);
-
-    if (currentSet < currentEx.sets) {
-      setCurrentSet(currentSet + 1);
-      setRestSeconds(60);
-      setIsResting(true);
-    } else {
-      handleNextExercise(newReps, newWeights);
-    }
-  };
-
-  const handleNextExercise = async (finalReps?: string[], finalWeights?: string[]) => {
-    const exercises = getSelectedDay()?.exercises || [];
-    const currentEx = exercises[activeExerciseIndex];
-    const repsToLog = finalReps || completedReps;
-    const weightsToLog = finalWeights || loggedWeight;
-
-    try {
-      await api.logProgress(currentEx.id, {
-        completedSets: currentEx.sets,
-        repsCompleted: repsToLog.join(','),
-        weightUsed: weightsToLog.join(','),
-        notes: exerciseLogNotes,
-      });
-    } catch (err) {
-      console.error('Failed to log exercise progress:', err);
-    }
-
-    if (activeExerciseIndex < exercises.length - 1) {
-      setActiveExerciseIndex(activeExerciseIndex + 1);
-      setCurrentSet(1);
-      setCompletedReps([]);
-      setLoggedWeight([]);
-      setExerciseLogNotes('');
-      setIsResting(false);
-      checkAndInitExerciseTimer(exercises[activeExerciseIndex + 1]);
-    } else {
-      setShowPlayer(false);
-      alert(lang === 'en' ? 'Congratulations! You have completed today\'s routine! Keep up the beast momentum!' : 'تهانينا! لقد أنهيت تمرين اليوم بنجاح. استمر في هذا الزخم للوحوش!');
-      fetchDashboardData();
-    }
-  };
-
-  // Rest timer tick
-  useEffect(() => {
-    let interval: any = null;
-    if (isResting && restSeconds > 0) {
-      interval = setInterval(() => {
-        setRestSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (isResting && restSeconds === 0) {
-      setIsResting(false);
-      playBeep();
-      const exercises = getSelectedDay()?.exercises || [];
-      const currentEx = exercises[activeExerciseIndex];
-      checkAndInitExerciseTimer(currentEx);
-    }
-    return () => clearInterval(interval);
-  }, [isResting, restSeconds, activeExerciseIndex, selectedDayIndex]);
-
-  // Exercise timer tick
-  useEffect(() => {
-    let interval: any = null;
-    if (isExerciseTimerActive && exerciseSeconds > 0) {
-      interval = setInterval(() => {
-        setExerciseSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (isExerciseTimerActive && exerciseSeconds === 0) {
-      setIsExerciseTimerActive(false);
-      playBeep();
-      handleFinishSet();
-    }
-    return () => clearInterval(interval);
-  }, [isExerciseTimerActive, exerciseSeconds]);
 
   const todayWorkout = getSelectedDay();
 
@@ -1547,251 +1404,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
         </div>
       )}
 
-      {/* ACTIVE WORKOUT PLAYER MODAL */}
-      {showPlayer && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(5, 7, 16, 0.98)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '500px', padding: '24px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0 }}>
-                  {lang === 'en' ? 'Interactive Player 🏋️‍♂️' : 'مشغل التمرين التفاعلي 🏋️‍♂️'}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowSoundSettings(!showSoundSettings)}
-                  className="secondary-btn"
-                  style={{ padding: '4px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
-                  title={lang === 'en' ? 'Timer Audio Settings' : 'إعدادات صوت المؤقت'}
-                >
-                  <Volume2 size={12} />
-                  <span>{lang === 'en' ? 'Sound' : 'الصوت'}</span>
-                </button>
-              </div>
-              <button onClick={() => setShowPlayer(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            {/* SOUND SETTINGS DRAWER */}
-            {showSoundSettings && (
-              <div
-                className="glass-panel animated-fade"
-                style={{
-                  padding: '14px',
-                  borderRadius: '12px',
-                  border: '1px solid var(--border-color)',
-                  background: 'rgba(0,0,0,0.3)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '800' }}>
-                    {lang === 'en' ? 'Rest Timer Sound Effect:' : 'نغمة انتهاء وقت الراحة:'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => playTimerSound(timerSoundPack, timerVolume)}
-                    className="glow-btn"
-                    style={{ padding: '3px 8px', fontSize: '11px' }}
-                  >
-                    🔊 {lang === 'en' ? 'Test Sound' : 'تجربة النغمة'}
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                  {[
-                    { id: 'BOXING_BELL', name_en: '🥊 Boxing Bell', name_ar: '🥊 جرس ملاكمة' },
-                    { id: 'CYBER_BEEP', name_en: '🤖 Cyber Beep', name_ar: '🤖 صافرة رقمية' },
-                    { id: 'ZEN_CHIME', name_en: '🔔 Zen Chime', name_ar: '🔔 جرس هادئ' },
-                    { id: 'WHISTLE', name_en: '🎺 Coach Whistle', name_ar: '🎺 صافرة مدرب' },
-                  ].map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => {
-                        setTimerSoundPack(s.id as any);
-                        localStorage.setItem('bm_timer_sound_pack', s.id);
-                        playTimerSound(s.id as any, timerVolume);
-                      }}
-                      style={{
-                        padding: '6px',
-                        borderRadius: '8px',
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        border: timerSoundPack === s.id ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
-                        background: timerSoundPack === s.id ? 'rgba(0, 210, 255, 0.15)' : 'transparent',
-                        color: timerSoundPack === s.id ? 'var(--primary)' : 'var(--text-secondary)',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {lang === 'en' ? s.name_en : s.name_ar}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Volume Slider */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    🔊 {lang === 'en' ? 'Volume:' : 'مستوى الصوت:'} {timerVolume}%
-                  </span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={timerVolume}
-                    onChange={(e) => {
-                      const v = parseInt(e.target.value, 10);
-                      setTimerVolume(v);
-                      localStorage.setItem('bm_timer_volume', String(v));
-                    }}
-                    style={{ flex: 1, accentColor: 'var(--primary)' }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {(() => {
-              const exercises = getSelectedDay()?.exercises || [];
-              const ex = exercises[activeExerciseIndex];
-              if (!ex) return null;
-
-              const isTimeBased = parseRepsToSeconds(ex.reps) !== null;
-
-              return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <span className="badge" style={{ background: 'var(--primary-glow)', color: 'var(--primary)', border: '1px solid var(--primary)', fontSize: '11px' }}>
-                      {lang === 'en' ? `Exercise ${activeExerciseIndex + 1} of ${exercises.length}` : `تمرين ${activeExerciseIndex + 1} من ${exercises.length}`}
-                    </span>
-                    <h2 style={{ fontSize: '20px', fontWeight: '900', marginTop: '8px' }}>{ex.name}</h2>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>🎯 {ex.targetMuscle}</span>
-                  </div>
-
-                  {/* Images */}
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                    {ex.imageUrl && (
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Movement' : 'طريقة الحركة'}</span>
-                        <div style={{ width: '100%', height: '110px', borderRadius: '8px', overflow: 'hidden', background: '#0e111a', border: '1px solid var(--border-color)' }}>
-                          <ExerciseImage src={ex.imageUrl} alt={ex.name} muscle={ex.targetMuscle} />
-                        </div>
-                      </div>
-                    )}
-                    {ex.anatomyImageUrl && (
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'Anatomy Map' : 'العضلات المستهدفة'}</span>
-                        <div style={{ width: '100%', height: '110px', borderRadius: '8px', overflow: 'hidden', background: '#0e111a', border: '1px solid var(--border-color)' }}>
-                          <ExerciseImage src={ex.anatomyImageUrl} alt="Target Muscle Anatomy" muscle={ex.targetMuscle} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Target Details */}
-                  <div className="glass-panel" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{lang === 'en' ? 'Current Set' : 'الجولة الحالية'}</span>
-                      <h3 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--primary)' }}>{currentSet} / {ex.sets}</h3>
-                    </div>
-                    <div style={{ width: '1px', height: '30px', background: 'var(--border-color)' }} />
-                    <div>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block' }}>{lang === 'en' ? 'AI Suggestion' : 'الهدف المقترح'}</span>
-                      <h3 style={{ fontSize: '15px', fontWeight: 'bold' }}>{ex.reps} reps @ {ex.weight || 'Bodyweight'}</h3>
-                    </div>
-                  </div>
-
-                  {/* Rest timer / Exercise Countdown */}
-                  {isResting ? (
-                    <div className="glass-panel text-center" style={{ padding: '16px', borderColor: 'var(--secondary)', animation: 'pulse 1.5s infinite' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', color: 'var(--secondary)' }}>
-                        <Timer size={18} />
-                        <h4 style={{ fontSize: '13px', fontWeight: 'bold' }}>{lang === 'en' ? 'Rest Time' : 'وقت الراحة والاستشفاء'}</h4>
-                      </div>
-                      <h2 style={{ fontSize: '36px', color: 'var(--secondary)', fontWeight: '900', marginTop: '6px' }}>{restSeconds}s</h2>
-                      <button onClick={() => setIsResting(false)} className="secondary-btn" style={{ marginTop: '8px', fontSize: '11px', padding: '4px 10px' }}>
-                        {lang === 'en' ? 'Skip Rest' : 'تخطي الراحة'}
-                      </button>
-                    </div>
-                  ) : (
-                    isTimeBased ? (
-                      <div className="glass-panel text-center" style={{ padding: '16px', borderColor: 'var(--primary)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', color: 'var(--primary)' }}>
-                          <Timer size={18} />
-                          <h4 style={{ fontSize: '13px', fontWeight: 'bold' }}>{lang === 'en' ? 'Countdown Timer' : 'عداد التمرين التنازلي'}</h4>
-                        </div>
-                        <h2 style={{ fontSize: '36px', color: 'var(--primary)', fontWeight: '900', marginTop: '6px' }}>{exerciseSeconds}s</h2>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '8px' }}>
-                          <button
-                            type="button"
-                            onClick={() => setIsExerciseTimerActive(!isExerciseTimerActive)}
-                            className="glow-btn"
-                            style={{ padding: '6px 12px', fontSize: '11px' }}
-                          >
-                            {isExerciseTimerActive ? (lang === 'en' ? 'Pause' : 'إيقاف مؤقت') : (lang === 'en' ? 'Start' : 'بدء المؤقت')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsExerciseTimerActive(false);
-                              setExerciseSeconds(parseRepsToSeconds(ex.reps) || 0);
-                            }}
-                            className="secondary-btn"
-                            style={{ padding: '6px 12px', fontSize: '11px' }}
-                          >
-                            {lang === 'en' ? 'Reset' : 'إعادة تعيين'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <label style={{ fontSize: '11px', fontWeight: 'bold' }}>{lang === 'en' ? 'Actual Reps' : 'التكرارات الفعلية'}</label>
-                          <input id="rep-input" type="number" defaultValue={ex.reps.split('-')[0]} className="input-field" style={{ textAlign: 'center' }} />
-                        </div>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <label style={{ fontSize: '11px', fontWeight: 'bold' }}>{lang === 'en' ? 'Weight Used' : 'الوزن المستعمل'}</label>
-                          <select id="weight-input" defaultValue={ex.weight || 'Bodyweight'} className="input-field" style={{ textAlign: 'center', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '8px', cursor: 'pointer' }}>
-                            <option value="Bodyweight">{lang === 'en' ? 'Bodyweight' : 'وزن الجسم'}</option>
-                            {(() => {
-                              const opts = [];
-                              for (let w = 2.5; w <= 150; w += 2.5) {
-                                const val = `${w} kg`;
-                                opts.push(<option key={val} value={val}>{val}</option>);
-                              }
-                              if (ex.weight && ex.weight !== 'Bodyweight' && !opts.some(o => o.props.value === ex.weight)) {
-                                opts.unshift(<option key={ex.weight} value={ex.weight}>{ex.weight}</option>);
-                              }
-                              return opts;
-                            })()}
-                          </select>
-                        </div>
-                      </div>
-                    )
-                  )}
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 'bold' }}>{lang === 'en' ? 'Notes (Optional)' : 'ملاحظات الجولة (اختياري)'}</label>
-                    <input
-                      type="text"
-                      placeholder={lang === 'en' ? 'E.g., felt light, shoulder pain...' : 'كيف كان شعورك بالوزن؟'}
-                      value={exerciseLogNotes}
-                      onChange={(e) => setExerciseLogNotes(e.target.value)}
-                      className="input-field"
-                    />
-                  </div>
-
-                  {!isResting && (
-                    <button onClick={handleFinishSet} className="glow-btn" style={{ justifyContent: 'center', padding: '12px', fontSize: '14px' }}>
-                      {lang === 'en' ? `Complete Set ${currentSet}` : `إتمام الجولة ${currentSet}`}
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
 
       {/* CHECK-IN MODAL */}
       {showCheckInModal && (

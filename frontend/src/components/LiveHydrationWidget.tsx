@@ -24,9 +24,11 @@ export const LiveHydrationWidget: React.FC<LiveHydrationWidgetProps> = ({
     const handleStorage = () => refreshLog();
     window.addEventListener('storage', handleStorage);
     window.addEventListener('beast_recovery_updated', handleStorage);
+    window.addEventListener('beast_water_updated', handleStorage);
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('beast_recovery_updated', handleStorage);
+      window.removeEventListener('beast_water_updated', handleStorage);
     };
   }, []);
 
