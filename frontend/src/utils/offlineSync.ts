@@ -18,7 +18,7 @@ export interface ActiveGymSession {
 
 export interface OfflineActionItem {
   id: string;
-  type: 'LOG_WORKOUT' | 'COMPLETE_DAY' | 'SAVE_RECOVERY' | 'UPDATE_PROFILE' | 'SYNC_DATA';
+  type: 'LOG_WORKOUT' | 'COMPLETE_DAY' | 'SAVE_RECOVERY' | 'UPDATE_PROFILE' | 'SYNC_DATA' | 'COMPLETE_SESSION_OFFLINE';
   payload: any;
   timestamp: number;
   retryCount: number;
@@ -82,6 +82,10 @@ export const getOfflineQueue = (): OfflineActionItem[] => {
   } catch {
     return [];
   }
+};
+
+export const getPendingOfflineCount = (): number => {
+  return getOfflineQueue().length;
 };
 
 export const enqueueOfflineAction = (type: OfflineActionItem['type'], payload: any): string => {

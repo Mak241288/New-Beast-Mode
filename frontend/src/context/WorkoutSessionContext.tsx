@@ -3,10 +3,11 @@ import { api } from '../services/api';
 import { cacheStore } from '../utils/cacheStore';
 import { audioCues } from '../utils/audioCues';
 import { wakeLockManager } from '../utils/wakeLock';
-import { generateUUID } from '../utils/offlineSync';
+import { generateUUID, enqueueOfflineAction, drainOfflineQueue, initOfflineSync } from '../utils/offlineSync';
 import { triggerHaptic } from '../utils/haptics';
 import { preloadWorkoutImages } from '../utils/imagePreloader';
 import { getExerciseHistoryAndSuggestion, saveExerciseCompletionRecord } from '../utils/progressiveOverload';
+import { playTimerSound } from '../utils/audioSynthesizer';
 
 export type SessionStatus = 'idle' | 'active' | 'resting' | 'paused' | 'completed';
 
@@ -102,6 +103,35 @@ const initialState: WorkoutSessionState = {
 };
 
 const WorkoutSessionContext = createContext<WorkoutSessionContextType | null>(null);
+
+export interface WorkoutTimerState {
+  totalElapsedSeconds: number;
+  restRemainingSeconds: number;
+}
+
+export const WorkoutTimerContext = createContext<WorkoutTimerState>({
+  totalElapsedSeconds: 0,
+  restRemainingSeconds: 0,
+});
+
+export const useWorkoutTimer = () => useContext(WorkoutTimerContext);
+
+export function formatWorkoutTime(secs: number): string {
+  const safeSecs = Math.max(0, Math.floor(secs || 0));
+  const m = Math.floor(safeSecs / 60);
+  const s = safeSecs % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+export const WorkoutElapsedTimerText: React.FC<{ style?: React.CSSProperties; className?: string }> = React.memo(({ style, className }) => {
+  const { totalElapsedSeconds } = useWorkoutTimer();
+  return <span style={style} className={className}>{formatWorkoutTime(totalElapsedSeconds)}</span>;
+});
+
+export const WorkoutRestTimerText: React.FC<{ style?: React.CSSProperties; className?: string }> = React.memo(({ style, className }) => {
+  const { restRemainingSeconds } = useWorkoutTimer();
+  return <span style={style} className={className}>{formatWorkoutTime(restRemainingSeconds)}</span>;
+});
 
 // Granular Set-Level Optimistic 3-Way Merge Function (Multi-Device Concurrency)
 export function mergeWorkoutSessions(
@@ -215,6 +245,25 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   stateRef.current = state;
   const cloudSyncDebounceTimerRef = useRef<any>(null);
 
+  // Dedicated High-Frequency Workout Timer State (Decoupled from heavy Session state)
+  const [timerState, setTimerState] = useState<WorkoutTimerState>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.status === 'active' || parsed.status === 'resting' || parsed.status === 'paused')) {
+          return {
+            totalElapsedSeconds: parsed.totalElapsedSeconds || 0,
+            restRemainingSeconds: parsed.restRemainingSeconds || 0,
+          };
+        }
+      }
+    } catch {}
+    return { totalElapsedSeconds: 0, restRemainingSeconds: 0 };
+  });
+
+  const timerRef = useRef<WorkoutTimerState>(timerState);
+
   // Play audio beep
   const playBeep = useCallback((freq = 880, duration = 0.15) => {
     audioCues.playBeep(freq, duration);
@@ -229,11 +278,50 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, [state.status]);
 
+  // Silent Offline FIFO Sync Queue Drainer on Network Reconnection
+  useEffect(() => {
+    const cleanupOfflineSync = initOfflineSync(async (_session, queue) => {
+      if (queue && queue.length > 0) {
+        console.log(`[OfflineSync] Network restored. Draining ${queue.length} offline actions...`);
+        await drainOfflineQueue(async (item) => {
+          try {
+            if (item.type === 'COMPLETE_SESSION_OFFLINE' || item.type === 'LOG_WORKOUT') {
+              if (item.payload?.dayId) {
+                await api.completeDay(item.payload.dayId).catch(() => null);
+              }
+              if (item.payload?.activityData) {
+                await api.logWorkoutActivity(item.payload.activityData).catch(() => null);
+              }
+              await api.pushUserDataToCloud(true).catch(() => null);
+              return true;
+            }
+            if (item.type === 'COMPLETE_DAY' && item.payload?.dayId) {
+              await api.completeDay(item.payload.dayId).catch(() => null);
+              return true;
+            }
+            return true;
+          } catch {
+            return false;
+          }
+        });
+      }
+    });
+
+    return () => {
+      cleanupOfflineSync();
+    };
+  }, []);
+
   // Save to LocalStorage & Cloud automatically whenever relevant session state changes
   useEffect(() => {
     if (state.status === 'active' || state.status === 'resting' || state.status === 'paused') {
       try {
-        const payloadWithTime = { ...state, lastUpdatedTimestamp: Date.now() };
+        const payloadWithTime = {
+          ...state,
+          totalElapsedSeconds: timerRef.current.totalElapsedSeconds,
+          restRemainingSeconds: timerRef.current.restRemainingSeconds,
+          lastUpdatedTimestamp: Date.now(),
+        };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payloadWithTime));
         cacheStore.set('active_gym_session', payloadWithTime);
         setHasSavedDraft(true);
@@ -270,15 +358,27 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     };
   }, [state.status, state.activeExerciseIndex, state.currentSetIndex, state.setLogs, state.isPaused, state.dayData]);
 
-  // Bulletproof Mobile Lifecycle Persistence (Incoming Phone Calls, App Switcher, Tab Freezing)
+  // Bulletproof Mobile Lifecycle Persistence (Incoming Phone Calls, App Switcher, Tab Freezing, Sudden Exit)
   useEffect(() => {
     const persistCurrentSessionSync = () => {
       const currentState = stateRef.current;
       if (currentState && (currentState.status === 'active' || currentState.status === 'resting' || currentState.status === 'paused')) {
         try {
-          const snapshot = { ...currentState, lastUpdatedTimestamp: Date.now() };
+          const snapshot = {
+            ...currentState,
+            totalElapsedSeconds: timerRef.current.totalElapsedSeconds,
+            restRemainingSeconds: timerRef.current.restRemainingSeconds,
+            lastUpdatedTimestamp: Date.now(),
+          };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
           cacheStore.set('active_gym_session', snapshot);
+
+          // Flush any pending debounced cloud sync before window/tab terminates
+          if (cloudSyncDebounceTimerRef.current) {
+            clearTimeout(cloudSyncDebounceTimerRef.current);
+            cloudSyncDebounceTimerRef.current = null;
+            api.flushPendingSyncOnExit(snapshot);
+          }
         } catch {}
       }
     };
@@ -341,71 +441,84 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   // Master Elapsed Time & Rest Timer Engine (Anchored to Timestamps)
+  // Isolates 1-second ticks into WorkoutTimerContext to eliminate full-tree re-renders!
   useEffect(() => {
     if (state.status === 'idle' || state.status === 'completed') return;
 
     const interval = setInterval(() => {
-      setState(prev => {
-        if (prev.status === 'idle' || prev.status === 'completed') return prev;
+      const currentState = stateRef.current;
+      if (currentState.status === 'idle' || currentState.status === 'completed') return;
 
-        let newElapsed = prev.totalElapsedSeconds;
-        if (!prev.isPaused && prev.startTimestamp) {
-          const now = Date.now();
-          const effectiveRunningMs = now - prev.startTimestamp - prev.totalPausedDurationMs;
-          newElapsed = Math.max(0, Math.floor(effectiveRunningMs / 1000));
-        }
+      let newElapsed = timerRef.current.totalElapsedSeconds;
+      if (!currentState.isPaused && currentState.startTimestamp) {
+        const now = Date.now();
+        const effectiveRunningMs = now - currentState.startTimestamp - currentState.totalPausedDurationMs;
+        newElapsed = Math.max(0, Math.floor(effectiveRunningMs / 1000));
+      }
 
-        // Rest timer computation
-        let newIsResting = prev.isResting;
-        let newRestRemaining = prev.restRemainingSeconds;
+      // Rest timer computation
+      let newRestRemaining = timerRef.current.restRemainingSeconds;
+      let restFinished = false;
 
-        if (prev.isResting && !prev.isRestPaused && prev.restTargetTimestamp) {
-          const msLeft = prev.restTargetTimestamp - Date.now();
-          const secondsLeft = Math.ceil(msLeft / 1000);
+      if (currentState.isResting && !currentState.isRestPaused && currentState.restTargetTimestamp) {
+        const msLeft = currentState.restTargetTimestamp - Date.now();
+        const secondsLeft = Math.ceil(msLeft / 1000);
 
-          if (secondsLeft <= 0) {
-            newIsResting = false;
-            newRestRemaining = 0;
-            playBeep(980, 0.25); // Ding when rest finishes!
-            triggerHaptic('restEnd');
-
-            let newActiveExIdx = prev.activeExerciseIndex;
-            let newCurSetIdx = prev.currentSetIndex;
-            if (prev.pendingNextExerciseIndex !== null && prev.pendingNextExerciseIndex !== undefined) {
-              newActiveExIdx = prev.pendingNextExerciseIndex;
-              newCurSetIdx = 0;
-            }
-
-            return {
-              ...prev,
-              totalElapsedSeconds: newElapsed,
-              isResting: false,
-              restRemainingSeconds: 0,
-              activeExerciseIndex: newActiveExIdx,
-              currentSetIndex: newCurSetIdx,
-              pendingNextExerciseIndex: null,
-              status: prev.isPaused ? 'paused' : 'active',
-            };
-          } else {
-            if (secondsLeft === 3) {
-              triggerHaptic('warning');
-            }
-            newRestRemaining = secondsLeft;
+        if (secondsLeft <= 0) {
+          restFinished = true;
+          newRestRemaining = 0;
+        } else {
+          if (secondsLeft === 3 && timerRef.current.restRemainingSeconds !== 3) {
+            triggerHaptic('warning');
           }
+          newRestRemaining = secondsLeft;
+        }
+      }
+
+      // 1. High-frequency ticking context update (Does NOT re-render GlobalWorkoutPlayer!)
+      if (
+        timerRef.current.totalElapsedSeconds !== newElapsed ||
+        timerRef.current.restRemainingSeconds !== newRestRemaining
+      ) {
+        timerRef.current = {
+          totalElapsedSeconds: newElapsed,
+          restRemainingSeconds: newRestRemaining,
+        };
+        setTimerState({
+          totalElapsedSeconds: newElapsed,
+          restRemainingSeconds: newRestRemaining,
+        });
+      }
+
+      // 2. Only perform discrete state transition when rest timer hits 0
+      if (restFinished && currentState.isResting) {
+        const soundPack = (localStorage.getItem('bm_timer_sound_pack') as any) || 'BOXING_BELL';
+        const volume = parseInt(localStorage.getItem('bm_timer_volume') || '80', 10);
+        playTimerSound(soundPack, volume);
+        triggerHaptic('restEnd');
+
+        let newActiveExIdx = currentState.activeExerciseIndex;
+        let newCurSetIdx = currentState.currentSetIndex;
+        if (currentState.pendingNextExerciseIndex !== null && currentState.pendingNextExerciseIndex !== undefined) {
+          newActiveExIdx = currentState.pendingNextExerciseIndex;
+          newCurSetIdx = 0;
         }
 
-        return {
+        setState(prev => ({
           ...prev,
           totalElapsedSeconds: newElapsed,
-          isResting: newIsResting,
-          restRemainingSeconds: newRestRemaining,
-          status: newIsResting ? 'resting' : (prev.isPaused ? 'paused' : 'active'),
-        };
-      });
+          isResting: false,
+          restRemainingSeconds: 0,
+          activeExerciseIndex: newActiveExIdx,
+          currentSetIndex: newCurSetIdx,
+          pendingNextExerciseIndex: null,
+          status: prev.isPaused ? 'paused' : 'active',
+        }));
+      }
     }, 500);
 
     return () => clearInterval(interval);
-  }, [state.status, playBeep]);
+  }, [state.status]);
 
   // Actions
   const startSession = useCallback((dayData: any) => {
@@ -449,6 +562,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     });
 
     const now = Date.now();
+    timerRef.current = { totalElapsedSeconds: 0, restRemainingSeconds: 0 };
+    setTimerState({ totalElapsedSeconds: 0, restRemainingSeconds: 0 });
     setState({
       status: 'active',
       dayData,
@@ -568,6 +683,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       if (isCompleted) {
         triggerHaptic('success');
         playBeep(1080, 0.35);
+        timerRef.current.restRemainingSeconds = 0;
+        setTimerState(t => ({ ...t, restRemainingSeconds: 0 }));
         return {
           ...prev,
           setLogs: newAllLogs,
@@ -578,6 +695,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       }
 
       const restTarget = Date.now() + restSeconds * 1000;
+      timerRef.current.restRemainingSeconds = restSeconds;
+      setTimerState(t => ({ ...t, restRemainingSeconds: restSeconds }));
 
       return {
         ...prev,
@@ -655,6 +774,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   const skipRest = useCallback(() => {
+    timerRef.current.restRemainingSeconds = 0;
+    setTimerState(t => ({ ...t, restRemainingSeconds: 0 }));
     setState(prev => {
       let newActiveExIdx = prev.activeExerciseIndex;
       let newCurSetIdx = prev.currentSetIndex;
@@ -682,6 +803,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       const currentTarget = prev.restTargetTimestamp || (Date.now() + prev.restRemainingSeconds * 1000);
       const newTarget = currentTarget + seconds * 1000;
       const newRemaining = prev.restRemainingSeconds + seconds;
+      timerRef.current.restRemainingSeconds = newRemaining;
+      setTimerState(t => ({ ...t, restRemainingSeconds: newRemaining }));
       return {
         ...prev,
         restTargetTimestamp: newTarget,
@@ -878,7 +1001,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       });
     });
 
-    const durationMin = Math.max(1, Math.round(currentState.totalElapsedSeconds / 60));
+    const durationSec = timerRef.current.totalElapsedSeconds || currentState.totalElapsedSeconds || 0;
+    const durationMin = Math.max(1, Math.round(durationSec / 60));
     const summary = {
       dayTitle: currentState.dayData.title || 'Day Workout',
       dayNumber: currentState.dayData.dayNumber || 1,
@@ -889,38 +1013,59 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       completedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
+    const activityData = {
+      title: currentState.dayData.title || 'Workout Routine',
+      durationMinutes: durationMin,
+      volumeKg: totalVolumeKg,
+      completedSets: totalSetsDone,
+    };
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Save stats to API / Supabase with Offline-First Resilience
+    let syncedOnline = false;
     try {
-      // Save stats to API / Supabase
-      if (currentState.dayData.id) {
-        await api.completeDay(currentState.dayData.id).catch(() => null);
-      }
-      await api.logWorkoutActivity({
-        title: currentState.dayData.title || 'Workout Routine',
-        durationMinutes: durationMin,
-        volumeKg: totalVolumeKg,
-        completedSets: totalSetsDone,
-      }).catch(() => null);
-
-      // Save today's completion date to local storage logs
-      const todayStr = new Date().toISOString().split('T')[0];
-      const existingLogsRaw = localStorage.getItem('beast_completed_workout_dates');
-      const existingLogs: string[] = existingLogsRaw ? JSON.parse(existingLogsRaw) : [];
-      if (!existingLogs.includes(todayStr)) {
-        existingLogs.push(todayStr);
-        localStorage.setItem('beast_completed_workout_dates', JSON.stringify(existingLogs));
-      }
-
-      // Dispatch global event for instant UI reflection on Dashboard & Weekly Streak
-      window.dispatchEvent(new CustomEvent('beast_workout_completed', {
-        detail: {
-          ...summary,
-          date: todayStr,
-          dayId: currentState.dayData.id,
+      if (typeof navigator !== 'undefined' && navigator.onLine) {
+        if (currentState.dayData.id) {
+          await api.completeDay(currentState.dayData.id).catch(() => null);
         }
-      }));
+        await api.logWorkoutActivity(activityData).catch(() => null);
+        await api.pushUserDataToCloud(true).catch(() => null);
+        syncedOnline = true;
+      }
     } catch (err) {
-      console.warn('[Workout Finish Log Error]:', err);
+      console.warn('[Workout Finish Online Sync Warning]:', err);
+      syncedOnline = false;
     }
+
+    // If offline or call threw, enqueue action into silent FIFO queue for automatic sync upon reconnection
+    if (!syncedOnline) {
+      console.log('[OfflineSync] Offline mode: Workout completion enqueued for silent sync upon reconnection.');
+      enqueueOfflineAction('COMPLETE_SESSION_OFFLINE', {
+        dayId: currentState.dayData.id,
+        summary,
+        activityData,
+        date: todayStr,
+      });
+    }
+
+    // Save today's completion date to local storage logs
+    const existingLogsRaw = localStorage.getItem('beast_completed_workout_dates');
+    const existingLogs: string[] = existingLogsRaw ? JSON.parse(existingLogsRaw) : [];
+    if (!existingLogs.includes(todayStr)) {
+      existingLogs.push(todayStr);
+      localStorage.setItem('beast_completed_workout_dates', JSON.stringify(existingLogs));
+    }
+
+    // Dispatch global event for instant UI reflection on Dashboard & Weekly Streak
+    window.dispatchEvent(new CustomEvent('beast_workout_completed', {
+      detail: {
+        ...summary,
+        date: todayStr,
+        dayId: currentState.dayData.id,
+        syncedOnline,
+      }
+    }));
 
     setState({
       ...initialState,
@@ -964,7 +1109,11 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   return (
     <WorkoutSessionContext.Provider
       value={{
-        state,
+        state: {
+          ...state,
+          totalElapsedSeconds: timerRef.current.totalElapsedSeconds,
+          restRemainingSeconds: timerRef.current.restRemainingSeconds,
+        },
         startSession,
         finishCurrentSet,
         updateSetLog,
@@ -987,7 +1136,9 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         hasSavedDraft,
       }}
     >
-      {children}
+      <WorkoutTimerContext.Provider value={timerState}>
+        {children}
+      </WorkoutTimerContext.Provider>
     </WorkoutSessionContext.Provider>
   );
 };

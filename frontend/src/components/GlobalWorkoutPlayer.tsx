@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useWorkoutSession } from '../context/WorkoutSessionContext';
+import {
+  useWorkoutSession,
+  WorkoutElapsedTimerText,
+  WorkoutRestTimerText,
+} from '../context/WorkoutSessionContext';
 import { ExerciseImage } from './ExerciseImage';
 import { WorkoutCompletionModal } from './WorkoutCompletionModal';
 import { PostWorkoutConfettiModal } from './PostWorkoutConfettiModal';
@@ -8,7 +12,6 @@ import { DynamicWarmupModal } from './DynamicWarmupModal';
 import { RoutineCardExportModal } from './RoutineCardExportModal';
 import { MuscleWikiModal } from './MuscleWikiModal';
 import { StoryProgressBar } from './StoryProgressBar';
-import { audioCues } from '../utils/audioCues';
 import { getExerciseHistoryAndSuggestion } from '../utils/progressiveOverload';
 import { getDailyRecovery, saveDailyRecovery } from '../utils/recoveryTracker';
 import { 
@@ -78,18 +81,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const [isHolding, setIsHolding] = useState(false);
   const [holdTimerSeconds, setHoldTimerSeconds] = useState(0);
 
-  // Web Audio Native Synthesized Rest Bell (0 KB, 100% Offline)
-  const playRestEndBell = () => {
-    if (!soundEnabled) return;
-    audioCues.playRestFinishedChime();
-  };
-
-  // Play bell when rest finishes
-  useEffect(() => {
-    if (state.isResting && state.restRemainingSeconds === 1) {
-      playRestEndBell();
-    }
-  }, [state.isResting, state.restRemainingSeconds]);
+  // Rest chime and sound pack are handled centrally in WorkoutSessionContext on completion
 
   // Isometric Hold interval
   useEffect(() => {
@@ -385,11 +377,6 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const activeSet = currentLogs[state.currentSetIndex] || { setNumber: state.currentSetIndex + 1, reps: '10', weight: '20 kg', completed: false };
   const totalExercises = exercises.length;
 
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   const handleFinishWorkout = async () => {
     if (window.confirm(isAr ? 'هل أنت متأكد من إنهاء وحفظ جلسة التمرين بالكامل؟' : 'Are you sure you want to finish and log this workout?')) {
@@ -449,7 +436,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-            <span style={{ color: '#fff', fontWeight: 'bold' }}>⏱️ {formatTime(state.totalElapsedSeconds)}</span>
+            <span style={{ color: '#fff', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>⏱️ <WorkoutElapsedTimerText /></span>
             <span>•</span>
             <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>⏳ {estimatedFinishTimeStr}</span>
           </div>
@@ -496,8 +483,8 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                 <Timer size={18} />
                 <span>{isAr ? 'فترة الراحة بين الجولات ⏳' : 'Rest Countdown ⏳'}</span>
               </div>
-              <div className={`animated-fade ${state.restRemainingSeconds <= 5 && state.restRemainingSeconds > 0 ? 'rest-timer-pulse' : ''}`} style={{ fontSize: 'clamp(56px, 12vw, 84px)', fontWeight: '900', color: state.restRemainingSeconds <= 5 ? '#10b981' : '#ffffff', fontVariantNumeric: 'tabular-nums', margin: '10px 0', transition: 'color 0.3s ease' }}>
-                {formatTime(state.restRemainingSeconds)}
+              <div className="animated-fade" style={{ fontSize: 'clamp(56px, 12vw, 84px)', fontWeight: '900', fontVariantNumeric: 'tabular-nums', margin: '10px 0', transition: 'color 0.3s ease' }}>
+                <WorkoutRestTimerText />
               </div>
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
@@ -696,7 +683,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Clock size={13} color="var(--primary)" />
                 <span style={{ fontVariantNumeric: 'tabular-nums', color: '#fff', fontWeight: 'bold' }}>
-                  {formatTime(state.totalElapsedSeconds)}
+                  <WorkoutElapsedTimerText />
                 </span>
                 {state.isPaused && <span style={{ color: '#f87171' }}>({isAr ? 'مؤقت' : 'Paused'})</span>}
               </span>
@@ -1075,8 +1062,8 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                     <div style={{ fontSize: '12px', color: '#f59e0b', fontWeight: 'bold' }}>
                       {isAr ? 'فترة راحة بين الجولات ⏳' : 'Resting Between Sets ⏳'}
                     </div>
-                    <div className={`animated-fade ${state.restRemainingSeconds <= 5 && state.restRemainingSeconds > 0 ? 'rest-timer-pulse' : ''}`} style={{ fontSize: '24px', fontWeight: '900', color: state.restRemainingSeconds <= 5 ? '#10b981' : '#fff', fontVariantNumeric: 'tabular-nums', transition: 'color 0.3s ease' }}>
-                      {formatTime(state.restRemainingSeconds)}
+                    <div className="animated-fade" style={{ fontSize: '24px', fontWeight: '900', fontVariantNumeric: 'tabular-nums', transition: 'color 0.3s ease' }}>
+                      <WorkoutRestTimerText />
                     </div>
                   </div>
                 </div>

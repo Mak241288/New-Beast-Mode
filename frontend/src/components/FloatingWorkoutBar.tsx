@@ -1,10 +1,55 @@
 import React from 'react';
-import { useWorkoutSession } from '../context/WorkoutSessionContext';
+import {
+  useWorkoutSession,
+  useWorkoutTimer,
+  WorkoutElapsedTimerText,
+  WorkoutRestTimerText,
+} from '../context/WorkoutSessionContext';
 import { Play, Pause, Maximize2, Check, FastForward, Square, Timer, Activity } from 'lucide-react';
 
 interface FloatingWorkoutBarProps {
   lang?: 'ar' | 'en';
 }
+
+const FloatingRestIndicator: React.FC<{ restTotalDuration: number }> = ({ restTotalDuration }) => {
+  const { restRemainingSeconds } = useWorkoutTimer();
+  const radius = 15;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.max(0, Math.min(restRemainingSeconds / Math.max(restTotalDuration || 60, 1), 1));
+  const strokeDashoffset = circumference * (1 - progress);
+
+  return (
+    <>
+      <svg width="40" height="40" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="20" cy="20" r={radius} stroke="rgba(255,255,255,0.08)" strokeWidth="3" fill="none" />
+        <circle
+          cx="20"
+          cy="20"
+          r={radius}
+          stroke={restRemainingSeconds <= 5 ? '#ef4444' : '#f59e0b'}
+          strokeWidth="3"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          fill="none"
+          style={{ transition: 'stroke-dashoffset 0.35s ease' }}
+        />
+      </svg>
+      <span
+        className="num-display"
+        style={{
+          position: 'absolute',
+          fontSize: '11px',
+          fontWeight: '900',
+          color: '#fff',
+          lineHeight: 1,
+        }}
+      >
+        {restRemainingSeconds}
+      </span>
+    </>
+  );
+};
 
 export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = 'ar' }) => {
   const {
@@ -39,13 +84,6 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
   const currentLogs = state.setLogs[state.activeExerciseIndex] || [];
   const totalSets = currentLogs.length || 3;
   const currentSetNum = Math.min(state.currentSetIndex + 1, totalSets);
-
-  // Format Elapsed time
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div
@@ -103,35 +141,7 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
           }}
         >
           {state.isResting ? (
-            <>
-              <svg width="40" height="40" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="20" cy="20" r="15" stroke="rgba(255,255,255,0.08)" strokeWidth="3" fill="none" />
-                <circle
-                  cx="20"
-                  cy="20"
-                  r="15"
-                  stroke={state.restRemainingSeconds <= 5 ? '#ef4444' : '#f59e0b'}
-                  strokeWidth="3"
-                  strokeDasharray={2 * Math.PI * 15}
-                  strokeDashoffset={2 * Math.PI * 15 * (1 - Math.max(0, Math.min(state.restRemainingSeconds / Math.max(state.restTotalDuration || 60, 1), 1)))}
-                  strokeLinecap="round"
-                  fill="none"
-                  style={{ transition: 'stroke-dashoffset 0.35s ease' }}
-                />
-              </svg>
-              <span
-                className="num-display"
-                style={{
-                  position: 'absolute',
-                  fontSize: '11px',
-                  fontWeight: '900',
-                  color: '#fff',
-                  lineHeight: 1,
-                }}
-              >
-                {state.restRemainingSeconds}
-              </span>
-            </>
+            <FloatingRestIndicator restTotalDuration={state.restTotalDuration || 60} />
           ) : (
             <Activity size={20} />
           )}
@@ -163,13 +173,17 @@ export const FloatingWorkoutBar: React.FC<FloatingWorkoutBarProps> = ({ lang = '
               <span style={{ color: '#f59e0b', fontSize: '12.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Timer size={13} />
                 <span>{isAr ? 'فترة راحة:' : 'Resting:'}</span>
-                <span className="num-display" style={{ fontSize: '14px', fontWeight: '800' }}>{formatTime(state.restRemainingSeconds)}</span>
+                <span className="num-display" style={{ fontSize: '14px', fontWeight: '800' }}>
+                  <WorkoutRestTimerText />
+                </span>
               </span>
             ) : (
               <span style={{ color: 'var(--primary)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Timer size={13} />
                 <span>{isAr ? 'الوقت المنقضي:' : 'Elapsed:'}</span>
-                <span className="num-display" style={{ fontSize: '13.5px', fontWeight: '800' }}>{formatTime(state.totalElapsedSeconds)}</span>
+                <span className="num-display" style={{ fontSize: '13.5px', fontWeight: '800' }}>
+                  <WorkoutElapsedTimerText />
+                </span>
                 {state.isPaused && <span style={{ color: '#f87171', fontWeight: 'bold' }}>({isAr ? 'مؤقت' : 'Paused'})</span>}
               </span>
             )}

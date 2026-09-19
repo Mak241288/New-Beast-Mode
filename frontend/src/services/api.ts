@@ -306,6 +306,54 @@ export async function pushUserDataToCloud(immediate: boolean = false): Promise<v
   }
 }
 
+/**
+ * Synchronous/keepalive cloud push flush on unexpected tab close (beforeunload / pagehide)
+ */
+export function flushPendingSyncOnExit(activeGymSessionSnapshot?: any): void {
+  try {
+    if (syncDebounceTimer) {
+      clearTimeout(syncDebounceTimer);
+      syncDebounceTimer = null;
+    }
+
+    const fallbackToken = sanitizeToken(localStorage.getItem('token'));
+    if (!fallbackToken) return;
+
+    const localActivePlan = cacheStore.get('active_plan');
+    const userProfile = cacheStore.get('user_profile');
+    const localPlanHistory = cacheStore.get('plan_history');
+    const userStats = cacheStore.get('user_stats');
+    const activeGymSession = activeGymSessionSnapshot || cacheStore.get('active_gym_session');
+
+    const cleanPayload = JSON.stringify({
+      userProfile: userProfile || undefined,
+      activePlan: localActivePlan || undefined,
+      workoutPlans: localPlanHistory || undefined,
+      weightLogs: (userStats as any)?.weightHistory || [],
+      checkIns: cacheStore.get('daily_check_ins') || [],
+      activeSession: activeGymSession || undefined,
+      clientTimestamp: Date.now(),
+    });
+
+    const url = `${API_BASE_URL}/api/sync/full-push`;
+
+    if (typeof fetch === 'function') {
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${fallbackToken}`,
+        },
+        body: cleanPayload,
+        keepalive: true,
+        credentials: 'omit',
+      }).catch(() => {});
+    }
+  } catch (err) {
+    console.warn('[Sync] Failed to flush pending sync on exit:', err);
+  }
+}
+
 export const cleanupRealtimeChannel = () => {
   try {
     if (typeof realtimeChannel !== 'undefined' && realtimeChannel) {
@@ -708,6 +756,7 @@ export async function deleteCloudSnapshot(snapshotId: string | number): Promise<
 
 export const api = {
   pushUserDataToCloud,
+  flushPendingSyncOnExit,
   syncUserDataFromCloud,
   createCloudSnapshot,
   getCloudSnapshots,
