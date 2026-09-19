@@ -4,7 +4,7 @@
   "description": "AI-Powered Fitness & Nutrition Backend",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --node-args=\"--max-http-header-size=65536\" --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node --max-http-header-size=65536 dist/index.js",
     "prisma:generate": "prisma generate",
