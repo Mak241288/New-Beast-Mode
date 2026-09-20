@@ -3,7 +3,7 @@ charset-normalizer==3.4.9
 et_xmlfile==2.0.0
 idna==3.18
 lxml==6.1.1
-numpy==2.5.1
+numpy==2.5.3
 openpyxl==3.1.5
 pandas==3.0.5
 python-dateutil==2.9.0.post0
@@ -14,4 +14,4 @@ scienceskillscommon @ file:///C:/Users/khate/.gemini/config/plugins/science/skil
 six==1.17.0
 typing_extensions==4.16.0
 tzdata==2026.3
-urllib3==2.7.0
+urllib3==2.8.0
