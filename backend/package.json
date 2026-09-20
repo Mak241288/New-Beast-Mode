@@ -11,7 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "db:backup": "ts-node src/scripts/backup_db.ts",
-    "backup:exercises": "ts-node src/scripts/backup_exercises.ts"
+    "backup:exercises": "ts-node src/scripts/backup_exercises.ts",
+    "test": "ts-node src/scripts/verify_trust_proxy.ts"
   },
   "dependencies": {
     "@google/genai": "^2.11.0",
@@ -25,7 +26,8 @@
     "express-rate-limit": "^7.2.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "proxy-addr": "2.0.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -33,8 +35,12 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.11.30",
+    "@types/proxy-addr": "^2.0.3",
     "prisma": "^5.11.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.3"
+  },
+  "overrides": {
+    "proxy-addr": "2.0.8"
   }
 }

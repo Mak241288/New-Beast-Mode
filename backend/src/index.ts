@@ -23,6 +23,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Trust First Proxy (Crucial for Render/Reverse Proxies & express-rate-limit X-Forwarded-For validation)
+// Security hardened against CVE-2026-90711 (AIKIDO-2026-101201): Configured using hop count (1)
+// rather than CIDR subnets. If subnets are ever added, use standard IPv4 ('10.0.0.0/8') or 104-bit IPv6 ('::ffff:10.0.0.0/104').
 app.set('trust proxy', 1);
 
 // Configurable Allowed Origins for Production Security
