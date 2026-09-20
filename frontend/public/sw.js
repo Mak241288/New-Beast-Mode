@@ -22,7 +22,8 @@ const TRUSTED_ORIGINS = new Set([
 ]);
 
 /**
- * SSRF Protection Validator: Checks if the target URL origin is trusted.
+ * SSRF Protection Validator: Checks if the target URL origin is strictly trusted
+ * and blocks internal/private IP addresses and metadata endpoints.
  */
 function isTrustedOrigin(rawUrl) {
   try {
@@ -30,20 +31,37 @@ function isTrustedOrigin(rawUrl) {
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return false;
     }
+
+    // Always allow same-origin requests
     if (parsed.origin === self.location.origin) {
       return true;
     }
+
+    // Block private/internal network addresses and AWS/cloud metadata services (SSRF prevention)
+    const host = parsed.hostname.toLowerCase();
+    if (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '169.254.169.254' ||
+      host.startsWith('10.') ||
+      host.startsWith('192.168.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host)
+    ) {
+      return false;
+    }
+
+    // Explicit exact origin match
     if (TRUSTED_ORIGINS.has(parsed.origin)) {
       return true;
     }
-    if (
-      parsed.hostname.endsWith('.supabase.co') ||
-      parsed.hostname.endsWith('.groq.com') ||
-      parsed.hostname.endsWith('.onrender.com') ||
-      parsed.hostname.endsWith('.vercel.app')
-    ) {
+
+    // Trusted subdomain validation with strict boundary matching
+    const trustedSuffixes = ['.supabase.co', '.groq.com', '.onrender.com', '.vercel.app'];
+    if (trustedSuffixes.some((suffix) => host.endsWith(suffix) && !host.includes(' '))) {
       return true;
     }
+
     return false;
   } catch {
     return false;
@@ -161,6 +179,11 @@ self.addEventListener('fetch', (event) => {
         const cachedResponse = await caches.match(event.request);
         if (cachedResponse) {
           return cachedResponse;
+        }
+
+        // Validate origin before executing fetch
+        if (!isTrustedOrigin(event.request.url)) {
+          return new Response('Forbidden', { status: 403 });
         }
 
         try {

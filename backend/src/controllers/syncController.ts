@@ -5,6 +5,7 @@ import { execFile } from 'child_process';
 import path from 'path';
 import prisma from '../services/db';
 import { logger } from '../services/logger';
+import sanitize from 'mongo-sanitize';
 
 const parseSafeDate = (val: any): Date | undefined => {
   if (!val) return undefined;
@@ -113,12 +114,14 @@ export const syncController = {
         return;
       }
 
+      // Deep sanitize request inputs to neutralize NoSQL operator injection ($gt, $ne, etc.)
+      const cleanBody = sanitize(req.body) || {};
       const {
         userProfile,
         activePlan,
         weightLogs,
         checkIns,
-      } = req.body || {};
+      } = cleanBody;
 
       // 1. Direct User Profile & Weight Update (No long-lived transaction lock)
       if (userProfile && typeof userProfile === 'object') {
@@ -201,7 +204,7 @@ export const syncController = {
       // 2. Direct Nested Plan Upsert (Prevent infinite duplicates on push)
       if (activePlan && typeof activePlan === 'object' && (activePlan.title || Array.isArray(activePlan.dayWorkouts) || Array.isArray(activePlan.days))) {
         const rawDays = Array.isArray(activePlan.dayWorkouts) ? activePlan.dayWorkouts : (Array.isArray(activePlan.days) ? activePlan.days : []);
-        const planTitle = String(activePlan.title || 'My Workout Plan').substring(0, 200);
+        const planTitle = (typeof activePlan.title === 'string' ? activePlan.title.trim() : 'My Workout Plan').substring(0, 200);
 
         // Check if user already has an active plan or a plan with this title
         const existingPlan = await prisma.workoutPlan.findFirst({
@@ -436,7 +439,8 @@ export const syncController = {
 
   async syncExercises(req: AuthRequest, res: Response) {
     try {
-      const { rapidApiKey } = req.body;
+      const cleanBody = sanitize(req.body) || {};
+      const rapidApiKey = typeof cleanBody.rapidApiKey === 'string' ? cleanBody.rapidApiKey.trim() : undefined;
 
       console.log('[SyncController] Initiating exercise library sync...');
       const result = await syncService.syncAllExercises(rapidApiKey);

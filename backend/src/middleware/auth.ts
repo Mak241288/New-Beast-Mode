@@ -3,7 +3,11 @@ import jwt from 'jsonwebtoken';
 import prisma from '../services/db';
 import { logger } from '../services/logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'beastmode_default_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  logger.error('[Auth Middleware] FATAL: JWT_SECRET environment variable is not configured!');
+}
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'beastmode_default_secret_key_2026';
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
 export interface AuthRequest extends Request {
@@ -36,9 +40,9 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   try {
     let resolvedUser: { id: number; email: string } | null = null;
 
-    // 2. Try verifying with local JWT_SECRET
+    // 2. Cryptographically verify signature with local JWT_SECRET using explicit algorithm
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET, { algorithms: ['HS256'] }) as any;
       if (decoded && (decoded.id || decoded.email)) {
         if (typeof decoded.id === 'number') {
           const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
@@ -62,28 +66,16 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
         }
       }
     } catch {
-      // Not signed with local JWT secret, proceed to Supabase JWT verification / decoding
+      // Not signed with local JWT secret, proceed to Supabase signature verification
     }
 
-    // 3. If not resolved, verify with SUPABASE_JWT_SECRET or decode Supabase / Google OAuth JWT payload
-    if (!resolvedUser) {
+    // 3. Cryptographically verify signature with SUPABASE_JWT_SECRET if configured
+    if (!resolvedUser && SUPABASE_JWT_SECRET) {
       let decodedPayload: any = null;
-
-      if (SUPABASE_JWT_SECRET) {
-        try {
-          decodedPayload = jwt.verify(token, SUPABASE_JWT_SECRET);
-        } catch {
-          decodedPayload = null;
-        }
-      }
-
-      // Safe decode of Supabase OAuth / Google JWT token
-      if (!decodedPayload) {
-        try {
-          decodedPayload = jwt.decode(token);
-        } catch {
-          decodedPayload = null;
-        }
+      try {
+        decodedPayload = jwt.verify(token, SUPABASE_JWT_SECRET, { algorithms: ['HS256', 'HS384', 'HS512'] });
+      } catch {
+        decodedPayload = null;
       }
 
       if (decodedPayload && typeof decodedPayload === 'object') {
