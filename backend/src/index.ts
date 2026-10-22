@@ -39,6 +39,8 @@ const defaultAllowedOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
+  'https://fit.mkhateeb.com',
+  'http://fit.mkhateeb.com',
   'https://beastmode.app',
   'https://beastmode-ai.vercel.app',
   'https://new-beast-mode.vercel.app',
