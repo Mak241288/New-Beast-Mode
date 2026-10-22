@@ -358,6 +358,9 @@ export const requestPasswordResetOtp = async (req: AuthRequest, res: Response): 
   }
 };
 
+// Track failed OTP attempts per email to prevent brute-forcing (in-memory lockout)
+const otpFailedAttempts = new Map<string, number>();
+
 // @desc    Verify OTP and Reset Password
 // @route   POST /api/auth/verify-otp-reset-password
 export const verifyOtpAndResetPassword = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -389,11 +392,24 @@ export const verifyOtpAndResetPassword = async (req: AuthRequest, res: Response)
       return;
     }
 
-    // Verify OTP Match & Expiry
+    // Verify OTP Match & Expiry with Brute-Force Lockout after 5 failed attempts
     if (!user.resetOtp || user.resetOtp !== cleanOtp) {
+      const fails = (otpFailedAttempts.get(cleanEmail) || 0) + 1;
+      otpFailedAttempts.set(cleanEmail, fails);
+      if (fails >= 5) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { resetOtp: null, resetOtpExpiry: null },
+        });
+        otpFailedAttempts.delete(cleanEmail);
+        res.status(429).json({ error: 'تم إلغاء رمز التحقق بعد 5 محاولات خاطئة لحماية حسابك. يرجى طلب رمز جديد.' });
+        return;
+      }
       res.status(400).json({ error: 'رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية' });
       return;
     }
+
+    otpFailedAttempts.delete(cleanEmail);
 
     if (!user.resetOtpExpiry || new Date(user.resetOtpExpiry) < new Date()) {
       res.status(400).json({ error: 'رمز التحقق (OTP) انتهت صلاحيته (صالح لـ 10 دقائق فقط)، اطلب رمزاً جديداً' });
@@ -839,12 +855,15 @@ export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    if (currentPassword) {
-      const match = await bcrypt.compare(currentPassword, user.password);
-      if (!match) {
-        res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة لتأكيد ربط الحساب' });
-        return;
-      }
+    if (!currentPassword || !isPrimitiveString(currentPassword)) {
+      res.status(400).json({ error: 'يرجى إدخال كلمة المرور الحالية لتأكيد ربط الحساب بـ Google' });
+      return;
+    }
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      res.status(401).json({ error: 'كلمة المرور الحالية غير صحيحة لتأكيد ربط الحساب' });
+      return;
     }
 
     const updatedUser = await prisma.user.update({

@@ -1152,20 +1152,25 @@ export const api = {
   requestPasswordResetOtp: async (email: string) => {
     const cleanEmail = email.trim().toLowerCase();
     const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : 'https://new-beast-mode.vercel.app/';
-    
-    // Generate a secure 6-digit OTP
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 1. Try Backend CSPRNG OTP endpoint first
     try {
-      sessionStorage.setItem(`bm_active_otp_${cleanEmail}`, generatedOtp);
+      const backendRes = await fetchBackendApi('/auth/forgot-password-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+      if (backendRes?.success) {
+        return backendRes;
+      }
     } catch {}
 
-    // Send real email via Supabase Auth
-    try {
-      await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: redirectUrl,
-      });
-    } catch (err) {
-      console.warn('[Supabase reset password email warning]:', err);
+    // 2. Send real recovery email via Supabase Auth
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: redirectUrl,
+    });
+    if (error) {
+      throw new Error(error.message || 'فشل إرسال رمز الاستعادة إلى البريد الإلكتروني');
     }
 
     return {
@@ -1177,83 +1182,54 @@ export const api = {
   verifyOtpAndResetPassword: async (data: { email: string; otp: string; newPassword: string }) => {
     const cleanEmail = data.email.trim().toLowerCase();
     const cleanOtp = data.otp.trim();
-    const storedOtp = sessionStorage.getItem(`bm_active_otp_${cleanEmail}`);
+
+    // 1. Try Backend OTP Verification & Password Reset first
+    try {
+      const backendRes = await fetchBackendApi('/auth/verify-otp-reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, otp: cleanOtp, newPassword: data.newPassword }),
+      });
+      if (backendRes?.success && backendRes?.token) {
+        localStorage.setItem('token', backendRes.token);
+        localStorage.setItem('bm_password_setup_done', 'true');
+        return backendRes;
+      }
+    } catch {}
 
     let verified = false;
 
-    if (storedOtp && cleanOtp === storedOtp) {
-      verified = true;
-      try {
-        sessionStorage.removeItem(`bm_active_otp_${cleanEmail}`);
-      } catch {}
-    }
-
-    if (!verified) {
-      // 1. Try recovery OTP
-      const { data: recData, error: verifyErr } = await supabase.auth.verifyOtp({
+    // 2. Verify strictly against Supabase Auth OTP types
+    for (const otpType of ['recovery', 'email', 'magiclink', 'signup'] as const) {
+      const { data: verifyData, error: verifyErr } = await supabase.auth.verifyOtp({
         email: cleanEmail,
         token: cleanOtp,
-        type: 'recovery',
+        type: otpType,
       });
-      if (!verifyErr && recData?.session) {
+      if (!verifyErr && verifyData?.session) {
         verified = true;
-      } else {
-        // 2. Try email OTP
-        const { data: emData, error: verifyErr2 } = await supabase.auth.verifyOtp({
-          email: cleanEmail,
-          token: cleanOtp,
-          type: 'email',
-        });
-        if (!verifyErr2 && emData?.session) {
-          verified = true;
-        } else {
-          // 3. Try magiclink OTP
-          const { data: magData, error: verifyErr3 } = await supabase.auth.verifyOtp({
-            email: cleanEmail,
-            token: cleanOtp,
-            type: 'magiclink',
-          });
-          if (!verifyErr3 && magData?.session) {
-            verified = true;
-          } else {
-            // 4. Try signup OTP
-            const { data: supData, error: verifyErr4 } = await supabase.auth.verifyOtp({
-              email: cleanEmail,
-              token: cleanOtp,
-              type: 'signup',
-            });
-            if (!verifyErr4 && supData?.session) {
-              verified = true;
-            }
-          }
-        }
+        break;
       }
     }
 
     if (!verified) {
-      throw new Error('رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية. يرجى التحقق من الرمز المكون من 6 إلى 8 خانات المرسل إلى بريدك الإلكتروني.');
+      throw new Error('رمز التحقق (OTP) غير صحيح أو منتهي الصلاحية. يرجى التحقق من الرمز المرسل إلى بريدك الإلكتروني.');
     }
 
-    // 1. Try updating authenticated user in Supabase
+    // Update authenticated user password in Supabase
     const { error: updateError } = await supabase.auth.updateUser({
       password: data.newPassword,
     });
-
-    // 2. If no session, create / update credentials directly in Supabase cloud
-    if (updateError || !updateError) {
-      try {
-        const signRes = await supabase.auth.signUp({
-          email: cleanEmail,
-          password: data.newPassword,
-        });
-        if (signRes.data?.session) {
-          localStorage.setItem('token', signRes.data.session.access_token);
-        }
-      } catch {}
+    if (updateError) {
+      throw new Error(updateError.message || 'فشل تحديث كلمة المرور');
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token || `bm_reset_${Date.now()}`;
+    const token = sessionData?.session?.access_token;
+    if (!token) {
+      throw new Error('انتهت صلاحية الجلسة، يرجى تسجيل الدخول بكلمة المرور الجديدة.');
+    }
+
     localStorage.setItem('token', token);
     localStorage.setItem('bm_password_setup_done', 'true');
 

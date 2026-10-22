@@ -1,10 +1,3 @@
-import sentry_sdk
-
-sentry_sdk.init(
-    dsn="https://d86e72394ab3886fccdeb4ec8631e6c7@o4511979386044416.ingest.us.sentry.io/4511979386306560",
-    traces_sample_rate=0.1,
-)
-
 import os
 import sqlite3
 import json
@@ -14,6 +7,14 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "backend", ".env"))
+
+try:
+    import sentry_sdk
+    _sentry_dsn = os.environ.get("SENTRY_DSN")
+    if _sentry_dsn:
+        sentry_sdk.init(dsn=_sentry_dsn, traces_sample_rate=0.1, send_default_pii=False)
+except ImportError:
+    pass
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "database", "exercises.db")

@@ -75,8 +75,8 @@ const corsOptions: cors.CorsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })); // Sets security HTTP headers without blocking cross-origin assets
-app.use(express.json({ limit: '10mb' })); // Parses incoming JSON requests
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '2mb' })); // Parses incoming JSON requests with safe memory cap
+app.use(express.urlencoded({ limit: '2mb', extended: true }));
 
 // Rate Limiting to prevent brute-force and DDoS
 const globalLimiter = rateLimit({
