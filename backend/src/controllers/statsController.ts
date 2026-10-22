@@ -154,7 +154,11 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
             // Map progress for strength trend
             ex.progressLogs.forEach(log => {
               // Extract first weight if comma-separated e.g. "15kg, 15kg" -> 15
-              const cleanWeight = log.weightUsed ? parseFloat(log.weightUsed.replace(/[^0-9.]/g, '')) : 0;
+              let cleanWeight = 0;
+              if (log.weightUsed) {
+                const firstPart = log.weightUsed.split(',')[0] || '';
+                cleanWeight = parseFloat(firstPart.replace(/[^0-9.]/g, '')) || 0;
+              }
               workoutStats.strengthTrend.push({
                 exerciseName: ex.name,
                 date: log.date,

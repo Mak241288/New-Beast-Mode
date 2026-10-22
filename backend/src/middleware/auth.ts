@@ -4,10 +4,15 @@ import prisma from '../services/db';
 import { logger } from '../services/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
-  logger.error('[Auth Middleware] FATAL: JWT_SECRET environment variable is not configured!');
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('[Auth Middleware] FATAL: JWT_SECRET environment variable is not configured!');
+    throw new Error('JWT_SECRET environment variable is not configured');
+  } else {
+    logger.warn('[Auth Middleware] WARNING: JWT_SECRET not set, falling back to local dev secret.');
+  }
 }
-const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'beastmode_default_secret_key_2026';
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'beastmode_dev_secret_only';
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
 export interface AuthRequest extends Request {

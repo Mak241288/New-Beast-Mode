@@ -376,7 +376,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       weightKg: Number(profile.currentWeight) || 75,
       heightCm: Number(profile.height) || 175,
       age: Number(profile.age) || 26,
-      gender: profile.gender === 'female' ? 'female' : 'male',
+      gender: String(profile.gender || '').toLowerCase() === 'female' ? 'female' : 'male',
       fitnessGoal: profile.fitnessGoal || 'HYPERTROPHY',
       daysPerWeek: Number(profile.daysPerWeek) || 4,
     });
@@ -699,7 +699,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                   {t.burnedCalories}
                 </span>
                 <span style={{ fontSize: '15px', fontWeight: '900', color: '#f59e0b' }}>
-                  {((stats?.totalWorkoutsCompleted || 0) * 380 + 420).toLocaleString()} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>kcal</span>
+                  {((stats?.totalWorkoutsCompleted || 0) * 380).toLocaleString()} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>kcal</span>
                 </span>
               </div>
             </div>
@@ -713,7 +713,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                   {t.totalMinutes}
                 </span>
                 <span style={{ fontSize: '15px', fontWeight: '900', color: '#00d2ff' }}>
-                  {((stats?.totalWorkoutsCompleted || 1) * 45)} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'min' : 'دقيقة'}</span>
+                  {((stats?.totalWorkoutsCompleted || 0) * 45)} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{lang === 'en' ? 'min' : 'دقيقة'}</span>
                 </span>
               </div>
             </div>
@@ -727,7 +727,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                   {t.totalVolume}
                 </span>
                 <span style={{ fontSize: '15px', fontWeight: '900', color: '#10b981' }}>
-                  {(((stats?.totalVolumeKg || 8500)) / 1000).toFixed(1)} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Ton</span>
+                  {(((stats?.totalVolumeKg || 0)) / 1000).toFixed(1)} <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>Ton</span>
                 </span>
               </div>
             </div>

@@ -827,32 +827,14 @@ export const api = {
     const cleanEmail = credentials.email.trim().toLowerCase();
     const cleanPassword = credentials.password.trim();
 
+    // Standard authentication via Supabase
     let { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password: cleanPassword,
     });
 
-    // Seamless Account Sync Fallback:
-    // If account was created locally or via OTP without initial Supabase password:
-    if (error && (error.message.includes('Invalid login credentials') || error.message.includes('User not found') || error.message.includes('invalid_credentials'))) {
-      try {
-        const signUpRes = await supabase.auth.signUp({
-          email: cleanEmail,
-          password: cleanPassword,
-          options: {
-            data: {
-              name: cleanEmail.split('@')[0],
-            },
-          },
-        });
-
-        if (signUpRes.data?.session || (signUpRes.data?.user && !signUpRes.error)) {
-          data = signUpRes.data as any;
-          error = null;
-        }
-      } catch {
-        // Keep original error
-      }
+    if (error) {
+      throw error;
     }
 
     if (error) {
@@ -991,9 +973,10 @@ export const api = {
       try {
         // 1. Try Backend Proxy (/api/auth/profile)
         const backendRes = await fetchBackendApi('/auth/profile');
-        if (backendRes?.user && typeof backendRes.user === 'object') {
+        const userObj = backendRes?.user || (backendRes && typeof backendRes === 'object' && !backendRes.error && backendRes.email ? backendRes : null);
+        if (userObj && typeof userObj === 'object') {
           const currentCached = cacheStore.get('user_profile') || {};
-          const merged = { ...currentCached, ...backendRes.user };
+          const merged = { ...currentCached, ...userObj };
           cacheStore.set('user_profile', merged);
           lastProfileFetchTime = Date.now();
           return merged;
@@ -1163,7 +1146,7 @@ export const api = {
       if (error) throw new Error(error.message || 'فشل تحديث البريد الإلكتروني');
     }
 
-    return { success: true, token: 'bm_session_active', message: 'تم تحديث أمان الحساب بنجاح!' };
+    return { success: true, message: 'تم تحديث أمان الحساب بنجاح!' };
   },
 
   requestPasswordResetOtp: async (email: string) => {
@@ -1395,8 +1378,9 @@ export const api = {
   getActivePlan: async () => {
     // 1. Try Backend Proxy (/api/workout/active)
     const backendRes = await fetchBackendApi('/workout/active');
-    if (backendRes?.plan && Array.isArray(backendRes.plan.dayWorkouts)) {
-      return backendRes.plan;
+    const planData = backendRes?.plan || backendRes;
+    if (planData && Array.isArray(planData.dayWorkouts)) {
+      return planData;
     }
     return planService.getActive();
   },
@@ -1406,6 +1390,8 @@ export const api = {
     const backendRes = await fetchBackendApi('/workout/history');
     if (Array.isArray(backendRes?.plans)) {
       return backendRes.plans;
+    } else if (Array.isArray(backendRes)) {
+      return backendRes;
     }
     return planService.getAll();
   },
@@ -1455,6 +1441,22 @@ export const api = {
   },
 
   generatePlan: async (options: any) => {
+    // 1. Try Backend Python AI Generator first
+    try {
+      const backendRes = await fetchBackendApi('/workout/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(options || {}),
+      });
+
+      if (backendRes && !backendRes.error && (Array.isArray(backendRes.dayWorkouts) || Array.isArray(backendRes.days))) {
+        const saved = await planService.save(backendRes, true);
+        return saved;
+      }
+    } catch (err) {
+      console.warn('[api.generatePlan] Backend generator fallback to smart presets:', err);
+    }
+
     const daysCount = options?.daysPerWeek || 4;
     const matchedPreset = PRESET_WORKOUT_PLANS.find((p: any) => p.days.length === daysCount) || PRESET_WORKOUT_PLANS[0];
 
@@ -1646,7 +1648,23 @@ export const api = {
     return { success: true };
   },
 
-  upgradePlan: async (_lang?: string) => {
+  upgradePlan: async (lang?: string) => {
+    // 1. Try backend AI Progressive Overload Upgrade
+    try {
+      const backendRes = await fetchBackendApi('/workout/upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lang: lang || 'ar' }),
+      });
+
+      if (backendRes && !backendRes.error && (Array.isArray(backendRes.dayWorkouts) || Array.isArray(backendRes.days))) {
+        const saved = await planService.save(backendRes, true);
+        return { success: true, plan: saved, completionRate: backendRes.completionRate || 95 };
+      }
+    } catch (err) {
+      console.warn('[api.upgradePlan] Backend AI upgrade fallback to smart progression:', err);
+    }
+
     const plan: any = cacheStore.get('active_plan');
     if (plan && plan.dayWorkouts) {
       plan.title = `${plan.title} [مطور - المرحلة 2]`;

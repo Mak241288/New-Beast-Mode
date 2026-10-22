@@ -157,8 +157,8 @@ export const syncController = {
         if (userProfile.fitnessLevel) updateData.fitnessLevel = String(userProfile.fitnessLevel).substring(0, 50);
         if (userProfile.fitnessGoal) updateData.fitnessGoal = String(userProfile.fitnessGoal).substring(0, 100);
         if (userProfile.equipment) updateData.equipment = String(userProfile.equipment).substring(0, 100);
-        if (userProfile.splitPreference) updateData.splitPreference = String(userProfile.splitPreference).substring(0, 100);
-        if (parseSafeNumber(userProfile.workoutDaysPerWeek) !== null) updateData.workoutDaysPerWeek = Math.round(Number(userProfile.workoutDaysPerWeek));
+        if (userProfile.splitPreference && (updateData as any).splitPreference) delete (updateData as any).splitPreference;
+        if (parseSafeNumber(userProfile.workoutDaysPerWeek) !== null) updateData.daysPerWeek = Math.round(Number(userProfile.workoutDaysPerWeek));
         if (typeof userProfile.onboardingCompleted === 'boolean') updateData.onboardingCompleted = userProfile.onboardingCompleted;
 
         if (Object.keys(updateData).length > 0) {

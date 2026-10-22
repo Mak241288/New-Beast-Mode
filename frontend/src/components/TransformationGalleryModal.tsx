@@ -66,9 +66,7 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   useEffect(() => {
-    if (photos.length > 0) {
-      idbStore.set('transformation_photos', photos).catch(() => {});
-    }
+    idbStore.set('transformation_photos', photos).catch(() => {});
   }, [photos]);
 
   if (!isOpen) return null;
@@ -568,6 +566,7 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
                     type="range"
                     min="0"
                     max="100"
+                    dir="ltr"
                     value={splitPos}
                     onChange={(e) => setSplitPos(Number(e.target.value))}
                     style={{ width: '100%', maxWidth: '480px', accentColor: '#ec4899', cursor: 'pointer' }}

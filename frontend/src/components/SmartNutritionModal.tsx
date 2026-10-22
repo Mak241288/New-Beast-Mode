@@ -25,7 +25,7 @@ export const SmartNutritionModal: React.FC<SmartNutritionModalProps> = ({
       weightKg: Number(userProfile?.currentWeight) || 75,
       heightCm: Number(userProfile?.height) || 175,
       age: Number(userProfile?.age) || 26,
-      gender: userProfile?.gender === 'female' ? 'female' : 'male',
+      gender: String(userProfile?.gender || '').toLowerCase() === 'female' ? 'female' : 'male',
       fitnessGoal: userProfile?.fitnessGoal || 'HYPERTROPHY',
       daysPerWeek: Number(userProfile?.daysPerWeek) || 4,
       proteinPerKg: customProteinPerKg,

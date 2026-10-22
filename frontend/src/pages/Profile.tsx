@@ -6,7 +6,6 @@ import { SmartNutritionModal } from '../components/SmartNutritionModal';
 import { TransformationGalleryModal } from '../components/TransformationGalleryModal';
 import { translations } from '../utils/translations';
 import { triggerTestNotification } from '../utils/notifications';
-import { exportFullDataJSON } from '../utils/exportUtils';
 import { cacheStore } from '../utils/cacheStore';
 
 interface ProfileProps {
@@ -308,8 +307,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const handleExportUserData = async () => {
     setExportingData(true);
     try {
-      const data = await api.exportUserData();
-      exportFullDataJSON(data);
+      await api.exportUserData();
     } catch (err: any) {
       alert(lang === 'en' ? 'Failed to export user data.' : 'فشل تصدير بيانات المستخدم.');
     } finally {
@@ -364,15 +362,11 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
 
     setSecuritySaving(true);
     try {
-      const res = await api.updateAccountSecurity({
+      await api.updateAccountSecurity({
         currentPassword: securityCurrentPassword,
         newEmail: securityNewEmail.trim() || undefined,
         newPassword: securityNewPassword.trim() || undefined,
       });
-
-      if (res.token) {
-        localStorage.setItem('token', res.token);
-      }
 
       setSecuritySuccess(lang === 'en' ? 'Security settings updated successfully!' : 'تم تحديث وتوثيق بيانات الأمان بنجاح!');
       setTimeout(() => {
@@ -442,7 +436,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         newPassword: securityNewPassword.trim(),
       });
 
-      if (res.token) {
+      if (res.token && res.token !== 'bm_session_active') {
         localStorage.setItem('token', res.token);
       }
 

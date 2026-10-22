@@ -272,9 +272,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   const handleAddWarmupToDay = async (dw: any) => {
     const routine = getSmartWarmupRoutine(dw.focusArea, dw.title);
+    const dayTarget = dw.id ?? dw.dayIndex;
     try {
       for (const ex of routine) {
-        await api.addCustomExercise(dw.id, ex);
+        await api.addCustomExercise(dayTarget, ex);
       }
       alert(lang === 'en' ? `🔥 Added warm-up routine to Day ${dw.dayIndex}!` : `🔥 تمت إضافة تمارين الإحماء لليوم ${dw.dayIndex} بنجاح!`);
       fetchActivePlan();
@@ -285,9 +286,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   const handleAddCooldownToDay = async (dw: any) => {
     const routine = getSmartCooldownRoutine(dw.focusArea, dw.title);
+    const dayTarget = dw.id ?? dw.dayIndex;
     try {
       for (const ex of routine) {
-        await api.addCustomExercise(dw.id, ex);
+        await api.addCustomExercise(dayTarget, ex);
       }
       alert(lang === 'en' ? `🧊 Added recovery / cooldown routine to Day ${dw.dayIndex}!` : `🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم ${dw.dayIndex} بنجاح!`);
       fetchActivePlan();
@@ -879,8 +881,9 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     e.preventDefault();
     const day = getSelectedDay();
     if (!day) return;
+    const dayTarget = day.id ?? day.dayIndex;
     try {
-      await api.addCustomExercise(day.id, customExForm);
+      await api.addCustomExercise(dayTarget, customExForm);
       setAddingCustom(false);
       setCustomExForm({
         name: '',

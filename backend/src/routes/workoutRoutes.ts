@@ -49,7 +49,6 @@ router.post('/day/:dayId/exercise', addCustomExercise);
 router.put('/exercise/:id', updateExercise);
 router.delete('/exercise/:id', deleteExercise);
 router.post('/exercise/:id/log', logProgress);
-router.post('/log', logProgress);
 router.get('/exercise/:id/alternatives', getAlternatives);
 router.post('/exercise/:id/swap-ai', swapExerciseAI);
 

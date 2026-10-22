@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
@@ -331,8 +332,8 @@ export const requestPasswordResetOtp = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    // Generate 6-digit cryptographic OTP code
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate 6-digit cryptographic CSPRNG OTP code
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const expiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
     await prisma.user.update({
@@ -343,16 +344,14 @@ export const requestPasswordResetOtp = async (req: AuthRequest, res: Response): 
       },
     });
 
-    console.log(`\n======================================================`);
-    console.log(`🔐 [BeastMode Security] OTP generated for ${cleanEmail}: ${otp}`);
-    console.log(`⏰ Expiry: ${expiry.toISOString()}`);
-    console.log(`======================================================\n`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔐 [BeastMode Dev] OTP generated for ${cleanEmail}: ${otp}`);
+    }
 
     res.status(200).json({
       success: true,
       message: 'تم إرسال رمز التحقق (OTP) إلى بريدك الإلكتروني بنجاح (صالح لمدة 10 دقائق)',
       email: cleanEmail,
-      debugOtp: otp, // returned to ensure seamless local/in-app verification
     });
   } catch (error) {
     res.status(500).json({ error: 'حدث خطأ أثناء توليد رمز التحقق' });
@@ -696,7 +695,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
 // @desc    Authenticate or Link Google Account
 // @route   POST /api/auth/google
 export const googleAuth = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { email, name, googleId, password, otp, idToken } = req.body;
+  const { email, name, googleId, password, otp } = req.body;
 
   try {
     if (!isPrimitiveString(email) || (name !== undefined && !isPrimitiveString(name)) || (googleId !== undefined && !isPrimitiveString(googleId))) {
@@ -729,7 +728,7 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
       // If NOT yet linked to this Google ID and account has password -> require password or email OTP verification to prevent hijacking!
       const isAlreadyLinked = Boolean(user.isGoogleLinked && (user.googleId === cleanGoogleId || (user.googleEmail && user.googleEmail.toLowerCase() === cleanEmail)));
 
-      if (!isAlreadyLinked && !idToken) {
+      if (!isAlreadyLinked) {
         if (password && isPrimitiveString(password)) {
           const isMatch = await bcrypt.compare(password, user.password);
           if (!isMatch) {

@@ -183,6 +183,14 @@ class ExerciseCatalogService {
         if (name_ar && (!ex.name_ar || ex.name_ar === ex.name_en)) {
           ex.name_ar = name_ar;
         }
+
+        // Persist permanently back to disk asynchronously to prevent re-translating and saving Gemini tokens
+        try {
+          fs.writeFileSync(BACKUP_JSON_PATH, JSON.stringify(this.exercises, null, 2), 'utf-8');
+        } catch (saveErr) {
+          console.warn('[ExerciseCatalog] Warning: Failed to persist translated exercise to disk:', saveErr);
+        }
+
         return true;
       }
       return false;

@@ -1,9 +1,12 @@
+import dotenv from 'dotenv';
+// Load environment variables immediately before any other module imports
+dotenv.config();
+
 import express from 'express';
 import 'express-async-errors';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 
 import authRoutes from './routes/authRoutes';
 import workoutRoutes from './routes/workoutRoutes';
@@ -12,9 +15,6 @@ import syncRoutes from './routes/syncRoutes';
 
 import { logger, initCrashTracking } from './services/logger';
 import { prisma } from './services/db';
-
-// Load environment variables
-dotenv.config();
 
 // Initialize Crash & Exception Tracking
 initCrashTracking();
@@ -53,7 +53,7 @@ const corsOptions: cors.CorsOptions = {
     const isAllowed =
       customOrigins.includes(cleanOrigin) ||
       defaultAllowedOrigins.includes(cleanOrigin) ||
-      cleanOrigin.endsWith('.vercel.app') ||
+      /^https:\/\/(new-)?beastmode[a-z0-9-]*\.vercel\.app$/.test(cleanOrigin) ||
       cleanOrigin.endsWith('.beastmode.app');
 
     if (isAllowed) {
@@ -88,16 +88,33 @@ const globalLimiter = rateLimit({
 });
 app.use('/api', globalLimiter);
 
-// Strict Rate Limiter for Login & Register to prevent Brute-Force & Credential Stuffing
+// Strict Rate Limiter for Login, Register, OTP & Auth Mutations to prevent Brute-Force & Credential Stuffing
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window
   max: 10, // Max 10 attempts per IP per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'تم تجاوز عدد محاولات تسجيل الدخول المسموح بها. يرجى الانتظار والتحقق بعد 15 دقيقة للحفاظ على أمان حسابك.' },
+  message: { error: 'تم تجاوز عدد محاولات الدخول/التحقق المسموح بها. يرجى الانتظار 15 دقيقة للحفاظ على أمان حسابك.' },
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password-otp', authLimiter);
+app.use('/api/auth/verify-otp-reset-password', authLimiter);
+app.use('/api/auth/google', authLimiter);
+
+// Dedicated AI Limiter to prevent token exhaustion and DDoS
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 20, // Max 20 AI generations per IP per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'تم تجاوز الحد الأقصى لطلبات الذكاء الاصطناعي. يرجى المحاولة بعد قليل للحفاظ على استقرار الخدمة.' },
+});
+app.use('/api/workout/upgrade', aiLimiter);
+app.use('/api/workout/generate', aiLimiter);
+app.use('/api/workout/import-bulk', aiLimiter);
+app.use('/api/workout/exercise/:id/swap-ai', aiLimiter);
+app.use('/api/workout/analyze-physique', aiLimiter);
 
 // Register routes
 app.use('/api/auth', authRoutes);

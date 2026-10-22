@@ -352,8 +352,8 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
               summary={{
                 workoutTitle: s.dayTitle,
                 durationMinutes: s.durationMinutes,
-                completedCount: s.totalSetsCompleted,
-                totalExercises: s.exercisesCount || 5,
+                completedCount: (s as any).totalExercisesCompleted || (s as any).exercisesCompleted || (state.dayData?.exercises?.length || 5),
+                totalExercises: (s as any).totalExercises || (state.dayData?.exercises?.length || 5),
                 totalWeightKg: s.totalVolumeKg,
               }}
             />

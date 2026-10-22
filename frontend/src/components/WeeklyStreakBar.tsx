@@ -63,7 +63,10 @@ export const WeeklyStreakBar: React.FC<WeeklyStreakBarProps> = ({
       const isToday = d.toDateString() === now.toDateString();
       const isPast = d < now && !isToday;
       
-      const dateStr = d.toISOString().split('T')[0];
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const dayNum = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${dayNum}`;
       const hasWorkoutFromLogs = workoutLogs.some((log: any) => {
         if (!log) return false;
         const logDate = (log.date || log.createdAt || '').split('T')[0];
@@ -85,7 +88,7 @@ export const WeeklyStreakBar: React.FC<WeeklyStreakBarProps> = ({
   }, [workoutLogs, completedDates, isEn]);
 
   const totalCompletedThisWeek = weekDays.filter(d => d.hasWorkout).length;
-  const activeStreak = streakCount > 0 ? streakCount : (totalCompletedThisWeek > 0 ? totalCompletedThisWeek : 1);
+  const activeStreak = streakCount > 0 ? streakCount : totalCompletedThisWeek;
 
   return (
     <div

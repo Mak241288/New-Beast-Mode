@@ -139,14 +139,16 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     api.getActivePlan().then(setActivePlan).catch(() => null);
   }, []);
 
-  const handleAddToPlan = async () => {
-    if (!selectedExercise || !targetDayId) return;
+  const handleAddToPlan = async (explicitDayId?: any) => {
+    const effectiveDayId = explicitDayId ?? targetDayId;
+    if (!selectedExercise || !effectiveDayId) return;
     setAddingToPlan(true);
     try {
       const name = lang === 'en' ? selectedExercise.name_en : (selectedExercise.name_ar || selectedExercise.name_en);
       const targetMuscle = lang === 'en' ? selectedExercise.muscle_en : (selectedExercise.muscle_ar || selectedExercise.muscle_en);
       
-      await api.addCustomExercise(Number(targetDayId), {
+      const dayTarget = Number(effectiveDayId) || effectiveDayId;
+      await api.addCustomExercise(dayTarget, {
         name,
         targetMuscle,
         category: selectedExercise.category || 'IRON',
@@ -577,10 +579,10 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
           lang={lang}
           onClose={() => setSelectedExercise(null)}
           onAddToPlan={activePlan ? () => {
-            const dayId = activePlan.dayWorkouts?.find((d: any) => !d.isRestDay)?.id;
-            if (dayId) {
-              setTargetDayId(dayId);
-              handleAddToPlan();
+            const activeDay = activePlan.dayWorkouts?.find((d: any) => !d.isRestDay);
+            const dayTarget = activeDay?.id ?? activeDay?.dayIndex;
+            if (dayTarget !== undefined) {
+              handleAddToPlan(dayTarget);
             } else {
               alert(lang === 'en' ? 'Please select a valid workout day.' : 'يرجى اختيار يوم تدريب نشط.');
             }

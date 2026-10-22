@@ -207,6 +207,9 @@ function getFromCache<T>(key: string): T | null {
     memoryCache.delete(key);
     return null;
   }
+  // LRU Refresh: re-insert so key moves to latest in insertion order
+  memoryCache.delete(key);
+  memoryCache.set(key, entry);
   return entry.value as T;
 }
 
@@ -587,6 +590,10 @@ export const upgradeWorkoutPlanAI = async (
   completionRate: number,
   lang: 'ar' | 'en' = 'ar'
 ): Promise<WorkoutPlanResponse> => {
+  const cacheKey = hashKey('upgrade_plan', { userId, activePlanTitle, roundedRate: Math.round(completionRate / 5) * 5, lang });
+  const cached = getFromCache<WorkoutPlanResponse>(cacheKey);
+  if (cached) return cached;
+
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('المستخدم غير موجود');
 
@@ -606,15 +613,17 @@ Generate a progressive overload routine representing the next phase.
 `;
 
   try {
-    return await callGeminiStructured<WorkoutPlanResponse>(
+    const result = await callGeminiStructured<WorkoutPlanResponse>(
       prompt,
       WORKOUT_PLAN_SCHEMA,
       PROMPT_SYSTEM_COACH(lang),
       {
         temperature: 0.6,
-        thinkingBudget: 1024,
+        thinkingBudget: 0, // Set to 0 to save expensive output tokens on structured JSON schemas
       }
     );
+    setInCache(cacheKey, result, 12 * 60 * 60 * 1000); // Cache for 12 hours
+    return result;
   } catch (error: any) {
     console.error('[upgradeWorkoutPlanAI] Error:', error);
     throw new Error('فشل ترقية الجدول الرياضي بالذكاء الاصطناعي.');
@@ -811,19 +820,28 @@ ${neededTranslations.map(e => `[ID: ${e.id}] Name: ${e.name_en}\nInstructions: $
 
 // 7. Bulk Workout Text Importer Parser
 export const parseBulkWorkoutText = async (rawText: string): Promise<BulkParsedPlanResponse> => {
+  // Cap raw input to 8000 characters to prevent token exhaustion attacks
+  const sanitizedText = (rawText || '').trim().slice(0, 8000);
+  const cacheKey = hashKey('bulk_parse', { text: sanitizedText });
+  const cached = getFromCache<BulkParsedPlanResponse>(cacheKey);
+  if (cached) return cached;
+
   const prompt = `
 Parse the following unstructured workout list into days, focus areas, rest days, exercises, sets, and reps:
 """
-${rawText}
+${sanitizedText}
 """
 `;
 
-  return await callGeminiStructured<BulkParsedPlanResponse>(
+  const parsed = await callGeminiStructured<BulkParsedPlanResponse>(
     prompt,
     BULK_PLAN_SCHEMA,
     PROMPT_SYSTEM_BULK_PARSER,
-    { temperature: 0.1 }
+    { temperature: 0.1, thinkingBudget: 0 }
   );
+
+  setInCache(cacheKey, parsed, 6 * 60 * 60 * 1000); // 6 Hours cache
+  return parsed;
 };
 
 export interface PhysiqueAnalysisResponse {
@@ -896,7 +914,7 @@ Provide an objective, science-based physique analysis estimating body fat %, mus
       prompt,
       PHYSIQUE_ANALYSIS_SCHEMA,
       systemInstruction,
-      { temperature: 0.6, thinkingBudget: 512 }
+      { temperature: 0.6, thinkingBudget: 0 }
     );
   } catch (error) {
     console.error('[analyzePhysiquePhotoAI Error]:', error);

@@ -549,7 +549,7 @@ def main():
     parser.add_argument("--location", type=str, default="GYM", choices=["GYM", "HOME"], help="Workout location")
     parser.add_argument("--equipment", type=str, default="", help="Comma-separated available equipment (for HOME)")
     parser.add_argument("--level", type=str, default="intermediate", choices=["beginner", "intermediate", "advanced"], help="User fitness level")
-    parser.add_argument("--goal", type=str, default="HYPERTROPHY", choices=["STRENGTH", "FAT_LOSS", "HYPERTROPHY", "ATHLETICISM"], help="Workout goal")
+    parser.add_argument("--goal", type=str, default="HYPERTROPHY", choices=["STRENGTH", "FAT_LOSS", "HYPERTROPHY", "ATHLETICISM", "LOSE_WEIGHT", "ENDURANCE", "MAINTENANCE"], help="Workout goal")
     parser.add_argument("--muscles", type=str, default="", help="Comma-separated target muscles (chest, back, shoulders, legs, arms, abs)")
     parser.add_argument("--rest-days", type=str, default="", help="Comma-separated rest days (e.g. friday,sunday)")
     parser.add_argument("--limit", type=int, default=0, help="Number of exercises per training day")

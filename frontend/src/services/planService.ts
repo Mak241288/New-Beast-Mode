@@ -377,13 +377,18 @@ export const planService = {
 
     // Direct Supabase table sync fallback
     const user = await getCurrentUser();
-    if (user?.email) {
+    const rawUserId = (user as any)?.user_metadata?.backend_id || (user as any)?.backend_id || (typeof user?.id === 'number' ? user.id : null);
+    const numericUserId = typeof rawUserId === 'number' ? rawUserId : (parseInt(String(rawUserId), 10) || null);
+
+    if (numericUserId && normalized.title) {
       try {
         await supabase.from('WorkoutPlan').upsert({
           id: typeof normalized.id === 'number' ? normalized.id : undefined,
+          userId: numericUserId,
           title: normalized.title,
           active: normalized.active,
-          durationWeeks: normalized.durationWeeks,
+          durationWeeks: normalized.durationWeeks || 4,
+          startDate: (normalized as any).startDate ? new Date((normalized as any).startDate).toISOString() : new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
       } catch (err) {

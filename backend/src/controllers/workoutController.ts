@@ -587,9 +587,14 @@ export const createManualPlan = async (req: AuthRequest, res: Response): Promise
 // @desc    Update day workout focus/status
 // @route   PUT /api/workout/day/:dayId
 export const updateDayWorkout = async (req: AuthRequest, res: Response): Promise<void> => {
-  const dayId = parseInt(req.params.dayId);
+  const dayId = validateNumericId(req.params.dayId);
   const userId = req.user?.id;
   const { title, focusArea, isRestDay, dayTips } = req.body;
+
+  if (!dayId) {
+    res.status(400).json({ error: 'معرّف اليوم غير صالح' });
+    return;
+  }
 
   try {
     const day = await prisma.dayWorkout.findUnique({
@@ -605,11 +610,11 @@ export const updateDayWorkout = async (req: AuthRequest, res: Response): Promise
     const updated = await prisma.dayWorkout.update({
       where: { id: dayId },
       data: {
-        title,
-        focusArea,
-        isRestDay: isRestDay !== undefined ? isRestDay : undefined,
-        dayTips,
-      },
+        title: title !== undefined ? sanitizeString(title, 150, 'اليوم التدريبي') : undefined,
+        focusArea: focusArea !== undefined ? sanitizeString(focusArea, 150, 'عام') : undefined,
+        isRestDay: isRestDay !== undefined ? Boolean(isRestDay) : undefined,
+        dayTips: dayTips !== undefined ? (dayTips ? sanitizeString(dayTips, 1000, '') : null) : undefined,
+      }
     });
 
     // If rest day, delete exercises in it
