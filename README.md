@@ -1,29 +1,29 @@
 # 🦍 BeastMode AI — Next-Gen Smart Fitness & Nutrition Ecosystem
 
 <p align="center">
-  <a href="https://new-beast-mode.vercel.app/" target="_blank">
-    <img src="https://img.shields.io/badge/BeastMode_AI-Launch_Live_App-00D2FF?style=for-the-badge&logo=vercel&logoColor=white" alt="BeastMode AI Live App" />
+  <a href="https://fit.mkhateeb.com" target="_blank">
+    <img src="https://img.shields.io/badge/BeastMode_AI-fit.mkhateeb.com-00D2FF?style=for-the-badge&logo=vercel&logoColor=white" alt="BeastMode AI Live App" />
   </a>
   <img src="https://img.shields.io/badge/Theme-⚡_Cyber_Volt_%26_Carbon-CCFF00?style=for-the-badge&logoColor=black" alt="Cyber Volt" />
   <img src="https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
-  <img src="https://img.shields.io/badge/Groq-LLaMA_3.3_70B-F55036?style=for-the-badge" alt="Groq" />
+  <img src="https://img.shields.io/badge/Security-OWASP_Hardened-10B981?style=for-the-badge&logo=security&logoColor=white" alt="Security" />
   <img src="https://img.shields.io/badge/Google_Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini" />
   <img src="https://img.shields.io/badge/PWA-100%25_Offline_Ready-FF6F00?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA" />
 </p>
 
 ---
 
-## 🌐 Live Cloud Deployment
+## 🌐 Live Production Deployment
 
-Experience the live, production-ready progressive web application directly in your browser or install it on your mobile device:
+Experience the live, production-hardened progressive web application on the official domain:
 
 <p align="center">
-  <a href="https://new-beast-mode.vercel.app/" target="_blank">
-    <b style="color: #00d2ff; font-size: 20px;">🚀 Launch BeastMode Live App (Vercel)</b><br />
-    <code>https://new-beast-mode.vercel.app/</code>
+  <a href="https://fit.mkhateeb.com" target="_blank">
+    <b style="color: #00d2ff; font-size: 22px;">🚀 Launch BeastMode Live App</b><br />
+    <code>https://fit.mkhateeb.com</code>
   </a>
 </p>
 
@@ -36,7 +36,7 @@ Experience the live, production-ready progressive web application directly in yo
 </p>
 
 <p align="center">
-  <em>⚡ Dynamic Glassmorphism Dashboard: Weekly Streaks, Trio Metric Pills, Live Hydration & Cinematic Cards.</em>
+  <em>⚡ Streamlined Glassmorphic Dashboard: Focused Today's Workout, Zero-State Metrics, Quick Daily Actions & Weekly Streak Bar.</em>
 </p>
 
 <br />
@@ -46,12 +46,12 @@ Experience the live, production-ready progressive web application directly in yo
     <td width="50%" align="center">
       <img src="docs/screenshots/workout_player_showcase.jpg" alt="Live Gym Workout Player" width="100%" style="border-radius: 12px;" />
       <br />
-      <b>🏋️ Zero-Latency Live Player & Story Segments</b>
+      <b>🏋️ One-Thumb Gym Player & Target Set Completion</b>
     </td>
     <td width="50%" align="center">
       <img src="docs/screenshots/muscle_anatomy_showcase.jpg" alt="3D Muscle Anatomy & Wiki" width="100%" style="border-radius: 12px;" />
       <br />
-      <b>🗺️ 3D Muscle Anatomy & MuscleWiki 1-2-3 Guide</b>
+      <b>🗺️ 3D Muscle Anatomy & 4,117+ Exercise Catalog</b>
     </td>
   </tr>
 </table>
@@ -60,30 +60,39 @@ Experience the live, production-ready progressive web application directly in yo
 
 ## 🌟 Key Features & Architectural Highlights
 
-### 1. 🏋️‍♂️ Zero-Latency Live Gym Player
-* **Story-Style Segmented Progress**: Glanceable top bar showing current session progression with active pulse and one-tap exercise skipping.
-* **Giant 1-Tap Logging**: Built for chalky fingers and heavy breathing. Complete sets and launch the countdown rest timer with a single tap (or keyboard Spacebar).
-* **Native Offline Synthesized Audio Chime**: Web Audio API audio bells (0 KB asset footprint, 100% offline).
+### 1. 🏋️‍♂️ One-Thumb Gym Player (Zero-Latency Live Session)
+* **Target Set Completion (`targetSetIndex`)**: Complete any individual set directly from the row with instant tactile feedback, without forcing set progression order.
+* **Smart Auto-Fill Weights**: Automatically propagates logged weight and reps to subsequent sets to eliminate repetitive gym data entry.
+* **Accurate Completion Summary**: Displays real completed vs total exercises ratio (`completedCount / totalExercises`) upon finishing the workout.
+* **Native Offline Audio Chimes**: Web Audio API synthesized chimes for rest timer countdowns (0 KB network footprint, 100% offline).
 
-### 2. 🤖 Biomechanical AI Coach (Groq LLaMA 3.3 & Gemini 2.5 Flash)
-* **Physiological Check-Ins**: Evaluates workout sensation, weekly adherence, joint pain, water hydration consistency, and tape circumference measurements (chest/arm growth vs waist reduction).
-* **Calibrated Progressive Overload**: Recommends exact micro-load increments (+2.5kg or +1-2 reps) rather than generic motivational text.
-* **Instant Muscle Swap Engine**: Replaces occupied gym equipment with scientifically equivalent movements targeting identical muscle fibers in under `0.5s`.
+### 2. 🛡️ Production-Grade Security & OWASP Hardening
+* **CSPRNG Cryptographic OTP**: 6-digit one-time password generation powered by `crypto.randomInt` with automatic Brute-Force lockout (invalidates token after 5 failed attempts).
+* **Guarded Google OAuth Linking**: Enforces cryptographic verification and requires current password verification before linking accounts.
+* **Strict CORS & Domain Isolation**: Restricts credentialed cross-origin access exclusively to verified domains (`fit.mkhateeb.com` and production Vercel subdomains).
+* **Tiered Rate Limiters**: Dedicated `authLimiter` (10 req / 15 min) and `aiLimiter` (20 req / 15 min) to prevent credential stuffing and token exhaustion.
+* **Zero-Leak Response Policy**: Completely eliminated all `debugOtp` and client-side `sessionStorage` token fallbacks.
 
-### 3. 🗺️ Interactive 3D Muscle Anatomy & MuscleWiki Pro
+### 3. ⚡ Optimized AI Engine & Token Conservation (Gemini 2.5 Flash)
+* **Zero-Waste Schema Execution**: Optimized structured JSON schema calls with `thinkingBudget: 0`, saving **512–1,024 expensive output tokens per generation**.
+* **Disk-Persisted Exercise Translations**: Writes Arabic exercise translations permanently to disk (`exercises_backup.json`), preventing repetitive LLM translation calls across server restarts.
+* **LRU-Cached Inferences**: Smart cache layer caching bulk imports, workout upgrades, and physique assessments by input hash.
+* **Bounded Input Protection**: Strict 8,000-character caps on unstructured workout inputs to prevent token depletion attacks.
+
+### 4. 🗺️ Interactive 3D Muscle Anatomy & 4,117+ Exercises
+* **Instant Add-to-Plan**: One-click addition from `MuscleWikiModal` directly into the currently active workout day without state collisions.
 * **Dual Front/Back SVG Heatmap**: Dynamically highlights primary agonist muscles in bright neon and secondary synergist stabilizers in muted hues.
-* **Step-by-Step 1-2-3 Execution Guide**: Form setup, eccentric/concentric movement path, and breathing tempo rhythm (2-0-1-0).
-* **Adaptive Bottom Sheet Engine**: Opens as a smooth native gesture draggable bottom sheet on mobile screens (`< 768px`) and an expansive centered glass modal on desktop (`>= 768px`).
+* **Smart Warmup & Cooldown Routines**: Context-aware dynamic warm-up and recovery exercise recommendations matching targeted muscles.
 
-### 4. 📊 Comprehensive Biometrics & Analytics
-* **Weekly Streak Strip**: 7-day interactive strip highlighting workout completions with glowing neon flame badges.
-* **Body Circumference Tracking**: Tape measurements (Chest, Arms, Waist, Thighs) in centimeters with history logs.
-* **Monthly Muscle Distribution**: Visual breakdown ensuring balanced volume between Push, Pull, Legs, and Core.
-* **Live Hydration Capsule**: Quick-add `+250ml` and `+500ml` water logging synchronized with recovery algorithms.
+### 5. 📊 Biometrics, Nutrition & Analytics
+* **Gender-Calibrated Nutrition Calculator**: Accurate Mifflin-St Jeor BMR/TDEE calculations supporting all uppercase/lowercase gender representations (`MALE`/`FEMALE`).
+* **True Zero-State Metrics**: Clean `0 kcal`, `0 min`, and `0.0 Ton` baselines for new athletes without inflated mock baselines.
+* **Multi-Set Weight Parsing**: Robust comma-separated weight parsing (`15kg, 20kg`) ensuring clean progression curves without string concatenation bugs.
+* **Localized Weekly Streak**: Timezone-aligned weekly streak calculation avoiding UTC date shifts in Middle Eastern and European timezones.
 
-### 5. 📱 Offline-First PWA (Progressive Web App)
-* **100% Gym Offline Continuity**: Operates without internet connectivity using an SSRF-hardened Service Worker (`sw.js`) and IndexedDB / LocalStorage cache tiers.
-* **Native Mobile Installation**: Custom floating install prompt for Android/Chromium and iOS Safari home-screen integration.
+### 6. 📱 Offline-First PWA (Progressive Web App)
+* **100% Offline Resilience**: Operates seamlessly in gym basements using IndexedDB, LocalStorage, and Service Worker cache tiers.
+* **Dual-Storage Cloud Sync**: Seamlessly syncs between browser local storage and Supabase PostgreSQL tables (`User`, `WorkoutPlan`, `DayWorkout`, `Exercise`, `WeightLog`, `ProgressLog`).
 
 ---
 
