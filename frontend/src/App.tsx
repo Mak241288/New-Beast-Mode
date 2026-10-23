@@ -489,6 +489,26 @@ function App() {
     setCurrentView('dashboard');
   };
 
+  const handleStartGuestExperience = () => {
+    const guestToken = `bm_guest_${Date.now()}`;
+    const guestProfile = {
+      id: 'guest',
+      email: 'guest@beastmode.ai',
+      name: lang === 'en' ? 'Guest Athlete' : 'رياضي تجريبي (ضيف)',
+      isGuest: true,
+      onboardingCompleted: true,
+    };
+    try {
+      localStorage.setItem('token', guestToken);
+      localStorage.setItem('bm_is_guest', 'true');
+      cacheStore.set('user_profile', guestProfile);
+    } catch {
+      // Ignore
+    }
+    setToken(guestToken);
+    setCurrentView('dashboard');
+  };
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -571,7 +591,7 @@ function App() {
         {currentView !== 'about' && currentView !== 'privacy' && currentView !== 'terms' && currentView !== 'login' && (
           <LandingPage
             lang={lang}
-            onGetStarted={() => navigateTo('login')}
+            onGetStarted={handleStartGuestExperience}
             onLogin={() => navigateTo('login')}
             onLanguageChange={handleLanguageChange}
             onNavigateToLegal={(page) => navigateTo(page)}

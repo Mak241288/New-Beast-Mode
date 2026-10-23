@@ -886,6 +886,18 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                 </div>
               )}
 
+              {/* Memory of Last Completed Weight/Reps */}
+              {(() => {
+                const hist = getExerciseHistoryAndSuggestion(currentEx.name || currentEx.name_en, currentEx.weight, currentEx.reps);
+                if (!hist || !hist.lastWeight) return null;
+                return (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '4px 10px', fontSize: '11.5px', color: '#f59e0b', fontWeight: '700', marginBottom: '8px' }}>
+                    <span>🏆 {isAr ? 'آخر أداء لك:' : 'Last Recorded:'}</span>
+                    <span style={{ color: '#fff' }}>{hist.lastWeight} × {hist.lastReps} {isAr ? 'عدة' : 'reps'}</span>
+                  </div>
+                );
+              })()}
+
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', padding: '3px 8px', borderRadius: '6px' }}>
                   🎯 {currentEx.muscle_ar || currentEx.muscle_en || currentEx.targetMuscle || 'عام'}
@@ -1196,54 +1208,96 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                         </td>
 
                         <td style={{ padding: '6px 3px' }}>
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            dir="ltr"
-                            value={displayWeight}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              updateSetLog(state.activeExerciseIndex, sIdx, { weight: val.trim() === '' ? 'Bodyweight' : val });
-                            }}
-                            placeholder={isAr ? 'وزن الجسم' : 'Bodyweight'}
-                            aria-label={isAr ? `وزن الجولة ${setLog.setNumber}` : `Weight for set ${setLog.setNumber}`}
-                            style={{
-                              width: '100%',
-                              padding: '8px 4px',
-                              textAlign: 'center',
-                              background: 'rgba(0, 0, 0, 0.4)',
-                              border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
-                              borderRadius: '8px',
-                              color: '#fff',
-                              fontSize: '12.5px',
-                              fontWeight: '600',
-                              unicodeBidi: 'plaintext',
-                            }}
-                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentNum = parseFloat(String(displayWeight).replace(/[^0-9.]/g, '')) || 0;
+                                const nextNum = Math.max(0, currentNum - 2.5);
+                                updateSetLog(state.activeExerciseIndex, sIdx, { weight: nextNum === 0 ? 'Bodyweight' : `${nextNum}kg` });
+                              }}
+                              style={{ width: '22px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer', padding: 0 }}
+                            >-</button>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              dir="ltr"
+                              value={displayWeight}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updateSetLog(state.activeExerciseIndex, sIdx, { weight: val.trim() === '' ? 'Bodyweight' : val });
+                              }}
+                              placeholder={isAr ? 'وزن الجسم' : 'Bodyweight'}
+                              aria-label={isAr ? `وزن الجولة ${setLog.setNumber}` : `Weight for set ${setLog.setNumber}`}
+                              style={{
+                                width: '100%',
+                                minWidth: '55px',
+                                padding: '8px 2px',
+                                textAlign: 'center',
+                                background: 'rgba(0, 0, 0, 0.4)',
+                                border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
+                                borderRadius: '8px',
+                                color: '#fff',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                unicodeBidi: 'plaintext',
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentNum = parseFloat(String(displayWeight).replace(/[^0-9.]/g, '')) || 0;
+                                const nextNum = currentNum + 2.5;
+                                updateSetLog(state.activeExerciseIndex, sIdx, { weight: `${nextNum}kg` });
+                              }}
+                              style={{ width: '22px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: '14px', cursor: 'pointer', padding: 0 }}
+                            >+</button>
+                          </div>
                         </td>
 
                         <td style={{ padding: '6px 3px' }}>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            dir="ltr"
-                            value={setLog.reps}
-                            onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { reps: e.target.value })}
-                            placeholder="10-12"
-                            aria-label={isAr ? `تكرار الجولة ${setLog.setNumber}` : `Reps for set ${setLog.setNumber}`}
-                            style={{
-                              width: '100%',
-                              padding: '8px 4px',
-                              textAlign: 'center',
-                              background: 'rgba(0, 0, 0, 0.4)',
-                              border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
-                              borderRadius: '8px',
-                              color: '#fff',
-                              fontSize: '12.5px',
-                              fontWeight: '600',
-                              unicodeBidi: 'plaintext',
-                            }}
-                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentReps = parseInt(String(setLog.reps).replace(/[^0-9]/g, '')) || 10;
+                                const nextReps = Math.max(1, currentReps - 1);
+                                updateSetLog(state.activeExerciseIndex, sIdx, { reps: String(nextReps) });
+                              }}
+                              style={{ width: '20px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: '13px', cursor: 'pointer', padding: 0 }}
+                            >-</button>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              dir="ltr"
+                              value={setLog.reps}
+                              onChange={(e) => updateSetLog(state.activeExerciseIndex, sIdx, { reps: e.target.value })}
+                              placeholder="10-12"
+                              aria-label={isAr ? `تكرار الجولة ${setLog.setNumber}` : `Reps for set ${setLog.setNumber}`}
+                              style={{
+                                width: '100%',
+                                minWidth: '45px',
+                                padding: '8px 2px',
+                                textAlign: 'center',
+                                background: 'rgba(0, 0, 0, 0.4)',
+                                border: isTargetSet ? '1px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.15)',
+                                borderRadius: '8px',
+                                color: '#fff',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                unicodeBidi: 'plaintext',
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentReps = parseInt(String(setLog.reps).replace(/[^0-9]/g, '')) || 10;
+                                const nextReps = currentReps + 1;
+                                updateSetLog(state.activeExerciseIndex, sIdx, { reps: String(nextReps) });
+                              }}
+                              style={{ width: '20px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.08)', border: 'none', color: '#fff', fontSize: '13px', cursor: 'pointer', padding: 0 }}
+                            >+</button>
+                          </div>
                         </td>
 
                         <td style={{ padding: '6px 3px' }}>

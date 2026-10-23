@@ -1358,9 +1358,23 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-end', width: '100%' }}>
           {/* Main Action Bar */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            {activePlan?.dayWorkouts && activePlan.dayWorkouts.some((dw: any) => !dw.isRestDay && dw.exercises?.length > 0) && (
+              <button
+                onClick={() => {
+                  const todayDay = activePlan.dayWorkouts.find((dw: any) => !dw.isRestDay && dw.exercises?.length > 0);
+                  if (todayDay) handleStartWorkoutSession(todayDay);
+                }}
+                className="glow-btn"
+                style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
+              >
+                <span>⚡</span>
+                <span>{lang === 'en' ? "Start Today's Workout ▶️" : 'بدء تمرين اليوم ▶️'}</span>
+              </button>
+            )}
+
             <button
               onClick={() => handleOpenManualBuilder()}
-              className="glow-btn"
+              className={activePlan?.dayWorkouts?.some((dw: any) => !dw.isRestDay && dw.exercises?.length > 0) ? "secondary-btn" : "glow-btn"}
               style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
             >
               <Plus size={15} />
