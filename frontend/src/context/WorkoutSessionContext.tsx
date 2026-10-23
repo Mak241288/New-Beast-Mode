@@ -589,13 +589,13 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
     });
   }, []);
 
-  const finishCurrentSet = useCallback((customValues?: { reps?: string | number; weight?: string | number }) => {
+  const finishCurrentSet = useCallback((customValues?: { reps?: string | number; weight?: string | number; targetSetIndex?: number }) => {
     // Tactile haptic feedback on set completion
     triggerHaptic('medium');
 
     setState(prev => {
       const exIdx = prev.activeExerciseIndex;
-      const setIdx = prev.currentSetIndex;
+      const setIdx = customValues?.targetSetIndex !== undefined ? customValues.targetSetIndex : prev.currentSetIndex;
       const currentLogs = prev.setLogs[exIdx] || [];
       const exercises = prev.dayData?.exercises || [];
       const currentEx = exercises[exIdx];

@@ -1276,7 +1276,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                           <button
                             onClick={() => {
                               if (!setLog.completed) {
-                                finishCurrentSet({ reps: setLog.reps, weight: setLog.weight });
+                                finishCurrentSet({ reps: setLog.reps, weight: setLog.weight, targetSetIndex: sIdx } as any);
                               } else {
                                 updateSetLog(state.activeExerciseIndex, sIdx, { completed: false });
                               }

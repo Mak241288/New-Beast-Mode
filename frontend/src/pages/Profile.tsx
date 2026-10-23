@@ -1277,116 +1277,21 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
                   <FileText size={13} />
                   <span>{lang === 'en' ? 'Terms of Service' : 'شروط الاستخدام والإخلاء'}</span>
                 </button>
+                {onLogout && (
+                  <>
+                    <span style={{ color: 'var(--text-muted)' }}>•</span>
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0, fontWeight: '700' }}
+                    >
+                      <LogOut size={13} />
+                      <span>{lang === 'en' ? 'Sign Out' : 'تسجيل الخروج'}</span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Account Actions & Sign Out Card */}
-        <div className="glass-panel" style={{ border: '1px solid var(--border-color)', padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Lock size={16} color="var(--primary)" />
-            {lang === 'en' ? 'Account & Session Actions' : 'إدارة وأمان الحساب والجلسة'}
-          </h3>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-            {/* Sign Out Button */}
-            {onLogout && (
-              <button
-                type="button"
-                onClick={onLogout}
-                className="secondary-btn"
-                style={{
-                  padding: '12px 18px',
-                  borderRadius: '10px',
-                  borderColor: 'rgba(239, 68, 68, 0.3)',
-                  color: 'var(--danger)',
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontWeight: '700',
-                  fontSize: '13.5px',
-                  cursor: 'pointer',
-                }}
-              >
-                <LogOut size={16} />
-                <span>{lang === 'en' ? 'Sign Out of Account' : 'تسجيل الخروج من الحساب'}</span>
-              </button>
-            )}
-
-            {/* Change Password / Security */}
-            <button
-              type="button"
-              onClick={() => {
-                setSecurityError('');
-                setSecuritySuccess('');
-                setShowSecurityModal(true);
-              }}
-              className="secondary-btn"
-              style={{
-                padding: '12px 18px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                fontSize: '13.5px',
-                cursor: 'pointer',
-              }}
-            >
-              <KeyRound size={16} color="var(--primary)" />
-              <span>{lang === 'en' ? 'Security & Passwords' : 'الأمان وتغيير كلمة المرور'}</span>
-            </button>
-
-            {/* Export All Data (GDPR / Backup) */}
-            <button
-              type="button"
-              disabled={exportingData}
-              onClick={handleExportUserData}
-              className="secondary-btn"
-              style={{
-                padding: '12px 18px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                fontSize: '13.5px',
-                cursor: 'pointer',
-                borderColor: 'rgba(0, 210, 255, 0.3)',
-                color: 'var(--primary)',
-              }}
-            >
-              <Download size={16} />
-              <span>{exportingData ? (lang === 'en' ? 'Exporting...' : 'جاري التصدير...') : (lang === 'en' ? 'Export My Data (JSON)' : 'تصدير وحفظ بياناتي 📥')}</span>
-            </button>
-
-            {/* Permanent Account Deletion */}
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteConfirmText('');
-                setShowDeleteModal(true);
-              }}
-              className="secondary-btn"
-              style={{
-                padding: '12px 18px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                fontSize: '13.5px',
-                cursor: 'pointer',
-                borderColor: 'rgba(239, 68, 68, 0.3)',
-                color: 'var(--danger)',
-              }}
-            >
-              <Trash2 size={16} />
-              <span>{lang === 'en' ? 'Delete Account' : 'حذف الحساب نهائياً 🗑️'}</span>
-            </button>
           </div>
         </div>
 
