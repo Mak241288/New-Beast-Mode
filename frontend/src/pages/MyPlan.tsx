@@ -1373,9 +1373,11 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
             )}
 
             <button
-              onClick={() => handleOpenManualBuilder()}
-              className={activePlan?.dayWorkouts?.some((dw: any) => !dw.isRestDay && dw.exercises?.length > 0) ? "secondary-btn" : "glow-btn"}
-              style={{ padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}
+              {...{
+                onClick: () => handleOpenManualBuilder(),
+                className: activePlan?.dayWorkouts?.some((dw: any) => !dw.isRestDay && dw.exercises?.length > 0) ? 'secondary-btn' : 'glow-btn',
+                style: { padding: '8px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' },
+              }}
             >
               <Plus size={15} />
               <span>{lang === 'en' ? 'Custom Plan Architect ✍️' : 'تصميم جدول يدوي ✍️'}</span>
