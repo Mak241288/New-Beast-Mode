@@ -6,6 +6,7 @@ import express from 'express';
 import 'express-async-errors';
 import cors from 'cors';
 import helmet from 'helmet';
+import mongoSanitize from 'mongo-sanitize';
 import rateLimit from 'express-rate-limit';
 
 import authRoutes from './routes/authRoutes';
@@ -76,9 +77,23 @@ const corsOptions: cors.CorsOptions = {
 // Security Middlewares - CORS must be placed first to ensure all responses (including errors) retain CORS headers
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })); // Sets security HTTP headers without blocking cross-origin assets
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    frameguard: { action: 'deny' },
+  })
+); // Sets security HTTP headers (HSTS, clickjacking prevention, MIME sniff protection)
 app.use(express.json({ limit: '2mb' })); // Parses incoming JSON requests with safe memory cap
-app.use(express.urlencoded({ limit: '2mb', extended: true }));
+app.use(express.urlencoded({ limit: '2mb', extended: false })); // Disallows nested object injection like ?user_id[$ne]=5
+
+// Query & Body Injection Sanitizer (strips out any malicious $ or . operators from input)
+app.use((req, _res, next) => {
+  if (req.body && typeof req.body === 'object') req.body = mongoSanitize(req.body);
+  if (req.query && typeof req.query === 'object') req.query = mongoSanitize(req.query);
+  if (req.params && typeof req.params === 'object') req.params = mongoSanitize(req.params);
+  next();
+});
 
 // Rate Limiting to prevent brute-force and DDoS
 const globalLimiter = rateLimit({
