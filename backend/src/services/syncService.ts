@@ -55,7 +55,7 @@ export const syncService = {
                 await db.exerciseLibrary.create({ data: { name, ...payload } });
               }
               totalSynced++;
-            } catch (err: any) {
+            } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
               logger.warn(`[SyncService] ExerciseDB Item sync error: ${item.name}`, err.message);
             }
           }
@@ -98,7 +98,7 @@ export const syncService = {
                 await db.exerciseLibrary.create({ data: { name, ...payload } });
               }
               totalSynced++;
-            } catch (err: any) {
+            } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
               logger.warn(`[SyncService] Wger Item sync error: ${item.name}`, err.message);
             }
           }
@@ -141,7 +141,7 @@ export const syncService = {
                 await db.exerciseLibrary.create({ data: { name, ...payload } });
               }
               totalSynced++;
-            } catch (err: any) {
+            } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
               logger.warn(`[SyncService] Yoga Pose sync error: ${pose.english_name}`, err.message);
             }
           }
@@ -185,7 +185,7 @@ export const syncService = {
                   await db.exerciseLibrary.create({ data: { name, ...payload } });
                 }
                 totalSynced++;
-              } catch (err: any) {
+              } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
                 logger.warn(`[SyncService] RapidAPI Yoga Pose sync error: ${pose.name}`, err.message);
               }
             }

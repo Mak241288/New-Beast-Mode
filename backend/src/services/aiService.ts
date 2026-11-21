@@ -310,7 +310,7 @@ export const callGroq = async (prompt: string, jsonMode: boolean = false, custom
 
   try {
     return await makeRequest('llama-3.3-70b-versatile');
-  } catch (error: any) {
+  } catch (raw_error: unknown) { const error = raw_error as { message?: string; code?: string; meta?: unknown; stack?: string };
     logger.warn('[callGroq] Primary model llama-3.3-70b-versatile failed, retrying with fallback llama-3.1-8b-instant...', error.message);
     try {
       return await makeRequest('llama-3.1-8b-instant');
@@ -532,7 +532,7 @@ ${equipmentGuidanceAr}
         thinkingBudget: 1024, // Deep reasoning for workout balance & injury accommodation
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[generateWorkoutPlanAI] Error:', error);
     throw new Error('فشل توليد الجدول الرياضي بالذكاء الاصطناعي.');
   }
@@ -625,7 +625,7 @@ Generate a progressive overload routine representing the next phase.
     );
     setInCache(cacheKey, result, 12 * 60 * 60 * 1000); // Cache for 12 hours
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[upgradeWorkoutPlanAI] Error:', error);
     throw new Error('فشل ترقية الجدول الرياضي بالذكاء الاصطناعي.');
   }
@@ -699,7 +699,7 @@ ${candidatesContext}
 
     setInCache(cacheKey, result);
     return result;
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('[suggestSwapAI] Error:', err);
     throw new Error('فشل استبدال التمرين بالذكاء الاصطناعي.');
   }
@@ -812,7 +812,7 @@ ${neededTranslations.map(e => `[ID: ${e.id}] Name: ${e.name_en}\nInstructions: $
         }
       }
     }
-  } catch (error: any) {
+  } catch (raw_error: unknown) { const error = raw_error as { message?: string; code?: string; meta?: unknown; stack?: string };
     logger.error('[translateExerciseInstructionsBatch] Error:', error.message);
   }
 

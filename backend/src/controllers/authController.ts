@@ -102,7 +102,8 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
       email: user.email,
       token,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[AuthController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ أثناء إنشاء الحساب' });
   }
 };
@@ -163,7 +164,8 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
       email: user.email,
       token,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[AuthController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ أثناء تسجيل الدخول' });
   }
 };
@@ -209,7 +211,8 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     res.status(200).json(user);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[AuthController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ أثناء جلب الملف الشخصي' });
   }
 };
@@ -305,7 +308,8 @@ export const updateAccountSecurity = async (req: AuthRequest, res: Response): Pr
       user: updated,
       token: newToken,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[AuthController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ أثناء تحديث بيانات الأمان' });
   }
 };
@@ -354,7 +358,8 @@ export const requestPasswordResetOtp = async (req: AuthRequest, res: Response): 
       message: 'تم إرسال رمز التحقق (OTP) إلى بريدك الإلكتروني بنجاح (صالح لمدة 10 دقائق)',
       email: cleanEmail,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[AuthController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ أثناء توليد رمز التحقق' });
   }
 };
@@ -449,7 +454,8 @@ export const verifyOtpAndResetPassword = async (req: AuthRequest, res: Response)
       },
       token,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[AuthController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ أثناء إعادة تعيين كلمة المرور' });
   }
 };
@@ -666,7 +672,7 @@ export const exportUserData = async (req: AuthRequest, res: Response): Promise<v
     };
 
     res.json(exportPayload);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[exportUserData] Error:', error);
     res.status(500).json({ error: 'فشل تصدير بيانات المستخدم' });
   }
@@ -702,7 +708,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     res.json({ success: true, message: 'تم حذف الحساب وكافة البيانات المرتبطة به نهائياً.' });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[deleteAccount] Error:', error);
     res.status(500).json({ error: 'فشل حذف الحساب. يرجى المحاولة لاحقاً.' });
   }
@@ -819,7 +825,7 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
       token,
       message: 'تم التحقق من الهوية وتسجيل الدخول عبر Google بنجاح ⚡',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[googleAuth] Error:', error);
     res.status(500).json({ error: 'فشل تسجيل الدخول أو ربط الحساب عبر Google' });
   }
@@ -883,7 +889,7 @@ export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promis
       googleId: updatedUser.googleId,
       message: 'تم التحقق من الهوية وربط حسابك بنجاح بحساب Google!',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[linkGoogleAccount] Error:', error);
     res.status(500).json({ error: 'فشل ربط الحساب بحساب Google' });
   }
@@ -914,7 +920,7 @@ export const unlinkGoogleAccount = async (req: AuthRequest, res: Response): Prom
       isGoogleLinked: false,
       message: 'تم إلغاء ربط الحساب بحساب Google بنجاح.',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[unlinkGoogleAccount] Error:', error);
     res.status(500).json({ error: 'فشل إلغاء ربط حساب Google' });
   }

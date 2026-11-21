@@ -63,7 +63,7 @@ class ExerciseCatalogService {
       }
 
       logger.warn('[ExerciseCatalog] No local JSON catalog file found.');
-    } catch (err: any) {
+    } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
       logger.error('[ExerciseCatalog] Failed to load exercise catalog:', err.message);
     }
   }

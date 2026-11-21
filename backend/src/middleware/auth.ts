@@ -15,6 +15,18 @@ if (!JWT_SECRET) {
 const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'beastmode_dev_secret_only';
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
 
+interface DecodedJwtPayload {
+  id?: number | string;
+  email?: string;
+  exp?: number;
+  user_metadata?: {
+    email?: string;
+    user_name?: string;
+    full_name?: string;
+    name?: string;
+  };
+}
+
 export interface AuthRequest extends Request {
   user?: {
     id: number;
@@ -28,8 +40,8 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
   // 1. Check for token in Authorization header or Cookies
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1]?.trim();
-  } else if ((req as any).cookies && (req as any).cookies.token) {
-    token = (req as any).cookies.token;
+  } else if (req.cookies?.token) {
+    token = req.cookies.token;
   } else if (req.headers.cookie) {
     const match = req.headers.cookie.match(/(?:^|;\s*)token=([^;]*)/);
     if (match) {
@@ -47,7 +59,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
     // 2. Cryptographically verify signature with local JWT_SECRET using explicit algorithm
     try {
-      const decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET, { algorithms: ['HS256'] }) as any;
+      const decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET, { algorithms: ['HS256'] }) as DecodedJwtPayload;
       if (decoded && (decoded.id || decoded.email)) {
         if (typeof decoded.id === 'number') {
           const dbUser = await prisma.user.findUnique({ where: { id: decoded.id } });
@@ -76,9 +88,10 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
     // 3. Cryptographically verify signature with SUPABASE_JWT_SECRET if configured
     if (!resolvedUser && SUPABASE_JWT_SECRET) {
-      let decodedPayload: any = null;
+      let decodedPayload: DecodedJwtPayload | null = null;
       try {
-        decodedPayload = jwt.verify(token, SUPABASE_JWT_SECRET, { algorithms: ['HS256', 'HS384', 'HS512'] });
+        const verified = jwt.verify(token, SUPABASE_JWT_SECRET, { algorithms: ['HS256', 'HS384', 'HS512'] });
+        decodedPayload = typeof verified === 'object' && verified !== null ? (verified as DecodedJwtPayload) : null;
       } catch {
         decodedPayload = null;
       }

@@ -96,7 +96,7 @@ export const syncController = {
           checkIns,
         },
       });
-    } catch (err: any) {
+    } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
       logger.error('[SyncController] fullPull error:', {
         message: err?.message,
         code: err?.code,
@@ -423,7 +423,7 @@ export const syncController = {
         timestamp: Date.now(),
         message: 'تمت المزامنة السحابية الكاملة بنجاح وحفظ كافة البيانات',
       });
-    } catch (err: any) {
+    } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
       logger.error('[SyncController] Full Push Error:', {
         message: err?.message,
         code: err?.code,
@@ -458,7 +458,7 @@ export const syncController = {
         count: result.count,
         errors: [],
       });
-    } catch (err: any) {
+    } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
       logger.error('[SyncController] Critical Sync error:', {
         message: err?.message,
         stack: err?.stack,
@@ -493,7 +493,7 @@ export const syncController = {
           output: stdout
         });
       });
-    } catch (err: any) {
+    } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
       logger.error('[SyncController] Performance test exception:', {
         message: err?.message,
         stack: err?.stack,

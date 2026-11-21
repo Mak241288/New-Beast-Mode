@@ -23,26 +23,26 @@ const writeToFile = (filePath: string, message: string) => {
   }
 };
 
-const formatLog = (level: string, message: string, meta?: any) => {
+const formatLog = (level: string, message: string, meta?: unknown) => {
   const timestamp = new Date().toISOString();
   const metaStr = meta ? ` | Meta: ${JSON.stringify(meta)}` : '';
   return `[${timestamp}] [${level.toUpperCase()}]: ${message}${metaStr}`;
 };
 
 export const logger = {
-  info: (message: string, meta?: any) => {
+  info: (message: string, meta?: unknown) => {
     const formatted = formatLog('info', message, meta);
     console.log(formatted);
     writeToFile(COMBINED_LOG_PATH, formatted);
   },
 
-  warn: (message: string, meta?: any) => {
+  warn: (message: string, meta?: unknown) => {
     const formatted = formatLog('warn', message, meta);
     console.warn(formatted);
     writeToFile(COMBINED_LOG_PATH, formatted);
   },
 
-  error: (message: string, error?: any, meta?: any) => {
+  error: (message: string, error?: unknown, meta?: unknown) => {
     const errDetails = error instanceof Error ? `${error.message}\nStack: ${error.stack}` : JSON.stringify(error);
     const formatted = formatLog('error', `${message} -> Details: ${errDetails}`, meta);
     console.error(formatted);
@@ -57,7 +57,7 @@ export const initCrashTracking = () => {
     logger.error('Uncaught Exception Detected', err);
   });
 
-  process.on('unhandledRejection', (reason: any) => {
+  process.on('unhandledRejection', (reason: unknown) => {
     logger.error('Unhandled Promise Rejection Detected', reason);
   });
 

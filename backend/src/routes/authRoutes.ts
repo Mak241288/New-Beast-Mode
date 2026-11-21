@@ -14,24 +14,25 @@ import {
   deleteAccount
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
+import { validateBody, AUTH_SCHEMAS } from '../middleware/validate';
 
 const router = Router();
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
+// Public routes with strict schema validation
+router.post('/register', validateBody(AUTH_SCHEMAS.register), register);
+router.post('/login', validateBody(AUTH_SCHEMAS.login), login);
 router.post('/google', googleAuth);
 router.post('/forgot-password-otp', requestPasswordResetOtp);
 router.post('/verify-otp-reset-password', verifyOtpAndResetPassword);
 
 // Protected routes (require JWT verification)
-router.get('/profile', protect as any, getProfile);
-router.put('/profile', protect as any, updateProfile);
-router.patch('/profile', protect as any, updateProfile);
-router.put('/security', protect as any, updateAccountSecurity);
-router.post('/link-google', protect as any, linkGoogleAccount);
-router.post('/unlink-google', protect as any, unlinkGoogleAccount);
-router.get('/export-data', protect as any, exportUserData);
-router.delete('/account', protect as any, deleteAccount);
+router.get('/profile', protect, getProfile);
+router.put('/profile', protect, updateProfile);
+router.patch('/profile', protect, updateProfile);
+router.put('/security', protect, updateAccountSecurity);
+router.post('/link-google', protect, linkGoogleAccount);
+router.post('/unlink-google', protect, unlinkGoogleAccount);
+router.get('/export-data', protect, exportUserData);
+router.delete('/account', protect, deleteAccount);
 
 export default router;

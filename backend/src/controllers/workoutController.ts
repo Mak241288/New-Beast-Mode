@@ -279,14 +279,14 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
         });
 
         res.status(201).json(createdPlan);
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('[WorkoutController] Error parsing/saving Python plan:', err);
         res.status(500).json({ error: 'فشل معالجة وحفظ الجدول الرياضي الناتج.' });
       }
     });
 
-  } catch (error: any) {
-    logger.error(error);
+  } catch (raw_error: unknown) { const error = raw_error as { message?: string; code?: string; meta?: unknown; stack?: string };
+    logger.error('[WorkoutController] Operation error', error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء توليد جدول التمارين' });
   }
 };
@@ -363,7 +363,8 @@ export const getActivePlan = async (req: AuthRequest, res: Response): Promise<vo
       ...plainPlan,
       dayWorkouts: mappedDayWorkouts,
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ أثناء جلب الجدول الرياضي' });
   }
 };
@@ -407,7 +408,8 @@ export const updateExercise = async (req: AuthRequest, res: Response): Promise<v
     });
 
     res.status(200).json(updated);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل تعديل التمرين' });
   }
 };
@@ -438,7 +440,8 @@ export const deleteExercise = async (req: AuthRequest, res: Response): Promise<v
       where: { id: exerciseId },
     });
     res.status(200).json({ message: 'تم حذف التمرين بنجاح' });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل حذف التمرين' });
   }
 };
@@ -492,7 +495,8 @@ export const addCustomExercise = async (req: AuthRequest, res: Response): Promis
     });
 
     res.status(201).json(newEx);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل إضافة التمرين المخصص' });
   }
 };
@@ -531,7 +535,8 @@ export const logProgress = async (req: AuthRequest, res: Response): Promise<void
     });
 
     res.status(201).json(log);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل تسجيل تقدم التمرين' });
   }
 };
@@ -580,7 +585,8 @@ export const createManualPlan = async (req: AuthRequest, res: Response): Promise
     });
 
     res.status(201).json(plan);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل إنشاء الجدول اليدوي' });
   }
 };
@@ -626,7 +632,8 @@ export const updateDayWorkout = async (req: AuthRequest, res: Response): Promise
     }
 
     res.status(200).json(updated);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل تحديث تفاصيل اليوم الرياضي' });
   }
 };
@@ -749,8 +756,8 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
       completionRate,
       plan: upgradedPlan,
     });
-  } catch (error: any) {
-    logger.error(error);
+  } catch (raw_error: unknown) { const error = raw_error as { message?: string; code?: string; meta?: unknown; stack?: string };
+    logger.error('[WorkoutController] Operation error', error);
     res.status(500).json({ error: error.message || 'فشل توليد ترقية الجدول الرياضي' });
   }
 };
@@ -1030,8 +1037,8 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
       dayWorkouts: mappedDayWorkouts
     });
 
-  } catch (error: any) {
-    logger.error(error);
+  } catch (raw_error: unknown) { const error = raw_error as { message?: string; code?: string; meta?: unknown; stack?: string };
+    logger.error('[WorkoutController] Operation error', error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء استيراد الجدول' });
   }
 };
@@ -1114,8 +1121,8 @@ export const importFilePlan = async (req: AuthRequest, res: Response): Promise<v
       return importBulkPlan(req, res);
     });
 
-  } catch (error: any) {
-    logger.error(error);
+  } catch (raw_error: unknown) { const error = raw_error as { message?: string; code?: string; meta?: unknown; stack?: string };
+    logger.error('[WorkoutController] Operation error', error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء استيراد ملف الجدول' });
   }
 };
@@ -1159,7 +1166,8 @@ export const getPlanHistory = async (req: AuthRequest, res: Response): Promise<v
     }));
 
     res.status(200).json(mappedHistory);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل جلب سجل البرامج الرياضية السابقة.' });
   }
 };
@@ -1226,7 +1234,8 @@ export const activateHistoricalPlan = async (req: AuthRequest, res: Response): P
       ...plainUpdated,
       dayWorkouts: mappedDayWorkouts,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل تفعيل البرنامج الرياضي المحدد.' });
   }
 };
@@ -1257,7 +1266,8 @@ export const renamePlan = async (req: AuthRequest, res: Response): Promise<void>
       data: { title: title.trim() },
     });
     res.status(200).json(updated);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل تعديل اسم الجدول' });
   }
 };
@@ -1333,7 +1343,8 @@ export const duplicatePlan = async (req: AuthRequest, res: Response): Promise<vo
     });
 
     res.status(201).json(duplicated);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل نسخ ومضاعفة الجدول' });
   }
 };
@@ -1389,7 +1400,8 @@ export const deletePlan = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     res.status(200).json({ success: true, message: 'تم حذف الجدول بنجاح' });
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'فشل حذف الجدول' });
   }
 };
@@ -1529,7 +1541,7 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
 
     cachedLibraryTreeData = treeData;
     res.status(200).json(treeData);
-  } catch (err: any) {
+  } catch (err: unknown) {
     logger.error('[LibraryTree Error]:', err);
     res.status(500).json({ error: 'فشل قراءة شجرة التمارين' });
   }
@@ -1575,7 +1587,8 @@ export const getAlternatives = async (req: AuthRequest, res: Response): Promise<
     }));
 
     res.status(200).json(alternatives);
-  } catch (error) {
+  } catch (error: unknown) {
+    logger.error('[WorkoutController] Unexpected error', error);
     res.status(500).json({ error: 'حدث خطأ غير متوقع أثناء البحث عن بدائل.' });
   }
 };
@@ -1662,7 +1675,7 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
       explanation: aiResult.explanation
     });
 
-  } catch (err: any) {
+  } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
     logger.error('[workoutController] AI Swap Error:', err);
     res.status(500).json({ error: err.message || 'فشل استبدال التمرين بالذكاء الاصطناعي.' });
   }
@@ -1686,7 +1699,7 @@ export const analyzePhysiquePhoto = async (req: AuthRequest, res: Response): Pro
       success: true,
       analysis,
     });
-  } catch (err: any) {
+  } catch (raw_err: unknown) { const err = raw_err as { message?: string; code?: string; meta?: unknown; stack?: string };
     logger.error('[workoutController] Analyze Physique Error:', err);
     res.status(500).json({ error: err.message || 'فشل تحليل صور التحول البدني بالذكاء الاصطناعي.' });
   }

@@ -2,6 +2,7 @@ import assert from 'assert';
 import crypto from 'crypto';
 import mongoSanitize from 'mongo-sanitize';
 import { exerciseCatalog } from '../services/exerciseCatalogService';
+import { validatePayload, AUTH_SCHEMAS } from '../middleware/validate';
 
 async function runAllBackendTests() {
   console.log('=== BeastMode Backend Security & Integrity Test Suite ===\n');
@@ -50,6 +51,25 @@ async function runAllBackendTests() {
     const sample = all[0];
     assert.ok(sample.name_en || sample.name_ar, 'Exercise entries must have localized names');
     console.log(`[PASS] 4. Exercise Catalog Loaded & Verified (${all.length} exercises)`);
+    passed++;
+  }
+
+  // 5. Request Schema Validation Middleware Verification
+  {
+    const badEmail = validatePayload({ email: 'not-an-email', password: '123' }, AUTH_SCHEMAS.register);
+    assert.strictEqual(badEmail.valid, false, 'Invalid email & short password must fail validation');
+    assert.ok(badEmail.errors.length >= 2);
+
+    const goodReg = validatePayload({ email: 'athlete@fit.mkhateeb.com', password: 'StrongPassword123!' }, AUTH_SCHEMAS.register);
+    assert.strictEqual(goodReg.valid, true, 'Valid registration payload must pass');
+
+    const badWeight = validatePayload({ weight: 999 }, AUTH_SCHEMAS.weightLog);
+    assert.strictEqual(badWeight.valid, false, 'Out-of-range weight must fail validation');
+
+    const goodWeight = validatePayload({ weight: 78.5, notes: 'Morning weigh-in' }, AUTH_SCHEMAS.weightLog);
+    assert.strictEqual(goodWeight.valid, true, 'Valid weight log must pass');
+
+    console.log('[PASS] 5. API Request Schema Validation (Auth & WeightLog)');
     passed++;
   }
 

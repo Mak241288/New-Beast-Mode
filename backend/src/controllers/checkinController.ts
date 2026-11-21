@@ -64,7 +64,7 @@ export const getCheckInStatus = async (req: AuthRequest, res: Response): Promise
       daysRemaining,
       latestCheckIn
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[getCheckInStatus] Error:', error);
     res.status(500).json({ error: 'فشل التحقق من حالة التقييم الأسبوعي.' });
   }
@@ -122,7 +122,7 @@ export const submitCheckIn = async (req: AuthRequest, res: Response): Promise<vo
       success: true,
       checkIn: newCheckIn
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[submitCheckIn] Error:', error);
     res.status(500).json({ error: 'فشل إرسال التقييم الأسبوعي.' });
   }
@@ -221,7 +221,7 @@ export const applySuggestions = async (req: AuthRequest, res: Response): Promise
       success: true,
       message: 'تم تطبيق اقتراحات الكوتش بنجاح وتحديث خطة تمارينك!'
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('[applySuggestions] Error:', error);
     res.status(500).json({ error: 'فشل تطبيق تعديلات الخطة التدريبية.' });
   }

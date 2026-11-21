@@ -16,6 +16,7 @@ import syncRoutes from './routes/syncRoutes';
 
 import { logger, initCrashTracking } from './services/logger';
 import { prisma } from './services/db';
+import { exerciseCatalog } from './services/exerciseCatalogService';
 
 // Initialize Crash & Exception Tracking
 initCrashTracking();
@@ -133,6 +134,13 @@ app.use('/api/workout/import-bulk', aiLimiter);
 app.use('/api/workout/exercise/:id/swap-ai', aiLimiter);
 app.use('/api/workout/analyze-physique', aiLimiter);
 
+// Enable strong ETag and smart caching for read-only exercise catalog requests
+app.set('etag', 'strong');
+app.use('/api/workout/exercises/library', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+  next();
+});
+
 // Register routes
 app.use('/api/auth', authRoutes);
 app.use('/api/workout', workoutRoutes);
@@ -145,27 +153,32 @@ app.get('/', (_req, res) => {
     <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 100px; color: #10b981;">
       <h1>BeastMode API Server is Running! 🏋️‍♂️🔥</h1>
       <p style="color: #6b7280; font-size: 16px;">Backend server is fully active and ready to power your fitness journey.</p>
-      <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">v1.0.0 | SQLite | Express | TypeScript</p>
+      <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">v2.0.0 | PostgreSQL (Supabase) | Prisma | Express | TypeScript</p>
     </div>
   `);
 });
 
-// Comprehensive Health & Pulse Check Route
+// Comprehensive Health & Pulse Check Route (DB Latency + Catalog + Uptime)
 app.get('/api/health', async (_req, res) => {
-  let dbStatus = 'connected';
-  let dbError: any = null;
+  let dbStatus: 'connected' | 'disconnected' = 'connected';
+  let dbError: string | null = null;
+  const startedAt = Date.now();
   try {
     await prisma.$queryRaw`SELECT 1`;
-  } catch (err: any) {
+  } catch (err: unknown) {
     dbStatus = 'disconnected';
     dbError = err instanceof Error ? err.message : String(err);
     logger.error('Database Health Check Failed', err);
   }
+  const dbLatencyMs = Date.now() - startedAt;
 
   const isHealthy = dbStatus === 'connected';
   res.status(isHealthy ? 200 : 503).json({
     status: isHealthy ? 'healthy' : 'unhealthy',
     database: dbStatus,
+    dbLatencyMs,
+    catalogSize: exerciseCatalog.getAll().length,
+    uptimeSeconds: Math.round(process.uptime()),
     ...(process.env.NODE_ENV !== 'production' && dbError ? { error: dbError } : {}),
     timestamp: Date.now(),
   });
@@ -186,7 +199,29 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 // Start Server
 const server = app.listen(PORT, () => {
-  console.log(`[BeastMode Server] Running on http://localhost:${PORT}`);
+  logger.info(`[BeastMode Server] Running on http://localhost:${PORT}`);
 });
 server.maxHeadersCount = 2000;
+
+// Graceful Shutdown Handler (prevents dropped requests & dangling DB connections on deploy/restart)
+const gracefulShutdown = (signal: string) => {
+  logger.info(`[BeastMode Server] Received ${signal}. Closing HTTP server and Prisma connections gracefully...`);
+  server.close(async () => {
+    try {
+      await prisma.$disconnect();
+      logger.info('[BeastMode Server] Clean shutdown complete.');
+      process.exit(0);
+    } catch (err) {
+      logger.error('[BeastMode Server] Error during Prisma disconnect', err);
+      process.exit(1);
+    }
+  });
+  setTimeout(() => {
+    logger.warn('[BeastMode Server] Forced shutdown after 10s timeout.');
+    process.exit(1);
+  }, 10000).unref();
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 

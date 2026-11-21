@@ -40,5 +40,6 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npx prisma generate
+      - run: npx oxlint src/controllers src/middleware src/routes src/services src/index.ts
       - run: npm test
       - run: npm run build
