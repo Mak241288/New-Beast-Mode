@@ -11,6 +11,7 @@ import { SmartExerciseSwapModal } from './SmartExerciseSwapModal';
 import { DynamicWarmupModal } from './DynamicWarmupModal';
 import { RoutineCardExportModal } from './RoutineCardExportModal';
 import { MuscleWikiModal } from './MuscleWikiModal';
+import { PlateCalculatorPopover } from './PlateCalculatorPopover';
 import { StoryProgressBar } from './StoryProgressBar';
 import { getExerciseHistoryAndSuggestion } from '../utils/progressiveOverload';
 import { getDailyRecovery, saveDailyRecovery } from '../utils/recoveryTracker';
@@ -78,6 +79,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showQuickSwapModal, setShowQuickSwapModal] = useState(false);
   const [showMuscleWiki, setShowMuscleWiki] = useState(false);
+  const [showPlateCalc, setShowPlateCalc] = useState(false);
   const [waterToast, setWaterToast] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -932,6 +934,27 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
                   <span>{isAr ? 'تشريح ودليل MuscleWiki 💡' : 'MuscleWiki Anatomy 💡'}</span>
                 </button>
 
+                {/* 🏋️ 1-Tap Olympic Barbell Plate Calculator */}
+                <button
+                  type="button"
+                  onClick={() => setShowPlateCalc(true)}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.14)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    color: '#10b981',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>🏋️ {isAr ? 'حاسبة طارات البار' : 'Plate Calc'}</span>
+                </button>
+
                 {/* 🔀 Quick Alternative Switcher */}
                 <button
                   type="button"
@@ -1537,6 +1560,16 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
           }}
           lang={lang as any}
           onClose={() => setShowMuscleWiki(false)}
+        />
+      )}
+
+      {/* 🏋️ Olympic Barbell Plate Calculator Popover */}
+      {showPlateCalc && (
+        <PlateCalculatorPopover
+          isOpen={showPlateCalc}
+          onClose={() => setShowPlateCalc(false)}
+          initialWeight={activeSet?.weight || currentEx?.weight}
+          lang={lang}
         />
       )}
     </div>
