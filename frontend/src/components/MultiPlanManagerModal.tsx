@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from '../utils/toast';
+import { confirmAction } from '../utils/confirmDialog';
 import { X, Star, Plus, Copy, Trash2, Edit3, Check, Calendar, Sparkles, Layers } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -97,7 +98,7 @@ export const MultiPlanManagerModal: React.FC<MultiPlanManagerModalProps> = ({
       ? `Are you sure you want to delete "${plan.title}"?`
       : `هل أنت متأكد من حذف جدول "${plan.title}"؟`;
 
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirmAction(confirmMsg))) return;
 
     setActionLoading(true);
     setErrorMsg('');

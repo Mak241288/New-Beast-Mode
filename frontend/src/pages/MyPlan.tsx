@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from '../utils/toast';
+import { confirmAction } from '../utils/confirmDialog';
 import { api } from '../services/api';
 import { Edit2, Edit3, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Share2, Calendar, Search } from 'lucide-react';
 import { translations } from '../utils/translations';
@@ -873,7 +874,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   const handleDeleteExercise = async (id: number) => {
     const confirmMsg = lang === 'en' ? 'Are you sure you want to delete this exercise?' : 'هل أنت متأكد من حذف هذا التمرين من جدولك؟';
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirmAction(confirmMsg))) return;
     try {
       await api.deleteExercise(id);
       fetchActivePlan();
@@ -1235,7 +1236,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     const confirmMsg = isEn
       ? 'AI will review your achievements and generate a brand new progressive routine. Do you want to start?'
       : 'سيقوم الذكاء الاصطناعي بمراجعة إنجازاتك المسجلة وتوليد جدول متطور وجديد كلياً. هل تود البدء؟';
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirmAction(confirmMsg))) return;
     setLoading(true);
     try {
       const res = await api.upgradePlan(lang);
@@ -3515,8 +3516,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 setManualRowSuggestions(null);
               };
 
-              const clearDayExercises = () => {
-                if (confirm(lang === 'en' ? 'Clear all exercises for this day?' : 'هل تود مسح جميع تمارين هذا اليوم؟')) {
+              const clearDayExercises = async () => {
+                if (await confirmAction(lang === 'en' ? 'Clear all exercises for this day?' : 'هل تود مسح جميع تمارين هذا اليوم؟')) {
                   const updated = [...manualDays];
                   updated[dayIdx].exercises = [];
                   setManualDays(updated);

@@ -1,6 +1,7 @@
 /* oxlint-disable react/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from '../utils/toast';
+import { confirmAction } from '../utils/confirmDialog';
 import { api } from '../services/api';
 import { cacheStore } from '../utils/cacheStore';
 import { audioCues } from '../utils/audioCues';
@@ -948,7 +949,8 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   }, []);
 
   const discardSession = useCallback(() => {
-    if (window.confirm('هل أنت متأكد من رغبتك في إلغاء هذا التمرين نهائياً؟ سيتم مسح مسودة التمرين الحالية.')) {
+    void confirmAction('هل أنت متأكد من رغبتك في إلغاء هذا التمرين نهائياً؟ سيتم مسح مسودة التمرين الحالية.').then((accepted) => {
+      if (!accepted) return;
       wakeLockManager.releaseLock();
       setState(initialState);
       try {
@@ -957,7 +959,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
       } catch (err) {
         console.warn('[WorkoutSessionContext] Discard storage removal warning:', err);
       }
-    }
+    });
   }, []);
 
   const finishWorkoutSession = useCallback(async () => {

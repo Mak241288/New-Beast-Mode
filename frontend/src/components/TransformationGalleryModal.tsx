@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from '../utils/toast';
+import { confirmAction } from '../utils/confirmDialog';
 import { X, Camera, Plus, Trash2, ArrowLeftRight, Sparkles, Brain, CheckCircle2, Flame, Award, Dumbbell, Utensils, Activity } from 'lucide-react';
 import { api } from '../services/api';
 import { idbStore } from '../utils/idbStore';
@@ -107,9 +108,9 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
     setNewLabel('');
   };
 
-  const handleDeletePhoto = (id: string) => {
-    if (!confirm(isEn ? 'Delete this transformation photo?' : 'هل تود حذف هذه الصورة؟')) return;
-    setPhotos(photos.filter((p) => p.id !== id));
+  const handleDeletePhoto = async (id: string) => {
+    if (!(await confirmAction(isEn ? 'Delete this transformation photo?' : 'هل تود حذف هذه الصورة؟'))) return;
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
   };
 
   const handleRunPhysiqueAnalysis = async (targetPhoto?: TransformationPhoto) => {

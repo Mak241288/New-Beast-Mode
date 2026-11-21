@@ -14,6 +14,8 @@ import { MuscleWikiModal } from './MuscleWikiModal';
 import { StoryProgressBar } from './StoryProgressBar';
 import { getExerciseHistoryAndSuggestion } from '../utils/progressiveOverload';
 import { getDailyRecovery, saveDailyRecovery } from '../utils/recoveryTracker';
+import { useWakeLock } from '../hooks/useWakeLock';
+import { confirmAction } from '../utils/confirmDialog';
 import { 
   Play, 
   Pause, 
@@ -66,6 +68,8 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
   } = useWorkoutSession();
 
   const isAr = lang === 'ar';
+  // Keep phone screen awake automatically while actively exercising in the gym
+  useWakeLock(Boolean(state.isPlayerOpen && state.status !== 'idle' && !state.isPaused));
   const [saving, setSaving] = useState(false);
   const [showShareCardModal, setShowShareCardModal] = useState(false);
   const [showDynamicWarmupModal, setShowDynamicWarmupModal] = useState(false);
@@ -379,7 +383,7 @@ export const GlobalWorkoutPlayer: React.FC<GlobalWorkoutPlayerProps> = ({ lang =
 
 
   const handleFinishWorkout = async () => {
-    if (window.confirm(isAr ? 'هل أنت متأكد من إنهاء وحفظ جلسة التمرين بالكامل؟' : 'Are you sure you want to finish and log this workout?')) {
+    if (await confirmAction(isAr ? 'هل أنت متأكد من إنهاء وحفظ جلسة التمرين بالكامل؟' : 'Are you sure you want to finish and log this workout?', { danger: false })) {
       setSaving(true);
       try {
         await finishWorkoutSession();

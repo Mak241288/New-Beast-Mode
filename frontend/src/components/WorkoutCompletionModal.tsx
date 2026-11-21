@@ -115,7 +115,7 @@ export const WorkoutCompletionModal: React.FC<WorkoutCompletionModalProps> = ({
 
     ctx.font = 'bold 16px sans-serif';
     ctx.fillStyle = '#10b981';
-    ctx.fillText('beastmode.app', 400, 740);
+    ctx.fillText('fit.mkhateeb.com', 400, 740);
 
     trackEvent('workout_finished', {
       title: summary.workoutTitle,

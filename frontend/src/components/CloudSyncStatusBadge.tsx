@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from '../utils/toast';
+import { confirmAction } from '../utils/confirmDialog';
 import { Cloud, RefreshCw, WifiOff, CheckCircle2, Bookmark, Trash2, RotateCcw, Plus, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -89,7 +90,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
   };
 
   const handleRestoreSnapshot = async (id: string | number, name: string) => {
-    if (confirm(isEn ? `Restore backup "${name}"? Current data will be replaced.` : `هل تود استعادة النسخة الاحتياطية "${name}"؟ سيتم استبدال البيانات الحالية بها.`)) {
+    if (await confirmAction(isEn ? `Restore backup "${name}"? Current data will be replaced.` : `هل تود استعادة النسخة الاحتياطية "${name}"؟ سيتم استبدال البيانات الحالية بها.`)) {
       try {
         await api.restoreCloudSnapshot(id);
         setShowTooltip(false);
