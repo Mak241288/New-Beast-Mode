@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from '../utils/toast';
 import { api } from '../services/api';
 import { Download, FileText, TrendingUp, Award, Flame, Dumbbell, Timer, Plus, Scale, Zap, PieChart, CheckCircle2 } from 'lucide-react';
 import { exportWeightLogsToCSV } from '../utils/exportUtils';
 import { cacheStore } from '../utils/cacheStore';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import type { StatsSummary, WorkoutPlan, UserProfile, DayWorkout, ExerciseItem, PersonalRecord } from '../types/domain';
 
 interface StatsProps {
   lang: 'ar' | 'en';
 }
 
 export const Stats: React.FC<StatsProps> = ({ lang }) => {
-  const [stats, setStats] = useState<any>(() => cacheStore.get('user_stats'));
-  const [activePlan, setActivePlan] = useState<any>(() => cacheStore.get('active_plan'));
-  const [userProfile, setUserProfile] = useState<any>(() => cacheStore.get('user_profile'));
+  const [stats, setStats] = useState<StatsSummary | null>(() => cacheStore.get('user_stats'));
+  const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(() => cacheStore.get('active_plan'));
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => cacheStore.get('user_profile'));
   const [loading, setLoading] = useState(() => !cacheStore.get('user_stats'));
 
   // Quick Weight Logger Modal state
@@ -23,9 +25,9 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
 
   const muscleVolumeMap: Record<string, number> = {};
   if (activePlan?.dayWorkouts) {
-    activePlan.dayWorkouts.forEach((dw: any) => {
+    activePlan.dayWorkouts.forEach((dw: DayWorkout) => {
       if (!dw.isRestDay && dw.exercises) {
-        dw.exercises.forEach((ex: any) => {
+        dw.exercises.forEach((ex: ExerciseItem) => {
           const muscle = (lang === 'en' ? ex.muscle_en : ex.muscle_ar) || ex.targetMuscle || (lang === 'en' ? 'General' : 'عام');
           const sets = parseInt(String(ex.sets)) || 3;
           muscleVolumeMap[muscle] = (muscleVolumeMap[muscle] || 0) + sets;
@@ -77,7 +79,7 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
     e.preventDefault();
     const weightNum = parseFloat(newWeight);
     if (!newWeight || isNaN(weightNum) || weightNum <= 0) {
-      alert(lang === 'en' ? 'Please enter a valid weight in kg.' : 'يرجى إدخال وزن صحيح بالكيلوجرام.');
+      toast.show(lang === 'en' ? 'Please enter a valid weight in kg.' : 'يرجى إدخال وزن صحيح بالكيلوجرام.');
       return;
     }
 
@@ -87,13 +89,13 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
         weight: weightNum,
         notes: weightNotes,
       });
-      alert(lang === 'en' ? 'Weight recorded successfully! ⚖️' : 'تم تسجيل الوزن بنجاح! ⚖️');
+      toast.show(lang === 'en' ? 'Weight recorded successfully! ⚖️' : 'تم تسجيل الوزن بنجاح! ⚖️');
       setShowWeightModal(false);
       setNewWeight('');
       setWeightNotes('');
       fetchStats();
     } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Failed to log weight' : 'فشل تسجيل الوزن'));
+      toast.show(err.message || (lang === 'en' ? 'Failed to log weight' : 'فشل تسجيل الوزن'));
     } finally {
       setSubmittingWeight(false);
     }
@@ -690,31 +692,34 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-end', height: '120px', gap: '8px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)', marginBottom: '15px' }}>
-                    {stats.weightHistory.slice(-10).map((log: any, idx: number) => {
-                      const maxW = Math.max(...stats.weightHistory.map((w: any) => w.weight));
-                      const minW = Math.min(...stats.weightHistory.map((w: any) => w.weight)) - 10;
+                    {(() => {
+                      const history = stats.weightHistory ?? [];
+                      const recent = history.slice(-10);
+                      const maxW = Math.max(...history.map((w) => w.weight));
+                      const minW = Math.min(...history.map((w) => w.weight)) - 10;
                       const range = maxW - minW || 1;
-                      const heightPercent = Math.max(((log.weight - minW) / range) * 100, 15);
-
-                      return (
-                        <div key={log.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{log.weight}</span>
-                          <div
-                            style={{
-                              width: '100%',
-                              height: `${heightPercent}px`,
-                              background: 'linear-gradient(to top, var(--primary), var(--secondary))',
-                              borderRadius: '4px 4px 0 0',
-                              opacity: idx === stats.weightHistory.slice(-10).length - 1 ? 1 : 0.7,
-                              boxShadow: idx === stats.weightHistory.slice(-10).length - 1 ? '0 0 10px var(--primary-glow)' : 'none',
-                            }}
-                          />
-                          <span style={{ fontSize: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            {new Date(log.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG', { day: 'numeric', month: 'numeric' })}
-                          </span>
-                        </div>
-                      );
-                    })}
+                      return recent.map((log, idx) => {
+                        const heightPercent = Math.max(((log.weight - minW) / range) * 100, 15);
+                        return (
+                          <div key={log.id ?? idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{log.weight}</span>
+                            <div
+                              style={{
+                                width: '100%',
+                                height: `${heightPercent}px`,
+                                background: 'linear-gradient(to top, var(--primary), var(--secondary))',
+                                borderRadius: '4px 4px 0 0',
+                                opacity: idx === recent.length - 1 ? 1 : 0.7,
+                                boxShadow: idx === recent.length - 1 ? '0 0 10px var(--primary-glow)' : 'none',
+                              }}
+                            />
+                            <span style={{ fontSize: '8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                              {new Date(log.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG', { day: 'numeric', month: 'numeric' })}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
 
                   <div style={{ maxHeight: '100px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -816,7 +821,7 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.personalRecords.map((pr: any, idx: number) => (
+                      {stats.personalRecords.map((pr: PersonalRecord, idx: number) => (
                         <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                           <td style={{ padding: '12px 5px', fontWeight: 'bold' }}>{pr.exercise}</td>
                           <td style={{ padding: '12px 5px', color: 'var(--primary)', fontWeight: 'bold' }}>
@@ -845,9 +850,9 @@ export const Stats: React.FC<StatsProps> = ({ lang }) => {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {Object.keys(muscleVolumeMap).length > 0 ? (
-                  Object.entries(muscleVolumeMap).slice(0, 6).map(([muscle, count]: any, i) => {
-                    const totalSets = Object.values(muscleVolumeMap).reduce((a: any, b: any) => a + b, 0) as number || 1;
-                    const percent = Math.min(100, Math.round(((count as number) / totalSets) * 100));
+                  Object.entries(muscleVolumeMap).slice(0, 6).map(([muscle, count], i) => {
+                    const totalSets = Object.values(muscleVolumeMap).reduce((a, b) => a + b, 0) || 1;
+                    const percent = Math.min(100, Math.round((count / totalSets) * 100));
                     const colors = ['#00d2ff', '#10b981', '#f59e0b', '#a855f7', '#ec4899', '#3b82f6'];
                     const color = colors[i % colors.length];
                     return (

@@ -92,6 +92,7 @@ export const ThemeToggle: React.FC<{ showPaletteDropdown?: boolean; placement?: 
       window.removeEventListener('resize', handleScrollOrResize);
       window.removeEventListener('scroll', handleScrollOrResize);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showDropdown]);
 
   const toggleTheme = () => {

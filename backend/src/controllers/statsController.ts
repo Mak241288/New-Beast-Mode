@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { logger } from '../services/logger';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
 
@@ -256,7 +257,7 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
       }
     });
   } catch (error) {
-    console.error(error);
+    logger.error('Failed to fetch user stats', error);
     res.status(500).json({ error: 'حدث خطأ أثناء جلب الإحصاءات' });
   }
 };

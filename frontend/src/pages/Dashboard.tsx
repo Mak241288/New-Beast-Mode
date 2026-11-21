@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { toast } from '../utils/toast';
 import { api, getCurrentUser } from '../services/api';
 import { Timer, Award, Flame, Dumbbell, CheckCircle2, ChevronRight, Calendar, Info, Utensils, Droplets, Camera, RefreshCw } from 'lucide-react';
 import { translations } from '../utils/translations';
@@ -114,7 +115,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       });
       onNavigate('myplan');
     } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Failed to generate plan.' : 'فشل توليد الخطة الرياضية.'));
+      toast.show(err.message || (lang === 'en' ? 'Failed to generate plan.' : 'فشل توليد الخطة الرياضية.'));
     } finally {
       setRegenerating(false);
     }
@@ -235,6 +236,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       window.removeEventListener('beast_plan_changed', handlePlanChanged);
       window.removeEventListener('beast_cloud_synced', handleCloudSync);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
   const handleSubmitCheckIn = async (e: React.FormEvent) => {
@@ -248,7 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
         lang
       });
       if (res.success) {
-        alert(lang === 'en' 
+        toast.show(lang === 'en' 
           ? 'Check-in submitted successfully! Your recommendation is ready on the dashboard.'
           : 'تم إرسال التقييم بنجاح! اقتراح الكوتش جاهز الآن على لوحة التحكم.'
         );
@@ -259,8 +261,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
         setHasStartedWorkouts(true);
         setCheckInPain('');
       }
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to submit check-in.' : 'فشل إرسال التقييم الأسبوعي.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to submit check-in.' : 'فشل إرسال التقييم الأسبوعي.');
     } finally {
       setSubmittingCheckIn(false);
     }
@@ -271,12 +273,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
     try {
       const res = await api.applyCheckInSuggestions();
       if (res.success) {
-        alert(res.message);
+        toast.show(res.message);
         // Reload dashboard details
         fetchDashboardData();
       }
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to apply suggestions.' : 'فشل تطبيق التعديلات.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to apply suggestions.' : 'فشل تطبيق التعديلات.');
     } finally {
       setSubmittingCheckIn(false);
     }
@@ -332,6 +334,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
 
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Active Plan and profile fetching and handling logic
@@ -363,8 +366,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       const newPlan = await api.getActivePlan();
       setActivePlan(newPlan);
       setSelectedDayIndex(1);
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to switch workout location plan.' : 'فشل تغيير موقع التمرين وإعادة التوليد.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to switch workout location plan.' : 'فشل تغيير موقع التمرين وإعادة التوليد.');
     } finally {
       setRegenerating(false);
     }
@@ -454,6 +457,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
     if (today?.exercises && today.exercises.length > 0) {
       preloadWorkoutImages(today.exercises);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePlan, selectedDayIndex]);
 
   const handleStartWorkout = () => {
@@ -559,7 +563,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
       totalMinutes,
       totalExercises,
     };
-  }, [stats, todayCompletedLocally]);
+  }, [stats]);
 
   return (
     <div style={{ padding: '20px 0' }}>
@@ -577,8 +581,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ lang, onNavigate, user }) 
                   setHasStartedWorkouts(status.hasStartedWorkouts);
                   setDaysRemaining(status.daysRemaining);
                   setShowCheckInModal(true);
-                } catch (err) {
-                  alert('Failed to force checkin');
+                } catch {
+                  toast.show('Failed to force checkin');
                 } finally {
                   setCheckInLoading(false);
                 }

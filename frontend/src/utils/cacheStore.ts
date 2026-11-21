@@ -64,7 +64,7 @@ export const cacheStore = {
         timestamp: Date.now(),
       };
       localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(payload));
-    } catch (err: any) {
+    } catch {
       console.warn(`[CacheStore] Quota handling triggered on key "${key}", performing smart cleanup...`);
       cacheStore.pruneStaleStorage();
 

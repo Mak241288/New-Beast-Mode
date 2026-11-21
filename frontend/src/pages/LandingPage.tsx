@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from '../utils/toast';
 import { 
   Dumbbell, 
   Activity, 
@@ -34,6 +35,25 @@ interface LandingPageProps {
   onLanguageChange: (lang: 'ar' | 'en') => void;
   onNavigateToLegal: (page: 'privacy' | 'terms' | 'about') => void;
 }
+
+const ROTATING_SLOGANS = {
+  ar: [
+    'يحلل تناسقك العضلي بالذكاء الاصطناعي',
+    'يوجهك بـ +4,298 تمرين بدقة HD وبحث فوري',
+    'يحسب سعراتك وماكروزك بدقة الغرام',
+    'يسجل جولاتك ومؤقتات الراحة بنقرة واحدة',
+    'يوفر قوالب تمارين جاهزة بنقرة واحدة',
+    'يتتبع زيادة أحمالك واستشفاءك العصبي التلقائي'
+  ],
+  en: [
+    'AI Muscle Symmetry & Physique Analysis',
+    'Guided by 4,298+ HD Exercises & Instant Search',
+    'Precision Macro & TDEE Nutrition Engine',
+    '1-Tap Set Logging & Floating Auto Rest Timers',
+    '1-Click Pro Workout Plans (PPL, Arnold, Upper/Lower)',
+    'Progressive Overload & CNS Recovery Tracker'
+  ]
+};
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   lang,
@@ -83,7 +103,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
   const handleInstallClick = async () => {
     if (!installPromptEvent) {
-      alert(isEn ? 'To install: Tap browser menu (⋮ or Share) -> "Add to Home Screen"' : 'لتثبيت التطبيق: اضغط على قائمة المتصفح (⋮ أو زر المشاركة) -> "إضافة إلى الشاشة الرئيسية"');
+      toast.show(isEn ? 'To install: Tap browser menu (⋮ or Share) -> "Add to Home Screen"' : 'لتثبيت التطبيق: اضغط على قائمة المتصفح (⋮ أو زر المشاركة) -> "إضافة إلى الشاشة الرئيسية"');
       return;
     }
     installPromptEvent.prompt();
@@ -95,25 +115,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   // Rotating Slogans State for Cinematic Hero
-  const ROTATING_SLOGANS = {
-    ar: [
-      'يحلل تناسقك العضلي بالذكاء الاصطناعي',
-      'يوجهك بـ +4,298 تمرين بدقة HD وبحث فوري',
-      'يحسب سعراتك وماكروزك بدقة الغرام',
-      'يسجل جولاتك ومؤقتات الراحة بنقرة واحدة',
-      'يوفر قوالب تمارين جاهزة بنقرة واحدة',
-      'يتتبع زيادة أحمالك واستشفاءك العصبي التلقائي'
-    ],
-    en: [
-      'AI Muscle Symmetry & Physique Analysis',
-      'Guided by 4,298+ HD Exercises & Instant Search',
-      'Precision Macro & TDEE Nutrition Engine',
-      '1-Tap Set Logging & Floating Auto Rest Timers',
-      '1-Click Pro Workout Plans (PPL, Arnold, Upper/Lower)',
-      'Progressive Overload & CNS Recovery Tracker'
-    ]
-  };
-
   const [sloganIndex, setSloganIndex] = useState(0);
   const [sloganFade, setSloganFade] = useState(true);
 

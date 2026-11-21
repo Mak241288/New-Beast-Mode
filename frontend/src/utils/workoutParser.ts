@@ -104,7 +104,7 @@ export function inferMuscleGroup(text: string): string {
  */
 function cleanExerciseName(name: string): string {
   return name
-    .replace(/^[\s\d.\-*•#()>\[\]]+/, '') // Remove leading numbers/bullets
+    .replace(/^[\s\d.\-*•#()>[\]]+/, '') // Remove leading numbers/bullets
     .replace(/[:：]/g, '') // Remove colons
     .replace(/\b(?:\d+\s*)?(?:جولات|مجموعات|sets|set)\b/gi, '') // Remove trailing "جولات" or "sets"
     .trim();
@@ -118,7 +118,7 @@ export function parseExerciseLine(rawLine: string, index: number): ParsedExercis
   if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) return null;
 
   // Clean leading bullets, numbers, hyphens, stars, checkboxes
-  const cleanLine = trimmed.replace(/^[\s\d.\-*•#()>\[\]]+/, '').trim();
+  const cleanLine = trimmed.replace(/^[\s\d.\-*•#()>[\]]+/, '').trim();
   if (!cleanLine) return null;
 
   let name = cleanLine;
@@ -339,7 +339,7 @@ export function parseBulkWorkoutText(rawText: string, lang: 'ar' | 'en' = 'ar'):
 
     // Clean title
     let rawTitle = bucket.header
-      .replace(/^[\s\d.\-*•#()>\[\]]+/, '')
+      .replace(/^[\s\d.\-*•#()>[\]]+/, '')
       .replace(/[:：]$/, '')
       .trim();
 

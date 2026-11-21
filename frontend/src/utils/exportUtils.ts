@@ -1,3 +1,5 @@
+import { toast } from './toast';
+
 /**
  * BeastMode AI - Export & Print Utilities
  */
@@ -23,7 +25,7 @@ export const downloadFile = (content: string, filename: string, mimeType = 'text
  */
 export const exportWorkoutPlanToCSV = (plan: any, lang: 'ar' | 'en' = 'ar'): void => {
   if (!plan || !plan.dayWorkouts) {
-    alert(lang === 'en' ? 'No active workout plan to export.' : 'لا يوجد جدول تدريبي متاح للتصدير.');
+    toast.show(lang === 'en' ? 'No active workout plan to export.' : 'لا يوجد جدول تدريبي متاح للتصدير.');
     return;
   }
 
@@ -84,7 +86,7 @@ export const exportWorkoutPlanToCSV = (plan: any, lang: 'ar' | 'en' = 'ar'): voi
  */
 export const exportWeightLogsToCSV = (logs: any[], lang: 'ar' | 'en' = 'ar'): void => {
   if (!logs || logs.length === 0) {
-    alert(lang === 'en' ? 'No weight logs available to export.' : 'لا توجد سجلات أوزان للتصدير.');
+    toast.show(lang === 'en' ? 'No weight logs available to export.' : 'لا توجد سجلات أوزان للتصدير.');
     return;
   }
 

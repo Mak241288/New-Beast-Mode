@@ -160,7 +160,7 @@ self.addEventListener('fetch', (event) => {
             cache.put(event.request, responseClone);
           }
           return networkResponse;
-        } catch (err) {
+        } catch {
           console.warn('[ServiceWorker] Network unavailable, serving cached HTML shell.');
           const cached = await caches.match(event.request);
           if (cached) return cached;

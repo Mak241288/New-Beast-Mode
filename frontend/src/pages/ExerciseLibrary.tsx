@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toast } from '../utils/toast';
 import { api } from '../services/api';
 import { Info, HelpCircle, LayoutGrid, MapPin, Database, RefreshCw } from 'lucide-react';
 import { InteractiveBodyMap } from '../components/InteractiveBodyMap';
@@ -124,11 +125,11 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
     setSyncing(true);
     try {
       await api.syncExercises();
-      alert(lang === 'en' ? 'Exercises synced to Supabase successfully!' : 'تم مزامنة وتغذية قاعدة بيانات Supabase بالتمارين بنجاح!');
+      toast.show(lang === 'en' ? 'Exercises synced to Supabase successfully!' : 'تم مزامنة وتغذية قاعدة بيانات Supabase بالتمارين بنجاح!');
       await fetchExercises();
     } catch (err: any) {
       console.error('[Sync Error]:', err);
-      alert(lang === 'en' ? 'Failed to sync exercises.' : 'فشل مزامنة التمارين مع Supabase.');
+      toast.show(lang === 'en' ? 'Failed to sync exercises.' : 'فشل مزامنة التمارين مع Supabase.');
     } finally {
       setSyncing(false);
     }
@@ -160,14 +161,14 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
         videoUrl: selectedExercise.video_url || null
       });
 
-      alert(lang === 'en' 
+      toast.show(lang === 'en' 
         ? `Successfully added "${name}" to your workout plan!`
         : `تم إضافة "${name}" إلى جدول تمارينك بنجاح!`
       );
       setTargetDayId('');
       setSelectedExercise(null);
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to add exercise to plan.' : 'فشل إضافة التمرين إلى الجدول.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to add exercise to plan.' : 'فشل إضافة التمرين إلى الجدول.');
     } finally {
       setAddingToPlan(false);
     }
@@ -584,7 +585,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({ lang }) => {
             if (dayTarget !== undefined) {
               handleAddToPlan(dayTarget);
             } else {
-              alert(lang === 'en' ? 'Please select a valid workout day.' : 'يرجى اختيار يوم تدريب نشط.');
+              toast.show(lang === 'en' ? 'Please select a valid workout day.' : 'يرجى اختيار يوم تدريب نشط.');
             }
           } : undefined}
         />

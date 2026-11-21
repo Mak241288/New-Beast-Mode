@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from '../utils/toast';
 import { api } from '../services/api';
 import { Edit2, Edit3, Trash2, ArrowLeftRight, Plus, Upload, History, Sparkles, AlertCircle, Info, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Printer, Download, Dumbbell, Copy, Timer, Crown, Layers, Share2, Calendar, Search } from 'lucide-react';
 import { translations } from '../utils/translations';
@@ -8,6 +9,9 @@ import { PresetPlansModal } from '../components/PresetPlansModal';
 import { MultiPlanManagerModal } from '../components/MultiPlanManagerModal';
 import { RoutineCardExportModal } from '../components/RoutineCardExportModal';
 import { DynamicWarmupModal } from '../components/DynamicWarmupModal';
+import { PlanHistoryModal } from '../components/plan/PlanHistoryModal';
+import { PlanExerciseSwapModal } from '../components/plan/PlanExerciseSwapModal';
+import { ExercisePickerModal } from '../components/plan/ExercisePickerModal';
 import type { PresetPlan } from '../utils/presetWorkoutPlans';
 import { createDefault7Days } from '../services/planService';
 import { cacheStore } from '../utils/cacheStore';
@@ -277,10 +281,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       for (const ex of routine) {
         await api.addCustomExercise(dayTarget, ex);
       }
-      alert(lang === 'en' ? `🔥 Added warm-up routine to Day ${dw.dayIndex}!` : `🔥 تمت إضافة تمارين الإحماء لليوم ${dw.dayIndex} بنجاح!`);
+      toast.show(lang === 'en' ? `🔥 Added warm-up routine to Day ${dw.dayIndex}!` : `🔥 تمت إضافة تمارين الإحماء لليوم ${dw.dayIndex} بنجاح!`);
       fetchActivePlan();
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to add warmup routine.' : 'فشل إضافة تمارين الإحماء.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to add warmup routine.' : 'فشل إضافة تمارين الإحماء.');
     }
   };
 
@@ -291,10 +295,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       for (const ex of routine) {
         await api.addCustomExercise(dayTarget, ex);
       }
-      alert(lang === 'en' ? `🧊 Added recovery / cooldown routine to Day ${dw.dayIndex}!` : `🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم ${dw.dayIndex} بنجاح!`);
+      toast.show(lang === 'en' ? `🧊 Added recovery / cooldown routine to Day ${dw.dayIndex}!` : `🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم ${dw.dayIndex} بنجاح!`);
       fetchActivePlan();
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to add cooldown routine.' : 'فشل إضافة تمارين الاستشفاء.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to add cooldown routine.' : 'فشل إضافة تمارين الاستشفاء.');
     }
   };
 
@@ -321,7 +325,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
-      alert(isEn ? '✅ Workout plan copied to clipboard formatted for WhatsApp!' : '✅ تم نسخ الخطة كرسالة واتساب منسقة بنجاح!');
+      toast.show(isEn ? '✅ Workout plan copied to clipboard formatted for WhatsApp!' : '✅ تم نسخ الخطة كرسالة واتساب منسقة بنجاح!');
     }
   };
 
@@ -471,6 +475,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       window.removeEventListener('beast_plan_changed', handlePlanChanged);
       window.removeEventListener('beast_cloud_synced', handleCloudSync);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleNameChange = (val: string, type: 'custom' | 'edit' | 'preview', dayIdx?: number, exIdx?: number) => {
@@ -605,7 +610,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       const profile = await api.getProfile();
       const isComplete = profile && profile.fitnessGoal && profile.fitnessLevel && profile.daysPerWeek;
       if (!isComplete) {
-        alert(lang === 'en' ? 'Please complete your profile first.' : 'يرجى إكمال ملفك الشخصي أولاً.');
+        toast.show(lang === 'en' ? 'Please complete your profile first.' : 'يرجى إكمال ملفك الشخصي أولاً.');
         onNavigate('profile');
         return;
       }
@@ -621,10 +626,10 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         lang,
       });
 
-      alert(lang === 'en' ? 'Plan regenerated successfully!' : 'تم إعادة توليد خطتك الرياضية بنجاح!');
+      toast.show(lang === 'en' ? 'Plan regenerated successfully!' : 'تم إعادة توليد خطتك الرياضية بنجاح!');
       fetchActivePlan();
     } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Failed to regenerate plan.' : 'فشل إعادة توليد الخطة الرياضية.'));
+      toast.show(err.message || (lang === 'en' ? 'Failed to regenerate plan.' : 'فشل إعادة توليد الخطة الرياضية.'));
     } finally {
       setRegeneratingPlan(false);
     }
@@ -632,7 +637,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
   const handleStartWorkoutSession = (dw: any) => {
     if (!dw.exercises || dw.exercises.length === 0) {
-      alert(lang === 'en' ? 'This day has no exercises to perform.' : 'لا توجد تمارين مضافة في هذا اليوم.');
+      toast.show(lang === 'en' ? 'This day has no exercises to perform.' : 'لا توجد تمارين مضافة في هذا اليوم.');
       return;
     }
     startSession(dw);
@@ -698,7 +703,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     if (!importPreview) return;
     const exName = importPreview.days[dayIdx].exercises[exIdx].name;
     if (!exName.trim()) {
-      alert(lang === 'en' ? 'Please enter an exercise name first.' : 'يرجى إدخال اسم التمرين أولاً.');
+      toast.show(lang === 'en' ? 'Please enter an exercise name first.' : 'يرجى إدخال اسم التمرين أولاً.');
       return;
     }
 
@@ -720,7 +725,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       };
       setImportPreview({ ...importPreview, days: updatedDays });
     } else {
-      alert(lang === 'en' 
+      toast.show(lang === 'en' 
         ? 'No matching exercise found in our database.' 
         : 'لم يتم العثور على تمرين مطابق في قاعدة البيانات.');
     }
@@ -743,15 +748,15 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
           imageUrl: match.image_url || match.gif_url || null,
           videoUrl: match.video_url || null
         });
-        alert(lang === 'en' 
+        toast.show(lang === 'en' 
           ? `Matched: "${matchedName}"! Exercise details, image, and video updated.` 
           : `تمت المطابقة مع: "${matchedName}"! تم تحديث التفاصيل، الصورة، والفيديو بنجاح.`);
         fetchActivePlan();
-      } catch (err) {
-        alert(lang === 'en' ? 'Failed to update exercise details.' : 'فشل تحديث تفاصيل التمرين.');
+      } catch {
+        toast.show(lang === 'en' ? 'Failed to update exercise details.' : 'فشل تحديث تفاصيل التمرين.');
       }
     } else {
-      alert(lang === 'en' 
+      toast.show(lang === 'en' 
         ? 'No matching exercise found in our database.' 
         : 'لم يتم العثور على تمرين مطابق في قاعدة البيانات.');
     }
@@ -771,8 +776,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     try {
       const list = await api.getAlternatives(exerciseId);
       setAlternativesList(list || []);
-    } catch (err) {
-      alert(lang === 'en' ? 'Failed to fetch alternative exercises.' : 'فشل جلب التمارين البديلة.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to fetch alternative exercises.' : 'فشل جلب التمارين البديلة.');
     } finally {
       setAlternativesLoading(false);
     }
@@ -805,8 +810,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       });
       setSwapExerciseId(null);
       fetchActivePlan();
-    } catch (err) {
-      alert(lang === 'en' ? 'Failed to swap exercise.' : 'فشل استبدال التمرين.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to swap exercise.' : 'فشل استبدال التمرين.');
     }
   };
 
@@ -817,7 +822,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     try {
       const res = await api.swapExerciseAI(swapExerciseId, aiSwapReason, lang);
       if (res.success) {
-        alert(lang === 'en'
+        toast.show(lang === 'en'
           ? `Successfully swapped with: "${res.exercise.name}"!\n\nAI Explanation: ${res.explanation}`
           : `تم الاستبدال بنجاح بـ: "${res.exercise.name}"!\n\nتفسير الذكاء الاصطناعي: ${res.explanation}`
         );
@@ -826,7 +831,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         fetchActivePlan();
       }
     } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'AI Swap failed.' : 'فشل التبديل الذكي بالذكاء الاصطناعي.'));
+      toast.show(err.message || (lang === 'en' ? 'AI Swap failed.' : 'فشل التبديل الذكي بالذكاء الاصطناعي.'));
     } finally {
       setAiSwapLoading(false);
     }
@@ -861,8 +866,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
       setEditingExercise(null);
       fetchActivePlan();
-    } catch (err) {
-      alert(lang === 'en' ? 'Failed to update exercise.' : 'فشل تعديل تفاصيل التمرين.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to update exercise.' : 'فشل تعديل تفاصيل التمرين.');
     }
   };
 
@@ -872,8 +877,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     try {
       await api.deleteExercise(id);
       fetchActivePlan();
-    } catch (err) {
-      alert(lang === 'en' ? 'Failed to delete exercise.' : 'فشل حذف التمرين.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to delete exercise.' : 'فشل حذف التمرين.');
     }
   };
 
@@ -897,8 +902,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         videoUrl: '',
       });
       fetchActivePlan();
-    } catch (err) {
-      alert(lang === 'en' ? 'Failed to add custom exercise.' : 'فشل إضافة التمرين المخصص.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to add custom exercise.' : 'فشل إضافة التمرين المخصص.');
     }
   };
 
@@ -919,13 +924,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
         setImportPreview(processed);
         setPreviewDayIndex(previewPlan.days[0]?.dayIndex || 1);
       } catch (err: any) {
-        alert(err.message || (lang === 'en' ? 'Failed to parse file.' : 'فشل تحليل وقراءة ملف الجدول المرفق.'));
+        toast.show(err.message || (lang === 'en' ? 'Failed to parse file.' : 'فشل تحليل وقراءة ملف الجدول المرفق.'));
       } finally {
         setFileLoading(false);
       }
     };
     reader.onerror = () => {
-      alert(lang === 'en' ? 'Failed to read file' : 'فشل قراءة الملف من جهازك.');
+      toast.show(lang === 'en' ? 'Failed to read file' : 'فشل قراءة الملف من جهازك.');
       setFileLoading(false);
     };
     
@@ -943,7 +948,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       setImportPreview(processed);
       setPreviewDayIndex(previewPlan.days[0]?.dayIndex || 1);
     } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Failed to import bulk plan.' : 'فشل استيراد الجدول المجمع وتحليله.'));
+      toast.show(err.message || (lang === 'en' ? 'Failed to import bulk plan.' : 'فشل استيراد الجدول المجمع وتحليله.'));
     } finally {
       setImportLoading(false);
     }
@@ -960,7 +965,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       setImportListText('');
       setSelectedDayIndex(1);
     } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Failed to save imported plan.' : 'فشل حفظ وتفعيل الجدول المستورد.'));
+      toast.show(err.message || (lang === 'en' ? 'Failed to save imported plan.' : 'فشل حفظ وتفعيل الجدول المستورد.'));
     } finally {
       setImportLoading(false);
     }
@@ -984,8 +989,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
     try {
       const res = await api.getPlanHistory();
       setHistoryList(res || []);
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to fetch history.' : 'فشل جلب سجل الخطط السابقة.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to fetch history.' : 'فشل جلب سجل الخطط السابقة.');
     } finally {
       setHistoryLoading(false);
     }
@@ -997,8 +1002,8 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       setActivePlan(plan);
       setShowHistory(false);
       setSelectedDayIndex(1);
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to activate plan.' : 'فشل تفعيل هذا البرنامج الرياضي.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to activate plan.' : 'فشل تفعيل هذا البرنامج الرياضي.');
     }
   };
 
@@ -1213,13 +1218,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       setSelectedDayIndex(1);
       await fetchHistory();
       await fetchActivePlan();
-      alert(
+      toast.show(
         lang === 'en'
           ? `🎉 Successfully activated: "${plan.title_en}"!`
           : `🎉 تم تفعيل جدول: "${plan.title_ar}" بنجاح كخطتك الحالية!`
       );
     } catch (err: any) {
-      alert(err.message || (lang === 'en' ? 'Failed to apply preset plan.' : 'فشل تفعيل الخطة الجاهزة.'));
+      toast.show(err.message || (lang === 'en' ? 'Failed to apply preset plan.' : 'فشل تفعيل الخطة الجاهزة.'));
     } finally {
       setLoading(false);
     }
@@ -1237,13 +1242,13 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
       const successMsg = isEn
         ? `Congratulations! Your adherence rate was ${res.completionRate.toFixed(1)}%. Upgraded plan generated successfully!`
         : `مبروك! نسبة التزامك بالجدول السابق بلغت ${res.completionRate.toFixed(1)}%. تم توليد نسختك المطورة بنجاح.`;
-      alert(successMsg);
+      toast.show(successMsg);
       fetchActivePlan();
     } catch (err: any) {
       const errMsg = isEn
         ? (err.message || 'Upgrade failed. Make sure you have logged some exercise progress first.')
         : (err.message || 'فشل الترقية. تأكد من تسجيل تقدمك في التمارين أولاً.');
-      alert(errMsg);
+      toast.show(errMsg);
     } finally {
       setLoading(false);
     }
@@ -2944,62 +2949,17 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
       {/* PLAN HISTORY MODAL */}
       {showHistory && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(5, 7, 16, 0.9)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setShowHistory(false)}>
-          <div className="glass-panel animated-fade" style={{ width: '100%', maxWidth: '500px', padding: '24px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '80vh' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800' }}>{t.historyBtn}</h3>
-
-            {historyLoading ? (
-              <div style={{ textAlign: 'center', padding: '30px' }}>{t.loading}</div>
-            ) : (
-              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '5px' }}>
-                {historyList.map((hPlan) => (
-                  <div
-                    key={hPlan.id}
-                    style={{
-                      padding: '15px',
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <div>
-                      <h4 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>{hPlan.title}</h4>
-                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        📅 {new Date(hPlan.startDate).toLocaleDateString(lang === 'en' ? 'en-US' : 'ar-EG')} ({hPlan.durationWeeks} {t.weeks})
-                      </p>
-                    </div>
-                    {hPlan.active ? (
-                      <span className="badge" style={{ backgroundColor: 'var(--primary-glow)', color: 'var(--primary)', border: '1px solid var(--primary)', fontSize: '11px' }}>
-                        {lang === 'en' ? 'Active' : 'نشط'}
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleActivatePlan(hPlan.id)}
-                        className="secondary-btn"
-                        style={{ padding: '6px 12px', fontSize: '12px' }}
-                      >
-                        {lang === 'en' ? 'Activate' : 'تفعيل'}
-                      </button>
-                    )}
-                  </div>
-                ))}
-
-                {historyList.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                    {lang === 'en' ? 'No plan history found.' : 'لا يوجد سجل برامج سابقة.'}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <button onClick={() => setShowHistory(false)} className="secondary-btn" style={{ justifyContent: 'center' }}>
-              {t.cancel}
-            </button>
-          </div>
-        </div>
+        <PlanHistoryModal
+          lang={lang}
+          historyLoading={historyLoading}
+          historyList={historyList}
+          title={t.historyBtn}
+          loadingLabel={t.loading}
+          weeksLabel={t.weeks}
+          cancelLabel={t.cancel}
+          onActivatePlan={(id) => handleActivatePlan(Number(id))}
+          onClose={() => setShowHistory(false)}
+        />
       )}
 
       {/* MANUAL WORKOUT PLAN BUILDER MODAL */}
@@ -3565,7 +3525,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
               const duplicateCurrentDayAsNew = () => {
                 if (manualDays.length >= 7) {
-                  alert(lang === 'en' ? 'Maximum 7 days reached.' : 'وصلت للحد الأقصى المسموح (7 أيام).');
+                  toast.show(lang === 'en' ? 'Maximum 7 days reached.' : 'وصلت للحد الأقصى المسموح (7 أيام).');
                   return;
                 }
                 const nextDayNum = manualDays.length + 1;
@@ -3578,7 +3538,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 };
                 setManualDays([...manualDays, cloned]);
                 setManualActiveDayIdx(nextDayNum);
-                alert(lang === 'en' ? `Day duplicated as Day ${nextDayNum}!` : `تم نسخ اليوم بنجاح كـ اليوم ${nextDayNum}!`);
+                toast.show(lang === 'en' ? `Day duplicated as Day ${nextDayNum}!` : `تم نسخ اليوم بنجاح كـ اليوم ${nextDayNum}!`);
               };
 
               const duplicateDayToNext = () => {
@@ -3593,7 +3553,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 };
                 setManualDays(updated);
                 setManualActiveDayIdx(updated[nextIdx].dayIndex);
-                alert(lang === 'en' ? `Copied to Day ${updated[nextIdx].dayIndex}` : `تم نسخ التمارين إلى اليوم ${updated[nextIdx].dayIndex}`);
+                toast.show(lang === 'en' ? `Copied to Day ${updated[nextIdx].dayIndex}` : `تم نسخ التمارين إلى اليوم ${updated[nextIdx].dayIndex}`);
               };
 
               const injectWarmup = () => {
@@ -3609,7 +3569,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 const updated = [...manualDays];
                 updated[dayIdx].exercises = [...formatted, ...updated[dayIdx].exercises];
                 setManualDays(updated);
-                alert(lang === 'en' ? '🔥 Added warm-up routine to day!' : '🔥 تمت إضافة تمارين الإحماء لليوم بنجاح!');
+                toast.show(lang === 'en' ? '🔥 Added warm-up routine to day!' : '🔥 تمت إضافة تمارين الإحماء لليوم بنجاح!');
               };
 
               const injectCooldown = () => {
@@ -3625,7 +3585,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 const updated = [...manualDays];
                 updated[dayIdx].exercises = [...updated[dayIdx].exercises, ...formatted];
                 setManualDays(updated);
-                alert(lang === 'en' ? '🧊 Added recovery & stretching routine to day!' : '🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم بنجاح!');
+                toast.show(lang === 'en' ? '🧊 Added recovery & stretching routine to day!' : '🧊 تمت إضافة تمارين الاستشفاء والإطالة لليوم بنجاح!');
               };
 
               // Compute weekly muscle volume
@@ -4593,7 +4553,7 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                 type="button"
                 onClick={async () => {
                   if (!manualTitle.trim()) {
-                    alert(lang === 'en' ? 'Please provide a plan title' : 'يرجى كتابة اسم للجدول التدريبي');
+                    toast.show(lang === 'en' ? 'Please provide a plan title' : 'يرجى كتابة اسم للجدول التدريبي');
                     return;
                   }
                   setManualSaving(true);
@@ -4617,12 +4577,12 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
                     setActivePlan(saved);
                     cacheStore.set('active_plan', saved);
                     setSelectedDayIndex(1);
-                    alert(lang === 'en' ? 'Custom workout plan saved and updated! ⚡' : 'تم حفظ وتحديث جدولك الرياضي بنجاح! ⚡');
+                    toast.show(lang === 'en' ? 'Custom workout plan saved and updated! ⚡' : 'تم حفظ وتحديث جدولك الرياضي بنجاح! ⚡');
                     setShowManualBuilder(false);
                     fetchHistory();
                     fetchActivePlan();
                   } catch (err: any) {
-                    alert(err.message || (lang === 'en' ? 'Failed to save custom plan' : 'فشل حفظ الجدول اليدوي'));
+                    toast.show(err.message || (lang === 'en' ? 'Failed to save custom plan' : 'فشل حفظ الجدول اليدوي'));
                   } finally {
                     setManualSaving(false);
                   }
@@ -4641,183 +4601,32 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
       {/* Smart Exercise Alternative Swap Modal */}
       {manualSwapTarget && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.88)',
-            backdropFilter: 'blur(10px)',
-            zIndex: 1250,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-          }}
-          onClick={() => {
+        <PlanExerciseSwapModal
+          lang={lang}
+          target={manualSwapTarget}
+          query={manualSwapQuery}
+          setQuery={setManualSwapQuery}
+          libraryExercises={libraryExercises}
+          onSelectReplacement={(replacement) => {
+            const { dayIdx, exIdx } = manualSwapTarget;
+            const updated = [...manualDays];
+            const prevEx = updated[dayIdx].exercises[exIdx];
+            updated[dayIdx].exercises[exIdx] = {
+              ...prevEx,
+              name: replacement.name,
+              targetMuscle: replacement.targetMuscle,
+              weight: replacement.weight,
+              imageUrl: replacement.imageUrl,
+            };
+            setManualDays(updated);
             setManualSwapTarget(null);
             setManualSwapQuery('');
           }}
-        >
-          <div
-            className="glass-card plan-architect-modal"
-            style={{
-              width: '100%',
-              maxWidth: '560px',
-              maxHeight: '85vh',
-              overflowY: 'auto',
-              borderRadius: '20px',
-              padding: '22px',
-              border: '1px solid var(--border-color)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
-              boxShadow: 'var(--glass-shadow)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Swap Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '18px' }}>🔄</span>
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: 'var(--text-primary)' }}>
-                    {lang === 'en' ? 'Smart Exercise Alternative Swap' : 'المبادلة الذكية لبدائل التمارين 🔄'}
-                  </h3>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    {lang === 'en' ? `Target Muscle: ${manualSwapTarget.exercise.targetMuscle || 'Muscle'}` : `العضلة المستهدفة: ${manualSwapTarget.exercise.targetMuscle || 'تمرين'}`}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setManualSwapTarget(null);
-                  setManualSwapQuery('');
-                }}
-                className="secondary-btn"
-                style={{ width: '32px', height: '32px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Current Exercise Badge */}
-            <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 'bold' }}>
-                  {lang === 'en' ? 'CURRENT EXERCISE TO REPLACE:' : 'التمرين الحالي المراد استبداله:'}
-                </span>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-primary)', marginTop: '2px' }}>
-                  {manualSwapTarget.exercise.name || (lang === 'en' ? 'Empty Slot' : 'تمرين فارغ')}
-                </div>
-              </div>
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                {manualSwapTarget.exercise.sets} × {manualSwapTarget.exercise.reps}
-              </span>
-            </div>
-
-            {/* Search Input */}
-            <input
-              type="text"
-              placeholder={lang === 'en' ? 'Search alternative exercise...' : 'ابحث عن تمرين بديل مخصص...'}
-              value={manualSwapQuery}
-              onChange={(e) => setManualSwapQuery(e.target.value)}
-              className="input-field"
-              style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', width: '100%' }}
-              autoFocus
-            />
-
-            {/* Alternatives List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }}>
-              {(() => {
-                const targetM = (manualSwapTarget.exercise.targetMuscle || '').toLowerCase().trim();
-                const q = manualSwapQuery.toLowerCase().trim()
-                  .replace(/[أإآ]/g, 'ا')
-                  .replace(/ة/g, 'ه')
-                  .replace(/ى/g, 'ي');
-
-                let alts = libraryExercises || [];
-                if (q) {
-                  alts = alts.filter(ex => {
-                    const nameAr = (ex.name_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
-                    const nameEn = (ex.name_en || ex.name || '').toLowerCase();
-                    const muscleAr = (ex.muscle_ar || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
-                    const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
-                    return nameAr.includes(q) || nameEn.includes(q) || muscleAr.includes(q) || muscleEn.includes(q);
-                  });
-                } else if (targetM) {
-                  alts = alts.filter(ex => {
-                    const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
-                    const muscleAr = (ex.muscle_ar || '').toLowerCase();
-                    return muscleEn.includes(targetM) || targetM.includes(muscleEn) || muscleAr.includes(targetM);
-                  });
-                }
-
-                if (alts.length === 0) {
-                  return (
-                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '12px' }}>
-                      {lang === 'en' ? 'No alternatives found. Type a name to search.' : 'لا توجد بدائل مباشرة. اكتب اسم التمرين في مربع البحث أعلاه.'}
-                    </div>
-                  );
-                }
-
-                return alts.slice(0, 15).map((altEx, idx) => {
-                  const altName = lang === 'en' ? (altEx.name_en || altEx.name) : (altEx.name_ar || altEx.name_en || altEx.name);
-                  const altEquip = lang === 'en' ? (altEx.equipment_en || altEx.equipment) : (altEx.equipment_ar || altEx.equipment_en || altEx.equipment);
-                  const altMuscle = lang === 'en' ? (altEx.muscle_en || altEx.targetMuscle) : (altEx.muscle_ar || altEx.muscle_en || altEx.targetMuscle);
-
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        const { dayIdx, exIdx } = manualSwapTarget;
-                        const updated = [...manualDays];
-                        const prevEx = updated[dayIdx].exercises[exIdx];
-                        updated[dayIdx].exercises[exIdx] = {
-                          ...prevEx,
-                          name: altName,
-                          targetMuscle: altEx.muscle_en || altEx.targetMuscle || prevEx.targetMuscle,
-                          weight: altEx.equipment_en || altEx.equipment || prevEx.weight || 'Dumbbells',
-                          imageUrl: altEx.image_url || altEx.imageUrl || '',
-                        } as any;
-                        setManualDays(updated);
-                        setManualSwapTarget(null);
-                        setManualSwapQuery('');
-                      }}
-                      className="secondary-btn"
-                      style={{
-                        padding: '10px 14px',
-                        borderRadius: '10px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        textAlign: lang === 'en' ? 'left' : 'right',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card-hover)',
-                        transition: 'all 0.15s',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '13px' }}>
-                          {altName}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', display: 'flex', gap: '8px' }}>
-                          <span>🏋️ {altEquip || 'Free Weight'}</span>
-                          <span>🎯 {altMuscle || ''}</span>
-                        </div>
-                      </div>
-                      <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(0, 210, 255, 0.15)', color: 'var(--primary)', fontSize: '11px', fontWeight: 'bold' }}>
-                        {lang === 'en' ? 'Select ⚡' : 'استبدال ⚡'}
-                      </span>
-                    </button>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </div>
+          onClose={() => {
+            setManualSwapTarget(null);
+            setManualSwapQuery('');
+          }}
+        />
       )}
 
       {/* MuscleWiki Exercise Guide Modal */}
@@ -4898,326 +4707,46 @@ export const MyPlan: React.FC<MyPlanProps> = ({ lang, onNavigate, onboardingComp
 
       {/* Interactive Visual Exercise Picker Modal (+4,100 Exercises) */}
       {showExercisePickerModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(5, 7, 16, 0.85)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 1400,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
+        <ExercisePickerModal
+          lang={lang}
+          isReplaceMode={showExercisePickerModal.exIdx !== undefined}
+          pickerMuscle={pickerMuscle}
+          setPickerMuscle={setPickerMuscle}
+          pickerEquipment={pickerEquipment}
+          setPickerEquipment={setPickerEquipment}
+          pickerQuery={pickerQuery}
+          setPickerQuery={setPickerQuery}
+          libraryExercises={libraryExercises}
+          onSelectExercise={(selectedExData) => {
+            const { dayIdx, exIdx } = showExercisePickerModal;
+            if (showManualBuilder) {
+              const updated = [...manualDays];
+              if (exIdx !== undefined && updated[dayIdx]?.exercises[exIdx]) {
+                updated[dayIdx].exercises[exIdx] = {
+                  ...updated[dayIdx].exercises[exIdx],
+                  ...selectedExData,
+                };
+              } else {
+                if (!updated[dayIdx].exercises) updated[dayIdx].exercises = [];
+                updated[dayIdx].exercises.push(selectedExData);
+              }
+              setManualDays(updated);
+            } else if (activePlan) {
+              const targetDayIndex = dayIdx + 1;
+              if (exIdx !== undefined) {
+                handleInlineUpdateExercise(targetDayIndex, exIdx, 'name', selectedExData.name);
+                handleInlineUpdateExercise(targetDayIndex, exIdx, 'targetMuscle', selectedExData.targetMuscle);
+                handleInlineUpdateExercise(targetDayIndex, exIdx, 'weight', selectedExData.weight);
+                handleInlineUpdateExercise(targetDayIndex, exIdx, 'imageUrl', selectedExData.imageUrl);
+                handleInlineUpdateExercise(targetDayIndex, exIdx, 'exerciseTips', selectedExData.exerciseTips);
+              } else {
+                handleInlineAddExercise(targetDayIndex, selectedExData);
+              }
+            }
+            setShowExercisePickerModal(null);
           }}
-          onClick={() => setShowExercisePickerModal(null)}
-        >
-          <div
-            className="glass-card plan-architect-modal"
-            style={{
-              width: '100%',
-              maxWidth: '860px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              borderRadius: '24px',
-              padding: '22px',
-              border: '1px solid var(--border-color)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              boxShadow: 'var(--glass-shadow)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(0, 210, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-                  <Dumbbell size={20} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '17px', fontWeight: '900', margin: 0, color: 'var(--text-primary)' }}>
-                    {lang === 'en' ? 'Visual Exercise Picker (+4,100 Exercises)' : 'المكتبة التفاعلية لاختيار التمارين المصورة (+4,100 تمرين) 🏋️'}
-                  </h3>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
-                    {lang === 'en' ? 'Filter by muscle or equipment, search in real-time, and add to your day with 1-click.' : 'فلترة حسب العضلة أو الأداة، بحث فوري فائق السرعة، وإضافة للجدول بنقرة واحدة.'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowExercisePickerModal(null)}
-                className="secondary-btn"
-                style={{ width: '34px', height: '34px', borderRadius: '50%', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Muscle Category Chips */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'thin' }}>
-              {[
-                { key: 'ALL', label: lang === 'en' ? '🌐 All' : '🌐 جميع العضلات' },
-                { key: 'Chest', label: lang === 'en' ? '🏋️ Chest' : '🏋️ الصدر' },
-                { key: 'Back', label: lang === 'en' ? '🦍 Back' : '🦍 الظهر' },
-                { key: 'Shoulders', label: lang === 'en' ? '🦾 Shoulders' : '🦾 الأكتاف' },
-                { key: 'Quadriceps', label: lang === 'en' ? '🦵 Quads' : '🦵 الأرجل' },
-                { key: 'Hamstrings', label: lang === 'en' ? '🦵 Hamstrings' : '🦵 الفخذ الخلفي' },
-                { key: 'Biceps', label: lang === 'en' ? '💪 Biceps' : '💪 البايسبس' },
-                { key: 'Triceps', label: lang === 'en' ? '⚡ Triceps' : '⚡ الترايسبس' },
-                { key: 'Abs', label: lang === 'en' ? '🔥 Abs & Core' : '🔥 عضلات البطن' },
-                { key: 'Calves', label: lang === 'en' ? '🦶 Calves' : '🦶 السمانة' },
-                { key: 'Cardio', label: lang === 'en' ? '⏱️ Cardio' : '⏱️ كارديو' },
-              ].map((tab) => {
-                const isActive = pickerMuscle === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setPickerMuscle(tab.key)}
-                    style={{
-                      padding: '7px 14px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      border: isActive ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                      background: isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'var(--bg-card-hover)',
-                      color: isActive ? 'var(--primary-contrast, #050710)' : 'var(--text-primary)',
-                      whiteSpace: 'nowrap',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Equipment Filter Chips & Search Bar */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <div style={{ flex: '1 1 240px', position: 'relative' }}>
-                <input
-                  type="text"
-                  placeholder={lang === 'en' ? 'Search by exercise name, muscle, equipment...' : '🔍 اكتب اسم التمرين، العضلة، الأداة...'}
-                  value={pickerQuery}
-                  onChange={(e) => setPickerQuery(e.target.value)}
-                  className="input-field"
-                  style={{ padding: '11px 16px', fontSize: '13.5px', borderRadius: '12px', width: '100%' }}
-                  autoFocus
-                />
-              </div>
-
-              {/* Equipment Filter Pills */}
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {[
-                  { key: 'ALL', label: 'الكل' },
-                  { key: 'Dumbbells', label: 'دمبلز' },
-                  { key: 'Barbell', label: 'بار' },
-                  { key: 'Cable', label: 'كيبل' },
-                  { key: 'Machine', label: 'أجهزة' },
-                  { key: 'Bodyweight', label: 'وزن الجسم' },
-                ].map((eq) => {
-                  const isActive = pickerEquipment === eq.key;
-                  return (
-                    <button
-                      key={eq.key}
-                      type="button"
-                      onClick={() => setPickerEquipment(eq.key)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '20px',
-                        fontSize: '11.5px',
-                        cursor: 'pointer',
-                        border: isActive ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                        background: isActive ? 'rgba(0, 210, 255, 0.15)' : 'var(--bg-card-hover)',
-                        color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                        fontWeight: isActive ? 'bold' : 'normal',
-                      }}
-                    >
-                      {eq.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Visual Exercise Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: '12px',
-              maxHeight: '440px',
-              overflowY: 'auto',
-              padding: '4px',
-            }}>
-              {(() => {
-                const q = pickerQuery.toLowerCase().trim()
-                  .replace(/[أإآ]/g, 'ا')
-                  .replace(/ة/g, 'ه')
-                  .replace(/ى/g, 'ي');
-                const qWords = q.split(/\s+/).filter(Boolean);
-
-                let list = libraryExercises || [];
-
-                // Filter by Muscle
-                if (pickerMuscle !== 'ALL') {
-                  const normPickerM = pickerMuscle.toLowerCase();
-                  list = list.filter(ex => {
-                    const mEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
-                    const mAr = (ex.muscle_ar || '').toLowerCase();
-                    return mEn.includes(normPickerM) || normPickerM.includes(mEn) || mAr.includes(normPickerM);
-                  });
-                }
-
-                // Filter by Equipment
-                if (pickerEquipment !== 'ALL') {
-                  const normPickerEq = pickerEquipment.toLowerCase();
-                  list = list.filter(ex => {
-                    const eqEn = (ex.equipment_en || ex.equipment || '').toLowerCase();
-                    const eqAr = (ex.equipment_ar || '').toLowerCase();
-                    return eqEn.includes(normPickerEq) || eqAr.includes(normPickerEq);
-                  });
-                }
-
-                // Filter by Query
-                if (qWords.length > 0) {
-                  list = list.filter(ex => {
-                    const nameAr = (ex.name_ar || ex.name || '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي');
-                    const nameEn = (ex.name_en || ex.name || '').toLowerCase();
-                    const muscleAr = (ex.muscle_ar || '').toLowerCase();
-                    const muscleEn = (ex.muscle_en || ex.targetMuscle || '').toLowerCase();
-                    const combined = `${nameAr} ${nameEn} ${muscleAr} ${muscleEn}`;
-                    return qWords.every(w => combined.includes(w));
-                  });
-                }
-
-                if (list.length === 0) {
-                  return (
-                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
-                      <span style={{ fontSize: '32px' }}>🔍</span>
-                      <p style={{ margin: '10px 0 0 0', fontSize: '13px' }}>
-                        {lang === 'en' ? 'No exercises match your filter. Try changing muscle or search query.' : 'لم نجد تمارين مطابقة للفلتر المحدد. جرب تغيير العضلة أو كتابة اسم آخر.'}
-                      </p>
-                    </div>
-                  );
-                }
-
-                return list.slice(0, 40).map((item, idx) => {
-                  const nameAr = item.name_ar || item.name_en || item.name;
-                  const nameEn = item.name_en || item.name;
-                  const muscle = item.muscle_ar || item.muscle_en || item.targetMuscle || 'عضلات';
-                  const equip = item.equipment_ar || item.equipment_en || item.equipment || 'أداة';
-                  const img = item.image_url || item.gif_url || '';
-
-                  return (
-                    <div
-                      key={item.id || idx}
-                      className="glass-panel"
-                      style={{
-                        padding: '12px',
-                        borderRadius: '14px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--bg-card-hover)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        gap: '10px',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', background: 'var(--bg-card)', flexShrink: 0, border: '1px solid var(--border-color)' }}>
-                          <ExerciseImage src={img} alt={nameEn} muscle={item.muscle_en || item.targetMuscle} />
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {lang === 'en' ? nameEn : nameAr}
-                          </div>
-                          {lang === 'ar' && nameEn && (
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {nameEn}
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '10px', background: 'rgba(0, 210, 255, 0.12)', color: 'var(--primary)', padding: '1px 6px', borderRadius: '6px', fontWeight: 'bold' }}>
-                              🎯 {muscle}
-                            </span>
-                            <span style={{ fontSize: '10px', background: 'var(--border-color)', color: 'var(--text-secondary)', padding: '1px 6px', borderRadius: '6px' }}>
-                              🏋️ {equip}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const { dayIdx, exIdx } = showExercisePickerModal;
-                          const selectedExData = {
-                            id: Date.now(),
-                            name: lang === 'en' ? nameEn : nameAr,
-                            targetMuscle: item.muscle_en || item.targetMuscle || 'Chest',
-                            weight: item.equipment_en || item.equipment || 'Dumbbells',
-                            imageUrl: img,
-                            sets: 3,
-                            reps: '10-12',
-                            restSeconds: 60,
-                            exerciseTips: item.instructions_ar || item.instructions_en || '',
-                          };
-
-                          if (showManualBuilder) {
-                            const updated = [...manualDays];
-                            if (exIdx !== undefined && updated[dayIdx]?.exercises[exIdx]) {
-                              // Update existing row
-                              updated[dayIdx].exercises[exIdx] = {
-                                ...updated[dayIdx].exercises[exIdx],
-                                ...selectedExData,
-                              };
-                            } else {
-                              // Append new exercise
-                              if (!updated[dayIdx].exercises) updated[dayIdx].exercises = [];
-                              updated[dayIdx].exercises.push(selectedExData);
-                            }
-                            setManualDays(updated);
-                          } else if (activePlan) {
-                            const targetDayIndex = dayIdx + 1;
-                            if (exIdx !== undefined) {
-                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'name', selectedExData.name);
-                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'targetMuscle', selectedExData.targetMuscle);
-                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'weight', selectedExData.weight);
-                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'imageUrl', selectedExData.imageUrl);
-                              handleInlineUpdateExercise(targetDayIndex, exIdx, 'exerciseTips', selectedExData.exerciseTips);
-                            } else {
-                              handleInlineAddExercise(targetDayIndex, selectedExData);
-                            }
-                          }
-
-                          setShowExercisePickerModal(null);
-                        }}
-                        className="glow-btn"
-                        style={{
-                          width: '100%',
-                          padding: '7px 10px',
-                          fontSize: '12px',
-                          borderRadius: '8px',
-                          justifyContent: 'center',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>{showExercisePickerModal.exIdx !== undefined ? (lang === 'en' ? 'Choose This Exercise ⚡' : 'استبدال بهذا التمرين ⚡') : (lang === 'en' ? '+ Add to Routine' : '+ إضافة إلى اليوم التدريبي')}</span>
-                      </button>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        </div>
+          onClose={() => setShowExercisePickerModal(null)}
+        />
       )}
     </div>
   );

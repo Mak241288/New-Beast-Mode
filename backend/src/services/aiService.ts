@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { logger } from './logger';
 import crypto from 'crypto';
 import prisma from './db';
 import { exerciseCatalog } from './exerciseCatalogService';
@@ -263,7 +264,7 @@ export const getGenAI = (): GoogleGenAI => {
   if (!genAIClient) {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) {
-      console.warn('[Gemini] GEMINI_API_KEY is not set in environment variables.');
+      logger.warn('[Gemini] GEMINI_API_KEY is not set in environment variables.');
     }
     genAIClient = new GoogleGenAI({ apiKey: geminiKey || '' });
   }
@@ -300,7 +301,7 @@ export const callGroq = async (prompt: string, jsonMode: boolean = false, custom
 
     const data: any = await response.json();
     if (!response.ok) {
-      console.error(`[Groq Error Details for ${modelName}]:`, data);
+      logger.error(`[Groq Error Details for ${modelName}]:`, data);
       throw new Error(data.error?.message || 'فشلت عملية التوليد عبر Groq');
     }
 
@@ -310,11 +311,11 @@ export const callGroq = async (prompt: string, jsonMode: boolean = false, custom
   try {
     return await makeRequest('llama-3.3-70b-versatile');
   } catch (error: any) {
-    console.warn('[callGroq] Primary model llama-3.3-70b-versatile failed, retrying with fallback llama-3.1-8b-instant...', error.message);
+    logger.warn('[callGroq] Primary model llama-3.3-70b-versatile failed, retrying with fallback llama-3.1-8b-instant...', error.message);
     try {
       return await makeRequest('llama-3.1-8b-instant');
     } catch (fallbackError: any) {
-      console.error('[callGroq] Fallback model llama-3.1-8b-instant also failed:', fallbackError.message);
+      logger.error('[callGroq] Fallback model llama-3.1-8b-instant also failed:', fallbackError.message);
       throw fallbackError;
     }
   }
@@ -351,7 +352,7 @@ async function withRetry<T>(
 
       const jitter = Math.random() * 400;
       const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1) + jitter, 6000);
-      console.warn(`[${context}] Transient error (${attempt}/${retries}): ${error?.message || error}. Retrying in ${Math.round(delay)}ms...`);
+      logger.warn(`[${context}] Transient error (${attempt}/${retries}): ${error?.message || error}. Retrying in ${Math.round(delay)}ms...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
@@ -402,7 +403,7 @@ export const callGeminiStructured = async <T>(
         return JSON.parse(responseText) as T;
       }, 3, 1000, 'callGeminiStructured');
     } catch (geminiError: any) {
-      console.warn(`[callGeminiStructured] Gemini failed (${geminiError.message}). Falling back to Groq LLaMA...`);
+      logger.warn(`[callGeminiStructured] Gemini failed (${geminiError.message}). Falling back to Groq LLaMA...`);
     }
   }
 
@@ -452,7 +453,7 @@ export const callGeminiText = async (
         return (response.text || '').trim();
       }, 3, 1000, 'callGeminiText');
     } catch (geminiError: any) {
-      console.warn(`[callGeminiText] Gemini failed (${geminiError.message}). Falling back to Groq...`);
+      logger.warn(`[callGeminiText] Gemini failed (${geminiError.message}). Falling back to Groq...`);
     }
   }
 
@@ -532,7 +533,7 @@ ${equipmentGuidanceAr}
       }
     );
   } catch (error: any) {
-    console.error('[generateWorkoutPlanAI] Error:', error);
+    logger.error('[generateWorkoutPlanAI] Error:', error);
     throw new Error('فشل توليد الجدول الرياضي بالذكاء الاصطناعي.');
   }
 };
@@ -576,7 +577,7 @@ Provide a concise, encouraging advice paragraph on how this impacts their routin
     setInCache(cacheKey, advice);
     return advice;
   } catch (error) {
-    console.error('[getProfileAdviceAI] Error:', error);
+    logger.error('[getProfileAdviceAI] Error:', error);
     return isEn
       ? 'Based on your updated profile, we recommend regenerating or adjusting your workout routine to align with your current fitness condition and equipment.'
       : 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح مواءمة جدول التمارين ليتناسب مع موقع تمرينك وحالتك البدنية المحدثة.';
@@ -625,7 +626,7 @@ Generate a progressive overload routine representing the next phase.
     setInCache(cacheKey, result, 12 * 60 * 60 * 1000); // Cache for 12 hours
     return result;
   } catch (error: any) {
-    console.error('[upgradeWorkoutPlanAI] Error:', error);
+    logger.error('[upgradeWorkoutPlanAI] Error:', error);
     throw new Error('فشل ترقية الجدول الرياضي بالذكاء الاصطناعي.');
   }
 };
@@ -652,7 +653,7 @@ export const suggestSwapAI = async (
 
   const cached = getFromCache<ExerciseSwapResponse>(cacheKey);
   if (cached) {
-    console.log(`[Token Saver] Serving exercise swap for '${exerciseName}' directly from Cache!`);
+    logger.info(`[Token Saver] Serving exercise swap for '${exerciseName}' directly from Cache!`);
     return cached;
   }
 
@@ -699,7 +700,7 @@ ${candidatesContext}
     setInCache(cacheKey, result);
     return result;
   } catch (err: any) {
-    console.error('[suggestSwapAI] Error:', err);
+    logger.error('[suggestSwapAI] Error:', err);
     throw new Error('فشل استبدال التمرين بالذكاء الاصطناعي.');
   }
 };
@@ -755,7 +756,7 @@ Athlete Weekly Performance & Biometrics:
     setInCache(cacheKey, recommendation);
     return recommendation;
   } catch (error) {
-    console.error('[suggestCheckInRecommendation] Error:', error);
+    logger.error('[suggestCheckInRecommendation] Error:', error);
     return isEn
       ? 'Outstanding dedication this week, Beast! Your metrics show great progressive adaptation. Maintain clean lifting technique and ensure your protein and hydration remain optimal.'
       : 'أداء استثنائي والتزام بطولي هذا الأسبوع يا وحش! قياساتك واستمراريتك تعكس تطوراً بدنياً حقيقياً. حافظ على التكنيك الدقيق واجعل شرب الماء والتغذية في قمة أولوياتك.';
@@ -782,7 +783,7 @@ export const translateExerciseInstructionsBatch = async (
   }
 
   if (neededTranslations.length === 0) {
-    console.log(`[Token Saver] All ${exercises.length} exercise translations served from Cache!`);
+    logger.info(`[Token Saver] All ${exercises.length} exercise translations served from Cache!`);
     return translationsMap;
   }
 
@@ -812,7 +813,7 @@ ${neededTranslations.map(e => `[ID: ${e.id}] Name: ${e.name_en}\nInstructions: $
       }
     }
   } catch (error: any) {
-    console.error('[translateExerciseInstructionsBatch] Error:', error.message);
+    logger.error('[translateExerciseInstructionsBatch] Error:', error.message);
   }
 
   return translationsMap;
@@ -917,7 +918,7 @@ Provide an objective, science-based physique analysis estimating body fat %, mus
       { temperature: 0.6, thinkingBudget: 0 }
     );
   } catch (error) {
-    console.error('[analyzePhysiquePhotoAI Error]:', error);
+    logger.error('[analyzePhysiquePhotoAI Error]:', error);
     if (isEn) {
       return {
         estimatedBodyFatRange: '13% - 16%',

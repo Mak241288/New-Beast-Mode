@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from '../utils/toast';
 import { X, Camera, Plus, Trash2, ArrowLeftRight, Sparkles, Brain, CheckCircle2, Flame, Award, Dumbbell, Utensils, Activity } from 'lucide-react';
 import { api } from '../services/api';
 import { idbStore } from '../utils/idbStore';
@@ -86,7 +87,7 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
   const handleSavePhoto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedImageBase64) {
-      alert(isEn ? 'Please select a photo first.' : 'يرجى اختيار صورة أولاً.');
+      toast.show(isEn ? 'Please select a photo first.' : 'يرجى اختيار صورة أولاً.');
       return;
     }
 
@@ -129,7 +130,7 @@ export const TransformationGalleryModal: React.FC<TransformationGalleryModalProp
       } else {
         throw new Error('No analysis data received');
       }
-    } catch (err: any) {
+    } catch {
       // High quality fallback analysis
       if (isEn) {
         setPhysiqueAnalysis({

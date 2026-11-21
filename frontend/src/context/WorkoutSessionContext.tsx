@@ -1,4 +1,6 @@
+/* oxlint-disable react/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from '../utils/toast';
 import { api } from '../services/api';
 import { cacheStore } from '../utils/cacheStore';
 import { audioCues } from '../utils/audioCues';
@@ -356,6 +358,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         clearTimeout(cloudSyncDebounceTimerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.status, state.activeExerciseIndex, state.currentSetIndex, state.setLogs, state.isPaused, state.dayData]);
 
   // Bulletproof Mobile Lifecycle Persistence (Incoming Phone Calls, App Switcher, Tab Freezing, Sudden Exit)
@@ -523,7 +526,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
   // Actions
   const startSession = useCallback((dayData: any) => {
     if (!dayData || !dayData.exercises || dayData.exercises.length === 0) {
-      alert('لا توجد تمارين مضافة في هذا اليوم التدريبي.');
+      toast.show('لا توجد تمارين مضافة في هذا اليوم التدريبي.');
       return;
     }
 
@@ -712,6 +715,7 @@ export const WorkoutSessionProvider: React.FC<{ children: React.ReactNode }> = (
         status: 'resting',
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateSetLog = useCallback((exerciseIndex: number, setIndex: number, updates: Partial<SetLogItem>) => {

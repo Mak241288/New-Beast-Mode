@@ -12,7 +12,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "db:backup": "ts-node src/scripts/backup_db.ts",
     "backup:exercises": "ts-node src/scripts/backup_exercises.ts",
-    "test": "ts-node src/scripts/verify_trust_proxy.ts"
+    "test": "ts-node src/scripts/verify_trust_proxy.ts && ts-node src/scripts/run_backend_tests.ts"
   },
   "dependencies": {
     "@google/genai": "^2.11.0",

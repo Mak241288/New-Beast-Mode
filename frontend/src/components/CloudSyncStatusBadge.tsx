@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from '../utils/toast';
 import { Cloud, RefreshCw, WifiOff, CheckCircle2, Bookmark, Trash2, RotateCcw, Plus, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -81,7 +82,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
       await loadSnapshots();
       showSyncNotification(isEn ? '💾 Snapshot backup saved!' : '💾 تم حفظ النسخة الاحتياطية بنجاح!');
     } catch (err: any) {
-      alert(err.message || 'فشل حفظ النسخة الاحتياطية');
+      toast.show(err.message || 'فشل حفظ النسخة الاحتياطية');
     } finally {
       setSavingSnapshot(false);
     }
@@ -94,7 +95,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
         setShowTooltip(false);
         showSyncNotification(isEn ? `✅ Restored "${name}"!` : `✅ تمت استعادة "${name}" بنجاح!`);
       } catch (err: any) {
-        alert(err.message || 'فشل استعادة النسخة الاحتياطية');
+        toast.show(err.message || 'فشل استعادة النسخة الاحتياطية');
       }
     }
   };
@@ -152,6 +153,7 @@ export const CloudSyncStatusBadge: React.FC<CloudSyncStatusBadgeProps> = ({ lang
       window.removeEventListener('beast_cloud_synced', handleLocalSyncEvent);
       window.removeEventListener('beast_sync_status', handleSyncStatus);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastSyncedTimestamp, isEn]);
 
   return (

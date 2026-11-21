@@ -6,6 +6,8 @@ import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
 import { WorkoutSessionProvider } from './context/WorkoutSessionContext.tsx'
+import { ToastContainer } from './components/ToastContainer.tsx'
+import { toast } from './utils/toast.ts'
 import { registerAutoUpdateServiceWorker } from './utils/pwaUpdate.ts'
 
 Sentry.init({
@@ -21,10 +23,9 @@ Sentry.init({
 });
 
 // Expose a helper to easily test Sentry from browser console
-(window as any).triggerSentryTest = () => {
+(window as unknown as { triggerSentryTest?: () => void }).triggerSentryTest = () => {
   Sentry.captureMessage('🦍 BeastMode Frontend Sentry Test: Successfully Connected!', 'info');
-  console.log('✅ Sentry test message sent to your dashboard!');
-  alert('تم إرسال حدث اختبار بنجاح إلى لوحة تحكم Sentry!');
+  toast.success('تم إرسال حدث اختبار بنجاح إلى لوحة تحكم Sentry!');
 };
 
 createRoot(document.getElementById('root')!).render(
@@ -32,6 +33,7 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <WorkoutSessionProvider>
         <App />
+        <ToastContainer />
       </WorkoutSessionProvider>
     </ErrorBoundary>
   </StrictMode>,

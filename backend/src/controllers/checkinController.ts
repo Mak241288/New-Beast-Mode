@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { logger } from '../services/logger';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../services/db';
 import { suggestCheckInRecommendation } from '../services/aiService';
@@ -64,7 +65,7 @@ export const getCheckInStatus = async (req: AuthRequest, res: Response): Promise
       latestCheckIn
     });
   } catch (error: any) {
-    console.error('[getCheckInStatus] Error:', error);
+    logger.error('[getCheckInStatus] Error:', error);
     res.status(500).json({ error: 'فشل التحقق من حالة التقييم الأسبوعي.' });
   }
 };
@@ -122,7 +123,7 @@ export const submitCheckIn = async (req: AuthRequest, res: Response): Promise<vo
       checkIn: newCheckIn
     });
   } catch (error: any) {
-    console.error('[submitCheckIn] Error:', error);
+    logger.error('[submitCheckIn] Error:', error);
     res.status(500).json({ error: 'فشل إرسال التقييم الأسبوعي.' });
   }
 };
@@ -221,7 +222,7 @@ export const applySuggestions = async (req: AuthRequest, res: Response): Promise
       message: 'تم تطبيق اقتراحات الكوتش بنجاح وتحديث خطة تمارينك!'
     });
   } catch (error: any) {
-    console.error('[applySuggestions] Error:', error);
+    logger.error('[applySuggestions] Error:', error);
     res.status(500).json({ error: 'فشل تطبيق تعديلات الخطة التدريبية.' });
   }
 };

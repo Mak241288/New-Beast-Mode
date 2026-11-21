@@ -325,6 +325,7 @@ function App() {
       window.removeEventListener('popstate', handlePopState);
       authListener?.subscription?.unsubscribe?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -482,6 +483,7 @@ function App() {
 
   useEffect(() => {
     checkStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleLoginSuccess = (newToken: string) => {

@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { logger } from '../services/logger';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
@@ -345,7 +346,7 @@ export const requestPasswordResetOtp = async (req: AuthRequest, res: Response): 
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`🔐 [BeastMode Dev] OTP generated for ${cleanEmail}: ${otp}`);
+      logger.info(`🔐 [BeastMode Dev] OTP generated for ${cleanEmail}: ${otp}`);
     }
 
     res.status(200).json({
@@ -556,7 +557,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       try {
         adjustmentSuggestion = await getProfileAdviceAI(oldUser, updatedUser);
       } catch (aiErr) {
-        console.error('Error generating AI profile advice:', aiErr);
+        logger.error('Error generating AI profile advice:', aiErr);
         adjustmentSuggestion = 'بناءً على التغييرات الجديدة في ملفك الشخصي، نقترح إعادة توليد جدول التمارين ليتناسب مع موقع تمرينك وحالتك البدنية المحدثة.';
       }
     }
@@ -588,7 +589,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       adjustmentSuggestion,
     });
   } catch (error) {
-    console.error(error);
+    logger.error('Failed to update user profile', error);
     res.status(500).json({ error: 'حدث خطأ أثناء تحديث الملف الشخصي' });
   }
 };
@@ -666,7 +667,7 @@ export const exportUserData = async (req: AuthRequest, res: Response): Promise<v
 
     res.json(exportPayload);
   } catch (error: any) {
-    console.error('[exportUserData] Error:', error);
+    logger.error('[exportUserData] Error:', error);
     res.status(500).json({ error: 'فشل تصدير بيانات المستخدم' });
   }
 };
@@ -702,7 +703,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
 
     res.json({ success: true, message: 'تم حذف الحساب وكافة البيانات المرتبطة به نهائياً.' });
   } catch (error: any) {
-    console.error('[deleteAccount] Error:', error);
+    logger.error('[deleteAccount] Error:', error);
     res.status(500).json({ error: 'فشل حذف الحساب. يرجى المحاولة لاحقاً.' });
   }
 };
@@ -819,7 +820,7 @@ export const googleAuth = async (req: AuthRequest, res: Response): Promise<void>
       message: 'تم التحقق من الهوية وتسجيل الدخول عبر Google بنجاح ⚡',
     });
   } catch (error: any) {
-    console.error('[googleAuth] Error:', error);
+    logger.error('[googleAuth] Error:', error);
     res.status(500).json({ error: 'فشل تسجيل الدخول أو ربط الحساب عبر Google' });
   }
 };
@@ -883,7 +884,7 @@ export const linkGoogleAccount = async (req: AuthRequest, res: Response): Promis
       message: 'تم التحقق من الهوية وربط حسابك بنجاح بحساب Google!',
     });
   } catch (error: any) {
-    console.error('[linkGoogleAccount] Error:', error);
+    logger.error('[linkGoogleAccount] Error:', error);
     res.status(500).json({ error: 'فشل ربط الحساب بحساب Google' });
   }
 };
@@ -914,7 +915,7 @@ export const unlinkGoogleAccount = async (req: AuthRequest, res: Response): Prom
       message: 'تم إلغاء ربط الحساب بحساب Google بنجاح.',
     });
   } catch (error: any) {
-    console.error('[unlinkGoogleAccount] Error:', error);
+    logger.error('[unlinkGoogleAccount] Error:', error);
     res.status(500).json({ error: 'فشل إلغاء ربط حساب Google' });
   }
 };

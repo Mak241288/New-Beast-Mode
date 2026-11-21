@@ -442,7 +442,7 @@ export const syncController = {
       const cleanBody = sanitize(req.body) || {};
       const rapidApiKey = typeof cleanBody.rapidApiKey === 'string' ? cleanBody.rapidApiKey.trim() : undefined;
 
-      console.log('[SyncController] Initiating exercise library sync...');
+      logger.info('[SyncController] Initiating exercise library sync...');
       const result = await syncService.syncAllExercises(rapidApiKey);
 
       if (!result.success) {
@@ -474,7 +474,7 @@ export const syncController = {
     try {
       const cwd = path.join(__dirname, '../../../workout_generator_python');
       
-      console.log('[SyncController] Launching Python cache performance benchmark test...');
+      logger.info('[SyncController] Launching Python cache performance benchmark test...');
       execFile('python', ['test_performance.py'], { cwd, env: process.env }, (error, stdout, stderr) => {
         if (error) {
           logger.error('[SyncController] Performance test execution error:', {

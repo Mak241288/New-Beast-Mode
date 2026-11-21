@@ -37,7 +37,7 @@ export function getDailyRecovery(dateKey: string = getTodayKey(), defaultTargetL
       const parsed = JSON.parse(raw);
       cacheStore.set(`recovery_log_${dateKey}`, parsed);
       return parsed;
-    } catch (e) {
+    } catch {
       // fallback
     }
   }

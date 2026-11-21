@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from '../utils/toast';
 import { X, Star, Plus, Copy, Trash2, Edit3, Check, Calendar, Sparkles, Layers } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -84,7 +85,7 @@ export const MultiPlanManagerModal: React.FC<MultiPlanManagerModalProps> = ({
 
   const handleDelete = async (plan: any) => {
     if (plans.length <= 1) {
-      alert(
+      toast.show(
         isEn
           ? 'You must keep at least one workout plan in your account.'
           : 'لا يمكن حذف الجدول الوحيد. يجب أن تحتفظ بجدول تدريبي واحد على الأقل.'

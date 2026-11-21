@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, memo } from 'react';
 import { X, Play, Dumbbell, ShieldAlert, Youtube, Activity, Globe } from 'lucide-react';
 import { ExerciseImage } from './ExerciseImage';
 import { YouTubeEmbedPlayer } from './YouTubeEmbedPlayer';
+import { sanitizeSafeUrl } from '../utils/urlSanitizer';
 
 export interface ExerciseItem {
   id?: string | number;
@@ -168,29 +169,6 @@ const MuscleAnatomySVG: React.FC<{ muscle: string; uid: string; view?: 'front' |
 });
 
 MuscleAnatomySVG.displayName = 'MuscleAnatomySVG';
-
-// Strict URL Protocol & Domain Validator to prevent DOM-based XSS (javascript: and untrusted origins)
-export const sanitizeSafeUrl = (rawUrl?: string, fallback = 'https://musclewiki.com', allowedHostnames?: string[]): string => {
-  if (!rawUrl || typeof rawUrl !== 'string') return fallback;
-  const trimmed = rawUrl.trim();
-  try {
-    const parsed = new URL(trimmed);
-    if (parsed.protocol !== 'https:') {
-      return fallback;
-    }
-    if (allowedHostnames && allowedHostnames.length > 0) {
-      const isAllowed = allowedHostnames.some(
-        (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`)
-      );
-      if (!isAllowed) {
-        return fallback;
-      }
-    }
-    return parsed.toString();
-  } catch {
-    return fallback;
-  }
-};
 
 // Helper: Safely parse array or multi-line string text
 const parseInstructionsArray = (raw: string | string[] | undefined): string[] => {
@@ -394,7 +372,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
     if (!exercise) return [];
     const smartArSteps = getSmartArabicInstructions(exercise.muscle_en || exercise.targetMuscle || '');
     const rawInstructions = exercise.instructions_ar || exercise.description_ar;
-    const isRawEnglish = typeof rawInstructions === 'string' && /^[a-zA-Z0-9\s.,'()\-]+$/.test(rawInstructions.substring(0, 50));
+    const isRawEnglish = typeof rawInstructions === 'string' && /^[a-zA-Z0-9\s.,'()-]+$/.test(rawInstructions.substring(0, 50));
 
     if (isAr) {
       if (rawInstructions && !isRawEnglish && String(rawInstructions).trim().length > 10) {
@@ -428,7 +406,7 @@ export const MuscleWikiModal: React.FC<MuscleWikiModalProps> = ({
     if (!exercise) return [];
     const smartArMistakes = getSmartArabicMistakes(exercise.muscle_en || exercise.targetMuscle || '');
     const rawMistakes = exercise.common_mistakes_ar;
-    const isMistakeEnglish = typeof rawMistakes === 'string' && /^[a-zA-Z0-9\s.,'()\-]+$/.test(rawMistakes.substring(0, 30));
+    const isMistakeEnglish = typeof rawMistakes === 'string' && /^[a-zA-Z0-9\s.,'()-]+$/.test(rawMistakes.substring(0, 30));
 
     if (isAr) {
       if (rawMistakes && !isMistakeEnglish && String(rawMistakes).trim().length > 5) {

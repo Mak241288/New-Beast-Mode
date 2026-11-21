@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { logger } from './logger';
 import path from 'path';
 
 export interface ExerciseRecord {
@@ -48,7 +49,7 @@ class ExerciseCatalogService {
           this.exercises = parsed.exercises;
         }
         this.isLoaded = true;
-        console.log(`[ExerciseCatalog] Loaded ${this.exercises.length} exercises from backup JSON.`);
+        logger.info(`[ExerciseCatalog] Loaded ${this.exercises.length} exercises from backup JSON.`);
         return;
       }
 
@@ -57,13 +58,13 @@ class ExerciseCatalogService {
         const parsed = JSON.parse(raw);
         this.exercises = Array.isArray(parsed) ? parsed : (parsed.exercises || []);
         this.isLoaded = true;
-        console.log(`[ExerciseCatalog] Loaded ${this.exercises.length} exercises from frontend catalog.`);
+        logger.info(`[ExerciseCatalog] Loaded ${this.exercises.length} exercises from frontend catalog.`);
         return;
       }
 
-      console.warn('[ExerciseCatalog] No local JSON catalog file found.');
+      logger.warn('[ExerciseCatalog] No local JSON catalog file found.');
     } catch (err: any) {
-      console.error('[ExerciseCatalog] Failed to load exercise catalog:', err.message);
+      logger.error('[ExerciseCatalog] Failed to load exercise catalog:', err.message);
     }
   }
 
@@ -188,7 +189,7 @@ class ExerciseCatalogService {
         try {
           fs.writeFileSync(BACKUP_JSON_PATH, JSON.stringify(this.exercises, null, 2), 'utf-8');
         } catch (saveErr) {
-          console.warn('[ExerciseCatalog] Warning: Failed to persist translated exercise to disk:', saveErr);
+          logger.warn('[ExerciseCatalog] Warning: Failed to persist translated exercise to disk:', saveErr);
         }
 
         return true;

@@ -1,4 +1,5 @@
 import db from './db';
+import { logger } from './logger';
 
 export const syncService = {
   /**
@@ -16,7 +17,7 @@ export const syncService = {
     // --- 1. ExerciseDB Sync (via RapidAPI) ---
     if (apiKey && apiKey !== 'YOUR_RAPIDAPI_KEY_HERE') {
       try {
-        console.log('[SyncService] Fetching from ExerciseDB (RapidAPI)...');
+        logger.info('[SyncService] Fetching from ExerciseDB (RapidAPI)...');
         const response = await fetch('https://exercisedb.p.rapidapi.com/exercises?limit=300', {
           headers: {
             'x-rapidapi-key': apiKey,
@@ -30,7 +31,7 @@ export const syncService = {
 
         const data: any = await response.json();
         if (Array.isArray(data)) {
-          console.log(`[SyncService] Fetched ${data.length} exercises from ExerciseDB. Syncing...`);
+          logger.info(`[SyncService] Fetched ${data.length} exercises from ExerciseDB. Syncing...`);
           for (const item of data) {
             try {
               const category = item.equipment?.toLowerCase() === 'body weight' ? 'CALISTHENICS' : 'IRON';
@@ -55,26 +56,26 @@ export const syncService = {
               }
               totalSynced++;
             } catch (err: any) {
-              console.warn(`[SyncService] ExerciseDB Item sync error: ${item.name}`, err.message);
+              logger.warn(`[SyncService] ExerciseDB Item sync error: ${item.name}`, err.message);
             }
           }
         }
       } catch (err: any) {
         errors.push(`ExerciseDB Sync Error: ${err.message}`);
-        console.error('[SyncService] ExerciseDB Sync Error:', err);
+        logger.error('[SyncService] ExerciseDB Sync Error:', err);
       }
     } else {
-      console.log('[SyncService] Skipping ExerciseDB sync: RAPIDAPI_KEY is not provided.');
+      logger.info('[SyncService] Skipping ExerciseDB sync: RAPIDAPI_KEY is not provided.');
     }
 
     // --- 2. Wger Workout Manager API Sync ---
     try {
-      console.log('[SyncService] Fetching from Wger Workout API...');
+      logger.info('[SyncService] Fetching from Wger Workout API...');
       const response = await fetch('https://wger.de/api/v2/exercise/?language=2&limit=40');
       if (response.ok) {
         const data: any = await response.json();
         if (data && Array.isArray(data.results)) {
-          console.log(`[SyncService] Fetched ${data.results.length} exercises from Wger API. Syncing...`);
+          logger.info(`[SyncService] Fetched ${data.results.length} exercises from Wger API. Syncing...`);
           for (const item of data.results) {
             try {
               const name = `${item.name} (Wger)`;
@@ -98,7 +99,7 @@ export const syncService = {
               }
               totalSynced++;
             } catch (err: any) {
-              console.warn(`[SyncService] Wger Item sync error: ${item.name}`, err.message);
+              logger.warn(`[SyncService] Wger Item sync error: ${item.name}`, err.message);
             }
           }
         }
@@ -107,7 +108,7 @@ export const syncService = {
       }
     } catch (err: any) {
       errors.push(`Wger API Sync Error: ${err.message}`);
-      console.error('[SyncService] Wger Sync Error:', err);
+      logger.error('[SyncService] Wger Sync Error:', err);
     }
 
     // --- 3. Yoga API Sync ---
@@ -116,12 +117,12 @@ export const syncService = {
 
     // A. Free Yoga API first
     try {
-      console.log('[SyncService] Fetching from public Yoga API...');
+      logger.info('[SyncService] Fetching from public Yoga API...');
       const response = await fetch('https://yoga-api-nrizg5byf-gullspoint.vercel.app/api/v1/poses');
       if (response.ok) {
         const data: any = await response.json();
         if (Array.isArray(data)) {
-          console.log(`[SyncService] Fetched ${data.length} poses from public Yoga API. Syncing...`);
+          logger.info(`[SyncService] Fetched ${data.length} poses from public Yoga API. Syncing...`);
           for (const pose of data) {
             try {
               const name = `${pose.english_name} - ${pose.sanskrit_name} (Yoga)`;
@@ -141,20 +142,20 @@ export const syncService = {
               }
               totalSynced++;
             } catch (err: any) {
-              console.warn(`[SyncService] Yoga Pose sync error: ${pose.english_name}`, err.message);
+              logger.warn(`[SyncService] Yoga Pose sync error: ${pose.english_name}`, err.message);
             }
           }
           yogaFetched = true;
         }
       }
     } catch (err: any) {
-      console.log('[SyncService] Public Yoga API failed, trying RapidAPI fallback...', err.message);
+      logger.info('[SyncService] Public Yoga API failed, trying RapidAPI fallback...', err.message);
     }
 
     // B. RapidAPI Yoga Fallback (if public failed and we have key)
     if (!yogaFetched && apiKey && apiKey !== 'YOUR_RAPIDAPI_KEY_HERE') {
       try {
-        console.log('[SyncService] Fetching from Yoga API via RapidAPI...');
+        logger.info('[SyncService] Fetching from Yoga API via RapidAPI...');
         const response = await fetch('https://yoga-poses8.p.rapidapi.com/poses', {
           headers: {
             'x-rapidapi-key': apiKey,
@@ -165,7 +166,7 @@ export const syncService = {
         if (response.ok) {
           const data: any = await response.json();
           if (Array.isArray(data)) {
-            console.log(`[SyncService] Fetched ${data.length} poses from RapidAPI Yoga API. Syncing...`);
+            logger.info(`[SyncService] Fetched ${data.length} poses from RapidAPI Yoga API. Syncing...`);
             for (const pose of data) {
               try {
                 const name = `${pose.name} (Yoga)`;
@@ -185,7 +186,7 @@ export const syncService = {
                 }
                 totalSynced++;
               } catch (err: any) {
-                console.warn(`[SyncService] RapidAPI Yoga Pose sync error: ${pose.name}`, err.message);
+                logger.warn(`[SyncService] RapidAPI Yoga Pose sync error: ${pose.name}`, err.message);
               }
             }
             yogaFetched = true;
@@ -195,7 +196,7 @@ export const syncService = {
         }
       } catch (err: any) {
         errors.push(`RapidAPI Yoga Sync Error: ${err.message}`);
-        console.error('[SyncService] RapidAPI Yoga Sync Error:', err);
+        logger.error('[SyncService] RapidAPI Yoga Sync Error:', err);
       }
     }
 

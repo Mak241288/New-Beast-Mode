@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { logger } from '../services/logger';
 import prisma from '../services/db';
 import { AuthRequest } from '../middleware/auth';
 import { exerciseCatalog } from '../services/exerciseCatalogService';
@@ -158,12 +159,12 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
       '--output', `data/processed/${planFileName}`
     ];
 
-    console.log(`[WorkoutController] Executing Python generator with safe args array`);
+    logger.info(`[WorkoutController] Executing Python generator with safe args array`);
 
     execFile('python', args, { cwd: pythonDir, env: process.env }, async (error: any, stdout: string, stderr: string) => {
-      console.log('[WorkoutController] Python Generator Output:', stdout);
+      logger.info('[WorkoutController] Python Generator Output:', stdout);
       if (error) {
-        console.error('[WorkoutController] Python Generator Error:', error, stderr);
+        logger.error('[WorkoutController] Python Generator Error:', error, stderr);
         res.status(500).json({ error: 'فشل تشغيل خوارزمية التوزيع الذكي للتمارين محلياً.' });
         return;
       }
@@ -177,7 +178,7 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
         try {
           await fs.unlink(planFilePath);
         } catch (err) {
-          console.error('[WorkoutController] Error deleting temp plan file:', err);
+          logger.error('[WorkoutController] Error deleting temp plan file:', err);
         }
 
         // For Arabic plans, if instructions_ar is missing, collect for batch translation
@@ -210,7 +211,7 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
             }));
             translationsMap = await translateExerciseInstructionsBatch(batchPayload);
           } catch (err) {
-            console.error('[Batch Translation Error]:', err);
+            logger.error('[Batch Translation Error]:', err);
           }
         }
 
@@ -279,13 +280,13 @@ export const generatePlan = async (req: AuthRequest, res: Response): Promise<voi
 
         res.status(201).json(createdPlan);
       } catch (err: any) {
-        console.error('[WorkoutController] Error parsing/saving Python plan:', err);
+        logger.error('[WorkoutController] Error parsing/saving Python plan:', err);
         res.status(500).json({ error: 'فشل معالجة وحفظ الجدول الرياضي الناتج.' });
       }
     });
 
   } catch (error: any) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء توليد جدول التمارين' });
   }
 };
@@ -688,7 +689,7 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
     try {
       aiPlan = await upgradeWorkoutPlanAI(userId, activePlan.title, completionRate, lang);
     } catch (aiErr) {
-      console.error('Error upgrading workout plan:', aiErr);
+      logger.error('Error upgrading workout plan:', aiErr);
       res.status(500).json({ error: 'فشل ترقية الجدول الرياضي بالذكاء الاصطناعي' });
       return;
     }
@@ -749,7 +750,7 @@ export const upgradePlan = async (req: AuthRequest, res: Response): Promise<void
       plan: upgradedPlan,
     });
   } catch (error: any) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: error.message || 'فشل توليد ترقية الجدول الرياضي' });
   }
 };
@@ -882,7 +883,7 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
     try {
       parsedPlan = await parseBulkWorkoutText(list);
     } catch (parseErr: any) {
-      console.error('[ImportBulkPlan] Parsing Error:', parseErr);
+      logger.error('[ImportBulkPlan] Parsing Error:', parseErr);
       res.status(400).json({ error: 'لم نتمكن من تحليل وتوزيع النص المدخل ذكياً. يرجى التأكد من التنسيق.' });
       return;
     }
@@ -1030,7 +1031,7 @@ export const importBulkPlan = async (req: AuthRequest, res: Response): Promise<v
     });
 
   } catch (error: any) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء استيراد الجدول' });
   }
 };
@@ -1093,11 +1094,11 @@ export const importFilePlan = async (req: AuthRequest, res: Response): Promise<v
       try {
         await fs.unlink(tempFilePath);
       } catch (unlinkErr) {
-        console.error('Failed to delete temp file:', unlinkErr);
+        logger.error('Failed to delete temp file:', unlinkErr);
       }
 
       if (error) {
-        console.error('[WorkoutController] File Parser Command Error:', error, stderr);
+        logger.error('[WorkoutController] File Parser Command Error:', error, stderr);
         res.status(500).json({ error: 'فشل قراءة وتحليل ملف الجدول المدخل.' });
         return;
       }
@@ -1114,7 +1115,7 @@ export const importFilePlan = async (req: AuthRequest, res: Response): Promise<v
     });
 
   } catch (error: any) {
-    console.error(error);
+    logger.error(error);
     res.status(500).json({ error: error.message || 'حدث خطأ أثناء استيراد ملف الجدول' });
   }
 };
@@ -1529,7 +1530,7 @@ export const getLibraryTree = async (_req: AuthRequest, res: Response): Promise<
     cachedLibraryTreeData = treeData;
     res.status(200).json(treeData);
   } catch (err: any) {
-    console.error('[LibraryTree Error]:', err);
+    logger.error('[LibraryTree Error]:', err);
     res.status(500).json({ error: 'فشل قراءة شجرة التمارين' });
   }
 };
@@ -1662,7 +1663,7 @@ export const swapExerciseAI = async (req: AuthRequest, res: Response): Promise<v
     });
 
   } catch (err: any) {
-    console.error('[workoutController] AI Swap Error:', err);
+    logger.error('[workoutController] AI Swap Error:', err);
     res.status(500).json({ error: err.message || 'فشل استبدال التمرين بالذكاء الاصطناعي.' });
   }
 };
@@ -1686,7 +1687,7 @@ export const analyzePhysiquePhoto = async (req: AuthRequest, res: Response): Pro
       analysis,
     });
   } catch (err: any) {
-    console.error('[workoutController] Analyze Physique Error:', err);
+    logger.error('[workoutController] Analyze Physique Error:', err);
     res.status(500).json({ error: err.message || 'فشل تحليل صور التحول البدني بالذكاء الاصطناعي.' });
   }
 };

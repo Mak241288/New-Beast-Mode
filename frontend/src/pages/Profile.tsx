@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from '../utils/toast';
 import { api } from '../services/api';
 import { User, ShieldAlert, ShieldCheck, Save, CheckCircle, RefreshCw, ChevronDown, ChevronUp, Settings, Download, Trash2, Bell, Lock, AlertTriangle, Eye, EyeOff, KeyRound, CheckCircle2, Info, FileText, LogOut } from 'lucide-react';
 import { PasswordRequirements } from '../components/PasswordRequirements';
@@ -102,7 +103,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         setForceSyncSuccessMsg('');
       }, 5000);
     } catch (err: any) {
-      alert(err.message || 'فشلت المزامنة السحابية');
+      toast.show(err.message || 'فشلت المزامنة السحابية');
     } finally {
       setIsForceSyncing(false);
     }
@@ -234,8 +235,8 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         setAdjustmentText(res.adjustmentSuggestion);
         setShowAdjustmentModal(true);
       }
-    } catch (err) {
-      alert(lang === 'en' ? 'Failed to save profile.' : 'فشل حفظ البيانات.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to save profile.' : 'فشل حفظ البيانات.');
     } finally {
       setSaving(false);
     }
@@ -253,10 +254,10 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
         level: 'intermediate',
         additionalQuestions: {},
       });
-      alert(lang === 'en' ? 'Your workout plan has been successfully updated!' : 'تم تحديث جدول تمارينك بنجاح ليتلاءم مع ملفك الشخصي الجديد!');
+      toast.show(lang === 'en' ? 'Your workout plan has been successfully updated!' : 'تم تحديث جدول تمارينك بنجاح ليتلاءم مع ملفك الشخصي الجديد!');
       onNavigate('dashboard');
-    } catch (err) {
-      alert(lang === 'en' ? 'Failed to update plan.' : 'فشل تحديث الخطة الرياضية تلقائياً.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to update plan.' : 'فشل تحديث الخطة الرياضية تلقائياً.');
     } finally {
       setSaving(false);
     }
@@ -293,7 +294,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     try {
       const success = await triggerTestNotification(lang);
       if (!success) {
-        alert(lang === 'en' 
+        toast.show(lang === 'en' 
           ? 'Notification permission not granted. Please allow notifications in browser settings.' 
           : 'لم يتم منح إذن الإشعارات. يرجى تفعيل الإشعارات من إعدادات المتصفح.');
       }
@@ -308,8 +309,8 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     setExportingData(true);
     try {
       await api.exportUserData();
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to export user data.' : 'فشل تصدير بيانات المستخدم.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to export user data.' : 'فشل تصدير بيانات المستخدم.');
     } finally {
       setExportingData(false);
     }
@@ -318,7 +319,7 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
   const handleDeleteAccount = async () => {
     const requiredConfirmation = lang === 'en' ? 'DELETE' : 'حذف';
     if (deleteConfirmText.trim() !== requiredConfirmation) {
-      alert(lang === 'en' ? 'Please type "DELETE" to confirm.' : 'يرجى كتابة كلمة "حذف" للتأكيد.');
+      toast.show(lang === 'en' ? 'Please type "DELETE" to confirm.' : 'يرجى كتابة كلمة "حذف" للتأكيد.');
       return;
     }
 
@@ -326,10 +327,10 @@ export const Profile: React.FC<ProfileProps> = ({ lang, onLanguageChange, onNavi
     try {
       await api.deleteAccount();
       localStorage.removeItem('token');
-      alert(lang === 'en' ? 'Account and all records deleted successfully.' : 'تم حذف الحساب وكافة سجلاتك نهائياً.');
+      toast.show(lang === 'en' ? 'Account and all records deleted successfully.' : 'تم حذف الحساب وكافة سجلاتك نهائياً.');
       window.location.reload();
-    } catch (err: any) {
-      alert(lang === 'en' ? 'Failed to delete account.' : 'فشل حذف الحساب.');
+    } catch {
+      toast.show(lang === 'en' ? 'Failed to delete account.' : 'فشل حذف الحساب.');
       setDeletingAccount(false);
     }
   };
