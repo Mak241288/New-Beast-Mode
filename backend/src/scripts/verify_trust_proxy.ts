@@ -1,5 +1,6 @@
 import proxyaddr from 'proxy-addr';
 import express from 'express';
+import helmet from 'helmet';
 
 async function runTrustProxyVerification() {
   console.log('--- Starting CVE-2026-90711 Verification Suite ---');
@@ -36,6 +37,7 @@ async function runTrustProxyVerification() {
 
   // 4. Express Trust Proxy Hop Count Validation
   const app = express();
+  app.use(helmet());
   app.set('trust proxy', 1);
 
   // In Express, when trust proxy is 1, req.ip resolves to the immediate client before the last trusted proxy

@@ -1,5 +1,8 @@
 name: BeastMode CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [master, main, preview]
